@@ -1,3 +1,4 @@
+import { Activity, Calendar, CreditCard, DollarSign, Download, Users } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import AnimatedBackground from '../components/AnimatedBackground';
@@ -48,67 +49,217 @@ export default function AdminPanel() {
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
       <Navbar />
-      <AnimatedBackground />
 
-      <div className="container mx-auto px-4 py-8 relative z-10">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-foreground mb-2">Admin Panel</h1>
-          <p className="text-muted-foreground">Manage system settings and users.</p>
+      {/* Background with reduced opacity specifically for dashboard readability */}
+      <div className="opacity-50">
+        <AnimatedBackground />
+      </div>
+
+      <div className="container mx-auto px-6 py-8 relative z-10 space-y-8">
+        {/* Header Section */}
+        <div className="flex items-center justify-between space-y-2">
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h2>
+            <p className="text-muted-foreground">
+              Overview of your system performance and user activity.
+            </p>
+          </div>
+          <div className="flex items-center space-x-2">
+            <button className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2">
+              <Calendar className="mr-2 h-4 w-4" />
+              <span>Jan 20, 2024 - Feb 09, 2024</span>
+            </button>
+            <button className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-4 py-2">
+              <Download className="mr-2 h-4 w-4" />
+              Download
+            </button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Dashboard Item 1 */}
-          <div className="bg-card rounded-xl shadow-lg border border-border p-6 hover:shadow-xl transition-all cursor-pointer group">
-            <div className="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-                />
-              </svg>
-            </div>
-            <h3 className="text-xl font-semibold text-card-foreground mb-2">Users Management</h3>
-            <p className="text-muted-foreground text-sm">
-              View, edit, and manage registered users.
-            </p>
+        {/* Tabs */}
+        <div className="space-y-4">
+          <div className="inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground">
+            <button className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-background text-foreground shadow">
+              Overview
+            </button>
+            <button className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-background/50 hover:text-foreground">
+              Analytics
+            </button>
+            <button className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-background/50 hover:text-foreground">
+              Reports
+            </button>
+            <button className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-background/50 hover:text-foreground">
+              Notifications
+            </button>
           </div>
 
-          {/* Dashboard Item 2 */}
-          <div className="bg-card rounded-xl shadow-lg border border-border p-6 hover:shadow-xl transition-all cursor-pointer group">
-            <div className="w-12 h-12 rounded-lg bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                />
-              </svg>
-            </div>
-            <h3 className="text-xl font-semibold text-card-foreground mb-2">System Settings</h3>
-            <p className="text-muted-foreground text-sm">
-              Configure global application preferences.
-            </p>
-          </div>
+          <div className="space-y-4">
+            {/* Cards Grid */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              {/* Card 1 */}
+              <div className="rounded-xl border border-border bg-card text-card-foreground shadow">
+                <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
+                  <h3 className="tracking-tight text-sm font-medium">Total Revenue</h3>
+                  <DollarSign className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <div className="p-6 pt-0">
+                  <div className="text-2xl font-bold">$45,231.89</div>
+                  <p className="text-xs text-muted-foreground">+20.1% from last month</p>
+                </div>
+              </div>
 
-          {/* Dashboard Item 3 */}
-          <div className="bg-card rounded-xl shadow-lg border border-border p-6 hover:shadow-xl transition-all cursor-pointer group">
-            <div className="w-12 h-12 rounded-lg bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                />
-              </svg>
+              {/* Card 2 */}
+              <div className="rounded-xl border border-border bg-card text-card-foreground shadow">
+                <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
+                  <h3 className="tracking-tight text-sm font-medium">Subscriptions</h3>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <div className="p-6 pt-0">
+                  <div className="text-2xl font-bold">+2350</div>
+                  <p className="text-xs text-muted-foreground">+180.1% from last month</p>
+                </div>
+              </div>
+
+              {/* Card 3 */}
+              <div className="rounded-xl border border-border bg-card text-card-foreground shadow">
+                <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
+                  <h3 className="tracking-tight text-sm font-medium">Sales</h3>
+                  <CreditCard className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <div className="p-6 pt-0">
+                  <div className="text-2xl font-bold">+12,234</div>
+                  <p className="text-xs text-muted-foreground">+19% from last month</p>
+                </div>
+              </div>
+
+              {/* Card 4 */}
+              <div className="rounded-xl border border-border bg-card text-card-foreground shadow">
+                <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
+                  <h3 className="tracking-tight text-sm font-medium">Active Now</h3>
+                  <Activity className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <div className="p-6 pt-0">
+                  <div className="text-2xl font-bold">+573</div>
+                  <p className="text-xs text-muted-foreground">+201 since last hour</p>
+                </div>
+              </div>
             </div>
-            <h3 className="text-xl font-semibold text-card-foreground mb-2">Analytics</h3>
-            <p className="text-muted-foreground text-sm">
-              Monitor usage statistics and performance.
-            </p>
+
+            {/* Charts & Listings */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+              {/* Chart Area */}
+              <div className="col-span-4 rounded-xl border border-border bg-card text-card-foreground shadow">
+                <div className="flex flex-col space-y-1.5 p-6">
+                  <h3 className="font-semibold leading-none tracking-tight">Overview</h3>
+                </div>
+                <div className="p-6 pt-0 pl-2">
+                  <div className="h-[350px] w-full flex items-end justify-between gap-2 px-4">
+                    {[35, 78, 45, 90, 60, 48, 85, 30, 65, 55, 80, 40].map((height, i) => (
+                      <div
+                        key={i}
+                        className="group relative flex-1 bg-primary/20 hover:bg-primary/40 rounded-t-sm transition-all h-full flex items-end"
+                      >
+                        <div
+                          className="w-full bg-primary rounded-t-sm transition-all group-hover:bg-primary/80"
+                          style={{ height: `${height}%` }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex justify-between mt-2 px-4 text-xs text-muted-foreground">
+                    <span>Jan</span>
+                    <span>Feb</span>
+                    <span>Mar</span>
+                    <span>Apr</span>
+                    <span>May</span>
+                    <span>Jun</span>
+                    <span>Jul</span>
+                    <span>Aug</span>
+                    <span>Sep</span>
+                    <span>Oct</span>
+                    <span>Nov</span>
+                    <span>Dec</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Recent Activity */}
+              <div className="col-span-3 rounded-xl border border-border bg-card text-card-foreground shadow">
+                <div className="flex flex-col space-y-1.5 p-6">
+                  <h3 className="font-semibold leading-none tracking-tight">Recent Sales</h3>
+                  <p className="text-sm text-muted-foreground">You made 265 sales this month.</p>
+                </div>
+                <div className="p-6 pt-0">
+                  <div className="space-y-8">
+                    {/* Item 1 */}
+                    <div className="flex items-center">
+                      <div className="relative flex h-9 w-9 shrink-0 overflow-hidden rounded-full bg-primary/10 items-center justify-center">
+                        <span className="flex h-full w-full items-center justify-center rounded-full bg-muted font-medium">
+                          OM
+                        </span>
+                      </div>
+                      <div className="ml-4 space-y-1">
+                        <p className="text-sm font-medium leading-none">Olivia Martin</p>
+                        <p className="text-sm text-muted-foreground">olivia.martin@email.com</p>
+                      </div>
+                      <div className="ml-auto font-medium">+$1,999.00</div>
+                    </div>
+                    {/* Item 2 */}
+                    <div className="flex items-center">
+                      <div className="relative flex h-9 w-9 shrink-0 overflow-hidden rounded-full bg-primary/10 items-center justify-center">
+                        <span className="flex h-full w-full items-center justify-center rounded-full bg-muted font-medium">
+                          JL
+                        </span>
+                      </div>
+                      <div className="ml-4 space-y-1">
+                        <p className="text-sm font-medium leading-none">Jackson Lee</p>
+                        <p className="text-sm text-muted-foreground">jackson.lee@email.com</p>
+                      </div>
+                      <div className="ml-auto font-medium">+$39.00</div>
+                    </div>
+                    {/* Item 3 */}
+                    <div className="flex items-center">
+                      <div className="relative flex h-9 w-9 shrink-0 overflow-hidden rounded-full bg-primary/10 items-center justify-center">
+                        <span className="flex h-full w-full items-center justify-center rounded-full bg-muted font-medium">
+                          IN
+                        </span>
+                      </div>
+                      <div className="ml-4 space-y-1">
+                        <p className="text-sm font-medium leading-none">Isabella Nguyen</p>
+                        <p className="text-sm text-muted-foreground">isabella.nguyen@email.com</p>
+                      </div>
+                      <div className="ml-auto font-medium">+$299.00</div>
+                    </div>
+                    {/* Item 4 */}
+                    <div className="flex items-center">
+                      <div className="relative flex h-9 w-9 shrink-0 overflow-hidden rounded-full bg-primary/10 items-center justify-center">
+                        <span className="flex h-full w-full items-center justify-center rounded-full bg-muted font-medium">
+                          WK
+                        </span>
+                      </div>
+                      <div className="ml-4 space-y-1">
+                        <p className="text-sm font-medium leading-none">William Kim</p>
+                        <p className="text-sm text-muted-foreground">will@email.com</p>
+                      </div>
+                      <div className="ml-auto font-medium">+$99.00</div>
+                    </div>
+                    {/* Item 5 */}
+                    <div className="flex items-center">
+                      <div className="relative flex h-9 w-9 shrink-0 overflow-hidden rounded-full bg-primary/10 items-center justify-center">
+                        <span className="flex h-full w-full items-center justify-center rounded-full bg-muted font-medium">
+                          SD
+                        </span>
+                      </div>
+                      <div className="ml-4 space-y-1">
+                        <p className="text-sm font-medium leading-none">Sofia Davis</p>
+                        <p className="text-sm text-muted-foreground">sofia.davis@email.com</p>
+                      </div>
+                      <div className="ml-auto font-medium">+$39.00</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
