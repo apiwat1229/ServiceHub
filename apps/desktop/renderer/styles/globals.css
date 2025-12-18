@@ -4,6 +4,13 @@
 
 @layer base {
   :root {
+    /* Settings CSS Variables */
+    --base-font-size: 14px;
+    --font-family: 'Bai Jamjuree', sans-serif;
+    --primary-color: #3b82f6;
+    --border-radius: 8px;
+
+    /* Theme Variables */
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
@@ -26,7 +33,7 @@
     --radius: 0.5rem;
   }
 
-  .dark {
+  [data-theme='dark'] {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
     --card: 222.2 84% 4.9%;
@@ -53,7 +60,22 @@
   * {
     @apply border-border;
   }
+
+  html {
+    font-size: var(--base-font-size);
+    font-family: var(--font-family);
+  }
+
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-family);
+  }
+
+  /* Apply border radius globally to buttons and inputs */
+  button,
+  input,
+  select,
+  textarea {
+    border-radius: var(--border-radius);
   }
 }

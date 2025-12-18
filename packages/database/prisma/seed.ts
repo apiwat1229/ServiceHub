@@ -19,6 +19,23 @@ async function main() {
 
     console.log('✅ Created admin user:', admin);
 
+    // Create requested admin user
+    const ytrcAdmin = await prisma.user.upsert({
+        where: { email: 'admin@ytrc.co.th' },
+        update: {
+            password: '$2b$10$vjIjDP5PS6K/pLgwrkpzTOhNVAkVyqW6.JIWFpwx1mJqhHQ4zvLfC',
+            role: 'ADMIN',
+        },
+        create: {
+            email: 'admin@ytrc.co.th',
+            name: 'YTRC Admin',
+            password: '$2b$10$vjIjDP5PS6K/pLgwrkpzTOhNVAkVyqW6.JIWFpwx1mJqhHQ4zvLfC',
+            role: 'ADMIN',
+        },
+    });
+
+    console.log('✅ Created YTRC admin user:', ytrcAdmin);
+
     // Create sample user
     const user = await prisma.user.upsert({
         where: { email: 'user@example.com' },

@@ -132,7 +132,7 @@ export default function AnimatedBackground() {
         {floatingIcons.map((item, index) => (
           <div
             key={index}
-            className="absolute pointer-events-none opacity-[0.06] float-icon text-blue-500"
+            className="absolute pointer-events-none opacity-[0.06] float-icon text-primary"
             style={
               {
                 top: item.top,
