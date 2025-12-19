@@ -28,9 +28,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
+  searchKey?: string;
 }
 
-export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData, TValue>) {
+export function DataTable<TData, TValue>({
+  columns,
+  data,
+  searchKey = 'email',
+}: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
@@ -59,9 +64,9 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
     <div className="w-full">
       <div className="flex items-center py-4 gap-2">
         <Input
-          placeholder="Filter emails..."
-          value={(table.getColumn('email')?.getFilterValue() as string) ?? ''}
-          onChange={(event) => table.getColumn('email')?.setFilterValue(event.target.value)}
+          placeholder={`Filter ${searchKey}...`}
+          value={(table.getColumn(searchKey)?.getFilterValue() as string) ?? ''}
+          onChange={(event) => table.getColumn(searchKey)?.setFilterValue(event.target.value)}
           className="max-w-sm"
         />
         <DropdownMenu>
@@ -82,7 +87,10 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
                     checked={column.getIsVisible()}
                     onCheckedChange={(value) => column.toggleVisibility(!!value)}
                   >
-                    {column.id}
+                    {column.id
+                      .replace(/_/g, ' ')
+                      .replace(/([a-z])([A-Z])/g, '$1 $2')
+                      .replace(/\b\w/g, (c) => c.toUpperCase())}
                   </DropdownMenuCheckboxItem>
                 );
               })}

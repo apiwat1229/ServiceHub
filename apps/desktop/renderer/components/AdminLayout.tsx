@@ -1,4 +1,4 @@
-import { Activity, LayoutDashboard, Package, ShoppingBag, Users } from 'lucide-react';
+import { Activity, LayoutDashboard, Package, ShoppingBag, Truck, Users } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import AnimatedBackground from './AnimatedBackground';
@@ -53,6 +53,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
     { icon: Users, label: 'Users', path: '/admin/users' },
+    { icon: Truck, label: 'Suppliers', path: '/admin/suppliers' },
     { icon: Package, label: 'Products', path: '/admin/products' },
     { icon: ShoppingBag, label: 'Orders', path: '/admin/orders' },
   ];

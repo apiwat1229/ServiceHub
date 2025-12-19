@@ -69,20 +69,40 @@ export interface CreateUserDto {
     avatar?: string;
 }
 
-export interface UpdateUserDto {
+export class UpdateUserDto {
+    username?: string;
     email?: string;
     password?: string;
-    username?: string;
     firstName?: string;
     lastName?: string;
     displayName?: string;
     department?: string;
     position?: string;
-    role?: 'USER' | 'ADMIN';
-    status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+    role?: string;
+    status?: string;
     pinCode?: string;
     hodId?: string;
     avatar?: string;
+}
+
+export class CreateSupplierDto {
+    code!: string;
+    name!: string;
+    taxId?: string;
+    address?: string;
+    phone?: string;
+    email?: string;
+    status?: string;
+}
+
+export class UpdateSupplierDto {
+    code?: string;
+    name?: string;
+    taxId?: string;
+    address?: string;
+    phone?: string;
+    email?: string;
+    status?: string;
 }
 
 // Post DTOs

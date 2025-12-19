@@ -1,0 +1,82 @@
+
+import { CreateSupplierDto, UpdateSupplierDto } from '@my-app/types';
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+
+@Injectable()
+export class SuppliersService {
+    constructor(private prisma: PrismaService) { }
+
+    async create(data: CreateSupplierDto) {
+        return this.prisma.supplier.create({
+            data: {
+                code: data.code,
+                name: data.name,
+                taxId: data.taxId,
+                address: data.address,
+                phone: data.phone,
+                email: data.email,
+                status: data.status || 'ACTIVE',
+            },
+        });
+    }
+
+    async findAll() {
+        const suppliers = await this.prisma.supplier.findMany({
+            orderBy: { createdAt: 'desc' },
+            include: {
+                province: true,
+            },
+        });
+
+        // Collect all unique rubber type codes
+        const allRubberTypeCodes = [...new Set(suppliers.flatMap(s => s.rubberTypeCodes))];
+
+        // Fetch rubber types
+        const rubberTypes = await this.prisma.rubberType.findMany({
+            where: {
+                code: { in: allRubberTypeCodes },
+            },
+            select: {
+                code: true,
+                name: true,
+                category: true,
+            },
+        });
+
+        // Create a map for quick lookup
+        const rubberTypeMap = new Map(rubberTypes.map(rt => [rt.code, rt]));
+
+        // Attach details to suppliers
+        return suppliers.map(supplier => ({
+            ...supplier,
+            rubberTypeDetails: supplier.rubberTypeCodes.map(code => {
+                const type = rubberTypeMap.get(code);
+                return {
+                    code,
+                    name: type?.name || code,
+                    category: type?.category || 'Other',
+                };
+            }),
+        }));
+    }
+
+    async findOne(id: string) {
+        return this.prisma.supplier.findUnique({
+            where: { id },
+        });
+    }
+
+    async update(id: string, data: UpdateSupplierDto) {
+        return this.prisma.supplier.update({
+            where: { id },
+            data,
+        });
+    }
+
+    async remove(id: string) {
+        return this.prisma.supplier.delete({
+            where: { id },
+        });
+    }
+}

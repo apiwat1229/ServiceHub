@@ -98,6 +98,8 @@ model District {
   @@map("districts")
 }
 
+
+
 model Subdistrict {
   id         Int      @id
   code       String   @unique
@@ -131,11 +133,12 @@ model RubberType {
 model Supplier {
   id             String   @id @default(uuid())
   code           String   @unique
-  display_name   String
+  name           String   @map("display_name")
+  taxId          String?  @map("tax_id")
   address        String?
   phone          String?
   email          String?
-  contact_person String?
+
   
   provinceId    Int?         @map("province_id")
   province      Province?    @relation(fields: [provinceId], references: [id])
@@ -144,16 +147,20 @@ model Supplier {
   subdistrictId Int?         @map("subdistrict_id")
   subdistrict   Subdistrict? @relation(fields: [subdistrictId], references: [id])
   
-  is_active        Boolean   @default(true)
+  status           String    @default("ACTIVE") @map("status") // Was is_active boolean, switching to String status for consistency with Users if desired, or keep boolean? 
+  // User plan said "status String". I will map `status` to `is_active` logic or just add `status` field. 
+  // Existing has `is_active Boolean`. I will replace/update to `status String` to match my plan, or simpler: keep `is_active` and map in DTO. 
+  // Let's stick to the plan: `status String`. I'll comment out old `is_active` or remove it.
+  
   notes            String?
-  rubber_type_codes String[]  @default([])
+  rubberTypeCodes String[]  @default([]) @map("rubber_type_codes")
   
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   
   // Extra fields from SQL export matching
-  first_name String?
-  last_name  String?
+  firstName String? @map("first_name")
+  lastName  String? @map("last_name")
   title      String?
 
   @@map("suppliers")
