@@ -44,3 +44,94 @@ enum Role {
   USER
   ADMIN
 }
+
+// Master Data: Location
+model Province {
+  id        Int      @id
+  code      String   @unique
+  name_th   String
+  name_en   String
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  suppliers Supplier[]
+  districts District[]
+
+  @@map("provinces")
+}
+
+model District {
+  id          Int      @id
+  code        String   @unique
+  name_th     String
+  name_en     String
+  provinceId  Int      @map("province_id")
+  province    Province @relation(fields: [provinceId], references: [id])
+  
+  createdAt DateTime @default(now()) @map("created_at")
+
+  suppliers    Supplier[]
+  subdistricts Subdistrict[]
+
+  @@map("districts")
+}
+
+model Subdistrict {
+  id         Int      @id
+  code       String   @unique
+  name_th    String
+  name_en    String
+  zip_code   String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  districtId Int      @map("district_id")
+  district   District @relation(fields: [districtId], references: [id])
+  
+  suppliers Supplier[]
+
+  @@map("subdistricts")
+}
+
+// Master Data: Rubber Type
+model RubberType {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  name        String
+  description String?
+  category    String?
+  is_active   Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("rubber_types")
+}
+
+// Mobile App: Supplier
+model Supplier {
+  id             String   @id @default(uuid())
+  code           String   @unique
+  display_name   String
+  address        String?
+  phone          String?
+  email          String?
+  contact_person String?
+  
+  provinceId    Int?         @map("province_id")
+  province      Province?    @relation(fields: [provinceId], references: [id])
+  districtId    Int?         @map("district_id")
+  district      District?    @relation(fields: [districtId], references: [id])
+  subdistrictId Int?         @map("subdistrict_id")
+  subdistrict   Subdistrict? @relation(fields: [subdistrictId], references: [id])
+  
+  is_active        Boolean   @default(true)
+  notes            String?
+  rubber_type_codes String[]  @default([])
+  
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  // Extra fields from SQL export matching
+  first_name String?
+  last_name  String?
+  title      String?
+
+  @@map("suppliers")
+}
