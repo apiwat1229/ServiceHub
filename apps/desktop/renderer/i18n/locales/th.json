@@ -114,6 +114,15 @@
     "queue": "คิว"
   },
   "admin": {
+    "sidebar": {
+      "main": "เมนูหลัก",
+      "system": "ระบบ",
+      "dashboard": "แดชบอร์ด",
+      "users": "ผู้ใช้งาน",
+      "suppliers": "ผู้จัดจำหน่าย",
+      "rubberTypes": "ประเภทยาง",
+      "analytics": "การวิเคราะห์"
+    },
     "dashboard": {
       "title": "แดชบอร์ด",
       "subtitle": "ภาพรวมประสิทธิภาพของระบบและการใช้งานของผู้ใช้",
@@ -277,11 +286,11 @@
     "primaryColor": "สีหลัก",
     "roundness": "ความโค้งมน",
     "fontFamily": "แบบอักษร",
-    "adminPanel": "แผงผู้ดูแลระบบ"
+    "adminPanel": "แผงควบคุม"
   },
   "system": {
     "pageNotFound": "ใม่พบหน้านี้",
-    "pageNotFoundDesc": "หน้าที่คุณกำลังมองหาไม่มีอยู่จริง",
+    "pageNotFoundDesc": "หน้าเว็บที่คุณค้นหาไม่มีอยู่จริง",
     "goBackHome": "กลับหน้าหลัก"
   }
 }

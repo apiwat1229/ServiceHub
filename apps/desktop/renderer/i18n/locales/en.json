@@ -114,6 +114,15 @@
     "queue": "Queue"
   },
   "admin": {
+    "sidebar": {
+      "main": "Main",
+      "system": "System",
+      "dashboard": "Dashboard",
+      "users": "Users",
+      "suppliers": "Suppliers",
+      "rubberTypes": "Rubber Types",
+      "analytics": "Analytics"
+    },
     "dashboard": {
       "title": "Dashboard",
       "subtitle": "Overview of your system performance and user activity.",

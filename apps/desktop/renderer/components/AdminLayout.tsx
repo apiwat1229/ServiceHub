@@ -1,6 +1,7 @@
 import { Activity, Layers, LayoutDashboard, Truck, Users } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import AnimatedBackground from './AnimatedBackground';
 import Navbar from './Navbar';
 
@@ -10,6 +11,7 @@ interface AdminLayoutProps {
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const router = useRouter();
+  const { t } = useTranslation();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -43,7 +45,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center">
         <AnimatedBackground />
-        <div className="text-foreground text-xl relative z-10">Verifying access...</div>
+        <div className="text-foreground text-xl relative z-10">{t('common.loading')}</div>
       </div>
     );
   }
@@ -51,10 +53,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   if (!isAdmin) return null;
 
   const menuItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
-    { icon: Users, label: 'Users', path: '/admin/users' },
-    { icon: Truck, label: 'Suppliers', path: '/admin/suppliers' },
-    { icon: Layers, label: 'Rubber Types', path: '/admin/rubber-types' },
+    { icon: LayoutDashboard, label: t('admin.sidebar.dashboard'), path: '/admin' },
+    { icon: Users, label: t('admin.sidebar.users'), path: '/admin/users' },
+    { icon: Truck, label: t('admin.sidebar.suppliers'), path: '/admin/suppliers' },
+    { icon: Layers, label: t('admin.sidebar.rubberTypes'), path: '/admin/rubber-types' },
   ];
 
   return (
@@ -67,7 +69,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           <div className="p-4 space-y-6">
             <div>
               <h4 className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                Main
+                {t('admin.sidebar.main')}
               </h4>
               {menuItems.map((item) => (
                 <button
@@ -87,7 +89,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
             <div>
               <h4 className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                System
+                {t('admin.sidebar.system')}
               </h4>
               <button
                 onClick={() => router.push('/admin/analytics')}
@@ -98,7 +100,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 }`}
               >
                 <Activity size={18} />
-                Analytics
+                {t('admin.sidebar.analytics')}
               </button>
             </div>
           </div>

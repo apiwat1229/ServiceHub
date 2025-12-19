@@ -44,7 +44,7 @@ export default function SettingsMenu({ onClose }: SettingsMenuProps) {
   ];
 
   return (
-    <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 backdrop-blur-xl border border-gray-200 dark:border-gray-700 rounded-lg shadow-2xl p-6 z-[60] animate-in fade-in zoom-in duration-200 origin-top-right">
+    <div className="absolute right-0 mt-2 w-80 max-h-[85vh] overflow-y-auto bg-white dark:bg-gray-800 backdrop-blur-xl border border-gray-200 dark:border-gray-700 rounded-lg shadow-2xl p-6 z-[60] animate-in fade-in zoom-in duration-200 origin-top-right">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-lg font-bold text-gray-900 dark:text-white">{t('settings.title')}</h2>
       </div>
