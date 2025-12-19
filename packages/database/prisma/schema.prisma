@@ -162,6 +162,15 @@ model Supplier {
   firstName String? @map("first_name")
   lastName  String? @map("last_name")
   title      String?
+  avatar     String?
+  zipCode    String?   @map("zip_code")
+  
+  // Business Details
+  certificateNumber    String?   @map("certificate_number")
+  certificateExpire    DateTime? @map("certificate_expire")
+  score               Float?    @default(0)
+  eudrQuotaUsed       Float?    @map("eudr_quota_used")
+  eudrQuotaCurrent    Float?    @map("eudr_quota_current")
 
   @@map("suppliers")
 }

@@ -88,21 +88,51 @@ export class UpdateUserDto {
 export class CreateSupplierDto {
     code!: string;
     name!: string;
+    firstName?: string;
+    lastName?: string;
+    title?: string;
     taxId?: string;
     address?: string;
+    provinceId?: number;
+    districtId?: number;
+    subdistrictId?: number;
+    zipCode?: string;
     phone?: string;
     email?: string;
     status?: string;
+    avatar?: string;
+    certificateNumber?: string;
+    certificateExpire?: Date;
+    score?: number;
+    eudrQuotaUsed?: number;
+    eudrQuotaCurrent?: number;
+    rubberTypeCodes?: string[];
+    notes?: string;
 }
 
 export class UpdateSupplierDto {
     code?: string;
     name?: string;
+    firstName?: string;
+    lastName?: string;
+    title?: string;
     taxId?: string;
     address?: string;
+    provinceId?: number;
+    districtId?: number;
+    subdistrictId?: number;
+    zipCode?: string;
     phone?: string;
     email?: string;
     status?: string;
+    avatar?: string;
+    certificateNumber?: string;
+    certificateExpire?: Date;
+    score?: number;
+    eudrQuotaUsed?: number;
+    eudrQuotaCurrent?: number;
+    rubberTypeCodes?: string[];
+    notes?: string;
 }
 
 // Post DTOs

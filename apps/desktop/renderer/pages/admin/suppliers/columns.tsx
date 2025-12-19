@@ -9,13 +9,28 @@ export type Supplier = {
   id: string;
   code: string;
   name: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  title?: string | null;
   taxId: string | null;
   address: string | null;
+  provinceId?: number | null;
+  districtId?: number | null;
+  subdistrictId?: number | null;
+  zipCode?: string | null;
   phone: string | null;
   email: string | null;
+  avatar?: string | null;
+  certificateNumber?: string | null;
+  certificateExpire?: string | Date | null;
+  score?: number | null;
+  eudrQuotaUsed?: number | null;
+  eudrQuotaCurrent?: number | null;
+  notes?: string | null;
   rubberTypeCodes: string[];
   rubberTypeDetails: { code: string; name: string; category: string }[];
   province: {
+    id?: number;
     name_th: string;
   } | null;
   status: string;
