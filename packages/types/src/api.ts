@@ -1,4 +1,6 @@
 // API Request/Response Types
+import { Type } from 'class-transformer';
+import { IsArray, IsDate, IsEmail, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export interface ApiResponse<T = any> {
     success: boolean;
@@ -86,52 +88,186 @@ export class UpdateUserDto {
 }
 
 export class CreateSupplierDto {
+    @IsString()
+    @IsNotEmpty()
     code!: string;
+
+    @IsString()
+    @IsNotEmpty()
     name!: string;
+
+    @IsOptional()
+    @IsString()
     firstName?: string;
+
+    @IsOptional()
+    @IsString()
     lastName?: string;
+
+    @IsOptional()
+    @IsString()
     title?: string;
+
+    @IsOptional()
+    @IsString()
     taxId?: string;
+
+    @IsOptional()
+    @IsString()
     address?: string;
+
+    @IsOptional()
+    @IsNumber()
     provinceId?: number;
+
+    @IsOptional()
+    @IsNumber()
     districtId?: number;
+
+    @IsOptional()
+    @IsNumber()
     subdistrictId?: number;
+
+    @IsOptional()
+    @IsString()
     zipCode?: string;
+
+    @IsOptional()
+    @IsString()
     phone?: string;
+
+    @IsOptional()
+    @IsEmail()
     email?: string;
+
+    @IsOptional()
+    @IsString()
     status?: string;
+
+    @IsOptional()
+    @IsString()
     avatar?: string;
+
+    @IsOptional()
+    @IsString()
     certificateNumber?: string;
+
+    @IsOptional()
+    @Type(() => Date)
+    @IsDate()
     certificateExpire?: Date;
+
+    @IsOptional()
+    @IsNumber()
     score?: number;
+
+    @IsOptional()
+    @IsNumber()
     eudrQuotaUsed?: number;
+
+    @IsOptional()
+    @IsNumber()
     eudrQuotaCurrent?: number;
+
+    @IsOptional()
+    @IsArray()
+    @IsString({ each: true })
     rubberTypeCodes?: string[];
+
+    @IsOptional()
+    @IsString()
     notes?: string;
 }
 
 export class UpdateSupplierDto {
+    @IsOptional()
+    @IsString()
     code?: string;
+
+    @IsOptional()
+    @IsString()
     name?: string;
+
+    @IsOptional()
+    @IsString()
     firstName?: string;
+
+    @IsOptional()
+    @IsString()
     lastName?: string;
+
+    @IsOptional()
+    @IsString()
     title?: string;
+
+    @IsOptional()
+    @IsString()
     taxId?: string;
+
+    @IsOptional()
+    @IsString()
     address?: string;
+
+    @IsOptional()
+    @IsNumber()
     provinceId?: number;
+
+    @IsOptional()
+    @IsNumber()
     districtId?: number;
+
+    @IsOptional()
+    @IsNumber()
     subdistrictId?: number;
+
+    @IsOptional()
+    @IsString()
     zipCode?: string;
+
+    @IsOptional()
+    @IsString()
     phone?: string;
+
+    @IsOptional()
+    @IsEmail()
     email?: string;
+
+    @IsOptional()
+    @IsString()
     status?: string;
+
+    @IsOptional()
+    @IsString()
     avatar?: string;
+
+    @IsOptional()
+    @IsString()
     certificateNumber?: string;
+
+    @IsOptional()
+    @Type(() => Date)
+    @IsDate()
     certificateExpire?: Date;
+
+    @IsOptional()
+    @IsNumber()
     score?: number;
+
+    @IsOptional()
+    @IsNumber()
     eudrQuotaUsed?: number;
+
+    @IsOptional()
+    @IsNumber()
     eudrQuotaCurrent?: number;
+
+    @IsOptional()
+    @IsArray()
+    @IsString({ each: true })
     rubberTypeCodes?: string[];
+
+    @IsOptional()
+    @IsString()
     notes?: string;
 }
 

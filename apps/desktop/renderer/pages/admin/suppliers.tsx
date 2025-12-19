@@ -1,11 +1,23 @@
-import { Plus, Truck } from 'lucide-react';
+import { format } from 'date-fns';
+import { Plus, Trash2, Truck } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import AdminLayout from '../../components/AdminLayout';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../../components/ui/alert-dialog';
 import { DataTable } from '../../components/ui/data-table';
 import { DatePicker } from '../../components/ui/date-picker';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { MultiSelect } from '../../components/ui/multi-select';
+import { SearchableSelect } from '../../components/ui/searchable-select';
 import {
   Select,
   SelectContent,
@@ -65,6 +77,7 @@ export default function SuppliersPage() {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   // Form Data
   const [formData, setFormData] = useState({
@@ -99,6 +112,20 @@ export default function SuppliersPage() {
   const [districts, setDistricts] = useState<any[]>([]);
   const [subdistricts, setSubdistricts] = useState<any[]>([]);
   const [rubberTypes, setRubberTypes] = useState<any[]>([]);
+
+  // Filters
+  const [filterProvince, setFilterProvince] = useState<string>('all');
+  const [filterRubberType, setFilterRubberType] = useState<string>('all');
+
+  const filteredSuppliers = React.useMemo(() => {
+    return suppliers.filter((s) => {
+      const matchesProvince =
+        filterProvince === 'all' || s.province?.id.toString() === filterProvince;
+      const matchesRubberType =
+        filterRubberType === 'all' || s.rubberTypeCodes?.includes(filterRubberType);
+      return matchesProvince && matchesRubberType;
+    });
+  }, [suppliers, filterProvince, filterRubberType]);
 
   const fetchSuppliers = async () => {
     try {
@@ -151,6 +178,27 @@ export default function SuppliersPage() {
       setSubdistricts([]);
     }
   }, [formData.districtId]);
+
+  // Fix: Auto-fill ZipCode in Edit mode if missing
+  useEffect(() => {
+    if (formData.subdistrictId && !formData.zipCode && subdistricts.length > 0) {
+      const sub = subdistricts.find((s) => s.id === formData.subdistrictId);
+      if (sub?.zip_code) {
+        setFormData((prev) => ({ ...prev, zipCode: sub.zip_code }));
+      }
+    }
+  }, [subdistricts, formData.subdistrictId, formData.zipCode]);
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value.replace(/\D/g, '').slice(0, 10);
+    let formatted = rawValue;
+    if (rawValue.length > 6) {
+      formatted = `${rawValue.slice(0, 3)}-${rawValue.slice(3, 6)}-${rawValue.slice(6)}`;
+    } else if (rawValue.length > 3) {
+      formatted = `${rawValue.slice(0, 3)}-${rawValue.slice(3)}`;
+    }
+    setFormData((prev) => ({ ...prev, phone: formatted }));
+  };
 
   const handleOpenCreate = () => {
     setEditingSupplier(null);
@@ -213,7 +261,30 @@ export default function SuppliersPage() {
     setIsModalOpen(true);
   };
 
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    try {
+      await suppliersApi.delete(deleteId);
+      toast({
+        title: 'Success',
+        description: 'Supplier deleted successfully.',
+        variant: 'success',
+      });
+      fetchSuppliers();
+      setDeleteId(null);
+    } catch (error) {
+      console.error('Failed to delete supplier:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete supplier.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleDelete = async (id: string) => {
+    setDeleteId(id);
+    if (true) return; // Bypass old logic
     if (!confirm('Are you sure you want to delete this supplier?')) return;
     try {
       await suppliersApi.delete(id);
@@ -235,28 +306,78 @@ export default function SuppliersPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const payload = { ...formData };
+      // Strong Sanitization of Payload
+      const payload: any = { ...formData };
+
+      // Date Handling: Convert YYYY-MM-DD string to ISO string for backend
+      if (payload.certificateExpire) {
+        payload.certificateExpire = new Date(payload.certificateExpire).toISOString();
+      } else {
+        delete payload.certificateExpire;
+      }
+
+      // Numeric Fields: Ensure they are numbers
+      ['score', 'eudrQuotaUsed', 'eudrQuotaCurrent'].forEach((field) => {
+        payload[field] = Number(payload[field]) || 0;
+      });
+
+      // Optional IDs: Delete if falsy (0, undefined, null, NaN)
+      ['provinceId', 'districtId', 'subdistrictId'].forEach((field) => {
+        if (!payload[field]) delete payload[field];
+      });
+
+      // Optional String Fields: Delete if empty string
+      [
+        'firstName',
+        'lastName',
+        'title',
+        'taxId',
+        'phone',
+        'email',
+        'avatar',
+        'certificateNumber',
+        'zipCode',
+        'notes',
+      ].forEach((field) => {
+        if (payload[field] === '') delete payload[field];
+      });
+
+      // Ensure required NAME is present. If empty, auto-generate from Title + First + Last
+      if (!payload.name) {
+        payload.name =
+          `${payload.title || ''}${payload.firstName || ''} ${payload.lastName || ''}`.trim();
+        // If still empty (unlikely with required inputs), set a fallback or let it fail validation naturally but as string
+        if (!payload.name) payload.name = 'Unknown Supplier';
+      }
+
+      // Arrays
+      if (!payload.rubberTypeCodes) payload.rubberTypeCodes = [];
+
+      console.log('Submitting Payload:', payload); // Debug payload
 
       if (editingSupplier) {
         await suppliersApi.update(editingSupplier.id, payload);
         toast({
           title: 'Success',
           description: 'Supplier updated successfully.',
+          variant: 'success',
         });
       } else {
         await suppliersApi.create(payload);
         toast({
           title: 'Success',
           description: 'Supplier created successfully.',
+          variant: 'success',
         });
       }
       setIsModalOpen(false);
       fetchSuppliers();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save supplier:', error);
+      console.error('Error Details:', error.response?.data); // Log detailed error from backend
       toast({
         title: 'Error',
-        description: 'Failed to save supplier.',
+        description: error.response?.data?.message || 'Failed to save supplier.',
         variant: 'destructive',
       });
     }
@@ -267,23 +388,71 @@ export default function SuppliersPage() {
     onDelete: handleDelete,
   });
 
+  const stats = React.useMemo(() => {
+    return {
+      total: suppliers.length,
+      active: suppliers.filter((s) => s.status === 'ACTIVE').length,
+      inactive: suppliers.filter((s) => s.status === 'INACTIVE').length,
+      suspended: suppliers.filter((s) => s.status === 'SUSPENDED').length,
+    };
+  }, [suppliers]);
+
   return (
     <AdminLayout>
       <div className="p-6 w-full max-w-[1400px] mx-auto space-y-8">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
-              <Truck className="h-8 w-8 text-primary" />
-              Suppliers Management
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Manage external suppliers, vendors, and partners.
-            </p>
+        {/* Header Card */}
+        <div className="bg-card rounded-xl border border-border shadow-sm p-4 md:p-6 flex flex-col xl:flex-row items-center justify-between gap-6 transition-all hover:shadow-md">
+          {/* Left: Title & Icon */}
+          <div className="flex items-center gap-4 w-full xl:w-auto">
+            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl transition-transform hover:scale-105">
+              <Truck className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold tracking-tight text-foreground">
+                Suppliers Management
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                Manage external suppliers, vendors, and partners.
+              </p>
+            </div>
           </div>
+
+          {/* Center: Stats Widget */}
+          <div className="hidden md:flex items-center bg-background/50 rounded-xl border border-border p-1 shadow-sm">
+            <div className="px-6 py-2 flex flex-col items-center min-w-[100px] border-r border-border/50 last:border-0">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                Total
+              </span>
+              <span className="text-lg font-bold text-foreground">{stats.total}</span>
+            </div>
+            <div className="w-px h-8 bg-border"></div>
+            <div className="px-6 py-2 flex flex-col items-center min-w-[100px]">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider text-green-600">
+                Active
+              </span>
+              <span className="text-lg font-bold text-green-600">{stats.active}</span>
+            </div>
+            <div className="w-px h-8 bg-border"></div>
+            <div className="px-6 py-2 flex flex-col items-center min-w-[100px]">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider text-destructive">
+                Inactive
+              </span>
+              <span className="text-lg font-bold text-destructive">{stats.inactive}</span>
+            </div>
+            <div className="w-px h-8 bg-border"></div>
+            <div className="px-6 py-2 flex flex-col items-center min-w-[100px]">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider text-orange-500">
+                Suspended
+              </span>
+              <span className="text-lg font-bold text-orange-500">{stats.suspended}</span>
+            </div>
+          </div>
+
+          {/* Right: Action Button */}
           <button
             onClick={handleOpenCreate}
-            className="inline-flex items-center justify-center rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow hover:bg-primary/90 h-10 px-4 py-2"
+            className="w-full xl:w-auto inline-flex items-center justify-center rounded-lg text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 hover:shadow-xl hover:-translate-y-0.5 h-11 px-8"
           >
             <Plus className="mr-2 h-4 w-4" />
             Add New Supplier
@@ -293,7 +462,35 @@ export default function SuppliersPage() {
         {/* Suppliers Table */}
         <div className="rounded-xl border border-border bg-card text-card-foreground shadow">
           <div className="bg-card rounded-lg border shadow-sm p-6">
-            <DataTable columns={columns} data={suppliers} searchKey="name" />
+            <DataTable columns={columns} data={filteredSuppliers} searchKey="name">
+              <Select value={filterProvince} onValueChange={setFilterProvince}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Filter Province" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Provinces</SelectItem>
+                  {provinces.map((p) => (
+                    <SelectItem key={p.id} value={p.id.toString()}>
+                      {p.name_th}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={filterRubberType} onValueChange={setFilterRubberType}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Filter Rubber Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Rubber Types</SelectItem>
+                  {rubberTypes.map((rt) => (
+                    <SelectItem key={rt.code} value={rt.code}>
+                      {rt.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </DataTable>
           </div>
         </div>
 
@@ -365,17 +562,23 @@ export default function SuppliersPage() {
                           <label className="text-sm font-medium text-foreground mb-1 block">
                             Title
                           </label>
-                          <select
-                            className="w-full px-3 py-2 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground"
-                            value={formData.title}
-                            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                          <Select
+                            value={formData.title || ''}
+                            onValueChange={(val) => setFormData({ ...formData, title: val })}
                           >
-                            <option value="">Select Title</option>
-                            <option value="Mr">Mr.</option>
-                            <option value="Mrs">Mrs.</option>
-                            <option value="Ms">Ms.</option>
-                            <option value="Company">Company</option>
-                          </select>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select Title" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="นาย">นาย</SelectItem>
+                              <SelectItem value="นาง">นาง</SelectItem>
+                              <SelectItem value="นางสาว">นางสาว</SelectItem>
+                              <SelectItem value="บริษัท">บริษัท</SelectItem>
+                              <SelectItem value="ว่าที่ ร.ต.">ว่าที่ ร.ต.</SelectItem>
+                              <SelectItem value="สหกรณ์">สหกรณ์</SelectItem>
+                              <SelectItem value="หจก.">หจก.</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                         <div>
                           <label className="text-sm font-medium text-foreground mb-1 block">
@@ -445,7 +648,8 @@ export default function SuppliersPage() {
                             className="w-full px-3 py-2 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground"
                             placeholder="081-234-5678"
                             value={formData.phone}
-                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                            onChange={handlePhoneChange}
+                            maxLength={12}
                           />
                         </div>
                         <div>
@@ -467,9 +671,9 @@ export default function SuppliersPage() {
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <Label className="mb-1 block">Province</Label>
-                          <Select
-                            value={formData.provinceId?.toString()}
-                            onValueChange={(val) => {
+                          <SearchableSelect
+                            value={formData.provinceId?.toString() || ''}
+                            onChange={(val) => {
                               const provinceId = parseInt(val);
                               setFormData({
                                 ...formData,
@@ -479,25 +683,19 @@ export default function SuppliersPage() {
                                 zipCode: '',
                               });
                             }}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select Province" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {provinces.map((p) => (
-                                <SelectItem key={p.id} value={p.id.toString()}>
-                                  {p.name_th}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                            options={provinces.map((p) => ({
+                              label: p.name_th,
+                              value: p.id.toString(),
+                            }))}
+                            placeholder="Select Province"
+                          />
                         </div>
                         <div>
                           <Label className="mb-1 block">District</Label>
-                          <Select
-                            value={formData.districtId?.toString()}
+                          <SearchableSelect
+                            value={formData.districtId?.toString() || ''}
                             disabled={!formData.provinceId}
-                            onValueChange={(val) => {
+                            onChange={(val) => {
                               const districtId = parseInt(val);
                               setFormData({
                                 ...formData,
@@ -506,25 +704,19 @@ export default function SuppliersPage() {
                                 zipCode: '',
                               });
                             }}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select District" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {districts.map((d) => (
-                                <SelectItem key={d.id} value={d.id.toString()}>
-                                  {d.name_th}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                            options={districts.map((d) => ({
+                              label: d.name_th,
+                              value: d.id.toString(),
+                            }))}
+                            placeholder="Select District"
+                          />
                         </div>
                         <div>
                           <Label className="mb-1 block">Sub-District</Label>
-                          <Select
-                            value={formData.subdistrictId?.toString()}
+                          <SearchableSelect
+                            value={formData.subdistrictId?.toString() || ''}
                             disabled={!formData.districtId}
-                            onValueChange={(val) => {
+                            onChange={(val) => {
                               const subdistrictId = parseInt(val);
                               const subdistrict = subdistricts.find((s) => s.id === subdistrictId);
                               setFormData({
@@ -533,18 +725,12 @@ export default function SuppliersPage() {
                                 zipCode: subdistrict?.zip_code || '',
                               });
                             }}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select Sub-District" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {subdistricts.map((s) => (
-                                <SelectItem key={s.id} value={s.id.toString()}>
-                                  {s.name_th}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                            options={subdistricts.map((s) => ({
+                              label: s.name_th,
+                              value: s.id.toString(),
+                            }))}
+                            placeholder="Select Sub-District"
+                          />
                         </div>
                         <div>
                           <Label className="mb-1 block">Zipcode</Label>
@@ -605,7 +791,7 @@ export default function SuppliersPage() {
                             }
                             setDate={(date) => {
                               // Keep the date as YYYY-MM-DD string in state
-                              const dateStr = date ? date.toISOString().split('T')[0] : '';
+                              const dateStr = date ? format(date, 'yyyy-MM-dd') : '';
                               setFormData({ ...formData, certificateExpire: dateStr });
                             }}
                           />
@@ -739,6 +925,24 @@ export default function SuppliersPage() {
             </div>
           </div>
         )}
+
+        <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <div className="mx-auto w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center mb-2">
+                <Trash2 className="w-6 h-6 text-red-600" />
+              </div>
+              <AlertDialogTitle>Delete Supplier?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete this supplier. View Settings to manage related data.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setDeleteId(null)}>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </AdminLayout>
   );

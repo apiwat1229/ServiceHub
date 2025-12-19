@@ -92,3 +92,35 @@ export const postsApi = {
         return response.data;
     },
 };
+
+// Rubber Types API
+export const rubberTypesApi = {
+    getAll: async () => {
+        const response = await api.get('/rubber-types');
+        return response.data;
+    },
+    getOne: async (id: string) => {
+        const response = await api.get(`/rubber-types/${id}`);
+        return response.data;
+    },
+    create: async (data: any) => {
+        const response = await api.post('/rubber-types', data);
+        return response.data;
+    },
+    update: async (id: string, data: any) => {
+        const response = await api.patch(`/rubber-types/${id}`, data);
+        return response.data;
+    },
+    delete: async (id: string) => {
+        const response = await api.delete(`/rubber-types/${id}`);
+        return response.data;
+    },
+};
+
+// Analytics API
+export const analyticsApi = {
+    getStats: async () => {
+        const response = await api.get('/analytics/stats');
+        return response.data;
+    },
+};

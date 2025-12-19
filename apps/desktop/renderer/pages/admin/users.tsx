@@ -7,11 +7,23 @@ import {
   Lock,
   Plus,
   Shield,
+  Trash2,
   User,
+  Users,
   X,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import AdminLayout from '../../components/AdminLayout';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../../components/ui/alert-dialog';
 import { DataTable } from '../../components/ui/data-table';
 import { usersApi } from '../../lib/api';
 import { useUserColumns } from './users/columns';
@@ -156,6 +168,15 @@ export default function UsersPage() {
     }
   };
 
+  const stats = useMemo(() => {
+    return {
+      total: users.length,
+      active: users.filter((u) => u.status === 'ACTIVE').length,
+      inactive: users.filter((u) => u.status === 'INACTIVE').length,
+      suspended: users.filter((u) => u.status === 'SUSPENDED').length,
+    };
+  }, [users]);
+
   // Define columns
   const columns = useUserColumns({
     onEdit: handleOpenEdit,
@@ -166,16 +187,56 @@ export default function UsersPage() {
     <AdminLayout>
       <div className="p-6 w-full max-w-[1400px] mx-auto space-y-8">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">Users Management</h1>
-            <p className="text-muted-foreground mt-1">
-              Manage user access, profiles, and permissions.
-            </p>
+        {/* Header Card */}
+        <div className="bg-card rounded-xl border border-border shadow-sm p-4 md:p-6 flex flex-col xl:flex-row items-center justify-between gap-6 transition-all hover:shadow-md">
+          {/* Left: Title & Icon */}
+          <div className="flex items-center gap-4 w-full xl:w-auto">
+            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl transition-transform hover:scale-105">
+              <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold tracking-tight text-foreground">Users Management</h1>
+              <p className="text-sm text-muted-foreground">
+                Manage user access, profiles, and permissions.
+              </p>
+            </div>
           </div>
+
+          {/* Center: Stats Widget */}
+          <div className="hidden md:flex items-center bg-background/50 rounded-xl border border-border p-1 shadow-sm">
+            <div className="px-6 py-2 flex flex-col items-center min-w-[100px] border-r border-border/50 last:border-0">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                Total
+              </span>
+              <span className="text-lg font-bold text-foreground">{stats.total}</span>
+            </div>
+            <div className="w-px h-8 bg-border"></div>
+            <div className="px-6 py-2 flex flex-col items-center min-w-[100px]">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider text-green-600">
+                Active
+              </span>
+              <span className="text-lg font-bold text-green-600">{stats.active}</span>
+            </div>
+            <div className="w-px h-8 bg-border"></div>
+            <div className="px-6 py-2 flex flex-col items-center min-w-[100px]">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider text-destructive">
+                Inactive
+              </span>
+              <span className="text-lg font-bold text-destructive">{stats.inactive}</span>
+            </div>
+            <div className="w-px h-8 bg-border"></div>
+            <div className="px-6 py-2 flex flex-col items-center min-w-[100px]">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider text-orange-500">
+                Suspended
+              </span>
+              <span className="text-lg font-bold text-orange-500">{stats.suspended}</span>
+            </div>
+          </div>
+
+          {/* Right: Action Button */}
           <button
             onClick={handleOpenCreate}
-            className="inline-flex items-center justify-center rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow hover:bg-primary/90 h-10 px-4 py-2"
+            className="w-full xl:w-auto inline-flex items-center justify-center rounded-lg text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 hover:shadow-xl hover:-translate-y-0.5 h-11 px-8"
           >
             <Plus className="mr-2 h-4 w-4" />
             Add New User
@@ -190,33 +251,23 @@ export default function UsersPage() {
         </div>
       </div>
 
-      {/* Delete Confirmation Alert Dialog */}
-      {deleteId && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-background rounded-xl shadow-2xl border border-border w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 p-6 space-y-4">
-            <div className="space-y-2">
-              <h3 className="text-lg font-semibold text-foreground">Are you absolutely sure?</h3>
-              <p className="text-sm text-muted-foreground">
-                This action cannot be undone. This will permanently delete the user account.
-              </p>
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="mx-auto w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center mb-2">
+              <Trash2 className="w-6 h-6 text-red-600" />
             </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <button
-                onClick={() => setDeleteId(null)}
-                className="px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted rounded-md transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmDelete}
-                className="px-4 py-2 text-sm font-medium bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-md transition-colors shadow-sm"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+            <AlertDialogTitle>Delete User?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this user account. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteId(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Advanced Create/Edit User Modal */}
       {isModalOpen && (

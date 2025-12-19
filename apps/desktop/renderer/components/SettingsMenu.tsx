@@ -42,7 +42,7 @@ export default function SettingsMenu({ onClose }: SettingsMenuProps) {
   ];
 
   return (
-    <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 backdrop-blur-xl border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl p-6 z-[60] animate-in fade-in zoom-in duration-200 origin-top-right">
+    <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 backdrop-blur-xl border border-gray-200 dark:border-gray-700 rounded-lg shadow-2xl p-6 z-[60] animate-in fade-in zoom-in duration-200 origin-top-right">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-lg font-bold text-gray-900 dark:text-white">Settings</h2>
       </div>
@@ -118,13 +118,13 @@ export default function SettingsMenu({ onClose }: SettingsMenuProps) {
           <div className="flex gap-2">
             <button
               onClick={() => setFontSize(Math.max(12, fontSize - 1))}
-              className="flex-1 py-2.5 bg-gray-50 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-xl text-sm font-medium transition-colors border border-gray-100 dark:border-gray-600 text-gray-900 dark:text-gray-100"
+              className="flex-1 py-2.5 bg-gray-50 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg text-sm font-medium transition-colors border border-gray-100 dark:border-gray-600 text-gray-900 dark:text-gray-100"
             >
               A-
             </button>
             <button
               onClick={() => setFontSize(Math.min(24, fontSize + 1))}
-              className="flex-1 py-2.5 bg-gray-50 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-xl text-sm font-medium transition-colors border border-gray-100 dark:border-gray-600 text-gray-900 dark:text-gray-100"
+              className="flex-1 py-2.5 bg-gray-50 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg text-sm font-medium transition-colors border border-gray-100 dark:border-gray-600 text-gray-900 dark:text-gray-100"
             >
               A+
             </button>
@@ -152,6 +152,35 @@ export default function SettingsMenu({ onClose }: SettingsMenuProps) {
           </div>
         </div>
 
+        <div className="h-px bg-gray-100" />
+
+        {/* Border Radius */}
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Roundness</span>
+            <span className="text-sm font-semibold text-gray-500">{borderRadius}px</span>
+          </div>
+          <div className="flex gap-2">
+            {[0, 4, 8, 12, 16].map((radius) => (
+              <button
+                key={radius}
+                onClick={() => setBorderRadius(radius)}
+                className={`flex-1 py-2 bg-gray-50 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600 transition-all ${
+                  borderRadius === radius ? 'ring-2 ring-blue-500 border-transparent' : ''
+                }`}
+                style={{ borderRadius: radius }}
+              >
+                <div
+                  className="w-4 h-4 border-2 border-current mx-auto"
+                  style={{ borderRadius: radius === 0 ? 0 : Math.min(radius, 6) }}
+                />
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="h-px bg-gray-100" />
+
         {/* Font Family */}
         <div>
           <span className="block text-sm font-medium text-gray-700 mb-4">Font Family</span>
@@ -160,7 +189,7 @@ export default function SettingsMenu({ onClose }: SettingsMenuProps) {
               <button
                 key={font}
                 onClick={() => setFontFamily(font)}
-                className={`px-3 py-2.5 rounded-xl text-sm transition-all text-left ${
+                className={`px-3 py-2.5 rounded-lg text-sm transition-all text-left ${
                   fontFamily === font
                     ? 'bg-blue-50 text-blue-600 font-medium'
                     : 'text-gray-600 hover:bg-gray-50'

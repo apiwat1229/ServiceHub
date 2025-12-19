@@ -1,4 +1,4 @@
-import { Activity, LayoutDashboard, Package, ShoppingBag, Truck, Users } from 'lucide-react';
+import { Activity, Layers, LayoutDashboard, Truck, Users } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import AnimatedBackground from './AnimatedBackground';
@@ -54,12 +54,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
     { icon: Users, label: 'Users', path: '/admin/users' },
     { icon: Truck, label: 'Suppliers', path: '/admin/suppliers' },
-    { icon: Package, label: 'Products', path: '/admin/products' },
-    { icon: ShoppingBag, label: 'Orders', path: '/admin/orders' },
+    { icon: Layers, label: 'Rubber Types', path: '/admin/rubber-types' },
   ];
 
   return (
-    <div className="min-h-screen bg-background flex flex-col font-sans">
+    <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
 
       <div className="flex flex-1 overflow-hidden relative">
@@ -90,7 +89,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               <h4 className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                 System
               </h4>
-              <button className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground rounded-md transition-colors">
+              <button
+                onClick={() => router.push('/admin/analytics')}
+                className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                  router.pathname === '/admin/analytics'
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                }`}
+              >
                 <Activity size={18} />
                 Analytics
               </button>
@@ -100,7 +106,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
         {/* Main Content */}
         <main className="flex-1 overflow-y-auto bg-background/50 relative">
-          <div className="absolute inset-0 opacity-20 pointer-events-none">
+          <div className="absolute inset-0 pointer-events-none">
             <AnimatedBackground />
           </div>
           {children}
