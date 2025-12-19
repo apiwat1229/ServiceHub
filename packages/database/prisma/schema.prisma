@@ -174,3 +174,38 @@ model Supplier {
 
   @@map("suppliers")
 }
+
+// Booking Queue System
+model Booking {
+  id              String    @id @default(uuid())
+  queueNo         Int       @map("queue_no")
+  bookingCode     String    @unique @map("booking_code")
+  date            DateTime
+  startTime       String    @map("start_time")
+  endTime         String    @map("end_time")
+  slot            String?
+  
+  // Supplier Information
+  supplierId      String    @map("supplier_id")
+  supplierCode    String    @map("supplier_code")
+  supplierName    String    @map("supplier_name")
+  
+  // Truck Information
+  truckType       String?   @map("truck_type")
+  truckRegister   String?   @map("truck_register")
+  
+  // Rubber Information
+  rubberType      String    @map("rubber_type")
+  
+  // Metadata
+  recorder        String
+  checkinAt       DateTime? @map("checkin_at")
+  
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@index([date, slot])
+  @@index([bookingCode])
+  @@map("bookings")
+}
+

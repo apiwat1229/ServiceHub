@@ -1,6 +1,7 @@
 import { useRouter } from 'next/router';
 import React, { useEffect, useState } from 'react';
 import { authApi } from '../lib/api';
+import { useAuthStore } from '../stores/authStore';
 
 export default function Index() {
   const router = useRouter();
@@ -33,8 +34,8 @@ export default function Index() {
         localStorage.removeItem('rememberedEmail');
       }
 
-      localStorage.setItem('accessToken', response.accessToken);
-      localStorage.setItem('user', JSON.stringify(response.user));
+      // Use Auth Store login action
+      useAuthStore.getState().login(response.user, response.accessToken);
       router.push('/posts');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Login failed');

@@ -8,6 +8,7 @@ import {
   Plus,
   Shield,
   Trash2,
+  Upload,
   User,
   Users,
   X,
@@ -64,6 +65,7 @@ export default function UsersPage() {
   // UI States
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string>('');
 
   // Delete Confirmation State
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -102,6 +104,7 @@ export default function UsersPage() {
       pinCode: '',
       avatar: '',
     });
+    setAvatarPreview('');
     setIsModalOpen(true);
   };
 
@@ -123,6 +126,7 @@ export default function UsersPage() {
       pinCode: user.pinCode || '',
       avatar: user.avatar || '',
     });
+    setAvatarPreview(user.avatar || '');
     setIsModalOpen(true);
   };
 
@@ -161,11 +165,42 @@ export default function UsersPage() {
         await usersApi.create(payload);
       }
       setIsModalOpen(false);
+      setAvatarPreview('');
       fetchUsers();
     } catch (error) {
       console.error('Failed to save user:', error);
       alert('Failed to save user');
     }
+  };
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Check file size (max 2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        alert('File size must be less than 2MB');
+        return;
+      }
+
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setFormData({ ...formData, avatar: base64String });
+        setAvatarPreview(base64String);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveAvatar = () => {
+    setFormData({ ...formData, avatar: '' });
+    setAvatarPreview('');
   };
 
   const stats = useMemo(() => {
@@ -350,18 +385,54 @@ export default function UsersPage() {
                         </div>
                         <div className="col-span-2">
                           <label className="text-sm font-medium text-foreground mb-1 block">
-                            Avatar URL
+                            Avatar Image
                           </label>
-                          <input
-                            type="text"
-                            className="w-full px-3 py-2 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground"
-                            placeholder="https://github.com/shadcn.png"
-                            value={formData.avatar}
-                            onChange={(e) => setFormData({ ...formData, avatar: e.target.value })}
-                          />
-                          <p className="text-[10px] text-muted-foreground mt-1">
-                            Link to a profile picture (e.g. from GitHub or image host).
-                          </p>
+                          <div className="flex items-start gap-4">
+                            {/* Avatar Preview */}
+                            <div className="flex-shrink-0">
+                              {avatarPreview ? (
+                                <div className="relative group">
+                                  <img
+                                    src={avatarPreview}
+                                    alt="Avatar preview"
+                                    className="w-20 h-20 rounded-full object-cover border-2 border-border"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={handleRemoveAvatar}
+                                    className="absolute -top-2 -right-2 p-1 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center border-2 border-dashed border-border">
+                                  <User className="w-8 h-8 text-muted-foreground" />
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Upload Button */}
+                            <div className="flex-1">
+                              <label
+                                htmlFor="avatar-upload"
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-muted hover:bg-muted/80 text-foreground rounded-md text-sm font-medium cursor-pointer transition-colors border border-border"
+                              >
+                                <Upload className="w-4 h-4" />
+                                {avatarPreview ? 'Change Image' : 'Upload Image'}
+                              </label>
+                              <input
+                                id="avatar-upload"
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={handleAvatarChange}
+                              />
+                              <p className="text-[10px] text-muted-foreground mt-2">
+                                Max 2MB. Supports JPG, PNG, GIF.
+                              </p>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>

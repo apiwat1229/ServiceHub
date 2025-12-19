@@ -1,5 +1,6 @@
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useAuthStore } from '../stores/authStore';
 
 interface ProfileMenuProps {
   onClose: () => void;
@@ -7,22 +8,11 @@ interface ProfileMenuProps {
 
 export default function ProfileMenu({ onClose }: ProfileMenuProps) {
   const router = useRouter();
-  const [user, setUser] = useState<{ email?: string; name?: string } | null>(null);
-
-  useEffect(() => {
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      try {
-        setUser(JSON.parse(userStr));
-      } catch (e) {
-        console.error('Failed to parse user data', e);
-      }
-    }
-  }, []);
+  const { user, logout } = useAuthStore();
+  const { t } = useTranslation();
 
   const handleLogout = () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('user');
+    logout();
     router.push('/login');
     onClose();
   };
@@ -30,23 +20,48 @@ export default function ProfileMenu({ onClose }: ProfileMenuProps) {
   return (
     <div className="absolute right-0 mt-2 w-64 bg-background backdrop-blur-xl border border-border rounded-2xl shadow-2xl p-4 z-[60] animate-in fade-in zoom-in duration-200 origin-top-right">
       <div className="flex items-center gap-3 mb-4 pb-4 border-b border-border">
-        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-            />
-          </svg>
+        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-lg font-bold flex-shrink-0">
+          {user?.name
+            ? user.name
+                .split(' ')
+                .map((n) => n[0])
+                .join('')
+                .toUpperCase()
+                .slice(0, 2)
+            : user?.email?.slice(0, 2).toUpperCase() || 'U'}
         </div>
-        <div className="overflow-hidden">
-          <p className="text-sm font-semibold text-foreground truncate">{user?.name || 'User'}</p>
+        <div className="overflow-hidden flex-1">
+          <p className="text-sm font-semibold text-foreground truncate">
+            {user?.name || user?.username || 'User'}
+          </p>
           <p className="text-xs text-muted-foreground truncate">
             {user?.email || 'user@example.com'}
           </p>
+          {user?.role && (
+            <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded-full">
+              {user.role}
+            </span>
+          )}
         </div>
       </div>
+
+      <button
+        onClick={() => {
+          router.push('/profile');
+          onClose();
+        }}
+        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-colors mb-2"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+          />
+        </svg>
+        {t('profile.viewProfile')}
+      </button>
 
       <button
         onClick={handleLogout}
@@ -60,7 +75,7 @@ export default function ProfileMenu({ onClose }: ProfileMenuProps) {
             d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
           />
         </svg>
-        Logout
+        {t('profile.logout')}
       </button>
     </div>
   );

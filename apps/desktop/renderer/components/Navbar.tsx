@@ -1,14 +1,38 @@
 import { useRouter } from 'next/router';
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useAuthStore } from '../stores/authStore';
+import { useLanguageStore } from '../stores/languageStore';
 import ProfileMenu from './ProfileMenu';
 import SettingsMenu from './SettingsMenu';
 
 export default function Navbar() {
   const router = useRouter();
+  const { user } = useAuthStore();
+  const { language, setLanguage } = useLanguageStore();
+  const { t } = useTranslation();
   const [showSettings, setShowSettings] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [showLanguage, setShowLanguage] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
+  const languageRef = useRef<HTMLDivElement>(null);
+
+  // Get user initials for avatar
+  const getInitials = () => {
+    if (user?.name) {
+      return user.name
+        .split(' ')
+        .map((n) => n[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2);
+    }
+    if (user?.email) {
+      return user.email.slice(0, 2).toUpperCase();
+    }
+    return 'U';
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -17,6 +41,9 @@ export default function Navbar() {
       }
       if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
         setShowProfile(false);
+      }
+      if (languageRef.current && !languageRef.current.contains(event.target as Node)) {
+        setShowLanguage(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -151,9 +178,44 @@ export default function Navbar() {
       {/* Right Controls */}
       <div className="flex items-center gap-2">
         {/* Language Selector */}
-        <button className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-          EN
-        </button>
+        <div className="relative" ref={languageRef}>
+          <button
+            onClick={() => setShowLanguage(!showLanguage)}
+            className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors font-medium"
+          >
+            {language === 'th' ? '🇹🇭 TH' : '🇬🇧 EN'}
+          </button>
+          {showLanguage && (
+            <div className="absolute right-0 mt-2 w-40 bg-background border border-border rounded-lg shadow-lg p-2 z-[60] animate-in fade-in zoom-in duration-200">
+              <button
+                onClick={() => {
+                  setLanguage('en');
+                  setShowLanguage(false);
+                }}
+                className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
+                  language === 'en'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'hover:bg-muted text-foreground'
+                }`}
+              >
+                🇬🇧 English
+              </button>
+              <button
+                onClick={() => {
+                  setLanguage('th');
+                  setShowLanguage(false);
+                }}
+                className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
+                  language === 'th'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'hover:bg-muted text-foreground'
+                }`}
+              >
+                🇹🇭 ไทย
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* Notifications */}
         <button
@@ -206,21 +268,24 @@ export default function Navbar() {
         <div className="relative" ref={profileRef}>
           <button
             onClick={() => setShowProfile(!showProfile)}
-            className={`p-2 rounded-lg transition-colors ${
+            className={`flex items-center justify-center w-9 h-9 rounded-full transition-all ${
               showProfile
-                ? 'bg-blue-50 text-blue-600'
-                : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
+                ? 'ring-2 ring-blue-500 ring-offset-2'
+                : 'hover:ring-2 hover:ring-gray-300'
             }`}
             title="Profile"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+            {user?.avatar ? (
+              <img
+                src={user.avatar}
+                alt={user.name || 'User'}
+                className="w-full h-full rounded-full object-cover"
               />
-            </svg>
+            ) : (
+              <div className="w-full h-full rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-semibold">
+                {getInitials()}
+              </div>
+            )}
           </button>
           {showProfile && <ProfileMenu onClose={() => setShowProfile(false)} />}
         </div>
