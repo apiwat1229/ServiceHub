@@ -67,7 +67,10 @@ export function SearchableSelect({
               autoFocus
             />
           </div>
-          <div className="max-h-[300px] overflow-y-auto p-1">
+          <div
+            className="max-h-[300px] overflow-y-auto p-1 pointer-events-auto"
+            onWheel={(e) => e.stopPropagation()}
+          >
             {filteredOptions.length === 0 ? (
               <p className="p-2 text-sm text-muted-foreground text-center">No results found.</p>
             ) : (
