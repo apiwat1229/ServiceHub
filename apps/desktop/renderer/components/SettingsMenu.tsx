@@ -239,46 +239,7 @@ export default function SettingsMenu({ onClose }: SettingsMenuProps) {
           )}
         </div>
 
-        {/* Admin Panel Link */}
-        {(() => {
-          try {
-            const userStr = localStorage.getItem('user');
-            if (userStr) {
-              const user = JSON.parse(userStr);
-              if (user.role && (user.role === 'admin' || user.role === 'ADMIN')) {
-                return (
-                  <div>
-                    <div className="h-px bg-gray-100 mb-6" />
-                    <button
-                      onClick={() => (window.location.href = '/admin')}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl font-medium transition-colors"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
-                        <line x1="3" x2="21" y1="9" y2="9" />
-                        <line x1="9" x2="9" y1="21" y2="9" />
-                      </svg>
-                      {t('settings.adminPanel')}
-                    </button>
-                  </div>
-                );
-              }
-            }
-          } catch (e) {
-            console.error('Error parsing user data', e);
-          }
-          return null;
-        })()}
+        {/* Admin Panel Link removed - moved to ProfileMenu */}
       </div>
     </div>
   );

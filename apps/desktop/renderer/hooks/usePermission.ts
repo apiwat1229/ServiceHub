@@ -29,5 +29,5 @@ export const usePermission = () => {
         return userRole.permissions?.[module]?.[action] === true;
     };
 
-    return { can };
+    return { can, isLoading: roles.length === 0 || useRolesStore.getState().isLoading };
 };

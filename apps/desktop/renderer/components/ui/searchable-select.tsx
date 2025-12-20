@@ -56,8 +56,8 @@ export function SearchableSelect({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0 z-[200]" align="start">
-        <div className="flex flex-col max-h-[300px]">
+      <PopoverContent className="w-[300px] p-0 z-[200]" align="start">
+        <div className="flex flex-col">
           <div className="flex items-center border-b px-3 py-2 sticky top-0 bg-popover z-10">
             <input
               className="flex h-9 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
@@ -67,7 +67,7 @@ export function SearchableSelect({
               autoFocus
             />
           </div>
-          <div className="overflow-y-auto flex-1 p-1">
+          <div className="max-h-[300px] overflow-y-auto p-1">
             {filteredOptions.length === 0 ? (
               <p className="p-2 text-sm text-muted-foreground text-center">No results found.</p>
             ) : (

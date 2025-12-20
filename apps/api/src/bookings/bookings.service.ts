@@ -20,9 +20,9 @@ function getSlotConfig(slot: string, date: Date) {
 
 function genBookingCode(date: Date, queueNo: number): string {
     const d = new Date(date);
-    const yy = String(d.getFullYear()).slice(-2);
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
+    const yy = String(d.getUTCFullYear()).slice(-2);
+    const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const dd = String(d.getUTCDate()).padStart(2, '0');
     const q = String(queueNo).padStart(2, '0');
     return `${yy}${mm}${dd}${q}`;
 }
@@ -37,14 +37,32 @@ export class BookingsService {
         const slot = `${startTime}-${endTime}`;
         const slotConfig = getSlotConfig(slot, new Date(date));
 
-        // Get existing bookings for this slot
-        const existingBookings = await this.prisma.booking.findMany({
+        // Generate the date prefix (YYMMDD) using UTC to match genBookingCode
+        const d = new Date(date);
+        const yy = String(d.getUTCFullYear()).slice(-2);
+        const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+        const dd = String(d.getUTCDate()).padStart(2, '0');
+        const codePrefix = `${yy}${mm}${dd}`;
+
+        console.log('--- DEBUG BOOKING CREATION ---');
+        console.log('Incoming Date:', date);
+        console.log('Code Prefix:', codePrefix);
+        console.log('Target Slot:', slot);
+
+        // Get ALL bookings for this "Code Date" (prefix) to ensure we have the full picture
+        const dayBookings = await this.prisma.booking.findMany({
             where: {
-                date: new Date(date),
-                slot,
+                bookingCode: {
+                    startsWith: codePrefix,
+                },
             },
-            orderBy: { queueNo: 'asc' },
         });
+
+        // Filter for the specific slot we are trying to book
+        const existingBookings = dayBookings.filter(b => b.slot === slot);
+
+        console.log('Found Existing Bookings for Slot:', existingBookings.length);
+        console.log('Existing Queue Numbers:', existingBookings.map(b => b.bookingCode));
 
         // Check if slot is full
         if (slotConfig.limit && existingBookings.length >= slotConfig.limit) {
@@ -54,8 +72,24 @@ export class BookingsService {
         // Calculate next queue number
         let queueNo: number;
         if (!slotConfig.limit) {
-            // Unlimited slot: use 0 or sequential
-            queueNo = 0;
+            // Unlimited slot: increment from start or max existing
+            const usedNumbers = existingBookings.map((b) => b.queueNo).sort((a, b) => a - b);
+            if (usedNumbers.length === 0) {
+                queueNo = slotConfig.start;
+            } else {
+                // Find gap or append
+                queueNo = slotConfig.start;
+                // Simple strategy for unlimited: just take (max + 1) or fill gaps?
+                // Using fill-gaps strategy to be consistent with limited logic
+                for (const num of usedNumbers) {
+                    if (num === queueNo) {
+                        queueNo++;
+                    } else {
+                        // Found a gap
+                        break;
+                    }
+                }
+            }
         } else {
             const usedNumbers = existingBookings.map((b) => b.queueNo).sort((a, b) => a - b);
             queueNo = slotConfig.start;
@@ -70,23 +104,28 @@ export class BookingsService {
 
         const bookingCode = genBookingCode(new Date(date), queueNo);
 
-        return this.prisma.booking.create({
-            data: {
-                queueNo,
-                bookingCode,
-                date: new Date(date),
-                startTime,
-                endTime,
-                slot,
-                supplierId,
-                supplierCode,
-                supplierName,
-                truckType,
-                truckRegister,
-                rubberType,
-                recorder,
-            },
-        });
+        try {
+            return await this.prisma.booking.create({
+                data: {
+                    queueNo,
+                    bookingCode,
+                    date: new Date(date),
+                    startTime,
+                    endTime,
+                    slot,
+                    supplierId,
+                    supplierCode,
+                    supplierName,
+                    truckType,
+                    truckRegister,
+                    rubberType,
+                    recorder,
+                },
+            });
+        } catch (error) {
+            console.error('Error creating booking:', error);
+            throw new BadRequestException('Failed to create booking. Please check the data and try again.');
+        }
     }
 
     async findAll(date?: string, slot?: string) {

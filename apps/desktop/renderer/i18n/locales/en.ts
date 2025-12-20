@@ -36,6 +36,11 @@ export const en = {
         title: "Queue Overview",
         subtitle: "Manage booking queue for supplier deliveries on",
         addBooking: "Add Booking",
+        editBooking: "Edit Booking",
+        slotFull: "Slot Full",
+        unlimited: "Unlimited",
+        upwards: "Upwards",
+        availableCount: "{{count}} Available",
         dashboard: "Dashboard",
         selectDate: "Select Date",
         selectTime: "Select Time",
@@ -46,10 +51,7 @@ export const en = {
         nextQueue: "Next Queue",
         totalToday: "Total Queues Today",
         available: "Available",
-        availableCount: "Available {{count}}",
         full: "Full",
-        slotFull: "This time slot is full",
-        unlimited: "Unlimited",
         ticket: "Ticket",
         bookingCode: "Booking Code",
         supplierCode: "Supplier Code",
@@ -102,7 +104,13 @@ export const en = {
         actions: "Actions",
         openMenu: "Open menu",
         status: "Status",
-        approve: "Approve"
+        approve: "Approve",
+
+        // Access Control
+        accessDenied: "Access Denied",
+        accessDeniedDesc: "You do not have permission to access\nthis module.",
+        contactAdmin: "Please contact your administrator if you\nneed access.",
+        ok: "OK"
     },
     admin: {
         notifications: {

@@ -65,7 +65,7 @@ export default function Navbar() {
   };
 
   const handleHome = () => {
-    router.push('/posts');
+    router.push('/services');
   };
 
   const handleSystemInfo = () => {
@@ -275,7 +275,10 @@ export default function Navbar() {
         </div>
 
         {/* Window Controls */}
-        <div className="flex items-center gap-1 ml-2">
+        <div
+          onClick={() => router.push('/services')}
+          className="flex items-center gap-3 cursor-pointer"
+        >
           <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Minimize">
             <svg
               className="w-4 h-4 text-gray-600"

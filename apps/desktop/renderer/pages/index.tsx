@@ -38,7 +38,7 @@ export default function Index() {
 
       // Use Auth Store login action
       useAuthStore.getState().login(response.user, response.accessToken);
-      router.push('/posts');
+      router.push('/services');
     } catch (err: any) {
       setError(err.response?.data?.message || t('auth.loginFailed'));
     } finally {

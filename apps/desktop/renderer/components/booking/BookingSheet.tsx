@@ -127,9 +127,19 @@ export default function BookingSheet({
     try {
       setLoading(true);
 
+      // Validate Supplier Data
       const selectedSupplier = suppliers.find((s) => s.id === supplierId);
-      const supplierCode = selectedSupplier?.code || '';
-      const supplierName = selectedSupplier?.name || selectedSupplier?.displayName || '';
+      if (!selectedSupplier) {
+        setAlertTitle('ข้อมูลไม่ถูกต้อง');
+        setAlertMessage('ไม่พบข้อมูล Supplier ที่เลือก กรุณาลองเลือกใหม่');
+        setAlertType('error');
+        setAlertOpen(true);
+        setLoading(false);
+        return;
+      }
+
+      const supplierCode = selectedSupplier.code || '';
+      const supplierName = selectedSupplier.name || selectedSupplier.displayName || '';
 
       // Get current user from Auth Store
       const user = useAuthStore.getState().user;
@@ -172,7 +182,7 @@ export default function BookingSheet({
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {isEditMode ? t('admin.users.editUser') : t('booking.addBooking')}
+            {isEditMode ? t('booking.editBooking') : t('booking.addBooking')}
           </DialogTitle>
           <DialogDescription>
             {format(selectedDate, 'dd MMM yyyy')} • {selectedSlot}

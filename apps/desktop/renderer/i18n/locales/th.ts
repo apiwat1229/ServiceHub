@@ -36,6 +36,7 @@ export const th = {
         title: "ภาพรวมคิว",
         subtitle: "จัดการคิวการจองสำหรับการส่งมอบของซัพพลายเออร์ในวันที่",
         addBooking: "เพิ่มการจอง",
+        editBooking: "แก้ไขการจอง",
         dashboard: "แดชบอร์ด",
         selectDate: "เลือกวันที่",
         selectTime: "เลือกเวลา",
@@ -45,6 +46,7 @@ export const th = {
         currentQueue: "คิวปัจจุบัน",
         nextQueue: "คิวถัดไป",
         totalToday: "คิวทั้งหมดวันนี้",
+        upwards: 'ขึ้นไป',
         available: "ว่าง",
         availableCount: "ว่าง {{count}} คิว",
         full: "เต็ม",
@@ -102,7 +104,13 @@ export const th = {
         actions: "การกระทำ",
         openMenu: "เปิดเมนู",
         status: "สถานะ",
-        approve: "อนุมัติ"
+        approve: "อนุมัติ",
+
+        // Access Control
+        accessDenied: "การเข้าถึงถูกปฏิเสธ",
+        accessDeniedDesc: "คุณไม่มีสิทธิ์ในการเข้าถึง\nโมดูลนี้",
+        contactAdmin: "โปรดติดต่อผู้ดูแลระบบหากคุณ\nต้องการสิทธิ์การเข้าถึง",
+        ok: "ตกลง"
     },
     admin: {
         notifications: {

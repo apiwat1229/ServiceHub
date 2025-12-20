@@ -1,4 +1,5 @@
 import {
+  AlertCircle,
   ArrowRight,
   Box,
   Calendar,
@@ -10,13 +11,26 @@ import {
   Wrench,
 } from 'lucide-react';
 import { useRouter } from 'next/router';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import AnimatedBackground from '../components/AnimatedBackground';
 import Navbar from '../components/Navbar';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../components/ui/alert-dialog';
+import { usePermission } from '../hooks/usePermission';
 
 export default function AppsDashboard() {
   const router = useRouter();
   const { t } = useTranslation();
+  const { can } = usePermission();
+  const [alertOpen, setAlertOpen] = useState(false);
 
   // Define Apps List
   const apps = [
@@ -55,6 +69,7 @@ export default function AppsDashboard() {
       hoverBorderColor: 'hover:border-green-500',
       hoverBgColor: 'hover:bg-green-50',
       path: '/booking-queue',
+      permission: 'bookings', // Module ID for permission check
     },
     {
       id: 'truck',
@@ -106,6 +121,14 @@ export default function AppsDashboard() {
     },
   ];
 
+  const handleAppClick = (app: any) => {
+    if (app.permission && !can('read', app.permission)) {
+      setAlertOpen(true);
+      return;
+    }
+    router.push(app.path);
+  };
+
   return (
     <div className="min-h-screen bg-background relative overflow-hidden flex flex-col">
       <Navbar />
@@ -129,7 +152,7 @@ export default function AppsDashboard() {
             <div
               key={app.id}
               className={`group relative overflow-hidden rounded-2xl border-2 ${app.borderColor} ${app.hoverBorderColor} ${app.hoverBgColor} bg-card/60 backdrop-blur-sm p-6 shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col`}
-              onClick={() => router.push(app.path)}
+              onClick={() => handleAppClick(app)}
             >
               {/* Decorative Background Blob */}
               <div
@@ -163,6 +186,32 @@ export default function AppsDashboard() {
           {/* Locked/Settings placeholder to fill grid or indicate admin area if needed, but user said exclude settings. */}
         </div>
       </main>
+
+      {/* Access Denied Alert */}
+      <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
+        <AlertDialogContent className="max-w-[400px] p-6">
+          <AlertDialogHeader className="flex flex-col items-center text-center">
+            <div className="mb-4 rounded-full bg-red-100 p-3">
+              <AlertCircle className="h-8 w-8 text-red-600" />
+            </div>
+            <AlertDialogTitle className="text-xl font-bold text-red-600 mb-2">
+              {t('common.accessDenied')}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-base text-gray-600 leading-relaxed text-center whitespace-pre-line">
+              {t('common.accessDeniedDesc')}
+              <span className="block mt-2 text-sm text-gray-500">{t('common.contactAdmin')}</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="sm:justify-center mt-6">
+            <AlertDialogAction
+              onClick={() => setAlertOpen(false)}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium h-11 rounded-lg"
+            >
+              {t('common.ok')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

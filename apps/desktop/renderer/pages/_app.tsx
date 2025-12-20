@@ -5,6 +5,8 @@ import { SettingsProvider } from '../contexts/SettingsContext';
 import '../i18n/config'; // Initialize i18n (Reload Triggered)
 import '../styles/globals.css';
 
+import { TooltipProvider } from '../components/ui/tooltip';
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -19,7 +21,9 @@ function MyApp({ Component, pageProps }: AppProps) {
     <>
       <SettingsProvider>
         <QueryClientProvider client={queryClient}>
-          <Component {...pageProps} />
+          <TooltipProvider delayDuration={0}>
+            <Component {...pageProps} />
+          </TooltipProvider>
         </QueryClientProvider>
       </SettingsProvider>
       <Toaster />

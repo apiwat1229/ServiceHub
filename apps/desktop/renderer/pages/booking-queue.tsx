@@ -31,17 +31,19 @@ import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Calendar } from '../components/ui/calendar';
 import { Card } from '../components/ui/card';
-import { Dialog, DialogContent } from '../components/ui/dialog';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '../components/ui/dropdown-menu';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '../components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
 import { Spinner } from '../components/ui/spinner';
 import { Tabs, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../components/ui/tooltip';
 import { useToast } from '../components/ui/use-toast';
+import { usePermission } from '../hooks/usePermission';
 import { bookingsApi } from '../lib/api';
 
 interface TimeSlot {
@@ -82,17 +84,6 @@ const RUBBER_TYPE_MAP: Record<string, string> = {
   Regular_CL: 'Regular CL',
   Regular_USS: 'Regular USS',
 };
-
-function getSlotConfig(slotValue: string, selectedDate: Date) {
-  const foundSlot = TIME_SLOTS.find((s) => s.value === slotValue);
-  if (!foundSlot) return { start: 1, limit: null };
-
-  const dayOfWeek = selectedDate.getDay();
-  if (dayOfWeek === 6 && slotValue === '10:00-11:00') {
-    return { start: 9, limit: null };
-  }
-  return { start: 1, limit: foundSlot.limit };
-}
 
 function thaiDateWithWeekday(dateField: Date): string {
   const weekdays = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
@@ -135,8 +126,20 @@ export default function BookingQueue() {
   const router = useRouter();
   const { toast } = useToast();
   const { t } = useTranslation();
+  const { can, isLoading } = usePermission();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>('08:00-09:00');
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('booking_queue_slot') || '08:00-09:00';
+    }
+    return '08:00-09:00';
+  });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('booking_queue_slot', selectedTimeSlot);
+    }
+  }, [selectedTimeSlot]);
   const [queues, setQueues] = useState<any[]>([]);
   const [totalDailyQueues, setTotalDailyQueues] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -146,6 +149,38 @@ export default function BookingQueue() {
   const [ticketDialogOpen, setTicketDialogOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
   const ticketRef = useRef<HTMLDivElement>(null);
+
+  // Route Protection
+  useEffect(() => {
+    if (isLoading) return; // Wait for permissions to load
+
+    // Check if user has permission to view this page
+    if (!can('read', 'bookings')) {
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        router.replace('/services');
+      } else {
+        router.replace('/login');
+      }
+    }
+  }, [can, router, isLoading]);
+
+  const SLOT_QUEUE_CONFIG: Record<string, { start: number; limit: number | null }> = {
+    '08:00-09:00': { start: 1, limit: 4 },
+    '09:00-10:00': { start: 5, limit: 4 },
+    '10:00-11:00': { start: 9, limit: 4 },
+    '11:00-12:00': { start: 13, limit: 4 },
+    '13:00-14:00': { start: 17, limit: null }, // Unlimited
+  };
+
+  function getSlotConfig(slotValue: string, selectedDate: Date) {
+    const dayOfWeek = selectedDate.getDay();
+    // Special case for Saturday 10:00-11:00
+    if (dayOfWeek === 6 && slotValue === '10:00-11:00') {
+      return { start: 9, limit: null };
+    }
+    return SLOT_QUEUE_CONFIG[slotValue] || { start: 1, limit: null };
+  }
 
   const slotConfig = getSlotConfig(selectedTimeSlot, selectedDate);
   const isSlotFull = slotConfig.limit ? queues.length >= slotConfig.limit : false;
@@ -158,17 +193,21 @@ export default function BookingQueue() {
       .filter((n) => !Number.isNaN(n))
       .sort((a, b) => a - b);
 
-    let candidate = slotConfig.start;
-    while (true) {
-      if (!slotConfig.limit || candidate < slotConfig.start + slotConfig.limit) {
-        if (!used.includes(candidate)) {
-          return candidate;
-        }
-        candidate += 1;
-      } else {
-        return slotConfig.start + used.length;
-      }
+    // If unlimited, just take max + 1 (or start if empty)
+    if (!slotConfig.limit) {
+      if (used.length === 0) return slotConfig.start;
+      return used[used.length - 1] + 1;
     }
+
+    // If limited, find first gap or append
+    let candidate = slotConfig.start;
+    while (candidate < slotConfig.start + slotConfig.limit) {
+      if (!used.includes(candidate)) {
+        return candidate;
+      }
+      candidate++;
+    }
+    return null;
   }, [slotConfig, queues, isSlotFull]);
 
   const fetchQueues = async () => {
@@ -284,6 +323,14 @@ export default function BookingQueue() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background relative overflow-hidden flex flex-col">
       <Navbar />
@@ -307,10 +354,12 @@ export default function BookingQueue() {
                 <RefreshCw className="h-4 w-4 mr-2" />
                 {t('common.refresh')}
               </Button>
-              <Button size="sm" disabled={isSlotFull} onClick={handleCreateBooking}>
-                <Plus className="h-4 w-4 mr-2" />
-                {isSlotFull ? t('booking.slotFull') : t('booking.addBooking')}
-              </Button>
+              {can('create', 'bookings') && (
+                <Button size="sm" disabled={isSlotFull} onClick={handleCreateBooking}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  {isSlotFull ? t('booking.slotFull') : t('booking.addBooking')}
+                </Button>
+              )}
             </div>
           </div>
 
@@ -365,15 +414,14 @@ export default function BookingQueue() {
             <p className="text-sm text-muted-foreground">
               {format(selectedDate, 'dd-MMM-yyyy (EEE)')} •{' '}
               {slotConfig.limit
-                ? `Queue ${slotConfig.start} - ${slotConfig.start + slotConfig.limit - 1}`
-                : `Queue ${slotConfig.start} ขึ้นไป (ไม่จำกัด)`}
+                ? `${t('booking.queue')} ${slotConfig.start} - ${slotConfig.start + slotConfig.limit - 1}`
+                : `${t('booking.queue')} ${slotConfig.start} ${t('booking.upwards')} (${t('booking.unlimited')})`}
             </p>
           </div>
           <div className="flex gap-2">
-            <Badge variant="secondary">
-              {t('booking.currentQueue')}: {queues.length}
-            </Badge>
-            {slotConfig.limit && (
+            {!slotConfig.limit ? (
+              <Badge className="bg-green-600 hover:bg-green-700">{t('booking.unlimited')}</Badge>
+            ) : (
               <Badge variant={isSlotFull ? 'destructive' : 'default'}>
                 {isSlotFull
                   ? t('booking.full')
@@ -413,27 +461,42 @@ export default function BookingQueue() {
                 >
                   <div className="flex justify-between items-center mb-3">
                     <span className="font-semibold text-sm">QUEUE : {queue.queueNo}</span>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <span className="sr-only">Open menu</span>
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEdit(queue)}>
-                          <Edit2 className="mr-2 h-4 w-4" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="text-red-600"
-                          onClick={() => setDeleteId(queue.id)}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <div className="flex items-center gap-1">
+                      {can('update', 'bookings') && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => handleEdit(queue)}
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Edit</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+                      {can('delete', 'bookings') && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              onClick={() => setDeleteId(queue.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-red-600 text-white border-red-700">
+                            <p>Delete</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+                    </div>
                   </div>
 
                   <div className="space-y-2 text-sm">
@@ -495,7 +558,9 @@ export default function BookingQueue() {
           </Card>
           <Card className="p-4 flex flex-col items-center justify-center text-center min-h-[100px]">
             <p className="text-sm text-muted-foreground mb-2">{t('booking.currentQueue')}</p>
-            <p className="text-3xl font-bold text-primary">{queues.length}</p>
+            <p className="text-3xl font-bold text-primary">
+              {queues.length > 0 ? Math.max(...queues.map((q) => Number(q.queueNo))) : '-'}
+            </p>
           </Card>
           <Card className="p-4 flex flex-col items-center justify-center text-center min-h-[100px]">
             <p className="text-sm text-muted-foreground mb-2">{t('booking.nextQueue')}</p>
@@ -504,15 +569,13 @@ export default function BookingQueue() {
             </p>
           </Card>
           <Card className="p-4 flex flex-col items-center justify-center text-center min-h-[100px]">
-            <p className="text-sm text-muted-foreground mb-2">{t('common.status')}</p>
-            {isSlotFull ? (
-              <p className="text-3xl font-bold text-red-600">{t('booking.full')}</p>
-            ) : slotConfig.limit ? (
-              <p className="text-3xl font-bold text-blue-500">
-                {t('booking.availableCount', { count: slotConfig.limit - queues.length })}
+            <p className="text-sm text-muted-foreground mb-2">{t('booking.available')}</p>
+            {slotConfig.limit ? (
+              <p className="text-3xl font-bold text-blue-600">
+                {Math.max(0, slotConfig.limit - queues.length)}
               </p>
             ) : (
-              <p className="text-3xl font-bold text-green-600">{t('booking.available')}</p>
+              <p className="text-3xl font-bold text-green-600">{t('booking.unlimited')}</p>
             )}
           </Card>
         </div>
@@ -539,6 +602,12 @@ export default function BookingQueue() {
       {/* Ticket Dialog */}
       <Dialog open={ticketDialogOpen} onOpenChange={setTicketDialogOpen}>
         <DialogContent className="max-w-md">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Ticket Preview</DialogTitle>
+            <DialogDescription>
+              Preview of the booking ticket details including code, supplier, and queue number.
+            </DialogDescription>
+          </DialogHeader>
           {selectedTicket &&
             (() => {
               const date = new Date(selectedTicket.date);

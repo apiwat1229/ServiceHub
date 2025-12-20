@@ -27,16 +27,15 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         }
 
         const user = JSON.parse(userStr);
-        if (
-          user.role &&
-          (user.role === 'admin' || user.role === 'ADMIN' || user.role === 'staff_1')
-        ) {
+        // Allow any user with a role to enter the admin layout
+        // Granular permissions (implemented below) will protect specific routes
+        if (user && user.role) {
           setIsAdmin(true);
         } else {
-          router.push('/posts');
+          router.push('/login');
         }
       } catch (e) {
-        console.error('Error verifying admin role', e);
+        console.error('Error verifying user', e);
         router.push('/login');
       } finally {
         setLoading(false);
@@ -47,6 +46,30 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   }, [router]);
 
   const { can } = usePermission();
+
+  // Route protection
+  useEffect(() => {
+    if (loading || !isAdmin) return;
+
+    const path = router.pathname;
+
+    // Define route to permission mapping
+    const routePermissions: Record<string, string> = {
+      '/admin/roles': 'roles',
+      '/admin/suppliers': 'suppliers',
+      '/admin/rubber-types': 'rubber_types',
+      '/admin/notifications': 'notifications',
+      '/admin/booking': 'booking_queue', // Assuming this is the path and module ID
+    };
+
+    // Check strict match or startsWith for nested routes if needed
+    const requiredModule = routePermissions[path];
+
+    if (requiredModule && !can('read', requiredModule)) {
+      console.warn(`Access denied to ${path}. Missing permission for ${requiredModule}`);
+      router.replace('/admin'); // Redirect to dashboard or 403 page
+    }
+  }, [router.pathname, loading, isAdmin, can]);
 
   if (loading) {
     return (
