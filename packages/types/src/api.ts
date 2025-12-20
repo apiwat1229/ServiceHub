@@ -19,7 +19,8 @@ export interface PaginatedResponse<T> {
 
 // Auth DTOs
 export interface LoginDto {
-    email: string;
+    email?: string;
+    username?: string;
     password: string;
 }
 

@@ -1,7 +1,8 @@
-import { Activity, Bell, Layers, LayoutDashboard, Shield, Truck, Users } from 'lucide-react';
+import { Activity, Bell, Layers, LayoutDashboard, Shield, Truck } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { usePermission } from '../hooks/usePermission';
 import AnimatedBackground from './AnimatedBackground';
 import Navbar from './Navbar';
 import { Spinner } from './ui/spinner';
@@ -26,7 +27,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         }
 
         const user = JSON.parse(userStr);
-        if (user.role && (user.role === 'admin' || user.role === 'ADMIN')) {
+        if (
+          user.role &&
+          (user.role === 'admin' || user.role === 'ADMIN' || user.role === 'staff_1')
+        ) {
           setIsAdmin(true);
         } else {
           router.push('/posts');
@@ -42,6 +46,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     checkAdmin();
   }, [router]);
 
+  const { can } = usePermission();
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center">
@@ -56,16 +62,35 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   if (!isAdmin) return null;
 
   const menuItems = [
-    { icon: LayoutDashboard, label: t('admin.sidebar.dashboard'), path: '/admin' },
-    { icon: Users, label: t('admin.sidebar.users'), path: '/admin/users' },
-    { icon: Shield, label: t('admin.sidebar.roles'), path: '/admin/roles' },
-    { icon: Truck, label: t('admin.sidebar.suppliers'), path: '/admin/suppliers' },
-    { icon: Layers, label: t('admin.sidebar.rubberTypes'), path: '/admin/rubber-types' },
-    { icon: Bell, label: t('admin.sidebar.notifications'), path: '/admin/notifications' },
-  ];
+    { icon: LayoutDashboard, label: t('admin.sidebar.dashboard'), path: '/admin', show: true },
+    {
+      icon: Shield,
+      label: t('admin.sidebar.roles'),
+      path: '/admin/roles',
+      show: can('read', 'roles'),
+    },
+    {
+      icon: Truck,
+      label: t('admin.sidebar.suppliers'),
+      path: '/admin/suppliers',
+      show: can('read', 'suppliers'),
+    },
+    {
+      icon: Layers,
+      label: t('admin.sidebar.rubberTypes'),
+      path: '/admin/rubber-types',
+      show: can('read', 'rubber_types'),
+    },
+    {
+      icon: Bell,
+      label: t('admin.sidebar.notifications'),
+      path: '/admin/notifications',
+      show: can('read', 'notifications'),
+    },
+  ].filter((item) => item.show);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-screen overflow-hidden bg-background flex flex-col">
       <Navbar />
 
       <div className="flex flex-1 overflow-hidden relative">

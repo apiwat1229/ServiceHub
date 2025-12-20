@@ -13,6 +13,7 @@ export class AuthService {
 
     async validateUser(identifier: string, password: string): Promise<any> {
         const user = await this.usersService.findByEmailOrUsername(identifier);
+
         if (user && (await bcrypt.compare(password, user.password))) {
             const { password, ...result } = user;
             return result;
@@ -21,7 +22,11 @@ export class AuthService {
     }
 
     async login(loginDto: LoginDto): Promise<AuthResponse> {
-        const user = await this.validateUser(loginDto.email, loginDto.password);
+        const identifier = loginDto.email || loginDto.username;
+        if (!identifier) {
+            throw new UnauthorizedException('Email or Username is required');
+        }
+        const user = await this.validateUser(identifier, loginDto.password);
         if (!user) {
             throw new UnauthorizedException('Invalid credentials');
         }
@@ -33,7 +38,7 @@ export class AuthService {
                 ...user,
                 createdAt: user.createdAt.toISOString(),
                 updatedAt: user.updatedAt.toISOString(),
-            } as any, // Cast to any to avoid strict type checks on missing optional fields during dev
+            } as any,
         };
     }
 

@@ -8,6 +8,7 @@ import { BookingsModule } from './bookings/bookings.module';
 import { MasterModule } from './master/master.module';
 import { PostsModule } from './posts/posts.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { RolesModule } from './roles/roles.module';
 import { RubberTypesModule } from './rubber-types/rubber-types.module';
 import { SuppliersModule } from './suppliers/suppliers.module';
 import { UsersModule } from './users/users.module';
@@ -27,6 +28,7 @@ import { UsersModule } from './users/users.module';
         RubberTypesModule,
         AnalyticsModule,
         BookingsModule,
+        RolesModule,
     ],
     controllers: [AppController],
     providers: [AppService],

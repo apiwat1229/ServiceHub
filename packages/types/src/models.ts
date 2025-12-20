@@ -1,8 +1,8 @@
 // Domain Models (matching Prisma schema)
 
 export enum Role {
-    USER = 'USER',
-    ADMIN = 'ADMIN',
+    USER = 'staff_1',
+    ADMIN = 'admin',
 }
 
 export interface User {

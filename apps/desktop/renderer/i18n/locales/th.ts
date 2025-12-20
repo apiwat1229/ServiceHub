@@ -101,7 +101,8 @@ export const th = {
         name: "ชื่อ",
         actions: "การกระทำ",
         openMenu: "เปิดเมนู",
-        status: "สถานะ"
+        status: "สถานะ",
+        approve: "อนุมัติ"
     },
     admin: {
         notifications: {
@@ -133,6 +134,9 @@ export const th = {
             system: "ระบบ",
             dashboard: "แดชบอร์ด",
             users: "ผู้ใช้งาน",
+            roleAccess: "ผู้ใช้งานและสิทธิ์",
+            assignUsers: "กำหนดผู้ใช้งาน",
+            assignUsersDesc: "เลือกผู้ใช้งานเพื่อกำหนดบทบาทนี้",
             suppliers: "ซัพพลายเออร์",
             rubberTypes: "ประเภทยาง",
             notifications: "การแจ้งเตือน",
@@ -239,6 +243,9 @@ export const th = {
             accountInfo: "ข้อมูลบัญชี",
             personalInfo: "ข้อมูลส่วนตัว",
             workInfo: "ข้อมูลการทำงาน",
+            securityAndAccess: "ความปลอดภัยและการเข้าถึง",
+            selectRole: "เลือกบทบาท",
+            selectStatus: "เลือกสถานะ",
             securityAccess: "ความปลอดภัย & การเข้าถึง",
             setPassword: "ตั้งรหัสผ่าน",
             username: "ชื่อผู้ใช้",
@@ -260,7 +267,18 @@ export const th = {
             selectHod: "เลือกหัวหน้าแผนก (ผช.ผจก.ขึ้นไป)",
             roles: {
                 user: "ผู้ใช้ทั่วไป",
-                admin: "ผู้ดูแลระบบ"
+                admin: "ผู้ดูแลระบบ",
+                md: "กรรมการผู้จัดการ",
+                gm: "ผู้จัดการทั่วไป",
+                manager: "ผู้จัดการ",
+                asst_mgr: "ผู้ช่วยผู้จัดการ",
+                senior_sup: "หัวหน้างานอาวุโส",
+                supervisor: "หัวหน้างาน",
+                senior_staff_1: "พนักงานอาวุโส 1",
+                staff_2: "พนักงาน 2",
+                senior_staff_2: "พนักงานอาวุโส 2",
+                op_leader: "หัวหน้าปฏิบัติการ",
+                staff_1: "พนักงาน 1"
             },
             deleteConfirm: "คุณแน่ใจหรือไม่?",
             deleteMessage: "การดำเนินการนี้ไม่สามารถยกเลิกได้",

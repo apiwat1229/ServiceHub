@@ -50,6 +50,7 @@ export class UsersService {
                 position: true,
                 role: true,
                 status: true,
+                avatar: true,
                 createdAt: true,
                 updatedAt: true,
             } as any,

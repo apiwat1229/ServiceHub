@@ -117,6 +117,30 @@ export const rubberTypesApi = {
     },
 };
 
+// Roles API
+export const rolesApi = {
+    getAll: async () => {
+        const response = await api.get('/roles');
+        return response.data;
+    },
+    getOne: async (id: string) => {
+        const response = await api.get(`/roles/${id}`);
+        return response.data;
+    },
+    create: async (data: any) => {
+        const response = await api.post('/roles', data);
+        return response.data;
+    },
+    update: async (id: string, data: any) => {
+        const response = await api.patch(`/roles/${id}`, data);
+        return response.data;
+    },
+    delete: async (id: string) => {
+        const response = await api.delete(`/roles/${id}`);
+        return response.data;
+    },
+};
+
 // Analytics API
 export const analyticsApi = {
     getStats: async () => {

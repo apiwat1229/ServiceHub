@@ -101,7 +101,8 @@ export const en = {
         name: "Name",
         actions: "Actions",
         openMenu: "Open menu",
-        status: "Status"
+        status: "Status",
+        approve: "Approve"
     },
     admin: {
         notifications: {
@@ -133,6 +134,7 @@ export const en = {
             system: "System",
             dashboard: "Dashboard",
             users: "Users",
+            roles: "User & Permissions",
             suppliers: "Suppliers",
             rubberTypes: "Rubber Types",
             notifications: "Notifications",
@@ -228,6 +230,16 @@ export const en = {
             createDesc: "Add a new rubber type to the system.",
             updateDesc: "Update rubber type details."
         },
+        roles: {
+            title: "Roles and Permissions",
+            subtitle: "Role Management & Permission",
+            addRole: "Add New Role",
+            editRole: "Edit Role",
+            editDescription: "Manage role access and permissions.",
+            roleAccess: "Role Access",
+            assignUsers: "Assign Users",
+            assignUsersDesc: "Select users to assign to this role."
+        },
         users: {
             title: "Users Management",
             subtitle: "Manage user access, profiles, and permissions.",
@@ -239,6 +251,9 @@ export const en = {
             accountInfo: "Account Information",
             personalInfo: "Personal Information",
             workInfo: "Work Information",
+            securityAndAccess: "Security & Access",
+            selectRole: "Select Role",
+            selectStatus: "Select Status",
             securityAccess: "Security & Access",
             setPassword: "Set Password",
             username: "Username",
@@ -260,7 +275,18 @@ export const en = {
             selectHod: "Select HOD (Ass.Manager+)",
             roles: {
                 user: "Standard User",
-                admin: "Administrator"
+                admin: "Administrator",
+                md: "Managing Director",
+                gm: "General Manager",
+                manager: "Manager",
+                asst_mgr: "Assistant Manager",
+                senior_sup: "Senior Supervisor",
+                supervisor: "Supervisor",
+                senior_staff_1: "Senior Staff 1",
+                staff_2: "Staff 2",
+                senior_staff_2: "Senior Staff 2",
+                op_leader: "Operator Leader",
+                staff_1: "Staff 1"
             },
             deleteConfirm: "Are you sure?",
             deleteMessage: "This action cannot be undone.",

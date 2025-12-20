@@ -18,6 +18,7 @@ my-app-monorepo/
 ## 🚀 Tech Stack
 
 ### Frontend (Desktop App)
+
 - **Nextron**: Next.js + Electron framework
 - **Next.js 14**: React framework with static export
 - **Shadcn/UI**: Beautiful UI components
@@ -26,6 +27,7 @@ my-app-monorepo/
 - **TypeScript**: Type safety
 
 ### Backend (API)
+
 - **NestJS**: Progressive Node.js framework
 - **Prisma**: Next-generation ORM
 - **PostgreSQL**: Relational database
@@ -95,6 +97,7 @@ npm run seed
 ```
 
 This will:
+
 - Generate the Prisma Client
 - Create database tables
 - Seed with sample data (admin user, sample posts)
@@ -108,6 +111,7 @@ npm run dev
 ```
 
 This starts:
+
 - **API Server**: http://localhost:3000/api
 - **Desktop App**: Electron window (Next.js on http://localhost:8888)
 - **Prisma Studio**: http://localhost:5555
@@ -171,6 +175,7 @@ docker run -p 3000:3000 --env-file ../../.env myapp-api
 ### Apps
 
 #### `apps/desktop` - Nextron Application
+
 ```
 desktop/
 ├── main/              # Electron main process
@@ -185,6 +190,7 @@ desktop/
 ```
 
 #### `apps/api` - NestJS Application
+
 ```
 api/
 ├── src/
@@ -200,6 +206,7 @@ api/
 ### Packages
 
 #### `packages/database` - Prisma
+
 ```
 database/
 ├── prisma/
@@ -211,6 +218,7 @@ database/
 ```
 
 #### `packages/types` - Shared Types
+
 ```
 types/
 └── src/
@@ -227,22 +235,39 @@ The API uses JWT-based authentication:
 2. **Receive Token**: Get `accessToken` in response
 3. **Use Token**: Include in `Authorization: Bearer <token>` header
 
-Protected routes require authentication. Admin-only routes require `ADMIN` role.
+Protected routes require authentication. Admin-only routes require `admin` role.
+
+The application uses a **Role-Based Access Control (RBAC)** system where roles and permissions are stored in the database.
+
+- **Admin**: Full access to all modules.
+- **Staff**: Access based on assigned permissions (e.g., Booking, Dashboard).
+- **Custom Roles**: Can be created and configured via the Admin Panel.
 
 ## 📡 API Endpoints
 
 ### Auth
+
 - `POST /api/auth/login` - Login
 - `POST /api/auth/register` - Register
 
 ### Users (Protected)
+
 - `GET /api/users` - List all users (Admin only)
 - `GET /api/users/:id` - Get user by ID
 - `POST /api/users` - Create user (Admin only)
 - `PATCH /api/users/:id` - Update user
 - `DELETE /api/users/:id` - Delete user (Admin only)
 
+### Roles (Protected)
+
+- `GET /api/roles` - List all roles
+- `GET /api/roles/:id` - Get role by ID
+- `POST /api/roles` - Create role (Admin only)
+- `PATCH /api/roles/:id` - Update role permissions/details
+- `DELETE /api/roles/:id` - Delete role
+
 ### Posts
+
 - `GET /api/posts` - List all posts (public)
 - `GET /api/posts/:id` - Get post by ID
 - `POST /api/posts` - Create post (Auth required)
@@ -250,6 +275,7 @@ Protected routes require authentication. Admin-only routes require `ADMIN` role.
 - `DELETE /api/posts/:id` - Delete post (Author/Admin)
 
 ### Health
+
 - `GET /api/health` - Health check
 
 ## 🗄️ Database Management
@@ -293,6 +319,7 @@ If using Docker Compose, access pgAdmin at http://localhost:5050:
 **Option 1: Separate API Server (Recommended)**
 
 Deploy the NestJS API to a cloud provider:
+
 - Heroku, Railway, Render
 - AWS (ECS, Lambda)
 - DigitalOcean App Platform
@@ -301,6 +328,7 @@ Deploy the NestJS API to a cloud provider:
 **Option 2: Sidecar Process**
 
 Bundle the API with the Electron app to run locally. This requires:
+
 1. Building the API as a standalone executable
 2. Starting it from the Electron main process
 3. Configuring the frontend to use `localhost` API
@@ -308,6 +336,7 @@ Bundle the API with the Electron app to run locally. This requires:
 ### Database Deployment
 
 Use a managed PostgreSQL service:
+
 - **AWS RDS**
 - **DigitalOcean Managed Databases**
 - **Supabase**
@@ -332,6 +361,7 @@ npm run build:linux  # .AppImage for Linux
 ### Available Scripts
 
 From root:
+
 - `npm run dev` - Start all services
 - `npm run build` - Build all workspaces
 - `npm run lint` - Lint all code
@@ -342,6 +372,7 @@ From root:
 ### VSCode Setup
 
 Recommended extensions:
+
 - ESLint
 - Prettier
 - Prisma
@@ -404,4 +435,5 @@ npm run generate
 - [NestJS Documentation](https://docs.nestjs.com)
 - [Prisma Documentation](https://www.prisma.io/docs)
 - [Shadcn/UI Documentation](https://ui.shadcn.com)
+
 # Desktop-NestJS

@@ -15,7 +15,7 @@ model User {
   email       String     @unique
   username    String?    @unique
   password    String
-  role        Role       @default(USER)
+  role        String     @default("staff_1")
   
   // Profile Info
   firstName   String?    @map("first_name")
@@ -63,10 +63,7 @@ model Post {
   @@map("posts")
 }
 
-enum Role {
-  USER
-  ADMIN
-}
+
 
 // Master Data: Location
 model Province {
@@ -147,6 +144,7 @@ model Supplier {
   subdistrictId Int?         @map("subdistrict_id")
   subdistrict   Subdistrict? @relation(fields: [subdistrictId], references: [id])
   
+  isActive         Boolean   @default(true) @map("is_active")
   status           String    @default("ACTIVE") @map("status") // Was is_active boolean, switching to String status for consistency with Users if desired, or keep boolean? 
   // User plan said "status String". I will map `status` to `is_active` logic or just add `status` field. 
   // Existing has `is_active Boolean`. I will replace/update to `status String` to match my plan, or simpler: keep `is_active` and map in DTO. 
@@ -164,6 +162,7 @@ model Supplier {
   title      String?
   avatar     String?
   zipCode    String?   @map("zip_code")
+  contactPerson String? @map("contact_person")
   
   // Business Details
   certificateNumber    String?   @map("certificate_number")
@@ -207,5 +206,20 @@ model Booking {
   @@index([date, slot])
   @@index([bookingCode])
   @@map("bookings")
+}
+
+// Role Management
+model Role {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  permissions Json?     // Stores permission matrix: { "users": { "orders": ["read", "write"] } }
+  color       String?  // UI color class like 'bg-blue-600'
+  icon        String?  // Icon name string
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("roles")
 }
 

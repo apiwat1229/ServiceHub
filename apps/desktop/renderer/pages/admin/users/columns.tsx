@@ -77,7 +77,13 @@ export const useUserColumns = ({ onEdit, onDelete }: ColumnsProps): ColumnDef<Us
       cell: ({ row }) => (
         <div className="flex items-center gap-3">
           <Avatar className="h-9 w-9 border">
-            <AvatarImage src={row.original.avatar || ''} alt={row.original.username} />
+            <AvatarImage
+              src={
+                row.original.avatar ||
+                `https://api.dicebear.com/7.x/avataaars/svg?seed=${row.original.id}`
+              }
+              alt={row.original.username}
+            />
             <AvatarFallback>{row.original.firstName?.charAt(0).toUpperCase()}</AvatarFallback>
           </Avatar>
           <div className="flex flex-col">
