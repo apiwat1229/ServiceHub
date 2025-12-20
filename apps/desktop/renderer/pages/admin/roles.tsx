@@ -19,6 +19,7 @@ import {
 import { useRouter } from 'next/router';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import AdminLayout from '../../components/AdminLayout';
 import ImageCropper from '../../components/ImageCropper';
 import {
@@ -64,7 +65,6 @@ import {
   TableHeader,
   TableRow,
 } from '../../components/ui/table';
-import { useToast } from '../../components/ui/use-toast';
 import { rolesApi, usersApi } from '../../lib/api';
 import { useUserColumns } from './users/columns';
 
@@ -191,7 +191,7 @@ const ICON_MAP: any = {
 export default function RolesPage() {
   const router = useRouter();
   const { t } = useTranslation();
-  const { toast } = useToast();
+  /* const { toast } = useToast(); -> Removed for Sonner */
   const [isLoading, setIsLoading] = useState(true);
 
   // Roles State
@@ -267,9 +267,7 @@ export default function RolesPage() {
       setRoles(updatedRoles);
     } catch (error) {
       console.error('Failed to fetch data:', error);
-      toast({
-        variant: 'destructive',
-        title: t('common.error'),
+      toast.error(t('common.error'), {
         description: 'Failed to fetch data',
       });
     } finally {
@@ -327,20 +325,15 @@ export default function RolesPage() {
         icon: typeof editingRole.icon === 'string' ? editingRole.icon : undefined, // Handle if icon is component vs string
       });
 
-      toast({
-        variant: 'success',
-        title: t('common.success'),
-        description: t('admin.roles.updated', 'Role updated successfully'),
+      toast.success(t('common.toast.success'), {
+        description: t('common.toast.createSuccess'),
       });
-
       setIsRoleModalOpen(false);
-      fetchData(); // Refresh data
+      fetchData(); // Changed from fetchRoles() to fetchData() to match existing function
     } catch (error) {
       console.error('Failed to save role:', error);
-      toast({
-        variant: 'destructive',
-        title: t('common.error'),
-        description: 'Failed to save role',
+      toast.error(t('common.toast.error'), {
+        description: t('common.toast.saveFailed'),
       });
     }
   };
@@ -409,9 +402,7 @@ export default function RolesPage() {
       setDeleteId(null);
     } catch (error) {
       console.error('Failed to delete user:', error);
-      toast({
-        variant: 'destructive',
-        title: t('common.error'),
+      toast.error(t('common.error'), {
         description: 'Failed to delete user',
       });
     }
@@ -429,18 +420,14 @@ export default function RolesPage() {
     if (!formData.position) missingFields.push('position');
 
     if (missingFields.length > 0) {
-      toast({
-        variant: 'destructive',
-        title: t('common.error'),
+      toast.error(t('common.error'), {
         description: t('admin.users.requiredFieldsError') || `Missing: ${missingFields.join(', ')}`,
       });
       return;
     }
 
     if (!editingUser && formData.password !== formData.confirmPassword) {
-      toast({
-        variant: 'destructive',
-        title: t('common.error'),
+      toast.error(t('common.error'), {
         description: t('admin.users.passwordMismatch', "Passwords don't match!"),
       });
       return;
@@ -469,17 +456,13 @@ export default function RolesPage() {
       setIsUserModalOpen(false);
       setAvatarPreview('');
       fetchData();
-      toast({
-        variant: 'success',
-        title: t('common.success'),
-        description: editingUser ? t('admin.users.updated') : t('admin.users.created'),
+      toast.success(t('common.toast.success'), {
+        description: t('common.toast.updateSuccess'),
       });
     } catch (error: any) {
       console.error('Failed to save user:', error);
-      toast({
-        variant: 'destructive',
-        title: t('common.error'),
-        description: error.response?.data?.message || 'Failed to save user',
+      toast.error(t('common.toast.error'), {
+        description: t('common.toast.saveFailed'),
       });
     } finally {
       setIsSaving(false);
@@ -490,10 +473,8 @@ export default function RolesPage() {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 2 * 1024 * 1024) {
-        toast({
-          variant: 'destructive',
-          title: t('common.error'),
-          description: t('admin.users.fileSizeError', 'File size must be less than 2MB'),
+        toast.error(t('common.toast.error'), {
+          description: t('common.toast.imageSizeError'),
         });
         return;
       }

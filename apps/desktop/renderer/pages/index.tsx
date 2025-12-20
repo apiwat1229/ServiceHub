@@ -158,7 +158,7 @@ export default function Index() {
   ];
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center px-4 relative overflow-hidden">
+    <div className="min-h-screen bg-background flex items-center justify-center px-4 relative overflow-hidden">
       {/* Animated Background Icons */}
       <style jsx>{`
         @keyframes float {
@@ -227,7 +227,7 @@ export default function Index() {
                 type="text"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-11 pr-4 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="w-full pl-11 pr-4 py-2.5 bg-background border border-input rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                 placeholder="username or email"
                 required
               />
@@ -307,7 +307,7 @@ export default function Index() {
               href="#"
               onClick={(e) => {
                 e.preventDefault();
-                alert('Password reset functionality coming soon!');
+                toast.info(t('common.toast.passwordResetSoon'));
               }}
               className="text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
             >

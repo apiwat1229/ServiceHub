@@ -14,6 +14,7 @@ import { useRouter } from 'next/router';
 import { QRCodeSVG } from 'qrcode.react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import AnimatedBackground from '../components/AnimatedBackground';
 import BookingSheet from '../components/booking/BookingSheet';
 import Navbar from '../components/Navbar';
@@ -42,7 +43,6 @@ import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popove
 import { Spinner } from '../components/ui/spinner';
 import { Tabs, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../components/ui/tooltip';
-import { useToast } from '../components/ui/use-toast';
 import { usePermission } from '../hooks/usePermission';
 import { bookingsApi } from '../lib/api';
 import { useBookingStore } from '../stores/bookingStore';
@@ -125,7 +125,7 @@ function getAvailableSlots(selectedDate: Date | undefined) {
 
 export default function BookingQueue() {
   const router = useRouter();
-  const { toast } = useToast();
+  /* const { toast } = useToast(); -> Removed for Sonner */
   const { t } = useTranslation();
   const { can, isLoading } = usePermission();
   const {
@@ -247,7 +247,7 @@ export default function BookingQueue() {
 
   const handleCreateBooking = () => {
     if (isSlotFull) {
-      alert('ช่วงเวลานี้เต็มแล้ว');
+      toast.error(t('common.toast.slotFull'));
       return;
     }
     setEditingBooking(null);
@@ -276,17 +276,14 @@ export default function BookingQueue() {
       link.download = `ticket_${selectedTicket?.bookingCode || 'booking'}.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
-      toast({
-        title: 'สำเร็จ',
-        description: 'บันทึกรูปภาพสำเร็จ',
-        className: 'bg-green-600 text-white border-green-700',
+      link.click();
+      toast.success(t('common.toast.success'), {
+        description: t('common.toast.imageSaved'),
       });
     } catch (err) {
       console.error('Save error:', err);
-      toast({
-        title: t('common.error'),
+      toast.error(t('common.error'), {
         description: t('booking.errorSaving'),
-        variant: 'destructive',
       });
     }
   };
@@ -303,18 +300,15 @@ export default function BookingQueue() {
         if (!blob) return;
         const item = new ClipboardItem({ [blob.type]: blob });
         await navigator.clipboard.write([item]);
-        toast({
-          title: 'สำเร็จ',
-          description: 'คัดลอก Ticket แล้ว',
-          className: 'bg-green-600 text-white border-green-700',
+        await navigator.clipboard.write([item]);
+        toast.success(t('common.toast.success'), {
+          description: t('common.toast.ticketCopied'),
         });
       }, 'image/png');
     } catch (err) {
       console.error('Copy error:', err);
-      toast({
-        title: t('common.error'),
+      toast.error(t('common.error'), {
         description: t('booking.errorCopying'),
-        variant: 'destructive',
       });
     }
   };
@@ -456,7 +450,9 @@ export default function BookingQueue() {
                   style={{ borderLeftColor: dayTheme.queueBg }}
                 >
                   <div className="flex justify-between items-center mb-3">
-                    <span className="font-semibold text-sm">QUEUE : {queue.queueNo}</span>
+                    <span className="font-semibold text-sm">
+                      {t('booking.queueNumber')} : {queue.queueNo}
+                    </span>
                     <div className="flex items-center gap-1">
                       {can('update', 'bookings') && (
                         <Tooltip>
@@ -471,7 +467,7 @@ export default function BookingQueue() {
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>Edit</p>
+                            <p>{t('common.edit')}</p>
                           </TooltipContent>
                         </Tooltip>
                       )}
@@ -488,7 +484,7 @@ export default function BookingQueue() {
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent className="bg-red-600 text-white border-red-700">
-                            <p>Delete</p>
+                            <p>{t('common.delete')}</p>
                           </TooltipContent>
                         </Tooltip>
                       )}
@@ -497,23 +493,23 @@ export default function BookingQueue() {
 
                   <div className="space-y-2 text-sm">
                     <div>
-                      <p className="text-xs text-muted-foreground">Code</p>
+                      <p className="text-xs text-muted-foreground">{t('booking.supplierCode')}</p>
                       <p className="font-medium">{queue.supplierCode}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground">Supplier</p>
+                      <p className="text-xs text-muted-foreground">{t('booking.supplierName')}</p>
                       <p className="truncate" title={queue.supplierName}>
                         {queue.supplierName}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground">Truck</p>
+                      <p className="text-xs text-muted-foreground">{t('booking.truck')}</p>
                       <p>
                         {[queue.truckType, queue.truckRegister].filter(Boolean).join(' ') || '-'}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground">Type</p>
+                      <p className="text-xs text-muted-foreground">{t('booking.type')}</p>
                       <p>
                         {RUBBER_TYPE_MAP[queue.rubberType] ||
                           queue.rubberTypeName ||
@@ -521,14 +517,14 @@ export default function BookingQueue() {
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground">Recorder</p>
+                      <p className="text-xs text-muted-foreground">{t('booking.recorder')}</p>
                       <p>{queue.recorder}</p>
                     </div>
                   </div>
 
                   <div className="mt-4 pt-4 border-t flex justify-between items-center">
                     <span className="text-xs text-muted-foreground">
-                      Booking: {queue.bookingCode}
+                      {t('booking.bookingCode')}: {queue.bookingCode}
                     </span>
                     <Button
                       variant="link"
@@ -537,7 +533,7 @@ export default function BookingQueue() {
                       onClick={() => handleShowTicket(queue)}
                     >
                       <FileText className="h-3 w-3 mr-1" />
-                      Ticket
+                      {t('booking.ticket')}
                     </Button>
                   </div>
                 </Card>
@@ -716,7 +712,7 @@ export default function BookingQueue() {
                           }}
                         />
                       ) : (
-                        <div className="w-32 h-32 bg-white/50 rounded border border-dashed border-gray-400 flex items-center justify-center">
+                        <div className="w-32 h-32 bg-muted/50 rounded border border-dashed border-muted-foreground/30 flex items-center justify-center">
                           <span className="text-gray-500 text-sm">No Code</span>
                         </div>
                       )}

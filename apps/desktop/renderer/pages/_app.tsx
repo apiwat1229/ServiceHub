@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { AppProps } from 'next/app';
-import { Toaster } from '../components/ui/toaster';
+import { Toaster } from '../components/ui/sonner';
 import { SettingsProvider } from '../contexts/SettingsContext';
 import '../i18n/config'; // Initialize i18n (Reload Triggered)
 import '../styles/globals.css';
@@ -26,7 +26,7 @@ function MyApp({ Component, pageProps }: AppProps) {
           </TooltipProvider>
         </QueryClientProvider>
       </SettingsProvider>
-      <Toaster />
+      <Toaster position="top-center" richColors />
     </>
   );
 }

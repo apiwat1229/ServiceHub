@@ -9,7 +9,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { useToast } from '../components/ui/use-toast';
 import UserLayout from '../components/UserLayout';
 import { usersApi } from '../lib/api';
 import { useAuthStore } from '../stores/authStore';
@@ -17,7 +16,7 @@ import { useAuthStore } from '../stores/authStore';
 export default function ProfilePage() {
   const { t } = useTranslation();
   const { user, updateUser } = useAuthStore();
-  const { toast } = useToast();
+  /* const { toast } = useToast(); -> Removed for Sonner */
   const [isLoading, setIsLoading] = useState(false);
   const [isCropperOpen, setIsCropperOpen] = useState(false);
   const [pendingImage, setPendingImage] = useState<string | null>(null);
@@ -62,10 +61,9 @@ export default function ProfilePage() {
       // For now, we assume simple text updates or URL updates.
       await usersApi.update(user.id, generalForm);
       updateUser(generalForm);
-      toast({
-        title: t('common.success'),
+      updateUser(generalForm);
+      toast.success(t('common.success'), {
         description: t('userProfile.updateSuccess'),
-        variant: 'success',
       });
     } catch (error) {
       console.error(error);
@@ -84,10 +82,8 @@ export default function ProfilePage() {
     if (!user?.id) return;
 
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      toast({
-        title: t('common.error'),
+      toast.error(t('common.error'), {
         description: t('userProfile.passwordMismatch'),
-        variant: 'destructive',
       });
       return;
     }
@@ -104,10 +100,8 @@ export default function ProfilePage() {
         // currentPassword: passwordForm.currentPassword // If backend requires it
       });
 
-      toast({
-        title: t('common.success'),
+      toast.success(t('common.success'), {
         description: t('userProfile.passwordUpdateSuccess'),
-        variant: 'success',
       });
       setPasswordForm({
         currentPassword: '',
@@ -177,10 +171,8 @@ export default function ProfilePage() {
                         const file = e.target.files?.[0];
                         if (file) {
                           if (file.size > 2 * 1024 * 1024) {
-                            toast({
-                              title: t('common.error'),
-                              description: 'Image size must be less than 2MB',
-                              variant: 'destructive',
+                            toast.error(t('common.toast.error'), {
+                              description: t('common.toast.imageSizeError'),
                             });
                             return;
                           }

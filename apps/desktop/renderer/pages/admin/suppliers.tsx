@@ -28,7 +28,6 @@ import {
 } from '../../components/ui/select';
 import { Spinner } from '../../components/ui/spinner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
-import { useToast } from '../../components/ui/use-toast';
 import { api } from '../../lib/api';
 import { Supplier, useSupplierColumns } from './suppliers/columns';
 
@@ -108,7 +107,7 @@ export default function SuppliersPage() {
     notes: '',
   });
 
-  const { toast } = useToast();
+  /* const { toast } = useToast(); -> Removed for Sonner */
 
   // Master Data State
   const [provinces, setProvinces] = useState<any[]>([]);
@@ -137,10 +136,8 @@ export default function SuppliersPage() {
       setSuppliers(data);
     } catch (error) {
       console.error('Failed to fetch suppliers:', error);
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: 'Failed to fetch suppliers.',
-        variant: 'destructive',
       });
     } finally {
       setIsLoading(false);
@@ -268,19 +265,15 @@ export default function SuppliersPage() {
     if (!deleteId) return;
     try {
       await suppliersApi.delete(deleteId);
-      toast({
-        title: 'Success',
+      toast.success('Success', {
         description: 'Supplier deleted successfully.',
-        variant: 'success',
       });
       fetchSuppliers();
       setDeleteId(null);
     } catch (error) {
       console.error('Failed to delete supplier:', error);
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: 'Failed to delete supplier.',
-        variant: 'destructive',
       });
     }
   };
@@ -291,17 +284,14 @@ export default function SuppliersPage() {
     if (!confirm('Are you sure you want to delete this supplier?')) return;
     try {
       await suppliersApi.delete(id);
-      toast({
-        title: 'Success',
-        description: 'Supplier deleted successfully.',
+      toast.success(t('common.toast.success'), {
+        description: t('common.toast.deleteSuccess'),
       });
       fetchSuppliers();
     } catch (error) {
       console.error('Failed to delete supplier:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to delete supplier.',
-        variant: 'destructive',
+      toast.error(t('common.toast.error'), {
+        description: t('common.toast.deleteFailed'),
       });
     }
   };
@@ -360,17 +350,13 @@ export default function SuppliersPage() {
 
       if (editingSupplier) {
         await suppliersApi.update(editingSupplier.id, payload);
-        toast({
-          title: 'Success',
-          description: 'Supplier updated successfully.',
-          variant: 'success',
+        toast.success(t('common.toast.success'), {
+          description: t('common.toast.updateSuccess'),
         });
       } else {
         await suppliersApi.create(payload);
-        toast({
-          title: 'Success',
-          description: 'Supplier created successfully.',
-          variant: 'success',
+        toast.success(t('common.toast.success'), {
+          description: t('common.toast.createSuccess'),
         });
       }
       setIsModalOpen(false);
@@ -378,10 +364,8 @@ export default function SuppliersPage() {
     } catch (error: any) {
       console.error('Failed to save supplier:', error);
       console.error('Error Details:', error.response?.data); // Log detailed error from backend
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: error.response?.data?.message || 'Failed to save supplier.',
-        variant: 'destructive',
       });
     }
   };

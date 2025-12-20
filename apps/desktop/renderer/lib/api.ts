@@ -2,9 +2,9 @@ import type { AuthResponse, LoginDto, RegisterDto } from '@my-app/types';
 import axios from 'axios';
 import { useAuthStore } from '../stores/authStore';
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:2530/api';
 
-const api = axios.create({
+export const api = axios.create({
     baseURL: BASE_URL,
 });
 

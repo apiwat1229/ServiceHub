@@ -14,7 +14,6 @@ import {
 } from '../../components/ui/alert-dialog';
 import { DataTable } from '../../components/ui/data-table';
 import { Spinner } from '../../components/ui/spinner';
-import { useToast } from '../../components/ui/use-toast';
 import { rubberTypesApi } from '../../lib/api';
 import { RubberType, useRubberTypeColumns } from './rubber-types/columns';
 
@@ -26,7 +25,7 @@ export default function RubberTypesPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const { t } = useTranslation();
 
-  const { toast } = useToast();
+  /* const { toast } = useToast(); -> Removed for Sonner */
 
   // Form Data
   const [formData, setFormData] = useState({
@@ -83,17 +82,16 @@ export default function RubberTypesPage() {
     try {
       await rubberTypesApi.delete(deleteId);
       toast({
-        title: 'Success',
-        description: 'Rubber type deleted successfully.',
-        variant: 'success',
+        title: t('common.toast.success'),
+        description: t('common.toast.deleteSuccess'),
       });
       fetchData();
       setDeleteId(null);
     } catch (error) {
-      console.error('Failed to delete:', error);
+      console.error('Failed to delete rubber type:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to delete rubber type.',
+        title: t('common.toast.error'),
+        description: t('common.toast.deleteFailed'),
         variant: 'destructive',
       });
     }
@@ -105,15 +103,15 @@ export default function RubberTypesPage() {
       if (editingItem) {
         await rubberTypesApi.update(editingItem.id, formData);
         toast({
-          title: 'Success',
-          description: 'Rubber type updated successfully.',
+          title: t('common.toast.success'),
+          description: t('common.toast.updateSuccess'),
           variant: 'success',
         });
       } else {
         await rubberTypesApi.create(formData);
         toast({
-          title: 'Success',
-          description: 'Rubber type created successfully.',
+          title: t('common.toast.success'),
+          description: t('common.toast.createSuccess'),
           variant: 'success',
         });
       }
@@ -121,10 +119,8 @@ export default function RubberTypesPage() {
       fetchData();
     } catch (error: any) {
       console.error('Failed to save:', error);
-      toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to save rubber type.',
-        variant: 'destructive',
+      toast.error(t('common.toast.error'), {
+        description: t('common.toast.saveFailed'),
       });
     }
   };

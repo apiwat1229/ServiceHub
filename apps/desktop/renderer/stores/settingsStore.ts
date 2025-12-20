@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware';
 import type { SettingsState } from '../types/store';
 
 const DEFAULT_SETTINGS = {
-    theme: 'system' as const,
+    theme: 'light' as const,
     fontSize: 15,
     primaryColor: '#3b82f6',
     borderRadius: 8,

@@ -1,6 +1,7 @@
 import { format } from 'date-fns';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { api, bookingsApi } from '../../lib/api';
 import { useAuthStore } from '../../stores/authStore';
 import {
@@ -81,10 +82,12 @@ export default function BookingSheet({
   const [startTime, endTime] = selectedSlot.split('-');
   const isEditMode = !!editingBooking;
 
+  // Fetch data on mount
   useEffect(() => {
-    if (!open) return;
-
     const fetchData = async () => {
+      // If we already have data, don't refetch (optional optimization)
+      if (suppliers.length > 0 && rubberTypes.length > 0) return;
+
       try {
         const [suppliersResp, rubberTypesResp] = await Promise.all([
           api.get('/suppliers'),
@@ -95,17 +98,27 @@ export default function BookingSheet({
         setRubberTypes(rubberTypesResp.data || []);
       } catch (err) {
         console.error('Failed to fetch data:', err);
+        // Only toast if open to avoid random toasts on page load if something fails silently?
+        // Better to fail silently on background fetch or toast only if user interacts.
+        // For now, let's keep it simple.
+        if (open) toast.error(t('common.toast.fetchFailed'));
       }
     };
 
     fetchData();
+  }, []); // Run once on mount
 
-    if (isEditMode && editingBooking) {
+  // Sync form with editingBooking
+  useEffect(() => {
+    if (open && isEditMode && editingBooking) {
       setSupplierId(editingBooking.supplierId || '');
       setTruckType(editingBooking.truckType || '');
       setTruckRegister(editingBooking.truckRegister || '');
+      // Ensure rubberType is set even if data isn't loaded yet,
+      // but value binding should work once options render.
       setRubberType(editingBooking.rubberType || '');
-    } else {
+    } else if (open && !isEditMode) {
+      // Reset form
       setSupplierId('');
       setTruckType('');
       setTruckRegister('');
@@ -117,10 +130,9 @@ export default function BookingSheet({
     e.preventDefault();
 
     if (!supplierId || !rubberType) {
-      setAlertTitle('ข้อมูลไม่ครบถ้วน');
-      setAlertMessage('กรุณากรอกข้อมูล Supplier และ Rubber Type ให้ครบถ้วน');
-      setAlertType('error');
-      setAlertOpen(true);
+      toast.error(t('common.toast.error'), {
+        description: t('booking.validationError', 'Please fill in all required fields'),
+      });
       return;
     }
 
@@ -130,10 +142,9 @@ export default function BookingSheet({
       // Validate Supplier Data
       const selectedSupplier = suppliers.find((s) => s.id === supplierId);
       if (!selectedSupplier) {
-        setAlertTitle('ข้อมูลไม่ถูกต้อง');
-        setAlertMessage('ไม่พบข้อมูล Supplier ที่เลือก กรุณาลองเลือกใหม่');
-        setAlertType('error');
-        setAlertOpen(true);
+        toast.error(t('common.toast.error'), {
+          description: t('booking.supplierNotFound', 'Supplier not found'),
+        });
         setLoading(false);
         return;
       }
@@ -160,18 +171,23 @@ export default function BookingSheet({
 
       if (isEditMode && editingBooking?.id) {
         await bookingsApi.update(editingBooking.id, payload);
+        toast.success(t('common.toast.success'), {
+          description: t('common.toast.updateSuccess'),
+        });
       } else {
         await bookingsApi.create(payload);
+        toast.success(t('common.toast.success'), {
+          description: t('common.toast.createSuccess'),
+        });
       }
 
       onSuccess();
       onClose();
     } catch (err: any) {
       console.error('Save booking error:', err);
-      setAlertTitle('เกิดข้อผิดพลาด');
-      setAlertMessage(err?.response?.data?.message || 'บันทึกการจองไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
-      setAlertType('error');
-      setAlertOpen(true);
+      toast.error(t('common.toast.error'), {
+        description: err?.response?.data?.message || t('common.toast.saveFailed'),
+      });
     } finally {
       setLoading(false);
     }
@@ -192,22 +208,22 @@ export default function BookingSheet({
         <form onSubmit={handleSubmit} className="space-y-4 mt-6">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Start Time</Label>
+              <Label>{t('booking.startTime')}</Label>
               <Input value={startTime} readOnly disabled />
             </div>
             <div className="space-y-2">
-              <Label>End Time</Label>
+              <Label>{t('booking.endTime')}</Label>
               <Input value={endTime} readOnly disabled />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Queue No.</Label>
+              <Label>{t('booking.queueNumber')}</Label>
               <Input value={nextQueueNo !== null ? nextQueueNo : '-'} readOnly disabled />
             </div>
             <div className="space-y-2">
-              <Label>Booking Code</Label>
+              <Label>{t('booking.bookingCode')}</Label>
               <Input
                 value={nextQueueNo !== null ? genBookingCode(selectedDate, nextQueueNo) : '-'}
                 readOnly
@@ -217,7 +233,7 @@ export default function BookingSheet({
           </div>
 
           <div className="space-y-2">
-            <Label>Supplier</Label>
+            <Label>{t('booking.supplier')}</Label>
             <SearchableSelect
               options={suppliers.map((supplier) => ({
                 value: supplier.id,
@@ -225,16 +241,16 @@ export default function BookingSheet({
               }))}
               value={supplierId}
               onChange={setSupplierId}
-              placeholder="เลือก Supplier"
+              placeholder={t('booking.selectSupplier')}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Truck Type</Label>
+              <Label>{t('booking.truckType')}</Label>
               <Select value={truckType} onValueChange={setTruckType}>
                 <SelectTrigger>
-                  <SelectValue placeholder="เลือกประเภทรถ" />
+                  <SelectValue placeholder={t('booking.selectTruckType')} />
                 </SelectTrigger>
                 <SelectContent>
                   {TRUCK_TYPES.map((type) => (
@@ -246,31 +262,35 @@ export default function BookingSheet({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>License Plate</Label>
+              <Label>{t('booking.truckRegister')}</Label>
               <Input
                 value={truckRegister}
                 onChange={(e) => setTruckRegister(e.target.value)}
-                placeholder="เช่น 10 ยธ 59343"
+                placeholder={t('booking.truckRegisterPlaceholder')}
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label>Rubber Type *</Label>
-            <Select value={rubberType} onValueChange={setRubberType}>
-              <SelectTrigger>
-                <SelectValue placeholder="เลือก Rubber Type" />
-              </SelectTrigger>
-              <SelectContent>
-                {rubberTypes
-                  .filter((rt) => rt.code === 'CL' || rt.name?.includes('CL'))
-                  .map((type) => (
-                    <SelectItem key={type.id} value={type.code}>
-                      {type.name}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
+            <Label htmlFor="rubberType">
+              {t('booking.rubberType')} <span className="text-destructive">*</span>
+            </Label>
+            <div className="relative">
+              <Select value={rubberType} onValueChange={setRubberType}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t('booking.selectRubberType')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {rubberTypes
+                    .filter((rt) => rt.code === 'CL' || rt.name?.includes('CL'))
+                    .map((type) => (
+                      <SelectItem key={type.id} value={type.code}>
+                        {type.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <DialogFooter className="mt-6">
