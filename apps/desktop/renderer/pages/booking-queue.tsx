@@ -45,6 +45,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '../components/ui/toolti
 import { useToast } from '../components/ui/use-toast';
 import { usePermission } from '../hooks/usePermission';
 import { bookingsApi } from '../lib/api';
+import { useBookingStore } from '../stores/bookingStore';
 
 interface TimeSlot {
   label: string;
@@ -127,19 +128,14 @@ export default function BookingQueue() {
   const { toast } = useToast();
   const { t } = useTranslation();
   const { can, isLoading } = usePermission();
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('booking_queue_slot') || '08:00-09:00';
-    }
-    return '08:00-09:00';
-  });
+  const {
+    selectedDate,
+    selectedSlot: selectedTimeSlot,
+    setSelectedDate,
+    setSelectedSlot: setSelectedTimeSlot,
+  } = useBookingStore();
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('booking_queue_slot', selectedTimeSlot);
-    }
-  }, [selectedTimeSlot]);
+  // NOTE: Local persistence logic removed as it is now handled by Zustand persist middleware
   const [queues, setQueues] = useState<any[]>([]);
   const [totalDailyQueues, setTotalDailyQueues] = useState(0);
   const [loading, setLoading] = useState(false);
