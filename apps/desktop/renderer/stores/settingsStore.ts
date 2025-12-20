@@ -4,10 +4,10 @@ import type { SettingsState } from '../types/store';
 
 const DEFAULT_SETTINGS = {
     theme: 'system' as const,
-    fontSize: 16,
+    fontSize: 15,
     primaryColor: '#3b82f6',
     borderRadius: 8,
-    fontFamily: 'Inter',
+    fontFamily: 'Bai Jamjuree',
 };
 
 export const useSettingsStore = create<SettingsState>()(

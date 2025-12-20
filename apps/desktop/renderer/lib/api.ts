@@ -1,20 +1,20 @@
 import type { AuthResponse, LoginDto, RegisterDto } from '@my-app/types';
 import axios from 'axios';
+import { useAuthStore } from '../stores/authStore';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:2530/api';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
 
-export const api = axios.create({
-    baseURL: API_URL,
-    headers: {
-        'Content-Type': 'application/json',
-    },
+const api = axios.create({
+    baseURL: BASE_URL,
 });
 
 // Request interceptor to add auth token
 api.interceptors.request.use((config) => {
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+    if (typeof window !== 'undefined') {
+        const token = useAuthStore.getState().accessToken;
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
     }
     return config;
 });

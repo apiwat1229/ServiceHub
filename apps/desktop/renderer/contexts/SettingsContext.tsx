@@ -1,4 +1,5 @@
-import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import React, { createContext, ReactNode, useEffect } from 'react';
+import { useSettingsStore } from '../stores/settingsStore';
 
 export type Theme = 'light' | 'dark';
 
@@ -18,11 +19,20 @@ export interface SettingsContextType {
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 export const useSettings = () => {
-  const context = useContext(SettingsContext);
-  if (!context) {
-    throw new Error('useSettings must be used within a SettingsProvider');
-  }
-  return context;
+  // Directly use the store hook for better performance and simplicity
+  const store = useSettingsStore();
+  return {
+    theme: store.theme,
+    fontSize: store.fontSize,
+    primaryColor: store.primaryColor,
+    borderRadius: store.borderRadius,
+    fontFamily: store.fontFamily,
+    setTheme: store.setTheme,
+    setFontSize: store.setFontSize,
+    setPrimaryColor: store.setPrimaryColor,
+    setBorderRadius: store.setBorderRadius,
+    setFontFamily: store.setFontFamily,
+  };
 };
 
 // Helper to convert Hex to HSL
@@ -71,45 +81,24 @@ const hexToHSL = (hex: string) => {
 
 interface SettingsProviderProps {
   children: ReactNode;
+  initialSettings?: any; // For backward compatibility if needed
 }
 
 export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) => {
-  const [theme, setTheme] = useState<Theme>('light');
-  const [fontSize, setFontSize] = useState(15);
-  const [primaryColor, setPrimaryColor] = useState('#3B82F6');
-  const [borderRadius, setBorderRadius] = useState(8);
-  const [fontFamily, setFontFamily] = useState('Bai Jamjuree');
+  const { theme, fontSize, primaryColor, borderRadius, fontFamily } = useSettingsStore();
 
-  // Load settings from localStorage on mount
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as Theme;
-    const savedFontSize = localStorage.getItem('fontSize');
-    const savedPrimaryColor = localStorage.getItem('primaryColor');
-    const savedBorderRadius = localStorage.getItem('borderRadius');
-    const savedFontFamily = localStorage.getItem('fontFamily');
-
-    if (savedTheme) setTheme(savedTheme);
-    if (savedFontSize) setFontSize(parseInt(savedFontSize));
-    if (savedPrimaryColor) setPrimaryColor(savedPrimaryColor);
-    // Force default border radius of 8px
-    setBorderRadius(8);
-    // if (savedBorderRadius) setBorderRadius(parseInt(savedBorderRadius));
-    if (savedFontFamily) setFontFamily(savedFontFamily);
-  }, []);
-
-  // Apply settings to document root
+  // Apply settings to document root (Side Effects)
   useEffect(() => {
     const root = document.documentElement;
 
     // Apply theme
     root.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
+    // localStorage handled by persist middleware
 
     // Apply font size
     root.style.setProperty('--base-font-size', `${fontSize}px`);
     // Force global font size scaling on HTML element
     root.style.fontSize = `${fontSize}px`;
-    localStorage.setItem('fontSize', fontSize.toString());
 
     // Apply primary color (Hex for simple usage)
     root.style.setProperty('--primary-color', primaryColor);
@@ -120,32 +109,20 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
     // Also update ring color to match primary for focus states
     root.style.setProperty('--ring', hsl);
 
-    localStorage.setItem('primaryColor', primaryColor);
-
     // Apply border radius
     root.style.setProperty('--border-radius', `${borderRadius}px`);
     root.style.setProperty('--radius', `${borderRadius / 16}rem`); // Update Tailwind's --radius
-    localStorage.setItem('borderRadius', borderRadius.toString());
 
     // Apply font family
     root.style.setProperty('--font-family', fontFamily);
     // Force global font family on HTML element
     root.style.fontFamily = fontFamily;
-    localStorage.setItem('fontFamily', fontFamily);
   }, [theme, fontSize, primaryColor, borderRadius, fontFamily]);
 
-  const value: SettingsContextType = {
-    theme,
-    fontSize,
-    primaryColor,
-    borderRadius,
-    fontFamily,
-    setTheme,
-    setFontSize,
-    setPrimaryColor,
-    setBorderRadius,
-    setFontFamily,
-  };
+  // We actually don't generally need to provide context values since useSettings uses the store directly,
+  // but we keep the Provider to mount the side-effects.
+  // Ideally, useSettings should just use the store, but if passing to Context for legacy...
+  // However, useSettings defined above IGNORES the context and uses the store directly.
 
-  return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
+  return <>{children}</>;
 };
