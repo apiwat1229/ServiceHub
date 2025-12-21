@@ -55,10 +55,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const markAsRead = async (id: string) => {
     try {
-      // Optimistic update
-      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, status: 'READ' } : n)));
       await api.put(`/notifications/${id}/read`);
-      await fetchNotifications(); // Sync to be sure
+      await fetchNotifications(); // Fetch actual state from BE
     } catch (err) {
       console.error('Failed to mark read', err);
     }
@@ -66,9 +64,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const markAllAsRead = async () => {
     try {
-      setNotifications((prev) => prev.map((n) => ({ ...n, status: 'READ' })));
       await api.put('/notifications/read-all');
-      await fetchNotifications();
+      await fetchNotifications(); // Fetch actual state from BE
     } catch (err) {
       console.error('Failed to mark all read', err);
     }

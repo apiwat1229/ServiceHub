@@ -1,41 +1,55 @@
-import { Body, Controller, Get, Param, Put, Request } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Request, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { NotificationsService } from './notifications.service';
-// import { JwtAuthGuard } from '../auth/jwt-auth.guard'; // Assuming Auth Guard exists?
-// Let's assume standard guard, or verify auth structure later. 
-// For now, I'll basic scaffold.
 
 @Controller('notifications')
+@UseGuards(JwtAuthGuard) // Apply authentication to all routes
 export class NotificationsController {
     constructor(private readonly notificationsService: NotificationsService) { }
 
-    // @UseGuards(JwtAuthGuard)
     @Get()
     findAll(@Request() req: any) {
-        // Ideally get user from req.user
-        // const userId = req.user.id;
-        // For MVP/Testing, maybe pass userId as query or assume mock
-        // Let's assume req.user is populated by AuthGuard
-        return this.notificationsService.findAll(req.user?.id || 'test-user-id');
+        return this.notificationsService.findAll(req.user.id);
     }
 
     @Get('unread')
     findUnread(@Request() req: any) {
-        return this.notificationsService.findUnread(req.user?.id || 'test-user-id');
+        return this.notificationsService.findUnread(req.user.id);
     }
 
     @Put(':id/read')
     markAsRead(@Param('id') id: string, @Request() req: any) {
-        return this.notificationsService.markAsRead(id, req.user?.id || 'test-user-id');
+        return this.notificationsService.markAsRead(id, req.user.id);
     }
 
     @Put('read-all')
     markAllAsRead(@Request() req: any) {
-        return this.notificationsService.markAllAsRead(req.user?.id || 'test-user-id');
+        return this.notificationsService.markAllAsRead(req.user.id);
     }
 
     @Get('settings')
     getSettings() {
         return this.notificationsService.getSettings();
+    }
+
+    @Post('broadcast')
+    broadcast(@Body() body: {
+        title: string;
+        message: string;
+        type?: 'INFO' | 'SUCCESS' | 'WARNING' | 'ERROR';
+        recipientRoles?: string[];
+        recipientUsers?: string[];
+        recipientGroups?: string[];
+    }, @Request() req: any) {
+        return this.notificationsService.broadcast({
+            ...body,
+            senderId: req.user?.id
+        });
+    }
+
+    @Get('history')
+    getBroadcastHistory() {
+        return this.notificationsService.getBroadcastHistory();
     }
 
     @Put('settings')
@@ -57,5 +71,35 @@ export class NotificationsController {
                 channels: body.channels,
             }
         );
+    }
+
+    @Get('groups')
+    getGroups() {
+        return this.notificationsService.findAllGroups();
+    }
+
+    @Post('groups')
+    createGroup(@Body() body: { name: string; description?: string; memberIds?: string[] }) {
+        return this.notificationsService.createGroup(body);
+    }
+
+    @Put('groups/:id')
+    updateGroup(@Param('id') id: string, @Body() body: { name?: string; description?: string; memberIds?: string[] }) {
+        return this.notificationsService.updateGroup(id, body);
+    }
+
+    @Delete('groups/:id')
+    deleteGroup(@Param('id') id: string) {
+        return this.notificationsService.deleteGroup(id);
+    }
+
+    @Delete('broadcast/:id')
+    deleteBroadcast(@Param('id') id: string) {
+        return this.notificationsService.deleteBroadcast(id);
+    }
+
+    @Delete('broadcast')
+    deleteBroadcasts(@Body() body: { ids: string[] }) {
+        return this.notificationsService.deleteBroadcasts(body.ids);
     }
 }

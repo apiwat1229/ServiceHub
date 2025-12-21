@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import type { AuthState, User } from '../types/store';
 
 export const useAuthStore = create<AuthState>()(
@@ -10,10 +10,6 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: false,
 
             login: (user: User, token: string) => {
-                // Also update localStorage for backward compatibility
-                localStorage.setItem('accessToken', token);
-                localStorage.setItem('user', JSON.stringify(user));
-
                 set({
                     user,
                     accessToken: token,
@@ -22,10 +18,6 @@ export const useAuthStore = create<AuthState>()(
             },
 
             logout: () => {
-                // Clear localStorage
-                localStorage.removeItem('accessToken');
-                localStorage.removeItem('user');
-
                 set({
                     user: null,
                     accessToken: null,
@@ -36,16 +28,26 @@ export const useAuthStore = create<AuthState>()(
             updateUser: (userData: Partial<User>) => {
                 set((state) => {
                     if (!state.user) return state;
-
                     const updatedUser = { ...state.user, ...userData };
-                    localStorage.setItem('user', JSON.stringify(updatedUser));
-
                     return { user: updatedUser };
                 });
+            },
+
+            verifySession: async () => {
+                try {
+                    const { authApi } = await import('../lib/api');
+                    const user = await authApi.getMe();
+                    set({ user, isAuthenticated: true });
+                } catch (error) {
+                    console.error('Session verification failed', error);
+                    // If verification fails (e.g. 401), allow logout
+                    set({ user: null, accessToken: null, isAuthenticated: false });
+                }
             },
         }),
         {
             name: 'auth-storage',
+            storage: createJSONStorage(() => sessionStorage), // Use SessionStorage for tab isolation
             partialize: (state) => ({
                 user: state.user,
                 accessToken: state.accessToken,

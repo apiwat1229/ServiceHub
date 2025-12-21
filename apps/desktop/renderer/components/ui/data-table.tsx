@@ -31,6 +31,7 @@ interface DataTableProps<TData, TValue> {
   searchKey?: string;
   searchPlaceholder?: string;
   children?: React.ReactNode;
+  onSelectionChange?: (selection: any) => void;
 }
 
 export function DataTable<TData, TValue>({
@@ -39,6 +40,7 @@ export function DataTable<TData, TValue>({
   searchKey = 'email',
   searchPlaceholder = 'Search...',
   children,
+  onSelectionChange,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -46,9 +48,17 @@ export function DataTable<TData, TValue>({
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
 
+  // Effect to notify parent of selection changes
+  React.useEffect(() => {
+    if (onSelectionChange) {
+      onSelectionChange(rowSelection);
+    }
+  }, [rowSelection, onSelectionChange]);
+
   const table = useReactTable({
     data,
     columns,
+    getRowId: (row: any) => row.id,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onGlobalFilterChange: setGlobalFilter,

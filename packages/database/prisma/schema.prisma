@@ -35,6 +35,9 @@ model User {
   hodId       String?    @map("hod_id")
   hod         User?      @relation("UserHod", fields: [hodId], references: [id])
   subordinates User[]    @relation("UserHod")
+  
+  // Notification Groups
+  notificationGroups NotificationGroup[] @relation("NotificationGroupMembers")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -297,6 +300,7 @@ model NotificationSetting {
   
   // Recipients Configuration
   recipientRoles Json  @default("[]") // Array of Role IDs
+  recipientGroups Json @default("[]") // Array of NotificationGroup IDs
   recipientUsers Json  @default("[]") // Array of User IDs (optional overrides)
   
   channels     Json    @default("[\"IN_APP\"]") // ["IN_APP", "EMAIL", "LINE"]
@@ -344,3 +348,15 @@ enum ApprovalStatus {
   CANCELLED
 }
 
+
+model NotificationGroup {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  
+  members     User[]   @relation("NotificationGroupMembers")
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

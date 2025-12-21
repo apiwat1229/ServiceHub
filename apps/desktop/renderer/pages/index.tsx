@@ -1,6 +1,7 @@
 import { useRouter } from 'next/router';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { authApi } from '../lib/api';
 import { useAuthStore } from '../stores/authStore';
 
@@ -11,7 +12,6 @@ export default function Index() {
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -24,7 +24,6 @@ export default function Index() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     setLoading(true);
 
     try {
@@ -38,9 +37,21 @@ export default function Index() {
 
       // Use Auth Store login action
       useAuthStore.getState().login(response.user, response.accessToken);
+
+      const fullName = [response.user.firstName, response.user.lastName].filter(Boolean).join(' ');
+      toast.success(t('auth.welcomeUser', { name: fullName }) || `Welcome back, ${fullName}`);
+
       router.push('/services');
     } catch (err: any) {
-      setError(err.response?.data?.message || t('auth.loginFailed'));
+      console.error('Login error:', err);
+      let errorMessage = err.response?.data?.message || t('auth.loginFailed');
+
+      // Handle specific error codes
+      if (err.response?.status === 401) {
+        errorMessage = t('auth.wrongCredentials');
+      }
+
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -199,12 +210,6 @@ export default function Index() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 text-center">{t('auth.login')}</h1>
         </div>
-
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg mb-6 text-sm">
-            {error}
-          </div>
-        )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Email Field */}

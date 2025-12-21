@@ -20,6 +20,7 @@ export interface AuthState {
     login: (user: User, token: string) => void;
     logout: () => void;
     updateUser: (user: Partial<User>) => void;
+    verifySession: () => Promise<void>;
 }
 
 export interface Settings {

@@ -1,6 +1,7 @@
 import { Layers, Plus, Trash2 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import AdminLayout from '../../components/AdminLayout';
 import {
   AlertDialog,
@@ -12,6 +13,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '../../components/ui/alert-dialog';
+import { Button } from '../../components/ui/button';
+import { Card } from '../../components/ui/card';
 import { DataTable } from '../../components/ui/data-table';
 import { Spinner } from '../../components/ui/spinner';
 import { rubberTypesApi } from '../../lib/api';
@@ -42,10 +45,8 @@ export default function RubberTypesPage() {
       setData(res);
     } catch (error) {
       console.error('Failed to fetch rubber types:', error);
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: 'Failed to fetch rubber types.',
-        variant: 'destructive',
       });
     } finally {
       setIsLoading(false);
@@ -81,18 +82,15 @@ export default function RubberTypesPage() {
     if (!deleteId) return;
     try {
       await rubberTypesApi.delete(deleteId);
-      toast({
-        title: t('common.toast.success'),
+      toast.success(t('common.toast.success'), {
         description: t('common.toast.deleteSuccess'),
       });
       fetchData();
       setDeleteId(null);
     } catch (error) {
       console.error('Failed to delete rubber type:', error);
-      toast({
-        title: t('common.toast.error'),
+      toast.error(t('common.toast.error'), {
         description: t('common.toast.deleteFailed'),
-        variant: 'destructive',
       });
     }
   };
@@ -102,17 +100,13 @@ export default function RubberTypesPage() {
     try {
       if (editingItem) {
         await rubberTypesApi.update(editingItem.id, formData);
-        toast({
-          title: t('common.toast.success'),
+        toast.success(t('common.toast.success'), {
           description: t('common.toast.updateSuccess'),
-          variant: 'success',
         });
       } else {
         await rubberTypesApi.create(formData);
-        toast({
-          title: t('common.toast.success'),
+        toast.success(t('common.toast.success'), {
           description: t('common.toast.createSuccess'),
-          variant: 'success',
         });
       }
       setIsModalOpen(false);
@@ -152,55 +146,58 @@ export default function RubberTypesPage() {
     <AdminLayout>
       <div className="p-6 w-full max-w-[1400px] mx-auto space-y-8">
         {/* Header Card */}
-        <div className="bg-card rounded-xl border border-border shadow-sm p-4 md:p-6 flex flex-col xl:flex-row items-center justify-between gap-6 transition-all hover:shadow-md">
+        <Card className="p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 border-border/60 shadow-sm relative overflow-hidden">
+          {/* Decorative Background Icon */}
+          <div className="absolute top-1/2 right-12 -translate-y-1/2 pointer-events-none opacity-5">
+            <Layers className="w-64 h-64" />
+          </div>
+
           {/* Left: Title & Icon */}
-          <div className="flex items-center gap-4 w-full xl:w-auto">
-            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl transition-transform hover:scale-105">
-              <Layers className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+          <div className="flex items-center gap-6 z-10 w-full md:w-auto">
+            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl text-blue-600 dark:text-blue-400">
+              <Layers className="h-8 w-8" />
             </div>
             <div>
               <h1 className="text-xl font-bold tracking-tight text-foreground">
-                Rubber Types Management
+                {t('admin.rubberTypes.title', 'Rubber Types Management')}
               </h1>
-              <p className="text-sm text-muted-foreground">
-                Manage rubber types and their configurations.
+              <p className="text-sm text-muted-foreground mt-1">
+                {t('admin.rubberTypes.subtitle', 'Manage rubber types and their configurations.')}
               </p>
             </div>
           </div>
 
           {/* Center: Stats Widget */}
-          <div className="hidden md:flex items-center bg-background/50 rounded-xl border border-border p-1 shadow-sm">
-            <div className="px-6 py-2 flex flex-col items-center min-w-[100px] border-r border-border/50 last:border-0">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+          <div className="flex items-center gap-8 md:gap-12 z-10 w-full md:w-auto justify-center md:justify-end text-center">
+            <div>
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">
                 Total
-              </span>
-              <span className="text-lg font-bold text-foreground">{stats.total}</span>
+              </p>
+              <p className="text-2xl font-bold">{stats.total}</p>
             </div>
-            <div className="w-px h-8 bg-border"></div>
-            <div className="px-6 py-2 flex flex-col items-center min-w-[100px]">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider text-green-600">
+            <div>
+              <p className="text-xs font-bold text-emerald-600 uppercase tracking-wider mb-1">
                 Active
-              </span>
-              <span className="text-lg font-bold text-green-600">{stats.active}</span>
+              </p>
+              <p className="text-2xl font-bold text-emerald-600">{stats.active}</p>
             </div>
-            <div className="w-px h-8 bg-border"></div>
-            <div className="px-6 py-2 flex flex-col items-center min-w-[100px]">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider text-destructive">
+            <div>
+              <p className="text-xs font-bold text-orange-500 uppercase tracking-wider mb-1">
                 Inactive
-              </span>
-              <span className="text-lg font-bold text-destructive">{stats.inactive}</span>
+              </p>
+              <p className="text-2xl font-bold text-orange-500">{stats.inactive}</p>
             </div>
           </div>
 
           {/* Right: Action Button */}
-          <button
+          <Button
             onClick={handleOpenCreate}
-            className="w-full xl:w-auto inline-flex items-center justify-center rounded-lg text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 hover:shadow-xl hover:-translate-y-0.5 h-11 px-8"
+            className="w-full xl:w-auto z-10 bg-primary text-primary-foreground shadow-lg shadow-primary/20"
           >
             <Plus className="mr-2 h-4 w-4" />
-            Add New Rubber Type
-          </button>
-        </div>
+            {t('admin.rubberTypes.add', 'Add New Rubber Type')}
+          </Button>
+        </Card>
 
         {/* Data Table */}
         <div className="rounded-xl border border-border bg-card text-card-foreground shadow">

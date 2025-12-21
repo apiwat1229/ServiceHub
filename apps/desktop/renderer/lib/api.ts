@@ -23,8 +23,12 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response?.status === 401) {
-            localStorage.removeItem('accessToken');
+        // Prevent redirect loop if already on login page or if the error comes from login endpoint
+        const isLoginRequest = error.config?.url?.includes('/auth/login');
+        const isLoginPage = typeof window !== 'undefined' && (window.location.pathname === '/login' || window.location.pathname === '/');
+
+        if (error.response?.status === 401 && !isLoginRequest && !isLoginPage) {
+            // Redirect to login only if it's an auth failure from other protected routes
             window.location.href = '/login';
         }
         return Promise.reject(error);
@@ -39,6 +43,10 @@ export const authApi = {
     },
     register: async (data: RegisterDto): Promise<AuthResponse> => {
         const response = await api.post<AuthResponse>('/auth/register', data);
+        return response.data;
+    },
+    getMe: async (): Promise<any> => {
+        const response = await api.get('/auth/me');
         return response.data;
     },
 };
@@ -197,3 +205,34 @@ export const accessControlApi = {
     },
 };
 
+// Notification Groups API
+export const notificationGroupsApi = {
+    getAll: async () => {
+        const response = await api.get('/notification-groups');
+        return response.data;
+    },
+    getOne: async (id: string) => {
+        const response = await api.get(`/notification-groups/${id}`);
+        return response.data;
+    },
+    create: async (data: { name: string; description?: string }) => {
+        const response = await api.post('/notification-groups', data);
+        return response.data;
+    },
+    update: async (id: string, data: any) => {
+        const response = await api.patch(`/notification-groups/${id}`, data);
+        return response.data;
+    },
+    delete: async (id: string) => {
+        const response = await api.delete(`/notification-groups/${id}`);
+        return response.data;
+    },
+    addMembers: async (id: string, userIds: string[]) => {
+        const response = await api.post(`/notification-groups/${id}/members`, { userIds });
+        return response.data;
+    },
+    removeMember: async (id: string, userId: string) => {
+        const response = await api.delete(`/notification-groups/${id}/members/${userId}`);
+        return response.data;
+    },
+};

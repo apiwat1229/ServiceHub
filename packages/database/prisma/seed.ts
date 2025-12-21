@@ -1,4 +1,4 @@
-import { PrismaClient } from '../node_modules/.prisma/client';
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -11,7 +11,9 @@ async function main() {
         update: {},
         create: {
             email: 'admin@example.com',
-            name: 'Admin User',
+            firstName: 'Admin',
+            lastName: 'User',
+            displayName: 'Admin User',
             password: '$2b$10$YourHashedPasswordHere', // Use bcrypt to hash in production
             role: 'ADMIN',
         },
@@ -28,7 +30,9 @@ async function main() {
         },
         create: {
             email: 'admin@ytrc.co.th',
-            name: 'YTRC Admin',
+            firstName: 'YTRC',
+            lastName: 'Admin',
+            displayName: 'YTRC Admin',
             password: '$2b$10$vjIjDP5PS6K/pLgwrkpzTOhNVAkVyqW6.JIWFpwx1mJqhHQ4zvLfC',
             role: 'ADMIN',
         },
@@ -42,7 +46,9 @@ async function main() {
         update: {},
         create: {
             email: 'user@example.com',
-            name: 'Sample User',
+            firstName: 'Sample',
+            lastName: 'User',
+            displayName: 'Sample User',
             password: '$2b$10$YourHashedPasswordHere', // Use bcrypt to hash in production
             role: 'USER',
         },
@@ -61,6 +67,48 @@ async function main() {
     });
 
     console.log('✅ Created sample post:', post);
+
+    // Initial Notification Settings
+    const defaultSettings = [
+        { sourceApp: 'BOOKING', actionType: 'CREATE', active: true, roles: ['ADMIN', 'MANAGER'] },
+        { sourceApp: 'BOOKING', actionType: 'CANCEL', active: true, roles: ['ADMIN'] },
+        { sourceApp: 'USER', actionType: 'REGISTER', active: true, roles: ['ADMIN'] },
+        { sourceApp: 'USER', actionType: 'APPROVAL_REQUEST', active: true, roles: ['ADMIN', 'MANAGER'] },
+        { sourceApp: 'SUPPLIER', actionType: 'CREATE', active: true, roles: ['ADMIN', 'PURCHASING'] },
+    ];
+
+    for (const setting of defaultSettings) {
+        await prisma.notificationSetting.upsert({
+            where: {
+                sourceApp_actionType: {
+                    sourceApp: setting.sourceApp,
+                    actionType: setting.actionType,
+                }
+            },
+            update: {}, // Don't overwrite if exists
+            create: {
+                sourceApp: setting.sourceApp,
+                actionType: setting.actionType,
+                isActive: setting.active,
+                recipientRoles: setting.roles,
+                channels: ["IN_APP"]
+            }
+        });
+    }
+    console.log('✅ Seeded notification settings');
+
+    console.log('✅ Seeded notification settings');
+
+    // Seed Notification Groups
+    const groups = ['MANAGEMENT', 'PRODUCTION', 'HR', 'SALES', 'IT'];
+    for (const name of groups) {
+        await prisma.notificationGroup.upsert({
+            where: { name },
+            update: {},
+            create: { name }
+        });
+    }
+    console.log('✅ Seeded notification groups');
 
     console.log('🎉 Seeding completed!');
 }

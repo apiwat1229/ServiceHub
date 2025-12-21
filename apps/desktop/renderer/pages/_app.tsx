@@ -29,7 +29,17 @@ function MyApp({ Component, pageProps }: AppProps) {
           </QueryClientProvider>
         </NotificationProvider>
       </SettingsProvider>
-      <Toaster position="top-center" richColors />
+      <Toaster
+        position="top-center"
+        richColors
+        toastOptions={{
+          style: {
+            justifyContent: 'center',
+            textAlign: 'center',
+          },
+          className: 'justify-center',
+        }}
+      />
     </>
   );
 }

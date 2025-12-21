@@ -101,7 +101,9 @@ export const en = {
         edit: "Edit",
         create: "Create",
         update: "Update",
+        saveChanges: "Save Changes",
         confirm: "Confirm",
+        confirmDelete: "Confirm Delete",
         close: "Close",
         search: "Search",
         filter: "Filter",
@@ -111,6 +113,7 @@ export const en = {
         loading: "Loading...",
         noData: "No data available",
         error: "Error",
+        errorLoading: "Failed to load data",
         success: "Success",
         warning: "Warning",
         info: "Info",
@@ -154,12 +157,17 @@ export const en = {
         accessDenied: "Access Denied",
         accessDeniedDesc: "You do not have permission to access\nthis module.",
         contactAdmin: "Please contact your administrator if you\nneed access.",
-        ok: "OK"
+        ok: "OK",
+        email: "Email",
+        username: "Username",
+        password: "Password"
     },
     admin: {
         notifications: {
             title: "Notification Management",
             subtitle: "Create, view, and manage system notifications.",
+            configuration: "Configuration",
+            broadcast: "Broadcast",
             create: "Create",
             createNew: "Create New Notification",
             type: "Type",
@@ -179,17 +187,83 @@ export const en = {
             deleteTitle: "Delete Notification?",
             deleteDescription: "This action cannot be undone. This will permanently delete the notification.",
             cancel: "Cancel",
-            confirmDelete: "Delete"
+            confirmDelete: "Delete",
+            deleteConfirm: "Confirm Delete",
+            clearAll: "Clear All",
+            clearAllConfirm: "Clear All Notifications",
+            deleteConfirmMessage: "Are you sure you want to delete this notification?",
+            clearAllConfirmMessage: "This will permanently delete all notifications. This action cannot be undone.",
+            groups: "Groups",
+            sendManualBroadcast: "Send Manual Broadcast",
+            sendBroadcastDescription: "Send a direct notification to specific users or roles.",
+            notificationTitle: "Notification Title",
+            messageContent: "Message content...",
+            targetRoles: "Target Roles (Optional)",
+            targetGroups: "Target Groups (Optional)",
+            targetUsers: "Target Users (Optional)",
+            selectRoles: "Select roles to broadcast to...",
+            selectGroups: "Select groups...",
+            selectUsers: "Select specific users...",
+            sendBroadcast: "Send Broadcast",
+            preview: "Preview",
+            previewDescription: "Notifications will appear in the user's bell menu and dashboard.",
+            newGroup: "+ New Group",
+            editGroup: "Edit Group",
+            groupName: "Group Name",
+            description: "Description",
+            members: "Members",
+            selectMembers: "Select members...",
+            saveGroup: "Save Group",
+            deleteGroup: "Delete Group?",
+            deleteGroupMessage: "Are you sure you want to delete this group? This action cannot be undone.",
+            noDescription: "No description",
+            noMembers: "No members",
+            recipients: "Recipients"
         },
+        notificationSettings: {
+            title: "Notification Rules",
+            subtitle: "Configure who receives alerts for system events.",
+            recipientsByGroup: "Recipients by Group",
+            whoGetsNotified: "Who gets notified?",
+            recipientUsers: "Recipients by User",
+            specificUsers: "Specific users",
+            triggeredWhen: "Triggered when {{action}} action occurs.",
+            active: "Active",
+            inactive: "Inactive",
+            appNotFound: "App not found",
+            goBack: "Go Back",
+            noRulesFound: "No notification rules found for this app.",
+            // Dialogs
+            searchUsers: "Search users...",
+            searchRoles: "Search roles...",
+            searchGroups: "Search groups...",
+            noUsersFound: "No users found.",
+            noRolesFound: "No roles found.",
+            noGroupsFound: "No groups found.",
+            usersSelected: "{{count}} users selected",
+            rolesSelected: "{{count}} roles selected",
+            groupsSelected: "{{count}} groups selected",
+            cancel: "Cancel",
+            addSelected: "Add Selected",
+            confirmAddUsers: "Add Users?",
+            confirmAddUsersDesc: "Are you sure you want to add {{count}} users to this notification rule?",
+            confirmAddRoles: "Add Roles?",
+            confirmAddRolesDesc: "Are you sure you want to add {{count}} roles to this notification rule?",
+            confirmAddGroups: "Add Groups?",
+            confirmAddGroupsDesc: "Are you sure you want to add {{count}} groups to this notification rule?"
+        },
+
         sidebar: {
             main: "Main",
             system: "System",
             dashboard: "Dashboard",
-            users: "Users",
-            roles: "User & Permissions",
-            suppliers: "Suppliers",
+            users: "Users Management",
+            roles: "Roles & Permissions",
+            suppliers: "Supplier Management",
             rubberTypes: "Rubber Types",
             notifications: "Notifications",
+            apps: "App Notification",
+            approvals: "Approvals",
             analytics: "Analytics"
         },
         dashboard: {
@@ -288,16 +362,24 @@ export const en = {
             addRole: "Add New Role",
             editRole: "Edit Role",
             editDescription: "Manage role access and permissions.",
+            add: "Add New Role",
+            edit: "Edit Role",
+            description: "Manage role access and permissions.",
             roleAccess: "Role Access",
             assignUsers: "Assign Users",
             assignUsersDesc: "Select users to assign to this role."
         },
         users: {
-            title: "Users Management",
+            title: "Roles & Permissions",
             subtitle: "Manage user access, profiles, and permissions.",
-            addUser: "Add New User",
+            breadcrumb: "Role Management & Permission",
+            totalRoles: "TOTAL",
+            assignedUsers: "ACTIVE",
+            unassigned: "SUSPENDED",
+            create: "Create Role",
             createNewUserAccount: "Create New User Account",
             editUserAccount: "Edit User Account",
+            editUser: "Edit User",
             createUserDescription: "Add a new user to the system.",
             updateUserDescription: "Update existing user details.",
             accountInfo: "Account Information",
@@ -358,12 +440,14 @@ export const en = {
             created: "User created successfully.",
             requiredFieldsError: "Please fill in all required fields."
         },
+
         status: {
+            total: "Total",
             active: "Active",
             inactive: "Inactive",
-            suspended: "Suspended",
-            total: "Total"
+            suspended: "Suspended"
         },
+
         departments: {
             qa: "Quality Assurance",
             it: "Information Technology",
@@ -389,7 +473,7 @@ export const en = {
             staff1: "Staff 1",
             opLeader: "Operator Leader",
             op: "Operator"
-        }
+        },
     },
     userProfile: {
         title: "User Profile",
@@ -429,6 +513,8 @@ export const en = {
         signIn: "Sign in",
         signingIn: "Signing in...",
         loginFailed: "Login failed",
+        welcomeUser: "Hello {{name}}",
+        wrongCredentials: "Incorrect username or password",
         passwordPlaceholder: "•••••"
     },
     settings: {
@@ -439,6 +525,7 @@ export const en = {
         roundness: "Roundness",
         fontFamily: "Font Family",
         adminPanel: "Admin Panel"
+
     },
     notifications: {
         title: "Notifications",

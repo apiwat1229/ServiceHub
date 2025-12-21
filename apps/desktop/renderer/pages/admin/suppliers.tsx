@@ -2,6 +2,7 @@ import { format } from 'date-fns';
 import { Plus, Trash2, Truck } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import AdminLayout from '../../components/AdminLayout';
 import {
   AlertDialog,
@@ -13,6 +14,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '../../components/ui/alert-dialog';
+import { Card } from '../../components/ui/card';
 import { DataTable } from '../../components/ui/data-table';
 import { DatePicker } from '../../components/ui/date-picker';
 import { Input } from '../../components/ui/input';
@@ -120,14 +122,27 @@ export default function SuppliersPage() {
   const [filterRubberType, setFilterRubberType] = useState<string>('all');
 
   const filteredSuppliers = React.useMemo(() => {
-    return suppliers.filter((s) => {
-      const matchesProvince =
-        filterProvince === 'all' || s.province?.id.toString() === filterProvince;
-      const matchesRubberType =
-        filterRubberType === 'all' || s.rubberTypeCodes?.includes(filterRubberType);
-      return matchesProvince && matchesRubberType;
-    });
-  }, [suppliers, filterProvince, filterRubberType]);
+    return suppliers
+      .map((s) => ({
+        ...s,
+        rubberTypeDetails:
+          s.rubberTypeCodes
+            ?.map((code) => {
+              const found = rubberTypes.find((rt) => rt.code === code);
+              return found
+                ? { code: found.code, name: found.name, category: found.category }
+                : null;
+            })
+            .filter(Boolean) || [],
+      }))
+      .filter((s) => {
+        const matchesProvince =
+          filterProvince === 'all' || s.province?.id?.toString() === filterProvince;
+        const matchesRubberType =
+          filterRubberType === 'all' || s.rubberTypeCodes?.includes(filterRubberType);
+        return matchesProvince && matchesRubberType;
+      });
+  }, [suppliers, filterProvince, filterRubberType, rubberTypes]);
 
   const fetchSuppliers = async () => {
     try {
@@ -399,60 +414,56 @@ export default function SuppliersPage() {
       <div className="p-6 w-full max-w-[1400px] mx-auto space-y-8">
         {/* Header */}
         {/* Header Card */}
-        <div className="bg-card rounded-xl border border-border shadow-sm p-4 md:p-6 flex flex-col xl:flex-row items-center justify-between gap-6 transition-all hover:shadow-md">
+        <Card className="p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 border-border/60 shadow-sm relative overflow-hidden">
+          {/* Decorative Background Icon */}
+          <div className="absolute top-1/2 right-12 -translate-y-1/2 pointer-events-none opacity-5">
+            <Truck className="w-64 h-64" />
+          </div>
+
           {/* Left: Title & Icon */}
-          <div className="flex items-center gap-4 w-full xl:w-auto">
-            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl transition-transform hover:scale-105">
-              <Truck className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+          <div className="flex items-center gap-6 z-10 w-full md:w-auto">
+            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl text-blue-600 dark:text-blue-400">
+              <Truck className="h-8 w-8" />
             </div>
             <div>
               <h1 className="text-xl font-bold tracking-tight text-foreground">
                 {t('admin.suppliers.title')}
               </h1>
-              <p className="text-sm text-muted-foreground">{t('admin.suppliers.subtitle')}</p>
+              <p className="text-sm text-muted-foreground mt-1">{t('admin.suppliers.subtitle')}</p>
             </div>
           </div>
 
           {/* Center: Stats Widget */}
-          <div className="hidden md:flex items-center bg-background/50 rounded-xl border border-border p-1 shadow-sm">
-            <div className="px-6 py-2 flex flex-col items-center min-w-[100px] border-r border-border/50 last:border-0">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+          <div className="flex items-center gap-8 md:gap-12 z-10 w-full md:w-auto justify-center md:justify-end text-center">
+            <div>
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">
                 {t('admin.status.total')}
-              </span>
-              <span className="text-lg font-bold text-foreground">{stats.total}</span>
+              </p>
+              <p className="text-2xl font-bold">{stats.total}</p>
             </div>
-            <div className="w-px h-8 bg-border"></div>
-            <div className="px-6 py-2 flex flex-col items-center min-w-[100px]">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider text-green-600">
+            <div>
+              <p className="text-xs font-bold text-emerald-600 uppercase tracking-wider mb-1">
                 {t('admin.status.active')}
-              </span>
-              <span className="text-lg font-bold text-green-600">{stats.active}</span>
+              </p>
+              <p className="text-2xl font-bold text-emerald-600">{stats.active}</p>
             </div>
-            <div className="w-px h-8 bg-border"></div>
-            <div className="px-6 py-2 flex flex-col items-center min-w-[100px]">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider text-destructive">
-                {t('admin.status.inactive')}
-              </span>
-              <span className="text-lg font-bold text-destructive">{stats.inactive}</span>
-            </div>
-            <div className="w-px h-8 bg-border"></div>
-            <div className="px-6 py-2 flex flex-col items-center min-w-[100px]">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider text-orange-500">
+            <div>
+              <p className="text-xs font-bold text-orange-500 uppercase tracking-wider mb-1">
                 {t('admin.status.suspended')}
-              </span>
-              <span className="text-lg font-bold text-orange-500">{stats.suspended}</span>
+              </p>
+              <p className="text-2xl font-bold text-orange-500">{stats.suspended}</p>
             </div>
           </div>
 
           {/* Right: Action Button */}
           <button
             onClick={handleOpenCreate}
-            className="w-full xl:w-auto inline-flex items-center justify-center rounded-lg text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 hover:shadow-xl hover:-translate-y-0.5 h-11 px-8"
+            className="w-full xl:w-auto z-10 inline-flex items-center justify-center rounded-lg text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 hover:shadow-xl hover:-translate-y-0.5 h-11 px-8"
           >
             <Plus className="mr-2 h-4 w-4" />
             {t('admin.suppliers.addNew')}
           </button>
-        </div>
+        </Card>
 
         {/* Suppliers Table */}
         <div className="rounded-xl border border-border bg-card text-card-foreground shadow">

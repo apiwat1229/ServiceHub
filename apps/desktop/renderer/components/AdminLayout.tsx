@@ -6,14 +6,15 @@ import {
   LayoutDashboard,
   Shield,
   Truck,
+  Users,
 } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePermission } from '../hooks/usePermission';
+import { useAuthStore } from '../stores/authStore';
 import AnimatedBackground from './AnimatedBackground';
 import Navbar from './Navbar';
-import { Spinner } from './ui/spinner';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -25,19 +26,26 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  const { user, accessToken } = useAuthStore();
+
   useEffect(() => {
-    const checkAdmin = () => {
+    const checkAdmin = async () => {
       try {
-        const userStr = localStorage.getItem('user');
-        if (!userStr) {
+        // First, trigger a session verification with the server
+        // This ensures that even if local storage is stale, we get the fresh truth
+        await useAuthStore.getState().verifySession();
+
+        // Use Zustand store state directly, or check sessionStorage if hydration is slow
+        // But Zustand with persist should handle hydration.
+        // For strict checking, we can check the store state.
+        const { user: storeUser } = useAuthStore.getState();
+
+        if (!storeUser) {
           router.push('/login');
           return;
         }
 
-        const user = JSON.parse(userStr);
-        // Allow any user with a role to enter the admin layout
-        // Granular permissions (implemented below) will protect specific routes
-        if (user && user.role) {
+        if (storeUser && storeUser.role) {
           setIsAdmin(true);
         } else {
           router.push('/login');
@@ -55,43 +63,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   const { can } = usePermission();
 
-  // Route protection
-  useEffect(() => {
-    if (loading || !isAdmin) return;
-
-    const path = router.pathname;
-
-    // Define route to permission mapping
-    const routePermissions: Record<string, string> = {
-      '/admin/roles': 'roles',
-      '/admin/suppliers': 'suppliers',
-      '/admin/rubber-types': 'rubber_types',
-      '/admin/notifications': 'notifications',
-      '/admin/booking': 'booking_queue', // Assuming this is the path and module ID
-    };
-
-    // Check strict match or startsWith for nested routes if needed
-    const requiredModule = routePermissions[path];
-
-    if (requiredModule && !can('read', requiredModule)) {
-      console.warn(`Access denied to ${path}. Missing permission for ${requiredModule}`);
-      router.replace('/admin'); // Redirect to dashboard or 403 page
-    }
-  }, [router.pathname, loading, isAdmin, can]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center">
-        <AnimatedBackground />
-        <div className="relative z-10">
-          <Spinner size="xl" />
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAdmin) return null;
-
   const menuItems = [
     { icon: LayoutDashboard, label: t('admin.sidebar.dashboard'), path: '/admin', show: true },
     {
@@ -99,6 +70,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       label: t('admin.sidebar.roles'),
       path: '/admin/roles',
       show: can('read', 'roles'),
+    },
+    {
+      icon: Users,
+      label: t('admin.sidebar.users', 'Users Management'),
+      path: '/admin/users',
+      show: can('read', 'users'),
     },
     {
       icon: Truck,
@@ -125,6 +102,30 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       show: can('read', 'approvals') || isAdmin, // Temporary: Allow all admins for now
     },
   ].filter((item) => item.show);
+
+  // Route protection
+  useEffect(() => {
+    if (loading || !isAdmin) return;
+
+    const path = router.pathname;
+
+    // Define route to permission mapping
+    const routePermissions: Record<string, string> = {
+      '/admin/roles': 'roles',
+      '/admin/suppliers': 'suppliers',
+      '/admin/rubber-types': 'rubber_types',
+      '/admin/notifications': 'notifications',
+      '/admin/booking': 'booking_queue', // Assuming this is the path and module ID
+    };
+
+    // Check strict match or startsWith for nested routes if needed
+    const requiredModule = routePermissions[path];
+
+    if (requiredModule && !can('read', requiredModule)) {
+      console.warn(`Access denied to ${path}. Missing permission for ${requiredModule}`);
+      router.replace('/admin'); // Redirect to dashboard or 403 page
+    }
+  }, [router.pathname, loading, isAdmin, can]);
 
   return (
     <div className="h-screen overflow-hidden bg-background flex flex-col">
@@ -178,7 +179,17 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           <div className="absolute inset-0 pointer-events-none">
             <AnimatedBackground />
           </div>
-          {children}
+
+          {loading ? (
+            <div className="flex h-full items-center justify-center">
+              <div className="flex flex-col items-center gap-4">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+                <p className="text-muted-foreground animate-pulse">Verifying Session...</p>
+              </div>
+            </div>
+          ) : isAdmin ? (
+            children
+          ) : null}
         </main>
       </div>
     </div>
