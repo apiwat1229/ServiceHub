@@ -59,7 +59,7 @@ import { Textarea } from '../../components/ui/textarea';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { api } from '../../lib/api';
 import { useNotificationStore } from '../../stores/notificationStore';
-import { useNotificationColumns } from './notifications/columns';
+// import { useNotificationColumns } from './notifications/columns'; // Removed as we switched to manual table
 
 // --- Type Definitions ---
 type NotificationSetting = {
@@ -254,13 +254,6 @@ export default function NotificationsPage() {
     }
   };
 
-  const columns = useNotificationColumns({
-    onDelete: (id) => handleDeleteClick({ id } as any),
-    onView: (broadcast) => {
-      setSelectedBroadcast(broadcast);
-      setViewDetailsOpen(true);
-    },
-  });
   const [viewDetailsOpen, setViewDetailsOpen] = useState(false);
   const [selectedBroadcast, setSelectedBroadcast] = useState<any>(null);
 
