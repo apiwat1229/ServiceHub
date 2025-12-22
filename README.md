@@ -1,13 +1,15 @@
-# My App - Monorepo
+# YTRC Portal - Monorepo
 
-A modern desktop application monorepo built with **Nextron** (Next.js + Electron), **NestJS**, **Prisma**, and **PostgreSQL**.
+A modern desktop application monorepo built with **Electron + Vue 3**, **NestJS**, **Prisma**, and **PostgreSQL**.
+
+The application is designed for the **YTRC Portal Center**, providing a robust system for managing factory operations, including user management, suppliers, and queues.
 
 ## 🏗️ Architecture
 
 ```
 my-app-monorepo/
 ├── apps/
-│   ├── desktop/          # Nextron (Next.js + Electron) frontend
+│   ├── desktop/          # Electron + Vue 3 + Vite frontend
 │   └── api/              # NestJS backend API
 ├── packages/
 │   ├── database/         # Prisma schema and migrations
@@ -15,30 +17,34 @@ my-app-monorepo/
 └── docker-compose.yml    # PostgreSQL for local development
 ```
 
-## 🚀 Tech Stack
+## 🚀 Key Features
 
 ### Frontend (Desktop App)
 
-- **Nextron**: Next.js + Electron framework
-- **Next.js 14**: React framework with static export
-- **Shadcn/UI**: Beautiful UI components
-- **Tailwind CSS**: Utility-first CSS
-- **React Query**: Data fetching and caching
-- **TypeScript**: Type safety
+- **Electron + Vue 3**: High-performance desktop experience.
+- **Layout System**:
+  - **Sidebar**: Admin-only navigation for managing modules.
+  - **Navbar**: Context-aware top bar with navigation controls (Back, Forward, Refresh, Home).
+  - **Global Background**: Consistent animated background across all pages.
+- **Dynamic Routing**: Role-based access control (Admin vs User).
+- **Authentication**:
+  - Secure Login with "Remember Me".
+  - **Force Change Password**: New users must change their password on first login.
+- **Error Handling**: Custom 404 and Error pages.
+- **UI Components**: Built with **Shadcn-Vue** (Radix Vue + Tailwind CSS) and **Lucide Icons**.
 
 ### Backend (API)
 
-- **NestJS**: Progressive Node.js framework
-- **Prisma**: Next-generation ORM
-- **PostgreSQL**: Relational database
-- **JWT**: Authentication
-- **Passport**: Auth middleware
-- **TypeScript**: Type safety
+- **NestJS**: Scalable server-side application.
+- **Prisma ORM**: Type-safe database access with PostgreSQL.
+- **Role-Based Access Control (RBAC)**: Secure endpoints based on User roles.
+- **User Management**: Creating users, password reset flows, and profile management.
+- **Swagger Documentation**: API endpoints documented automatically.
 
 ## 📋 Prerequisites
 
-- **Node.js**: >= 18.0.0
-- **npm**: >= 9.0.0
+- **Node.js**: >= 20.0.0
+- **npm**: >= 10.0.0
 - **Docker** (optional): For local PostgreSQL
 - **PostgreSQL**: If not using Docker
 
@@ -47,11 +53,9 @@ my-app-monorepo/
 ### 1. Clone and Install
 
 ```bash
-cd /Users/apiwat/Desktop/My-App
+cd /path/to/project
 npm install
 ```
-
-This will install all dependencies for the monorepo and all workspaces.
 
 ### 2. Environment Setup
 
@@ -79,8 +83,6 @@ npm run dev:db
 docker-compose up -d
 ```
 
-This starts PostgreSQL on port 5432 and pgAdmin on port 5050.
-
 **Option B: Local PostgreSQL**
 
 Install PostgreSQL locally and create a database named `myapp`.
@@ -91,20 +93,20 @@ Generate Prisma Client and run migrations:
 
 ```bash
 cd packages/database
-npm run generate
-npm run migrate
-npm run seed
+npx prisma generate
+npx prisma migrate dev
+npx prisma db seed
 ```
 
 This will:
 
 - Generate the Prisma Client
 - Create database tables
-- Seed with sample data (admin user, sample posts)
+- Seed with sample data (Default Admin: `admin@example.com` / `password`)
 
 ### 5. Start Development
 
-From the root directory:
+From the root directory, run:
 
 ```bash
 npm run dev
@@ -113,8 +115,7 @@ npm run dev
 This starts:
 
 - **API Server**: http://localhost:3000/api
-- **Desktop App**: Electron window (Next.js on http://localhost:8888)
-- **Prisma Studio**: http://localhost:5555
+- **Desktop App**: Electron window (Vite dev server)
 
 Or start individually:
 
@@ -124,17 +125,18 @@ npm run dev:api
 
 # Desktop app only
 npm run dev:desktop
-
-# Prisma Studio only
-npm run db:studio
 ```
 
-## 🔑 Default Credentials
+## 🔐 Credentials & Authentication
 
-After running the seed script:
+- **Default Admin**:
+  - Email: `admin@example.com`
+  - Password: `password` (You will be forced to change this on first login)
 
-- **Email**: admin@example.com
-- **Password**: (hashed in seed.ts - update with bcrypt)
+- **Force Change Password Flow**:
+  - New users created by Admin will have `forceChangePassword: true`.
+  - Upon login, they are redirected to `/change-password`.
+  - They must set a new password to proceed to the Dashboard.
 
 ## 📦 Building for Production
 
@@ -152,7 +154,7 @@ npm run build:win
 npm run build:linux
 ```
 
-Output will be in `apps/desktop/dist/`.
+Output will be in `dist/`.
 
 ### Build API
 
@@ -162,278 +164,38 @@ npm run build
 npm run start:prod
 ```
 
-Or use Docker:
-
-```bash
-cd apps/api
-docker build -t myapp-api .
-docker run -p 3000:3000 --env-file ../../.env myapp-api
-```
-
 ## 🗂️ Project Structure
 
 ### Apps
 
-#### `apps/desktop` - Nextron Application
+#### `apps/desktop` - Frontend
 
-```
-desktop/
-├── main/              # Electron main process
-│   ├── background.ts  # Main window creation
-│   └── preload.ts     # Context bridge
-├── renderer/          # Next.js application
-│   ├── pages/         # Next.js pages
-│   ├── components/    # React components
-│   ├── lib/           # Utilities and API client
-│   └── styles/        # Global styles
-└── electron-builder.yml
-```
+- `src/main/`: Electron main process.
+- `src/preload/`: Context bridge.
+- `src/renderer/`: Vue 3 application.
+  - `components/layout/`: Sidebar, Navbar, MainLayout, GlobalBackground.
+  - `views/`: Page components (Login, Home, NotFound, Error).
+  - `stores/`: Pinia state management (Auth).
 
-#### `apps/api` - NestJS Application
+#### `apps/api` - Backend
 
-```
-api/
-├── src/
-│   ├── auth/          # Authentication module
-│   ├── users/         # Users CRUD module
-│   ├── posts/         # Posts CRUD module
-│   ├── prisma/        # Prisma service
-│   ├── app.module.ts  # Root module
-│   └── main.ts        # Entry point
-└── Dockerfile
-```
+- `src/auth/`: Authentication logic (Login, Change Password, Guards).
+- `src/users/`: User management.
+- `src/app.module.ts`: Root module.
 
 ### Packages
 
-#### `packages/database` - Prisma
+#### `packages/database`
 
-```
-database/
-├── prisma/
-│   ├── schema.prisma  # Database schema
-│   ├── migrations/    # Migration files
-│   └── seed.ts        # Seed script
-└── src/
-    └── index.ts       # Prisma client export
-```
-
-#### `packages/types` - Shared Types
-
-```
-types/
-└── src/
-    ├── api.ts         # API DTOs
-    ├── models.ts      # Domain models
-    └── index.ts       # Exports
-```
-
-## 🔐 Authentication
-
-The API uses JWT-based authentication:
-
-1. **Register/Login**: POST `/api/auth/register` or `/api/auth/login`
-2. **Receive Token**: Get `accessToken` in response
-3. **Use Token**: Include in `Authorization: Bearer <token>` header
-
-Protected routes require authentication. Admin-only routes require `admin` role.
-
-The application uses a **Role-Based Access Control (RBAC)** system where roles and permissions are stored in the database.
-
-- **Admin**: Full access to all modules.
-- **Staff**: Access based on assigned permissions (e.g., Booking, Dashboard).
-- **Custom Roles**: Can be created and configured via the Admin Panel.
-
-## 📡 API Endpoints
-
-### Auth
-
-- `POST /api/auth/login` - Login
-- `POST /api/auth/register` - Register
-
-### Users (Protected)
-
-- `GET /api/users` - List all users (Admin only)
-- `GET /api/users/:id` - Get user by ID
-- `POST /api/users` - Create user (Admin only)
-- `PATCH /api/users/:id` - Update user
-- `DELETE /api/users/:id` - Delete user (Admin only)
-
-### Roles (Protected)
-
-- `GET /api/roles` - List all roles
-- `GET /api/roles/:id` - Get role by ID
-- `POST /api/roles` - Create role (Admin only)
-- `PATCH /api/roles/:id` - Update role permissions/details
-- `DELETE /api/roles/:id` - Delete role
-
-### Posts
-
-- `GET /api/posts` - List all posts (public)
-- `GET /api/posts/:id` - Get post by ID
-- `POST /api/posts` - Create post (Auth required)
-- `PATCH /api/posts/:id` - Update post (Author/Admin)
-- `DELETE /api/posts/:id` - Delete post (Author/Admin)
-
-### Health
-
-- `GET /api/health` - Health check
-
-## 🗄️ Database Management
-
-### Prisma Studio
-
-Visual database browser:
-
-```bash
-npm run db:studio
-```
-
-Access at http://localhost:5555
-
-### Migrations
-
-```bash
-cd packages/database
-
-# Create migration
-npm run migrate
-
-# Deploy migrations
-npm run migrate:deploy
-
-# Reset database
-npm run migrate:reset
-```
-
-### pgAdmin
-
-If using Docker Compose, access pgAdmin at http://localhost:5050:
-
-- **Email**: admin@admin.com
-- **Password**: admin
-
-## 🚢 Deployment
-
-### Backend Deployment Options
-
-**Option 1: Separate API Server (Recommended)**
-
-Deploy the NestJS API to a cloud provider:
-
-- Heroku, Railway, Render
-- AWS (ECS, Lambda)
-- DigitalOcean App Platform
-- Vercel (serverless)
-
-**Option 2: Sidecar Process**
-
-Bundle the API with the Electron app to run locally. This requires:
-
-1. Building the API as a standalone executable
-2. Starting it from the Electron main process
-3. Configuring the frontend to use `localhost` API
-
-### Database Deployment
-
-Use a managed PostgreSQL service:
-
-- **AWS RDS**
-- **DigitalOcean Managed Databases**
-- **Supabase**
-- **Heroku Postgres**
-- **Railway**
-
-Update `DATABASE_URL` in production environment.
-
-### Desktop App Distribution
-
-Use Electron Builder to create installers:
-
-```bash
-cd apps/desktop
-npm run build:mac    # .dmg for macOS
-npm run build:win    # .exe for Windows
-npm run build:linux  # .AppImage for Linux
-```
-
-## 🧪 Development Tools
-
-### Available Scripts
-
-From root:
-
-- `npm run dev` - Start all services
-- `npm run build` - Build all workspaces
-- `npm run lint` - Lint all code
-- `npm run format` - Format with Prettier
-- `npm run type-check` - TypeScript check
-- `npm run clean` - Remove all node_modules
-
-### VSCode Setup
-
-Recommended extensions:
-
-- ESLint
-- Prettier
-- Prisma
-- Tailwind CSS IntelliSense
-
-Settings are pre-configured in `.vscode/settings.json`.
-
-## 📝 Adding Shadcn/UI Components
-
-```bash
-cd apps/desktop/renderer
-npx shadcn-ui@latest add button
-npx shadcn-ui@latest add card
-npx shadcn-ui@latest add dialog
-```
-
-Components will be added to `renderer/components/ui/`.
+- `prisma/schema.prisma`: Database schema definition.
 
 ## 🤝 Contributing
 
 1. Create a feature branch
 2. Make changes
-3. Run `npm run lint` and `npm run type-check`
+3. Run `npm run lint`
 4. Submit a pull request
 
 ## 📄 License
 
 MIT
-
-## 🆘 Troubleshooting
-
-### Database Connection Issues
-
-- Ensure PostgreSQL is running
-- Check `DATABASE_URL` in `.env`
-- Verify database exists: `psql -U postgres -l`
-
-### Prisma Client Not Found
-
-```bash
-cd packages/database
-npm run generate
-```
-
-### Electron App Won't Start
-
-- Check Next.js dev server is running on port 8888
-- Clear `.next` cache: `rm -rf apps/desktop/renderer/.next`
-
-### API 404 Errors
-
-- Ensure API is running on port 3000
-- Check `API_URL` in frontend environment
-- Verify CORS settings in `apps/api/src/main.ts`
-
-## 📚 Learn More
-
-- [Nextron Documentation](https://github.com/saltyshiomix/nextron)
-- [Next.js Documentation](https://nextjs.org/docs)
-- [NestJS Documentation](https://docs.nestjs.com)
-- [Prisma Documentation](https://www.prisma.io/docs)
-- [Shadcn/UI Documentation](https://ui.shadcn.com)
-
-# Desktop-NestJS

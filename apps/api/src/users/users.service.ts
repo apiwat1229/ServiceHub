@@ -33,6 +33,7 @@ export class UsersService {
             data: {
                 ...createUserDto,
                 password: hashedPassword,
+                forceChangePassword: true,
             },
         });
     }
@@ -74,6 +75,15 @@ export class UsersService {
                 avatar: true,
                 createdAt: true,
                 updatedAt: true,
+                permissions: true,
+                hod: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true,
+                        email: true,
+                    }
+                },
             } as any,
         });
 
@@ -102,6 +112,16 @@ export class UsersService {
                 avatar: true,
                 createdAt: true,
                 updatedAt: true,
+                forceChangePassword: true,
+                permissions: true,
+                hod: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true,
+                        email: true,
+                    }
+                },
             } as any,
         });
     }
@@ -129,6 +149,16 @@ export class UsersService {
                 avatar: true,
                 createdAt: true,
                 updatedAt: true,
+                forceChangePassword: true,
+                permissions: true,
+                hod: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true,
+                        email: true,
+                    }
+                },
             } as any,
         });
     }
@@ -186,6 +216,13 @@ export class UsersService {
                 createdAt: true,
                 updatedAt: true,
             } as any,
+        });
+    }
+
+    async updateLastLogin(id: string) {
+        return this.prisma.user.update({
+            where: { id },
+            data: { lastLoginAt: new Date() },
         });
     }
 

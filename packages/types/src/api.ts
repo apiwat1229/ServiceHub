@@ -1,6 +1,6 @@
 // API Request/Response Types
 import { Type } from 'class-transformer';
-import { IsArray, IsDate, IsEmail, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsBoolean, IsDate, IsEmail, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export interface ApiResponse<T = any> {
     success: boolean;
@@ -124,6 +124,15 @@ export class UpdateUserDto {
     @IsOptional()
     @IsString()
     avatar?: string;
+
+    @IsOptional()
+    @IsBoolean()
+    forceChangePassword?: boolean;
+
+    @IsOptional()
+    @IsDate()
+    @Type(() => Date)
+    lastLoginAt?: Date;
 }
 
 export class CreateSupplierDto {

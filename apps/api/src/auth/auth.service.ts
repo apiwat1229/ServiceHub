@@ -1,5 +1,5 @@
 import { AuthResponse, LoginDto, RegisterDto } from '@my-app/types';
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
@@ -30,6 +30,23 @@ export class AuthService {
         if (!user) {
             throw new UnauthorizedException('Invalid credentials');
         }
+
+        if (user.forceChangePassword) {
+            // Create a temporary token specifically for changing password
+            const tempToken = this.jwtService.sign(
+                { sub: user.id, email: user.email, scope: 'CHANGE_PASSWORD' },
+                { expiresIn: '30m' }
+            );
+
+            throw new ForbiddenException({
+                code: 'MUST_CHANGE_PASSWORD',
+                tempToken,
+                message: 'You must change your password to continue.'
+            });
+        }
+
+        // Update last login
+        await this.usersService.updateLastLogin(user.id);
 
         const payload = { email: user.email, sub: user.id, role: user.role };
         return {
@@ -63,4 +80,40 @@ export class AuthService {
         };
     }
 
+    async changePassword(userId: string, oldPass: string, newPass: string) {
+        // 1. Get user to get current password hash
+        const user = await this.usersService.findOne(userId); // findOne typically returns user without password if select is used?
+        // Wait, usersService.findOne selects specific fields. Currently it does NOT select password.
+        // I need to use findByEmail or a new method `findForAuth` that returns password.
+
+        // I can use `this.usersService.findByEmailOrUsername(user.email)` if I have email?
+        // findOne does NOT return password.
+        // But `findByEmail` DOES return password (in `select`).
+        // So I can use `user.email` from `findOne` to call `findByEmail`.
+        // Or I can just use `prisma` directly if I injected it? No, explicit dependency is better.
+        // Let's rely on `findByEmail` or add `findWithPassword`.
+
+        // Actually, users.service `findByEmail` (step 220) selects `password: true`.
+        // users.service `findOne` (step 175) does NOT select `password`.
+
+        const fullUser = await this.usersService.findByEmail(user.email);
+
+        if (!fullUser || !fullUser.password) {
+            throw new UnauthorizedException('User not found');
+        }
+
+        const isMatch = await bcrypt.compare(oldPass, fullUser.password);
+        if (!isMatch) {
+            throw new UnauthorizedException('Old password is incorrect');
+        }
+
+        const hashedPassword = await bcrypt.hash(newPass, 10);
+
+        await this.usersService.update(userId, {
+            password: hashedPassword,
+            forceChangePassword: false,
+        });
+
+        return { message: 'Password changed successfully' };
+    }
 }

@@ -28,4 +28,10 @@ export class AuthController {
         const user = await this.usersService.findOne(req.user.userId);
         return user;
     }
+
+    @UseGuards(JwtAuthGuard)
+    @Post('change-password')
+    async changePassword(@Request() req, @Body() body: any) {
+        return this.authService.changePassword(req.user.userId, body.oldPassword, body.newPassword);
+    }
 }
