@@ -405,3 +405,25 @@ export interface UpdatePostDto {
     content?: string;
     published?: boolean;
 }
+
+// Role DTOs
+export interface Role {
+    id: string;
+    name: string;
+    description: string | null;
+    permissions: Record<string, any>;
+    icon?: string;
+    color?: string;
+    usersCount?: number;
+    isSystem?: boolean; // To protect system roles
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface UpdateRoleDto {
+    name?: string;
+    description?: string;
+    permissions?: Record<string, any>;
+    icon?: string;
+    color?: string;
+}

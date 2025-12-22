@@ -94,4 +94,8 @@ export class RolesService implements OnModuleInit {
             data
         });
     }
+
+    async remove(id: string) {
+        return this.prisma.role.delete({ where: { id } });
+    }
 }

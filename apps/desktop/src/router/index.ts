@@ -56,7 +56,7 @@ const routes = [
             {
                 path: 'roles',
                 name: 'Roles',
-                component: () => import('../views/Placeholder.vue'),
+                component: () => import('../views/admin/Roles.vue'),
             },
             {
                 path: 'users',

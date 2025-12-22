@@ -378,9 +378,17 @@
       "op": "Operator"
     },
     "roles": {
+      "title": "Roles & Permissions",
+      "subtitle": "Manage user access, profiles, and permissions.",
       "totalRoles": "Total Roles",
       "assignedUsers": "Assigned Users",
       "unassigned": "Unassigned",
+      "addRole": "Add New Role",
+      "editRole": "Edit Role",
+      "roleAccess": "Role Access",
+      "editDescription": "Manage role access and permissions.",
+      "assignUsers": "Assign Users",
+      "assignUsersDesc": "Select users to assign to this role.",
       "deleteConfirm": "Delete Role?",
       "deleteMessage": "Are you sure you want to delete this role? This action cannot be undone."
     }

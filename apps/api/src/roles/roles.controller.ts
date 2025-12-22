@@ -1,5 +1,5 @@
 
-import { Body, Controller, Get, Param, Patch, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesService } from './roles.service';
 
@@ -21,5 +21,10 @@ export class RolesController {
     @Patch(':id')
     update(@Param('id') id: string, @Body() body: any) {
         return this.rolesService.update(id, body);
+    }
+
+    @Delete(':id')
+    remove(@Param('id') id: string) {
+        return this.rolesService.remove(id);
     }
 }
