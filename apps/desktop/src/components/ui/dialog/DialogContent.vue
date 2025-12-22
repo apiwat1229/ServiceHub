@@ -2,6 +2,7 @@
 import { cn } from '@/lib/utils';
 import { X } from 'lucide-vue-next';
 import {
+  DialogClose,
   DialogContent,
   type DialogContentEmits,
   type DialogContentProps,

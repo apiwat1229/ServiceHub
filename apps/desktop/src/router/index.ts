@@ -52,7 +52,42 @@ const routes = [
                 path: '',
                 name: 'AdminDashboard',
                 component: () => import('../views/admin/Dashboard.vue'),
-            }
+            },
+            {
+                path: 'roles',
+                name: 'Roles',
+                component: () => import('../views/Placeholder.vue'),
+            },
+            {
+                path: 'users',
+                name: 'Users Management',
+                component: () => import('../views/Placeholder.vue'),
+            },
+            {
+                path: 'suppliers',
+                name: 'Suppliers',
+                component: () => import('../views/admin/Suppliers.vue'),
+            },
+            {
+                path: 'rubber-types',
+                name: 'Rubber Types',
+                component: () => import('../views/admin/RubberTypes.vue'),
+            },
+            {
+                path: 'notifications',
+                name: 'Notifications',
+                component: () => import('../views/Placeholder.vue'),
+            },
+            {
+                path: 'approvals',
+                name: 'Approvals',
+                component: () => import('../views/Placeholder.vue'),
+            },
+            {
+                path: 'analytics',
+                name: 'Analytics',
+                component: () => import('../views/Placeholder.vue'),
+            },
         ]
     },
     {
