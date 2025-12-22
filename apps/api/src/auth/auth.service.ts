@@ -26,10 +26,38 @@ export class AuthService {
         if (!identifier) {
             throw new UnauthorizedException('Email or Username is required');
         }
-        const user = await this.validateUser(identifier, loginDto.password);
+        // Check if user exists
+        const user = await this.usersService.findByEmailOrUsername(identifier);
         if (!user) {
-            throw new UnauthorizedException('Invalid credentials');
+            throw new UnauthorizedException('User not found');
         }
+
+        // Check if locked
+        if (user.status === 'SUSPENDED') {
+            throw new UnauthorizedException('Account is locked. Please contact admin.');
+        }
+
+        // Check password
+        const isMatch = await bcrypt.compare(loginDto.password, user.password);
+        if (!isMatch) {
+            // Increment failed attempts
+            const attempts = (user.failedLoginAttempts || 0) + 1;
+            const shouldLock = attempts >= 10;
+
+            await this.usersService.updateLoginAttempts(user.id, attempts, shouldLock);
+
+            if (shouldLock) {
+                throw new UnauthorizedException('Account locked due to too many failed attempts.');
+            }
+            const remaining = 10 - attempts;
+            throw new UnauthorizedException(`Password incorrect. ${remaining} attempts remaining.`);
+        }
+
+        // Reset attempts on success
+        if (user.failedLoginAttempts > 0) {
+            await this.usersService.updateLoginAttempts(user.id, 0);
+        }
+
 
         if (user.forceChangePassword) {
             // Create a temporary token specifically for changing password
@@ -94,7 +122,7 @@ export class AuthService {
         // Let's rely on `findByEmail` or add `findWithPassword`.
 
         // Actually, users.service `findByEmail` (step 220) selects `password: true`.
-        // users.service `findOne` (step 175) does NOT select `password`.
+        // users.service `findOne` (step 175) does NOT select password.
 
         const fullUser = await this.usersService.findByEmail(user.email);
 

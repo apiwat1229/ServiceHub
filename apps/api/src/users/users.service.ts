@@ -112,6 +112,7 @@ export class UsersService {
                 avatar: true,
                 createdAt: true,
                 updatedAt: true,
+                failedLoginAttempts: true,
                 forceChangePassword: true,
                 permissions: true,
                 hod: {
@@ -149,6 +150,7 @@ export class UsersService {
                 avatar: true,
                 createdAt: true,
                 updatedAt: true,
+                failedLoginAttempts: true,
                 forceChangePassword: true,
                 permissions: true,
                 hod: {
@@ -231,6 +233,17 @@ export class UsersService {
 
         return this.prisma.user.delete({
             where: { id },
+        });
+    }
+
+    async updateLoginAttempts(id: string, attempts: number, lock: boolean = false) {
+        const data: any = { failedLoginAttempts: attempts };
+        if (lock) {
+            data.status = 'SUSPENDED'; // Lock user
+        }
+        return this.prisma.user.update({
+            where: { id },
+            data,
         });
     }
 }

@@ -30,6 +30,7 @@ import {
   User,
 } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 
 const authStore = useAuthStore();
@@ -57,6 +58,12 @@ const pageTitle = computed(() => {
   if (name === 'AdminDashboard') return 'Admin Panel';
   return name;
 });
+
+const { locale } = useI18n();
+
+const toggleLanguage = () => {
+  locale.value = locale.value === 'en' ? 'th' : 'en';
+};
 </script>
 
 <template>
@@ -97,6 +104,18 @@ const pageTitle = computed(() => {
     </div>
 
     <div class="flex items-center gap-4">
+      <!-- Language Switcher -->
+      <!-- Language Switcher -->
+      <Button
+        variant="ghost"
+        size="sm"
+        class="h-9 w-12 px-0 font-bold"
+        @click="toggleLanguage"
+        :title="locale === 'en' ? 'Switch to Thai' : 'Switch to English'"
+      >
+        <span>{{ locale === 'en' ? 'EN' : 'TH' }}</span>
+      </Button>
+
       <!-- Bell Notification -->
       <Button variant="ghost" size="icon" class="h-8 w-8">
         <Bell class="w-5 h-5 text-muted-foreground" />

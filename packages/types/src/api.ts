@@ -38,6 +38,23 @@ export interface AuthResponse {
 }
 
 // User DTOs
+export type UserRole =
+    | 'admin'
+    | 'md'
+    | 'gm'
+    | 'manager'
+    | 'asst_mgr'
+    | 'senior_sup'
+    | 'supervisor'
+    | 'senior_staff_2'
+    | 'senior_staff_1'
+    | 'staff_2'
+    | 'staff_1'
+    | 'op_leader'
+    // Preserving existing roles for backward compatibility during migration
+    | 'USER'
+    | 'ADMIN';
+
 export interface UserDto {
     id: string;
     email: string;
@@ -47,7 +64,7 @@ export interface UserDto {
     displayName: string | null;
     department: string | null;
     position: string | null;
-    role: 'USER' | 'ADMIN';
+    role: UserRole;
     status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
     pinCode: string | null;
     hodId: string | null;
@@ -56,19 +73,60 @@ export interface UserDto {
     updatedAt: string;
 }
 
-export interface CreateUserDto {
-    email: string;
-    password: string;
+export class CreateUserDto {
+    @IsEmail()
+    email!: string;
+
+    @IsString()
+    @IsNotEmpty()
+    password!: string;
+
+    @IsOptional()
+    @IsString()
     username?: string;
+
+    @IsOptional()
+    @IsString()
     firstName?: string;
+
+    @IsOptional()
+    @IsString()
     lastName?: string;
+
+    @IsOptional()
+    @IsString()
     displayName?: string;
+
+    @IsOptional()
+    @IsString()
     department?: string;
+
+    @IsOptional()
+    @IsString()
     position?: string;
-    role?: 'USER' | 'ADMIN';
+
+    @IsOptional()
+    @IsString()
+    role?: UserRole;
+
+    @IsOptional()
+    @IsString()
     status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+
+    @IsOptional()
+    @IsString()
+    employeeId?: string;
+
+    @IsOptional()
+    @IsString()
     pinCode?: string;
+
+    @IsOptional()
+    @IsString()
     hodId?: string;
+
+    @IsOptional()
+    @IsString()
     avatar?: string;
 }
 
@@ -107,7 +165,7 @@ export class UpdateUserDto {
 
     @IsOptional()
     @IsString()
-    role?: string;
+    role?: UserRole;
 
     @IsOptional()
     @IsString()
@@ -116,6 +174,10 @@ export class UpdateUserDto {
     @IsOptional()
     @IsString()
     pinCode?: string;
+
+    @IsOptional()
+    @IsString()
+    employeeId?: string;
 
     @IsOptional()
     @IsString()

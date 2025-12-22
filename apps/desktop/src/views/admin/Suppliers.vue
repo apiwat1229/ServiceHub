@@ -28,6 +28,7 @@ import { suppliersApi, type Supplier } from '@/services/suppliers';
 import type { ColumnDef } from '@tanstack/vue-table';
 import { ArrowUpDown, Edit, Plus, Search, Trash2, Truck } from 'lucide-vue-next';
 import { computed, h, onMounted, ref, watch } from 'vue';
+import { toast } from 'vue-sonner';
 
 // --- State ---
 const suppliers = ref<Supplier[]>([]);
@@ -163,6 +164,15 @@ const handleOpenEdit = async (item: Supplier) => {
   }
   if (item.districtId) {
     subdistricts.value = await masterApi.getSubdistricts(item.districtId);
+
+    // Ensure Zip Code is set if missing or just to be safe based on subdistrict
+    if (item.subdistrictId) {
+      const sub = subdistricts.value.find((s) => s.id === item.subdistrictId);
+      if (sub) {
+        const zip = (sub as any).zip_code || (sub as any).zipCode || sub.zip_code;
+        if (zip) formData.value.zipCode = zip.toString();
+      }
+    }
   }
 
   isModalOpen.value = true;
@@ -183,13 +193,16 @@ const handleSubmit = async () => {
 
     if (editingItem.value) {
       await suppliersApi.update(editingItem.value.id, formData.value);
+      toast.success('Supplier updated successfully');
     } else {
       await suppliersApi.create(formData.value);
+      toast.success('Supplier created successfully');
     }
     isModalOpen.value = false;
     await fetchData();
   } catch (error) {
     console.error('Failed to save supplier:', error);
+    toast.error('Failed to save supplier');
   }
 };
 
@@ -202,11 +215,13 @@ const confirmDelete = async () => {
   if (!itemToDelete.value) return;
   try {
     await suppliersApi.delete(itemToDelete.value);
+    toast.success('Supplier deleted successfully');
     isDeleteModalOpen.value = false;
     itemToDelete.value = null;
     await fetchData();
   } catch (error) {
     console.error('Failed to delete supplier:', error);
+    toast.error('Failed to delete supplier');
   }
 };
 
@@ -249,7 +264,11 @@ watch(
   (newVal) => {
     if (newVal) {
       const sub = subdistricts.value.find((s) => s.id === newVal);
-      if (sub) formData.value.zipCode = sub.zip_code.toString();
+      if (sub) {
+        // Handle potential snake_case or camelCase from API
+        const zip = (sub as any).zip_code || (sub as any).zipCode || sub.zip_code;
+        if (zip) formData.value.zipCode = zip.toString();
+      }
     }
   }
 );
@@ -259,22 +278,44 @@ const formatPhone = (phone?: string) => {
   if (!phone) return '-';
   const clean = phone.replace(/\D/g, '');
   if (clean.length === 10) {
-    return `${clean.slice(0, 3)}-${clean.slice(3, 7)}-${clean.slice(7)}`;
-  } else if (clean.length === 9) {
-    return `${clean.slice(0, 2)}-${clean.slice(2, 5)}-${clean.slice(5)}`;
+    return `${clean.slice(0, 3)}-${clean.slice(3, 6)}-${clean.slice(6)}`;
   }
   return phone;
 };
 
-const getRubberTypeColor = (code: string) => {
+const handlePhoneInput = (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  let val = input.value.replace(/\D/g, '');
+
+  if (val.length > 10) val = val.slice(0, 10);
+
+  // Format as 08x-xxx-xxxx
+  if (val.length > 6) {
+    val = `${val.slice(0, 3)}-${val.slice(3, 6)}-${val.slice(6)}`;
+  } else if (val.length > 3) {
+    val = `${val.slice(0, 3)}-${val.slice(3)}`;
+  }
+
+  formData.value.phone = val;
+};
+
+const getRubberTypeColor = (code: string, name?: string) => {
+  if (name) {
+    const n = name.toLowerCase();
+    if (n.includes('eudr'))
+      return 'bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100';
+    if (n.includes('north east') || n.includes('ตะวันออกเฉียงเหนือ'))
+      return 'bg-red-100 text-red-800 border-red-200 hover:bg-red-100';
+  }
+
   // Simple deterministic color generation based on code
   const colors = [
     'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-100',
-    'bg-green-100 text-green-800 border-green-200 hover:bg-green-100',
     'bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100',
     'bg-purple-100 text-purple-800 border-purple-200 hover:bg-purple-100',
-    'bg-rose-100 text-rose-800 border-rose-200 hover:bg-rose-100',
     'bg-indigo-100 text-indigo-800 border-indigo-200 hover:bg-indigo-100',
+    'bg-pink-100 text-pink-800 border-pink-200 hover:bg-pink-100',
+    'bg-cyan-100 text-cyan-800 border-cyan-200 hover:bg-cyan-100',
   ];
   let hash = 0;
   for (let i = 0; i < code.length; i++) {
@@ -337,7 +378,7 @@ const columns: ColumnDef<Supplier>[] = [
           const rt = rubberTypes.value.find((r) => r.code === code);
           return h(
             Badge,
-            { variant: 'outline', class: getRubberTypeColor(code) },
+            { variant: 'outline', class: getRubberTypeColor(code, rt?.name) },
             () => rt?.name || code
           );
         })
@@ -484,7 +525,23 @@ onMounted(() => {
     </div>
 
     <!-- DataTable -->
-    <DataTable :columns="columns" :data="filteredData" />
+    <!-- Data Display -->
+    <div v-if="isLoading" class="space-y-4">
+      <div v-for="i in 5" :key="i" class="flex items-center space-x-4">
+        <Skeleton class="h-12 w-full" />
+      </div>
+    </div>
+
+    <EmptyState
+      v-else-if="filteredData.length === 0"
+      :icon="Truck"
+      title="No Suppliers Found"
+      description="No suppliers match your current filters or search query."
+      action-label="Add New Supplier"
+      :action="handleOpenCreate"
+    />
+
+    <DataTable v-else :columns="columns" :data="filteredData" />
 
     <!-- Create/Edit Modal -->
     <Dialog v-model:open="isModalOpen">
@@ -542,7 +599,11 @@ onMounted(() => {
             <div class="grid grid-cols-2 gap-4">
               <div class="space-y-2">
                 <Label>Phone</Label>
-                <Input v-model="formData.phone" />
+                <Input
+                  :model-value="formData.phone"
+                  @input="handlePhoneInput"
+                  placeholder="08x-xxx-xxxx"
+                />
               </div>
               <div class="space-y-2">
                 <Label>Email</Label>

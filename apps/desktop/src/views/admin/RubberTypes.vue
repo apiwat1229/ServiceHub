@@ -11,6 +11,14 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { rubberTypesApi, type RubberType } from '@/services/rubberTypes';
 import type { ColumnDef } from '@tanstack/vue-table';
@@ -21,6 +29,7 @@ import { computed, h, onMounted, ref } from 'vue';
 const rubberTypes = ref<RubberType[]>([]);
 const isLoading = ref(true);
 const searchQuery = ref('');
+const statusFilter = ref('ALL');
 const isModalOpen = ref(false);
 const isDeleteModalOpen = ref(false);
 const itemToDelete = ref<string | null>(null);
@@ -45,12 +54,24 @@ const stats = computed(() => {
 
 // Filtered Data
 const filteredData = computed(() => {
-  if (!searchQuery.value) return rubberTypes.value;
-  const lowerQuery = searchQuery.value.toLowerCase();
-  return rubberTypes.value.filter(
-    (item) =>
-      item.name.toLowerCase().includes(lowerQuery) || item.code.toLowerCase().includes(lowerQuery)
-  );
+  let data = rubberTypes.value;
+
+  // Status Filter
+  if (statusFilter.value !== 'ALL') {
+    const isActive = statusFilter.value === 'ACTIVE';
+    data = data.filter((item) => item.is_active === isActive);
+  }
+
+  // Search Filter
+  if (searchQuery.value) {
+    const lowerQuery = searchQuery.value.toLowerCase();
+    data = data.filter(
+      (item) =>
+        item.name.toLowerCase().includes(lowerQuery) || item.code.toLowerCase().includes(lowerQuery)
+    );
+  }
+
+  return data;
 });
 
 // Actions
@@ -261,10 +282,28 @@ onMounted(() => {
         <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input v-model="searchQuery" placeholder="Search code or name..." class="pl-9" />
       </div>
+
+      <Select v-model="statusFilter">
+        <SelectTrigger class="w-[180px]">
+          <SelectValue placeholder="All Status" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="ALL">All Status</SelectItem>
+          <SelectItem value="ACTIVE">Active</SelectItem>
+          <SelectItem value="INACTIVE">Inactive</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+
+    <!-- Loading State -->
+    <div v-if="isLoading" class="space-y-4">
+      <div v-for="i in 5" :key="i" class="flex items-center space-x-4">
+        <Skeleton class="h-12 w-full" />
+      </div>
     </div>
 
     <!-- Data Table -->
-    <DataTable :columns="columns" :data="filteredData" />
+    <DataTable v-else :columns="columns" :data="filteredData" />
 
     <!-- Create/Edit Dialog -->
     <Dialog v-model:open="isModalOpen">

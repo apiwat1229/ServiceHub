@@ -1,8 +1,19 @@
 // Domain Models (matching Prisma schema)
 
 export enum Role {
-    USER = 'staff_1',
     ADMIN = 'admin',
+    MD = 'md',
+    GM = 'gm',
+    MANAGER = 'manager',
+    ASST_MGR = 'asst_mgr',
+    SENIOR_SUP = 'senior_sup',
+    SUPERVISOR = 'supervisor',
+    SENIOR_STAFF_2 = 'senior_staff_2',
+    SENIOR_STAFF_1 = 'senior_staff_1',
+    STAFF_2 = 'staff_2',
+    STAFF_1 = 'staff_1',
+    OP_LEADER = 'op_leader',
+    USER = 'staff_1', // Legacy alias
 }
 
 export interface User {

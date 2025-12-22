@@ -61,7 +61,7 @@ const routes = [
             {
                 path: 'users',
                 name: 'Users Management',
-                component: () => import('../views/Placeholder.vue'),
+                component: () => import('../views/admin/UsersManagement.vue'),
             },
             {
                 path: 'suppliers',

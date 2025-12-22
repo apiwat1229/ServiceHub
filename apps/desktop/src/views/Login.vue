@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Eye, EyeOff } from 'lucide-vue-next';
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { toast } from 'vue-sonner';
 import { useAuthStore } from '../stores/auth';
 
 import { storage } from '../services/storage';
@@ -23,13 +24,12 @@ console.log('[Login] Initial rememberMe:', rememberMe.value);
 
 const authStore = useAuthStore();
 const router = useRouter();
-const errorMsg = ref('');
 
 async function handleLogin() {
   loading.value = true;
-  errorMsg.value = '';
   try {
     await authStore.login({ email: email.value, password: password.value }, rememberMe.value);
+    toast.success('Login successful');
     router.push('/');
   } catch (err: any) {
     if (err.response?.data?.code === 'MUST_CHANGE_PASSWORD') {
@@ -37,7 +37,7 @@ async function handleLogin() {
       return;
     }
     console.error('Login Error:', err);
-    errorMsg.value = err.response?.data?.message || err.message || 'Login failed';
+    toast.error(err.response?.data?.message || err.message || 'Login failed');
   } finally {
     loading.value = false;
   }
@@ -55,14 +55,6 @@ async function handleLogin() {
       </CardHeader>
       <CardContent>
         <form @submit.prevent="handleLogin" class="space-y-5">
-          <!-- Error Message -->
-          <div
-            v-if="errorMsg"
-            class="p-3 text-sm text-red-500 bg-red-50 rounded-lg break-words whitespace-pre-wrap"
-          >
-            {{ errorMsg }}
-          </div>
-
           <div class="space-y-2">
             <Label for="email">Email</Label>
             <div class="relative">

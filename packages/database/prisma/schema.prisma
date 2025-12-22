@@ -52,6 +52,7 @@ model User {
   
   // Security
   forceChangePassword Boolean @default(false) @map("force_change_password")
+  failedLoginAttempts Int     @default(0) @map("failed_login_attempts")
   lastLoginAt         DateTime? @map("last_login_at")
   preferences         Json?
 
