@@ -11,10 +11,29 @@ const routes = [
         children: [
             {
                 path: '',
-                name: 'Home',
+                name: 'Dashboard', // Changed from Home to Dashboard to match Sidebar
                 component: Home,
             },
-            // Add other protected routes here
+            {
+                path: 'queue',
+                name: 'Queue & Booking',
+                component: () => import('../views/Placeholder.vue'),
+            },
+            {
+                path: 'suppliers',
+                name: 'Suppliers',
+                component: () => import('../views/Placeholder.vue'),
+            },
+            {
+                path: 'users',
+                name: 'Users',
+                component: () => import('../views/Placeholder.vue'),
+            },
+            {
+                path: 'settings',
+                name: 'Settings',
+                component: () => import('../views/Placeholder.vue'),
+            },
         ]
     },
     {

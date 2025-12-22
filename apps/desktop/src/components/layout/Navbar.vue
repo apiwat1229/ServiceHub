@@ -1,7 +1,14 @@
 <script setup lang="ts">
-import SettingsSheet from '@/components/settings/SettingsSheet.vue';
+import AppearanceSettings from '@/components/settings/AppearanceSettings.vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar/index';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,14 +26,16 @@ import {
   LayoutDashboard,
   LogOut,
   RotateCw,
+  Settings,
   User,
 } from 'lucide-vue-next';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 const authStore = useAuthStore();
 const router = useRouter();
 const route = useRoute();
+const showThemeSettings = ref(false);
 
 const props = defineProps<{
   showBrand?: boolean;
@@ -52,7 +61,7 @@ const pageTitle = computed(() => {
 
 <template>
   <header
-    class="h-14 border-b border-border bg-card/80 backdrop-blur px-6 flex items-center justify-between sticky top-0 z-10"
+    class="h-12 border-b border-border bg-card/80 backdrop-blur px-6 flex items-center justify-between sticky top-0 z-10"
   >
     <div class="flex items-center gap-4">
       <!-- Navigation Controls -->
@@ -88,21 +97,21 @@ const pageTitle = computed(() => {
     </div>
 
     <div class="flex items-center gap-4">
-      <SettingsSheet />
-
-      <Button variant="ghost" size="icon" class="rounded-full">
+      <!-- Bell Notification -->
+      <Button variant="ghost" size="icon" class="h-8 w-8">
         <Bell class="w-5 h-5 text-muted-foreground" />
       </Button>
 
+      <!-- User Profile -->
       <DropdownMenu>
         <DropdownMenuTrigger as-child>
-          <Button variant="ghost" class="relative h-9 w-9 rounded-full">
-            <Avatar class="h-9 w-9">
+          <Button variant="ghost" class="relative h-8 w-8">
+            <Avatar class="h-8 w-8 rounded-md">
               <AvatarImage
                 :src="authStore.user?.avatar || ''"
                 :alt="authStore.user?.username || ''"
               />
-              <AvatarFallback>{{ userInitials() }}</AvatarFallback>
+              <AvatarFallback class="rounded-md">{{ userInitials() }}</AvatarFallback>
             </Avatar>
           </Button>
         </DropdownMenuTrigger>
@@ -128,6 +137,11 @@ const pageTitle = computed(() => {
             <User class="mr-2 h-4 w-4" />
             <span>Profile</span>
           </DropdownMenuItem>
+
+          <DropdownMenuItem @click="showThemeSettings = true">
+            <Settings class="mr-2 h-4 w-4" />
+            <span>Theme Settings</span>
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem @click="handleLogout" class="text-red-600 focus:text-red-600">
             <LogOut class="mr-2 h-4 w-4" />
@@ -135,6 +149,84 @@ const pageTitle = computed(() => {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <!-- Window Controls -->
+      <div class="flex items-center gap-1 border-l pl-2 ml-2">
+        <Button variant="ghost" size="icon" class="h-8 w-8" title="Minimize">
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 15 15"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            class="w-4 h-4"
+          >
+            <path
+              d="M2.25 7.5H12.75"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </Button>
+        <Button variant="ghost" size="icon" class="h-8 w-8" title="Maximize">
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 15 15"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            class="w-3.5 h-3.5"
+          >
+            <path
+              d="M2.5 2.5H12.5V12.5H2.5V2.5Z"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          class="h-8 w-8 hover:bg-red-500 hover:text-white"
+          title="Close"
+        >
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 15 15"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            class="w-4 h-4"
+          >
+            <path
+              d="M3.75 3.75L11.25 11.25"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+            <path
+              d="M11.25 3.75L3.75 11.25"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </Button>
+      </div>
     </div>
+    <!-- Theme Settings Dialog -->
+    <Dialog v-model:open="showThemeSettings">
+      <DialogContent class="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Theme Settings</DialogTitle>
+          <DialogDescription>Customize the appearance of the application.</DialogDescription>
+        </DialogHeader>
+        <div class="py-4">
+          <AppearanceSettings />
+        </div>
+      </DialogContent>
+    </Dialog>
   </header>
 </template>

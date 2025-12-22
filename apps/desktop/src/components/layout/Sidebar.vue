@@ -16,12 +16,12 @@ const menuItems = [
 
 <template>
   <aside class="w-64 bg-card border-r border-border min-h-screen flex flex-col">
-    <div class="p-6 border-b border-border flex items-center justify-center">
+    <div class="h-12 px-6 border-b border-border flex items-center justify-center">
       <!-- Logo Placeholder -->
       <h1
         class="text-xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent"
       >
-        YTRC Portal
+        Admin Panel
       </h1>
     </div>
 
