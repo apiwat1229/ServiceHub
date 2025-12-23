@@ -407,7 +407,7 @@ export interface UpdatePostDto {
 }
 
 // Role DTOs
-export interface Role {
+export interface RoleDto {
     id: string;
     name: string;
     description: string | null;
@@ -420,10 +420,44 @@ export interface Role {
     updatedAt: string;
 }
 
-export interface UpdateRoleDto {
-    name?: string;
+export class CreateRoleDto {
+    @IsString()
+    @IsNotEmpty()
+    name!: string;
+
+    @IsOptional()
+    @IsString()
     description?: string;
+
+    @IsOptional()
     permissions?: Record<string, any>;
+
+    @IsOptional()
+    @IsString()
     icon?: string;
+
+    @IsOptional()
+    @IsString()
+    color?: string;
+}
+
+export class UpdateRoleDto {
+    @IsOptional()
+    @IsString()
+    name?: string;
+
+    @IsOptional()
+    @IsString()
+    description?: string;
+
+    @IsOptional()
+    permissions?: Record<string, any>;
+
+    @IsOptional()
+    @IsString()
+    icon?: string;
+
+    @IsOptional()
+    @IsString()
     color?: string;
 }

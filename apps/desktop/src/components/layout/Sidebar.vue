@@ -19,7 +19,7 @@ const menuGroups = [
     title: 'Main',
     items: [
       { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
-      { name: 'Roles', path: '/admin/roles', icon: Shield },
+      { name: 'Roles & Permissions', path: '/admin/roles', icon: Shield },
       { name: 'Users Management', path: '/admin/users', icon: Users },
       { name: 'Suppliers', path: '/admin/suppliers', icon: Truck },
       { name: 'Rubber Types', path: '/admin/rubber-types', icon: Layers },

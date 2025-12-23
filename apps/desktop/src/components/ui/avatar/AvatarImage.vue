@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { cn } from '@/lib/utils';
-import { AvatarImage, type AvatarImageProps } from 'reka-ui';
+import { AvatarImage, type AvatarImageProps } from 'radix-vue';
 
 const props = defineProps<AvatarImageProps & { class?: string }>();
 </script>

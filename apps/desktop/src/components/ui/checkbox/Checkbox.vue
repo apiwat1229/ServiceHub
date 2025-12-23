@@ -2,8 +2,8 @@
 import { cn } from '@/lib/utils';
 import { CheckIcon } from '@radix-icons/vue';
 import { reactiveOmit } from '@vueuse/core';
-import type { CheckboxRootEmits, CheckboxRootProps } from 'reka-ui';
-import { CheckboxIndicator, CheckboxRoot, useForwardPropsEmits } from 'reka-ui';
+import type { CheckboxRootEmits, CheckboxRootProps } from 'radix-vue';
+import { CheckboxIndicator, CheckboxRoot, useForwardPropsEmits } from 'radix-vue';
 import type { HTMLAttributes } from 'vue';
 
 const props = defineProps<CheckboxRootProps & { class?: HTMLAttributes['class'] }>();

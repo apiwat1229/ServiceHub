@@ -4,7 +4,7 @@ import {
   type PopoverRootEmits,
   type PopoverRootProps,
   useForwardPropsEmits,
-} from 'reka-ui';
+} from 'radix-vue';
 
 const props = defineProps<PopoverRootProps>();
 const emits = defineEmits<PopoverRootEmits>();

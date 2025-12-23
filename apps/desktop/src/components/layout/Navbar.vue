@@ -105,16 +105,6 @@ const toggleLanguage = () => {
 
     <div class="flex items-center gap-4">
       <!-- Language Switcher -->
-      <!-- Language Switcher -->
-      <Button
-        variant="ghost"
-        size="sm"
-        class="h-9 w-12 px-0 font-bold"
-        @click="toggleLanguage"
-        :title="locale === 'en' ? 'Switch to Thai' : 'Switch to English'"
-      >
-        <span>{{ locale === 'en' ? 'EN' : 'TH' }}</span>
-      </Button>
 
       <!-- Bell Notification -->
       <Button variant="ghost" size="icon" class="h-8 w-8">
@@ -171,6 +161,16 @@ const toggleLanguage = () => {
 
       <!-- Window Controls -->
       <div class="flex items-center gap-1 border-l pl-2 ml-2">
+        <!-- Language Switcher -->
+        <Button
+          variant="ghost"
+          size="sm"
+          class="h-9 w-12 px-0 font-bold mr-1"
+          @click="toggleLanguage"
+          :title="locale === 'en' ? 'Switch to Thai' : 'Switch to English'"
+        >
+          <span>{{ locale === 'en' ? 'EN' : 'TH' }}</span>
+        </Button>
         <Button variant="ghost" size="icon" class="h-8 w-8" title="Minimize">
           <svg
             width="15"

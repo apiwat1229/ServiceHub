@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { DropdownMenuPortal, type DropdownMenuPortalProps } from 'reka-ui';
+import { DropdownMenuPortal, type DropdownMenuPortalProps } from 'radix-vue';
 
 const props = defineProps<DropdownMenuPortalProps>();
 </script>

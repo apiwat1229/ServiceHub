@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { cn } from '@/lib/utils';
-import { DialogOverlay, type DialogOverlayProps } from 'reka-ui';
+import { DialogOverlay, type DialogOverlayProps } from 'radix-vue';
 import { computed } from 'vue';
 
 const props = defineProps<DialogOverlayProps & { class?: string }>();

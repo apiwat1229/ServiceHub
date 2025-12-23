@@ -57,25 +57,22 @@ export class RolesService implements OnModuleInit {
     }
 
     async seedDefaults() {
-        const count = await this.prisma.role.count();
-        if (count === 0) {
-            console.log('Seeding default roles...');
-            for (const role of DEFAULT_ROLES) {
-                await this.prisma.role.upsert({
-                    where: { name: role.name },
-                    update: {},
-                    create: {
-                        id: role.id, // Using explicit ID strategy if UUIDs aren't strictly required or if we force them
-                        name: role.name,
-                        description: role.description,
-                        color: role.color,
-                        icon: role.icon,
-                        permissions: role.permissions,
-                    }
-                });
-            }
-            console.log('Roles seeded.');
+        console.log('Seeding default roles...');
+        for (const role of DEFAULT_ROLES) {
+            await this.prisma.role.upsert({
+                where: { name: role.name },
+                update: {}, // Don't overwrite existing changes
+                create: {
+                    id: role.id,
+                    name: role.name,
+                    description: role.description,
+                    color: role.color,
+                    icon: role.icon,
+                    permissions: role.permissions,
+                }
+            });
         }
+        console.log('Roles seeded.');
     }
 
     async findAll() {
@@ -95,7 +92,37 @@ export class RolesService implements OnModuleInit {
         });
     }
 
+    async create(data: any) {
+        // Check if role with same name already exists
+        const existing = await this.prisma.role.findUnique({
+            where: { name: data.name }
+        });
+
+        if (existing) {
+            throw new Error('Role with this name already exists');
+        }
+
+        return this.prisma.role.create({
+            data: {
+                name: data.name,
+                description: data.description || '',
+                color: data.color || 'bg-slate-500',
+                icon: data.icon || 'User',
+                permissions: data.permissions || {},
+            }
+        });
+    }
+
     async remove(id: string) {
+        // Check if any users have this role
+        const usersWithRole = await this.prisma.user.count({
+            where: { role: id }
+        });
+
+        if (usersWithRole > 0) {
+            throw new Error(`Cannot delete role: ${usersWithRole} user(s) are assigned to this role`);
+        }
+
         return this.prisma.role.delete({ where: { id } });
     }
 }

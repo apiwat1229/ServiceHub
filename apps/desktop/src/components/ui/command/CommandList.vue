@@ -5,7 +5,7 @@ import {
   type ComboboxContentEmits,
   type ComboboxContentProps,
   useForwardPropsEmits,
-} from 'reka-ui';
+} from 'radix-vue';
 import { type HTMLAttributes, computed } from 'vue';
 
 const props = withDefaults(

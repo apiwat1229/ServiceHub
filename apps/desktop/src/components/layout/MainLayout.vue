@@ -27,7 +27,7 @@ const showSidebar = computed(() => {
       <main class="flex-1 overflow-x-hidden overflow-y-auto p-6">
         <router-view v-slot="{ Component }">
           <transition name="fade" mode="out-in">
-            <component :is="Component" />
+            <component :is="Component" :key="route.fullPath" />
           </transition>
         </router-view>
       </main>

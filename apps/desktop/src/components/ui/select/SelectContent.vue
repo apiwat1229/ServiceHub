@@ -7,7 +7,7 @@ import {
   SelectPortal,
   SelectViewport,
   useForwardPropsEmits,
-} from 'reka-ui';
+} from 'radix-vue';
 import { type HTMLAttributes, computed } from 'vue';
 
 defineOptions({ inheritAttrs: false });

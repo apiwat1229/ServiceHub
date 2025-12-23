@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { cn } from '@/lib/utils';
-import { ComboboxSeparator, type ComboboxSeparatorProps } from 'reka-ui';
+import { ComboboxSeparator, type ComboboxSeparatorProps } from 'radix-vue';
 import { type HTMLAttributes, computed } from 'vue';
 
 const props = defineProps<ComboboxSeparatorProps & { class?: HTMLAttributes['class'] }>();

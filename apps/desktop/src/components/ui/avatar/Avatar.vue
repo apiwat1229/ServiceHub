@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { cn } from '@/lib/utils';
-import { AvatarRoot, type AvatarRootProps, useForwardProps } from 'reka-ui';
+import { AvatarRoot, type AvatarRootProps, useForwardProps } from 'radix-vue';
 
 const props = defineProps<AvatarRootProps & { class?: string }>();
 

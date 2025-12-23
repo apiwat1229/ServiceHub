@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { cn } from '@/lib/utils';
-import { DialogTitle, type DialogTitleProps, useForwardProps } from 'reka-ui';
+import { DialogTitle, type DialogTitleProps, useForwardProps } from 'radix-vue';
 import { computed } from 'vue';
 
 const props = defineProps<DialogTitleProps & { class?: string }>();

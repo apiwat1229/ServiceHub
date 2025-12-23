@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { cn } from '@/lib/utils';
-import { ComboboxEmpty, type ComboboxEmptyProps } from 'reka-ui';
+import { ComboboxEmpty, type ComboboxEmptyProps } from 'radix-vue';
 import { type HTMLAttributes, computed } from 'vue';
 
 const props = defineProps<ComboboxEmptyProps & { class?: HTMLAttributes['class'] }>();

@@ -1,5 +1,7 @@
 
-import { Body, Controller, Delete, Get, Param, Patch, UseGuards } from '@nestjs/common';
+
+import { CreateRoleDto, UpdateRoleDto } from '@my-app/types';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesService } from './roles.service';
 
@@ -18,8 +20,13 @@ export class RolesController {
         return this.rolesService.findOne(id);
     }
 
+    @Post()
+    create(@Body() body: CreateRoleDto) {
+        return this.rolesService.create(body);
+    }
+
     @Patch(':id')
-    update(@Param('id') id: string, @Body() body: any) {
+    update(@Param('id') id: string, @Body() body: UpdateRoleDto) {
         return this.rolesService.update(id, body);
     }
 

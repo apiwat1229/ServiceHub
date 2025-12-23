@@ -23,6 +23,7 @@
     "electron-window-state": "^5.0.3",
     "lucide-vue-next": "^0.562.0",
     "pinia": "^3.0.4",
+    "radix-vue": "^1.9.11",
     "reka-ui": "^2.6.1",
     "tailwind-merge": "^2.6.0",
     "vee-validate": "^4.15.1",
@@ -35,6 +36,8 @@
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.4",
     "autoprefixer": "^10.4.23",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.3",
     "electron": "^30.0.1",
     "electron-builder": "^24.13.3",
     "postcss": "^8.5.6",

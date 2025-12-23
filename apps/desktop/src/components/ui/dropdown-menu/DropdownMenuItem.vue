@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { cn } from '@/lib/utils';
-import { DropdownMenuItem, type DropdownMenuItemProps, useForwardProps } from 'reka-ui';
+import { DropdownMenuItem, type DropdownMenuItemProps, useForwardProps } from 'radix-vue';
 import { type HTMLAttributes, computed } from 'vue';
 
 const props = defineProps<

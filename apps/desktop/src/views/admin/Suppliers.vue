@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import EmptyState from '@/components/ui/empty-state/EmptyState.vue';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { MultiSelect } from '@/components/ui/multi-select';
@@ -21,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { masterApi, type District, type Province, type Subdistrict } from '@/services/master';
@@ -445,270 +447,276 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="p-6 space-y-8 max-w-[1600px] mx-auto">
-    <!-- Header / Stats -->
-    <div
-      class="grid grid-cols-1 md:grid-cols-4 gap-6 p-6 rounded-xl border border-border bg-card shadow-sm relative overflow-hidden"
-    >
-      <div class="absolute top-1/2 right-12 -translate-y-1/2 pointer-events-none opacity-5">
-        <Truck class="w-64 h-64" />
-      </div>
-      <div class="md:col-span-2 flex items-center gap-6 z-10">
-        <div
-          class="p-4 bg-primary/10 rounded-xl text-primary flex items-center justify-center h-16 w-16"
-        >
-          <Truck class="h-8 w-8" />
+  <div>
+    <div class="p-6 space-y-8 max-w-[1600px] mx-auto">
+      <!-- Header / Stats -->
+      <div
+        class="grid grid-cols-1 md:grid-cols-4 gap-6 p-6 rounded-xl border border-border bg-card shadow-sm relative overflow-hidden"
+      >
+        <div class="absolute top-1/2 right-12 -translate-y-1/2 pointer-events-none opacity-5">
+          <Truck class="w-64 h-64" />
         </div>
-        <div>
-          <h1 class="text-2xl font-bold tracking-tight text-foreground">Suppliers</h1>
-          <p class="text-sm text-muted-foreground mt-1">
-            Manage supplier information and contacts.
-          </p>
-        </div>
-      </div>
-      <div class="md:col-span-2 flex items-center justify-between gap-8 z-10 pl-8 border-l">
-        <div class="text-center">
-          <div class="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">
-            Total
+        <div class="md:col-span-2 flex items-center gap-6 z-10">
+          <div
+            class="p-4 bg-primary/10 rounded-xl text-primary flex items-center justify-center h-16 w-16"
+          >
+            <Truck class="h-8 w-8" />
           </div>
-          <div class="text-3xl font-bold">{{ stats.total }}</div>
-        </div>
-        <div class="text-center">
-          <div class="text-xs font-bold text-emerald-500 uppercase tracking-wider mb-1">Active</div>
-          <div class="text-3xl font-bold text-emerald-500">{{ stats.active }}</div>
-        </div>
-        <div class="text-center">
-          <div class="text-xs font-bold text-orange-500 uppercase tracking-wider mb-1">
-            Suspended
+          <div>
+            <h1 class="text-2xl font-bold tracking-tight text-foreground">Suppliers</h1>
+            <p class="text-sm text-muted-foreground mt-1">
+              Manage supplier information and contacts.
+            </p>
           </div>
-          <div class="text-3xl font-bold text-orange-500">{{ stats.suspended }}</div>
         </div>
-        <div class="ml-auto">
-          <Button @click="handleOpenCreate" size="lg" class="shadow-lg shadow-primary/20">
-            <Plus class="mr-2 h-5 w-5" />
-            Add New
-          </Button>
+        <div class="md:col-span-2 flex items-center justify-between gap-8 z-10 pl-8 border-l">
+          <div class="text-center">
+            <div class="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">
+              Total
+            </div>
+            <div class="text-3xl font-bold">{{ stats.total }}</div>
+          </div>
+          <div class="text-center">
+            <div class="text-xs font-bold text-emerald-500 uppercase tracking-wider mb-1">
+              Active
+            </div>
+            <div class="text-3xl font-bold text-emerald-500">{{ stats.active }}</div>
+          </div>
+          <div class="text-center">
+            <div class="text-xs font-bold text-orange-500 uppercase tracking-wider mb-1">
+              Suspended
+            </div>
+            <div class="text-3xl font-bold text-orange-500">{{ stats.suspended }}</div>
+          </div>
+          <div class="ml-auto">
+            <Button @click="handleOpenCreate" size="lg" class="shadow-lg shadow-primary/20">
+              <Plus class="mr-2 h-5 w-5" />
+              Add New
+            </Button>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Controls -->
-    <div class="flex items-center justify-between gap-4">
-      <div class="relative w-full max-w-sm">
-        <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input v-model="searchQuery" placeholder="Search suppliers..." class="pl-9" />
+      <!-- Controls -->
+      <div class="flex items-center justify-between gap-4">
+        <div class="relative w-full max-w-sm">
+          <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input v-model="searchQuery" placeholder="Search suppliers..." class="pl-9" />
+        </div>
+        <div class="flex items-center gap-2">
+          <Select v-model="filterProvince">
+            <SelectTrigger class="w-[180px]">
+              <SelectValue placeholder="All Provinces" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Provinces</SelectItem>
+              <SelectItem v-for="p in provinces" :key="p.id" :value="p.id.toString()">
+                {{ p.name_th }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          <Select v-model="filterRubberType">
+            <SelectTrigger class="w-[180px]">
+              <SelectValue placeholder="All Rubber Types" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Rubber Types</SelectItem>
+              <SelectItem v-for="rt in rubberTypes" :key="rt.id" :value="rt.code">
+                {{ rt.name }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
-      <div class="flex items-center gap-2">
-        <Select v-model="filterProvince">
-          <SelectTrigger class="w-[180px]">
-            <SelectValue placeholder="All Provinces" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Provinces</SelectItem>
-            <SelectItem v-for="p in provinces" :key="p.id" :value="p.id.toString()">
-              {{ p.name_th }}
-            </SelectItem>
-          </SelectContent>
-        </Select>
-        <Select v-model="filterRubberType">
-          <SelectTrigger class="w-[180px]">
-            <SelectValue placeholder="All Rubber Types" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Rubber Types</SelectItem>
-            <SelectItem v-for="rt in rubberTypes" :key="rt.id" :value="rt.code">
-              {{ rt.name }}
-            </SelectItem>
-          </SelectContent>
-        </Select>
+
+      <!-- DataTable -->
+      <!-- Data Display -->
+      <div v-if="isLoading" class="space-y-4">
+        <div v-for="i in 5" :key="i" class="flex items-center space-x-4">
+          <Skeleton class="h-12 w-full" />
+        </div>
       </div>
+
+      <EmptyState
+        v-else-if="filteredData.length === 0"
+        :icon="Truck"
+        title="No Suppliers Found"
+        description="No suppliers match your current filters or search query."
+        action-label="Add New Supplier"
+        :action="handleOpenCreate"
+      />
+
+      <DataTable v-else :columns="columns" :data="filteredData" />
+
+      <!-- Create/Edit Modal -->
+      <Dialog v-model:open="isModalOpen">
+        <DialogContent class="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{{ editingItem ? 'Edit Supplier' : 'Add New Supplier' }}</DialogTitle>
+            <DialogDescription>Fill in the supplier details below.</DialogDescription>
+          </DialogHeader>
+
+          <Tabs default-value="basic" class="w-full">
+            <TabsList class="grid w-full grid-cols-4">
+              <TabsTrigger value="basic">Basic</TabsTrigger>
+              <TabsTrigger value="contact">Contact</TabsTrigger>
+              <TabsTrigger value="address">Address</TabsTrigger>
+              <TabsTrigger value="business">Business</TabsTrigger>
+            </TabsList>
+
+            <!-- Basic Info -->
+            <TabsContent value="basic" class="space-y-4 py-4">
+              <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-2">
+                  <Label>Code</Label>
+                  <Input v-model="formData.code" placeholder="SUP-001" />
+                </div>
+                <div class="space-y-2">
+                  <Label>Title</Label>
+                  <Select v-model="formData.title">
+                    <SelectTrigger><SelectValue placeholder="Select Title" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="นาย">นาย</SelectItem>
+                      <SelectItem value="นาง">นาง</SelectItem>
+                      <SelectItem value="นางสาว">นางสาว</SelectItem>
+                      <SelectItem value="บริษัท">บริษัท</SelectItem>
+                      <SelectItem value="หจก.">หจก.</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div class="space-y-2">
+                  <Label>First Name</Label>
+                  <Input v-model="formData.firstName" />
+                </div>
+                <div class="space-y-2">
+                  <Label>Last Name</Label>
+                  <Input v-model="formData.lastName" />
+                </div>
+                <div class="col-span-2 space-y-2">
+                  <Label>Display Name (Auto-generated if empty)</Label>
+                  <Input v-model="formData.name" placeholder="Leave empty to auto-generate" />
+                </div>
+              </div>
+            </TabsContent>
+
+            <!-- Contact Info -->
+            <TabsContent value="contact" class="space-y-4 py-4">
+              <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-2">
+                  <Label>Phone</Label>
+                  <Input
+                    :model-value="formData.phone"
+                    @input="handlePhoneInput"
+                    placeholder="08x-xxx-xxxx"
+                  />
+                </div>
+                <div class="space-y-2">
+                  <Label>Email</Label>
+                  <Input v-model="formData.email" type="email" />
+                </div>
+              </div>
+            </TabsContent>
+
+            <!-- Address Info -->
+            <TabsContent value="address" class="space-y-4 py-4">
+              <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-2">
+                  <Label>Province</Label>
+                  <Combobox
+                    :options="provinces.map((p) => ({ value: p.id.toString(), label: p.name_th }))"
+                    :model-value="formData.provinceId?.toString()"
+                    @update:model-value="(v) => (formData.provinceId = v ? parseInt(v) : undefined)"
+                    placeholder="Select Province"
+                  />
+                </div>
+                <div class="space-y-2">
+                  <Label>District</Label>
+                  <Combobox
+                    :options="districts.map((d) => ({ value: d.id.toString(), label: d.name_th }))"
+                    :model-value="formData.districtId?.toString()"
+                    @update:model-value="(v) => (formData.districtId = v ? parseInt(v) : undefined)"
+                    placeholder="Select District"
+                    :disabled="!formData.provinceId"
+                  />
+                </div>
+                <div class="space-y-2">
+                  <Label>Subdistrict</Label>
+                  <Combobox
+                    :options="
+                      subdistricts.map((s) => ({ value: s.id.toString(), label: s.name_th }))
+                    "
+                    :model-value="formData.subdistrictId?.toString()"
+                    @update:model-value="
+                      (v) => (formData.subdistrictId = v ? parseInt(v) : undefined)
+                    "
+                    placeholder="Select Subdistrict"
+                    :disabled="!formData.districtId"
+                  />
+                </div>
+                <div class="space-y-2">
+                  <Label>Zip Code</Label>
+                  <Input v-model="formData.zipCode" readonly />
+                </div>
+                <div class="col-span-2 space-y-2">
+                  <Label>Address Line</Label>
+                  <Textarea v-model="formData.address" />
+                </div>
+              </div>
+            </TabsContent>
+
+            <!-- Business Info -->
+            <TabsContent value="business" class="space-y-4 py-4">
+              <div class="grid grid-cols-2 gap-4">
+                <div class="col-span-2 space-y-2">
+                  <Label>Rubber Types</Label>
+                  <MultiSelect
+                    :options="rubberTypes.map((rt) => ({ label: rt.name, value: rt.code }))"
+                    :model-value="formData.rubberTypeCodes"
+                    @update:model-value="(v) => (formData.rubberTypeCodes = v)"
+                    placeholder="Select Rubber Types"
+                  />
+                </div>
+                <div class="space-y-2">
+                  <Label>Tax ID</Label>
+                  <Input v-model="formData.taxId" />
+                </div>
+                <div class="space-y-2">
+                  <Label>Status</Label>
+                  <Select v-model="formData.status">
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ACTIVE">Active</SelectItem>
+                      <SelectItem value="INACTIVE">Inactive</SelectItem>
+                      <SelectItem value="SUSPENDED">Suspended</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+
+          <DialogFooter>
+            <Button variant="outline" @click="isModalOpen = false">Cancel</Button>
+            <Button @click="handleSubmit">Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <!-- Delete Confirmation -->
+      <Dialog v-model:open="isDeleteModalOpen">
+        <DialogContent class="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Delete Supplier?</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this supplier? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" @click="isDeleteModalOpen = false">Cancel</Button>
+            <Button variant="destructive" @click="confirmDelete">Delete</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
-
-    <!-- DataTable -->
-    <!-- Data Display -->
-    <div v-if="isLoading" class="space-y-4">
-      <div v-for="i in 5" :key="i" class="flex items-center space-x-4">
-        <Skeleton class="h-12 w-full" />
-      </div>
-    </div>
-
-    <EmptyState
-      v-else-if="filteredData.length === 0"
-      :icon="Truck"
-      title="No Suppliers Found"
-      description="No suppliers match your current filters or search query."
-      action-label="Add New Supplier"
-      :action="handleOpenCreate"
-    />
-
-    <DataTable v-else :columns="columns" :data="filteredData" />
-
-    <!-- Create/Edit Modal -->
-    <Dialog v-model:open="isModalOpen">
-      <DialogContent class="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{{ editingItem ? 'Edit Supplier' : 'Add New Supplier' }}</DialogTitle>
-          <DialogDescription>Fill in the supplier details below.</DialogDescription>
-        </DialogHeader>
-
-        <Tabs default-value="basic" class="w-full">
-          <TabsList class="grid w-full grid-cols-4">
-            <TabsTrigger value="basic">Basic</TabsTrigger>
-            <TabsTrigger value="contact">Contact</TabsTrigger>
-            <TabsTrigger value="address">Address</TabsTrigger>
-            <TabsTrigger value="business">Business</TabsTrigger>
-          </TabsList>
-
-          <!-- Basic Info -->
-          <TabsContent value="basic" class="space-y-4 py-4">
-            <div class="grid grid-cols-2 gap-4">
-              <div class="space-y-2">
-                <Label>Code</Label>
-                <Input v-model="formData.code" placeholder="SUP-001" />
-              </div>
-              <div class="space-y-2">
-                <Label>Title</Label>
-                <Select v-model="formData.title">
-                  <SelectTrigger><SelectValue placeholder="Select Title" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="นาย">นาย</SelectItem>
-                    <SelectItem value="นาง">นาง</SelectItem>
-                    <SelectItem value="นางสาว">นางสาว</SelectItem>
-                    <SelectItem value="บริษัท">บริษัท</SelectItem>
-                    <SelectItem value="หจก.">หจก.</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div class="space-y-2">
-                <Label>First Name</Label>
-                <Input v-model="formData.firstName" />
-              </div>
-              <div class="space-y-2">
-                <Label>Last Name</Label>
-                <Input v-model="formData.lastName" />
-              </div>
-              <div class="col-span-2 space-y-2">
-                <Label>Display Name (Auto-generated if empty)</Label>
-                <Input v-model="formData.name" placeholder="Leave empty to auto-generate" />
-              </div>
-            </div>
-          </TabsContent>
-
-          <!-- Contact Info -->
-          <TabsContent value="contact" class="space-y-4 py-4">
-            <div class="grid grid-cols-2 gap-4">
-              <div class="space-y-2">
-                <Label>Phone</Label>
-                <Input
-                  :model-value="formData.phone"
-                  @input="handlePhoneInput"
-                  placeholder="08x-xxx-xxxx"
-                />
-              </div>
-              <div class="space-y-2">
-                <Label>Email</Label>
-                <Input v-model="formData.email" type="email" />
-              </div>
-            </div>
-          </TabsContent>
-
-          <!-- Address Info -->
-          <TabsContent value="address" class="space-y-4 py-4">
-            <div class="grid grid-cols-2 gap-4">
-              <div class="space-y-2">
-                <Label>Province</Label>
-                <Combobox
-                  :options="provinces.map((p) => ({ value: p.id.toString(), label: p.name_th }))"
-                  :model-value="formData.provinceId?.toString()"
-                  @update:model-value="(v) => (formData.provinceId = v ? parseInt(v) : undefined)"
-                  placeholder="Select Province"
-                />
-              </div>
-              <div class="space-y-2">
-                <Label>District</Label>
-                <Combobox
-                  :options="districts.map((d) => ({ value: d.id.toString(), label: d.name_th }))"
-                  :model-value="formData.districtId?.toString()"
-                  @update:model-value="(v) => (formData.districtId = v ? parseInt(v) : undefined)"
-                  placeholder="Select District"
-                  :disabled="!formData.provinceId"
-                />
-              </div>
-              <div class="space-y-2">
-                <Label>Subdistrict</Label>
-                <Combobox
-                  :options="subdistricts.map((s) => ({ value: s.id.toString(), label: s.name_th }))"
-                  :model-value="formData.subdistrictId?.toString()"
-                  @update:model-value="
-                    (v) => (formData.subdistrictId = v ? parseInt(v) : undefined)
-                  "
-                  placeholder="Select Subdistrict"
-                  :disabled="!formData.districtId"
-                />
-              </div>
-              <div class="space-y-2">
-                <Label>Zip Code</Label>
-                <Input v-model="formData.zipCode" readonly />
-              </div>
-              <div class="col-span-2 space-y-2">
-                <Label>Address Line</Label>
-                <Textarea v-model="formData.address" />
-              </div>
-            </div>
-          </TabsContent>
-
-          <!-- Business Info -->
-          <TabsContent value="business" class="space-y-4 py-4">
-            <div class="grid grid-cols-2 gap-4">
-              <div class="col-span-2 space-y-2">
-                <Label>Rubber Types</Label>
-                <MultiSelect
-                  :options="rubberTypes.map((rt) => ({ label: rt.name, value: rt.code }))"
-                  :model-value="formData.rubberTypeCodes"
-                  @update:model-value="(v) => (formData.rubberTypeCodes = v)"
-                  placeholder="Select Rubber Types"
-                />
-              </div>
-              <div class="space-y-2">
-                <Label>Tax ID</Label>
-                <Input v-model="formData.taxId" />
-              </div>
-              <div class="space-y-2">
-                <Label>Status</Label>
-                <Select v-model="formData.status">
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ACTIVE">Active</SelectItem>
-                    <SelectItem value="INACTIVE">Inactive</SelectItem>
-                    <SelectItem value="SUSPENDED">Suspended</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </TabsContent>
-        </Tabs>
-
-        <DialogFooter>
-          <Button variant="outline" @click="isModalOpen = false">Cancel</Button>
-          <Button @click="handleSubmit">Save Changes</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-
-    <!-- Delete Confirmation -->
-    <Dialog v-model:open="isDeleteModalOpen">
-      <DialogContent class="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Delete Supplier?</DialogTitle>
-          <DialogDescription>
-            Are you sure you want to delete this supplier? This action cannot be undone.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button variant="outline" @click="isDeleteModalOpen = false">Cancel</Button>
-          <Button variant="destructive" @click="confirmDelete">Delete</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   </div>
 </template>
