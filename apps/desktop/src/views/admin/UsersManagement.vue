@@ -443,7 +443,7 @@ onMounted(() => {
     </div>
 
     <!-- Data Display -->
-    <DataTable :columns="columns" :data="filteredData" />
+    <DataTable :columns="columns" :data="filteredData" enable-selection />
 
     <!-- Create/Edit Modal -->
     <Dialog v-model:open="isModalOpen">

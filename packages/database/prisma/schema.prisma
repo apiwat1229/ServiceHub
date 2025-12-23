@@ -297,6 +297,8 @@ enum NotificationType {
   SUCCESS
   WARNING
   ERROR
+  REQUEST
+  APPROVE
 }
 
 enum NotificationStatus {

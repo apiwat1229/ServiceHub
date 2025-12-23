@@ -1,30 +1,77 @@
 <script setup lang="ts">
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
+import DataTable from '@/components/ui/data-table/DataTable.vue';
 import { notificationsApi } from '@/services/notifications';
 import { socketService } from '@/services/socket';
 import type { NotificationDto } from '@my-app/types';
+import type { ColumnDef } from '@tanstack/vue-table';
 import { format } from 'date-fns';
-import {
-  AlertTriangle,
-  Bell,
-  Check,
-  CheckCheck,
-  Clock,
-  Info,
-  Trash2,
-  XCircle,
-} from 'lucide-vue-next';
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { Bell, Check, CheckCheck, Trash2 } from 'lucide-vue-next';
+import { computed, h, onMounted, onUnmounted, ref } from 'vue';
 import { toast } from 'vue-sonner';
-
-// const { t } = useI18n(); // access if needed later
 
 const notifications = ref<NotificationDto[]>([]);
 const isLoading = ref(true);
 const filter = ref<'all' | 'unread'>('all');
+
+// Delete confirmation
+const deleteDialogOpen = ref(false);
+const notificationToDelete = ref<{ id: string; title: string } | null>(null);
+
+// Mark as read confirmation
+const markReadDialogOpen = ref(false);
+const notificationToMarkRead = ref<{ id: string; title: string } | null>(null);
+
+// Mark all as read confirmation
+const markAllReadDialogOpen = ref(false);
+
+// Bulk delete confirmation
+const bulkDeleteDialogOpen = ref(false);
+const notificationsToBulkDelete = ref<NotificationDto[]>([]);
+
+const confirmDelete = (id: string, title: string) => {
+  notificationToDelete.value = { id, title };
+  deleteDialogOpen.value = true;
+};
+
+const confirmMarkAsRead = (id: string, title: string) => {
+  notificationToMarkRead.value = { id, title };
+  markReadDialogOpen.value = true;
+};
+
+const confirmMarkAllAsRead = () => {
+  markAllReadDialogOpen.value = true;
+};
+
+const executeDelete = async () => {
+  if (!notificationToDelete.value) return;
+  await handleDelete(notificationToDelete.value.id);
+  deleteDialogOpen.value = false;
+  notificationToDelete.value = null;
+};
+
+const executeMarkAsRead = async () => {
+  if (!notificationToMarkRead.value) return;
+  await handleMarkAsRead(notificationToMarkRead.value.id);
+  markReadDialogOpen.value = false;
+  notificationToMarkRead.value = null;
+};
+
+const executeMarkAllAsRead = async () => {
+  await handleMarkAllAsRead();
+  markAllReadDialogOpen.value = false;
+};
 
 const fetchNotifications = async () => {
   isLoading.value = true;
@@ -43,7 +90,6 @@ const fetchNotifications = async () => {
 const handleMarkAsRead = async (id: string) => {
   try {
     await notificationsApi.markAsRead(id);
-    // Optimistic update
     const notif = notifications.value.find((n) => n.id === id);
     if (notif) notif.isRead = true;
     toast.success('Marked as read');
@@ -73,6 +119,32 @@ const handleDelete = async (id: string) => {
   }
 };
 
+const handleBulkDelete = async (selectedNotifications: NotificationDto[]) => {
+  console.log('[handleBulkDelete] Called with:', selectedNotifications.length, 'notifications');
+  if (selectedNotifications.length === 0) return;
+
+  // Store selected notifications and open confirmation dialog
+  notificationsToBulkDelete.value = selectedNotifications;
+  bulkDeleteDialogOpen.value = true;
+  console.log('[handleBulkDelete] Dialog opened');
+};
+
+const executeBulkDelete = async () => {
+  if (notificationsToBulkDelete.value.length === 0) return;
+
+  try {
+    await Promise.all(notificationsToBulkDelete.value.map((n) => notificationsApi.delete(n.id)));
+    const deletedIds = notificationsToBulkDelete.value.map((n) => n.id);
+    notifications.value = notifications.value.filter((n) => !deletedIds.includes(n.id));
+    toast.success(`${notificationsToBulkDelete.value.length} notification(s) deleted`);
+    bulkDeleteDialogOpen.value = false;
+    notificationsToBulkDelete.value = [];
+  } catch (error) {
+    console.error('Failed to delete notifications:', error);
+    toast.error('Failed to delete some notifications');
+  }
+};
+
 const filteredNotifications = computed(() => {
   if (filter.value === 'unread') {
     return notifications.value.filter((n) => !n.isRead);
@@ -82,35 +154,108 @@ const filteredNotifications = computed(() => {
 
 const unreadCount = computed(() => notifications.value.filter((n) => !n.isRead).length);
 
-const getIcon = (type: string) => {
-  switch (type) {
-    case 'SUCCESS':
-      return Check;
-    case 'WARNING':
-      return AlertTriangle;
-    case 'ERROR':
-      return XCircle;
-    default:
-      return Info;
-  }
-};
-
-const getTypeColor = (type: string) => {
-  switch (type) {
-    case 'SUCCESS':
-      return 'text-green-500 bg-green-500/10';
-    case 'WARNING':
-      return 'text-yellow-500 bg-yellow-500/10';
-    case 'ERROR':
-      return 'text-destructive bg-destructive/10';
-    default:
-      return 'text-blue-500 bg-blue-500/10';
-  }
-};
-
 const formatTime = (dateStr: string | Date) => {
-  return format(new Date(dateStr), 'dd/MM/yyyy HH:mm');
+  return format(new Date(dateStr), 'dd-MMM-yyyy, HH:mm:ss');
 };
+
+// Column Definitions
+const notificationColumns: ColumnDef<NotificationDto>[] = [
+  {
+    accessorKey: 'type',
+    header: 'Type',
+    cell: ({ row }) => {
+      const type = row.original.type;
+      const variants: Record<
+        string,
+        { variant: 'default' | 'destructive' | 'secondary' | 'outline'; class: string }
+      > = {
+        INFO: { variant: 'default', class: 'bg-blue-500 hover:bg-blue-600' },
+        SUCCESS: { variant: 'default', class: 'bg-green-500 hover:bg-green-600' },
+        WARNING: { variant: 'default', class: 'bg-yellow-500 hover:bg-yellow-600 text-black' },
+        ERROR: { variant: 'destructive', class: '' },
+      };
+      const config = variants[type] || variants.INFO;
+      return h(
+        Badge,
+        {
+          variant: config.variant,
+          class: config.class,
+        },
+        () => type
+      );
+    },
+  },
+  {
+    accessorKey: 'title',
+    header: 'Title',
+    cell: ({ row }) => {
+      const isRead = row.original.isRead;
+      return h('div', { class: 'flex items-center gap-2' }, [
+        !isRead ? h('div', { class: 'w-2 h-2 rounded-full bg-primary animate-pulse' }) : null,
+        h(
+          'span',
+          { class: isRead ? 'font-medium text-muted-foreground' : 'font-semibold' },
+          row.original.title
+        ),
+      ]);
+    },
+  },
+  {
+    accessorKey: 'message',
+    header: 'Message',
+    cell: ({ row }) => {
+      return h(
+        'div',
+        { class: 'max-w-md truncate text-muted-foreground text-sm' },
+        row.original.message
+      );
+    },
+  },
+  {
+    accessorKey: 'createdAt',
+    header: 'Date',
+    cell: ({ row }) => {
+      return h(
+        'span',
+        { class: 'text-sm text-muted-foreground' },
+        formatTime(row.original.createdAt)
+      );
+    },
+  },
+  {
+    id: 'actions',
+    header: 'Actions',
+    cell: ({ row }) => {
+      const notification = row.original;
+      return h('div', { class: 'flex gap-1' }, [
+        !notification.isRead
+          ? h(
+              Button,
+              {
+                variant: 'ghost',
+                size: 'icon',
+                class: 'h-8 w-8 text-primary hover:text-primary hover:bg-primary/10',
+                onClick: () => confirmMarkAsRead(notification.id, notification.title),
+                title: 'Mark as read',
+              },
+              () => h(Check, { class: 'w-4 h-4' })
+            )
+          : null,
+        h(
+          Button,
+          {
+            variant: 'ghost',
+            size: 'icon',
+            class: 'h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10',
+            onClick: () => confirmDelete(notification.id, notification.title),
+            title: 'Delete',
+          },
+          () => h(Trash2, { class: 'w-4 h-4' })
+        ),
+      ]);
+    },
+  },
+];
 
 onMounted(() => {
   fetchNotifications();
@@ -130,130 +275,167 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="p-6 md:p-8 space-y-8 max-w-5xl mx-auto">
-    <!-- Header -->
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-      <div>
-        <h1 class="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
-          <div class="p-2 rounded-lg bg-primary/10 text-primary">
-            <Bell class="w-6 h-6" />
-          </div>
-          My Notifications
-        </h1>
-        <p class="text-muted-foreground mt-1">
-          Stay updated with your latest system alerts and messages.
-        </p>
-      </div>
-      <div class="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          @click="handleMarkAllAsRead"
-          :disabled="unreadCount === 0"
-        >
-          <CheckCheck class="w-4 h-4 mr-2" />
-          Mark all as read
-        </Button>
-      </div>
-    </div>
-
-    <!-- Filters -->
-    <div class="flex items-center gap-2 border-b pb-4">
-      <Button
-        variant="ghost"
-        :class="filter === 'all' ? 'bg-muted text-foreground' : 'text-muted-foreground'"
-        class="rounded-full px-4"
-        @click="filter = 'all'"
+  <div class="relative z-0">
+    <div class="space-y-6">
+      <!-- Dynamic Header Card -->
+      <div
+        class="rounded-xl border border-border/60 bg-card/40 backdrop-blur-xl p-6 relative overflow-hidden shadow-sm z-0"
       >
-        All
-        <Badge variant="secondary" class="ml-2 bg-background/50">{{ notifications.length }}</Badge>
-      </Button>
-      <Button
-        variant="ghost"
-        :class="filter === 'unread' ? 'bg-muted text-foreground' : 'text-muted-foreground'"
-        class="rounded-full px-4"
-        @click="filter = 'unread'"
-      >
-        Unread
-        <Badge v-if="unreadCount > 0" variant="destructive" class="ml-2">{{ unreadCount }}</Badge>
-      </Button>
-    </div>
+        <div class="absolute top-1/2 right-12 -translate-y-1/2 pointer-events-none opacity-[0.03]">
+          <Bell class="w-64 h-64 rotate-12" />
+        </div>
 
-    <!-- Content -->
-    <div v-if="isLoading" class="space-y-4">
-      <Skeleton class="h-24 w-full rounded-xl" v-for="i in 3" :key="i" />
-    </div>
-
-    <div
-      v-else-if="filteredNotifications.length === 0"
-      class="text-center py-20 text-muted-foreground"
-    >
-      <div class="bg-muted/30 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-        <Bell class="w-8 h-8 opacity-50" />
-      </div>
-      <p class="text-lg font-medium">No notifications found</p>
-      <p class="text-sm">You're all caught up!</p>
-    </div>
-
-    <div v-else class="space-y-3">
-      <Card
-        v-for="notification in filteredNotifications"
-        :key="notification.id"
-        class="transition-all duration-200 hover:shadow-md border-l-4"
-        :class="[
-          notification.isRead ? 'border-l-transparent opacity-80' : 'border-l-primary bg-primary/5',
-        ]"
-      >
-        <CardContent class="p-4 flex items-start gap-4">
-          <!-- Icon -->
-          <div class="mt-1 p-2 rounded-full shrink-0" :class="getTypeColor(notification.type)">
-            <component :is="getIcon(notification.type)" class="w-5 h-5" />
-          </div>
-
-          <!-- Text -->
-          <div class="flex-1 min-w-0">
-            <div class="flex justify-between items-start gap-2">
-              <h3
-                class="font-semibold text-base"
-                :class="{ 'text-muted-foreground': notification.isRead }"
-              >
-                {{ notification.title }}
-              </h3>
-              <span class="text-xs text-muted-foreground whitespace-nowrap flex items-center gap-1">
-                <Clock class="w-3 h-3" />
-                {{ formatTime(notification.createdAt) }}
-              </span>
+        <div class="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
+          <div class="flex items-center gap-4 w-full md:w-auto">
+            <div
+              class="h-12 w-12 flex items-center justify-center bg-blue-100/50 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400 shadow-sm backdrop-blur-sm"
+            >
+              <Bell class="h-6 w-6" />
             </div>
-            <p class="text-sm text-muted-foreground mt-1 leading-relaxed">
-              {{ notification.message }}
-            </p>
+            <div>
+              <h1 class="text-xl font-bold tracking-tight text-foreground">My Notifications</h1>
+              <p class="text-sm text-muted-foreground mt-0.5">
+                Stay updated with your latest system alerts and messages.
+              </p>
+            </div>
           </div>
 
-          <!-- Actions -->
-          <div class="flex flex-col gap-1 self-center">
+          <!-- Stats & Actions -->
+          <div class="flex flex-1 items-center justify-end gap-8 md:gap-12 text-center">
+            <div>
+              <p class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">
+                Total Notifications
+              </p>
+              <p class="text-2xl font-bold text-foreground">{{ notifications.length }}</p>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <Button
+                class="gap-2 bg-green-600 hover:bg-green-700"
+                @click="confirmMarkAllAsRead"
+                :disabled="unreadCount === 0"
+              >
+                <CheckCheck class="w-4 h-4" />
+                Mark all as read
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Content Card with Tabs -->
+      <div class="bg-card rounded-lg border relative z-0">
+        <div class="border-b px-6 py-3">
+          <div class="flex items-center gap-2">
             <Button
-              v-if="!notification.isRead"
               variant="ghost"
-              size="icon"
-              class="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
-              title="Mark as read"
-              @click.stop="handleMarkAsRead(notification.id)"
+              size="sm"
+              :class="{ 'bg-muted': filter === 'all' }"
+              @click="filter = 'all'"
             >
-              <div class="w-2 h-2 rounded-full bg-primary" />
+              All
+              <Badge variant="secondary" class="ml-2">{{ notifications.length }}</Badge>
             </Button>
             <Button
               variant="ghost"
-              size="icon"
-              class="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-              title="Remove"
-              @click.stop="handleDelete(notification.id)"
+              size="sm"
+              :class="{ 'bg-muted': filter === 'unread' }"
+              @click="filter = 'unread'"
             >
-              <Trash2 class="w-4 h-4" />
+              Unread
+              <Badge v-if="unreadCount > 0" class="ml-2 bg-primary text-primary-foreground">
+                {{ unreadCount }}
+              </Badge>
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+
+        <!-- Data Table -->
+        <div class="p-6">
+          <DataTable
+            :columns="notificationColumns"
+            :data="filteredNotifications"
+            enable-selection
+            @delete-selected="handleBulkDelete"
+          />
+        </div>
+      </div>
     </div>
+
+    <!-- Delete Confirmation Dialog -->
+    <AlertDialog v-model:open="deleteDialogOpen">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete Notification</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to delete "{{ notificationToDelete?.title }}"?
+            <br />
+            This action cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction class="bg-destructive hover:bg-destructive/90" @click="executeDelete">
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
+    <!-- Mark as Read Confirmation Dialog -->
+    <AlertDialog v-model:open="markReadDialogOpen">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Mark as Read</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to mark "{{ notificationToMarkRead?.title }}" as read?
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction @click="executeMarkAsRead"> Mark as Read </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
+    <!-- Mark All as Read Confirmation Dialog -->
+    <AlertDialog v-model:open="markAllReadDialogOpen">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Mark All as Read</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to mark all {{ unreadCount }} unread notifications as read?
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction @click="executeMarkAllAsRead"> Mark All as Read </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
+    <!-- Bulk Delete Confirmation Dialog -->
+    <AlertDialog v-model:open="bulkDeleteDialogOpen">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete Multiple Notifications</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to delete
+            <strong>{{ notificationsToBulkDelete.length }}</strong> notification(s)?
+            <br />
+            This action cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            class="bg-destructive hover:bg-destructive/90"
+            @click="executeBulkDelete"
+          >
+            Delete {{ notificationsToBulkDelete.length }} Notification(s)
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   </div>
 </template>
-```

@@ -303,7 +303,7 @@ onMounted(() => {
     </div>
 
     <!-- Data Table -->
-    <DataTable v-else :columns="columns" :data="filteredData" />
+    <DataTable v-else :columns="columns" :data="filteredData" enable-selection />
 
     <!-- Create/Edit Dialog -->
     <Dialog v-model:open="isModalOpen">

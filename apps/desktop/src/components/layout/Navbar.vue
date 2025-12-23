@@ -114,14 +114,54 @@ onMounted(() => {
     if (!unreadNotifications.value.some((n) => n.id === newNotification.id)) {
       unreadNotifications.value.unshift(newNotification);
 
-      // Show Toast
-      toast(newNotification.title, {
+      // Show Toast with type-based styling
+      const getToastStyles = (type: string) => {
+        const colorClasses = {
+          SUCCESS: 'text-green-600',
+          APPROVE: 'text-teal-600',
+          ERROR: 'text-red-600',
+          WARNING: 'text-yellow-600',
+          INFO: 'text-blue-600',
+          REQUEST: 'text-purple-600',
+        };
+        return colorClasses[type as keyof typeof colorClasses] || colorClasses.INFO;
+      };
+
+      const colorClass = getToastStyles(newNotification.type);
+
+      const toastOptions = {
         description: newNotification.message,
+        duration: 5000, // 5 seconds
         action: {
           label: 'View',
           onClick: () => router.push('/my-notifications'),
         },
-      });
+        classNames: {
+          toast: 'bg-white border-2 shadow-lg',
+          title: `font-semibold ${colorClass}`,
+          description: 'text-gray-600',
+          actionButton: `${colorClass} bg-transparent hover:bg-gray-100 border ${colorClass.replace('text-', 'border-')}`,
+          icon: 'w-6 h-6', // Larger icon
+        },
+      };
+
+      switch (newNotification.type) {
+        case 'SUCCESS':
+        case 'APPROVE':
+          toast.success(newNotification.title, toastOptions);
+          break;
+        case 'ERROR':
+          toast.error(newNotification.title, toastOptions);
+          break;
+        case 'WARNING':
+          toast.warning(newNotification.title, toastOptions);
+          break;
+        case 'INFO':
+        case 'REQUEST':
+        default:
+          toast.info(newNotification.title, toastOptions);
+          break;
+      }
     }
   });
 });
@@ -143,7 +183,7 @@ onUnmounted(() => {
 
 <template>
   <header
-    class="h-12 border-b border-border bg-card/80 backdrop-blur px-6 flex items-center justify-between sticky top-0 z-10"
+    class="h-12 border-b border-border bg-card/80 backdrop-blur px-6 flex items-center justify-between sticky top-0 z-50"
   >
     <div class="flex items-center gap-4">
       <!-- Navigation Controls -->

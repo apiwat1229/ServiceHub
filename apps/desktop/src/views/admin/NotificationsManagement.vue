@@ -51,6 +51,7 @@ import type {
   UserDto,
 } from '@my-app/types';
 import type { ColumnDef } from '@tanstack/vue-table';
+import { format } from 'date-fns';
 import {
   Bell,
   Briefcase,
@@ -162,6 +163,10 @@ const headerSubtitle = computed(() => {
 // State
 const activeTab = ref('broadcast');
 const broadcasts = ref<BroadcastDto[]>([]);
+
+// Bulk delete confirmation
+const bulkDeleteDialogOpen = ref(false);
+const broadcastsToBulkDelete = ref<BroadcastDto[]>([]);
 const groups = ref<NotificationGroupDto[]>([]);
 const roles = ref<RoleDto[]>([]);
 const users = ref<UserDto[]>([]);
@@ -180,6 +185,7 @@ const broadcastForm = ref<CreateBroadcastDto>({
   recipientRoles: [],
   recipientUsers: [],
   recipientGroups: [],
+  actionUrl: '',
 });
 
 // Group Dialog
@@ -196,13 +202,6 @@ const groupForm = ref<CreateNotificationGroupDto>({
 // Broadcast Columns
 const broadcastColumns: ColumnDef<BroadcastDto>[] = [
   {
-    accessorKey: 'title',
-    header: () => t('admin.notifications.titleLabel'),
-    cell: ({ row }) => {
-      return h('span', { class: 'font-medium' }, row.original.title);
-    },
-  },
-  {
     accessorKey: 'type',
     header: () => t('admin.notifications.type'),
     cell: ({ row }) => {
@@ -215,6 +214,8 @@ const broadcastColumns: ColumnDef<BroadcastDto>[] = [
         SUCCESS: { variant: 'default', class: 'bg-green-500 hover:bg-green-600' },
         WARNING: { variant: 'default', class: 'bg-yellow-500 hover:bg-yellow-600 text-black' },
         ERROR: { variant: 'destructive', class: '' },
+        REQUEST: { variant: 'default', class: 'bg-purple-500 hover:bg-purple-600' },
+        APPROVE: { variant: 'default', class: 'bg-teal-500 hover:bg-teal-600' },
       };
       const config = variants[type] || variants.INFO;
       return h(
@@ -225,6 +226,13 @@ const broadcastColumns: ColumnDef<BroadcastDto>[] = [
         },
         () => type
       );
+    },
+  },
+  {
+    accessorKey: 'title',
+    header: () => t('admin.notifications.titleLabel'),
+    cell: ({ row }) => {
+      return h('span', { class: 'font-medium' }, row.original.title);
     },
   },
   {
@@ -348,7 +356,35 @@ const resetBroadcastForm = () => {
     recipientRoles: [],
     recipientUsers: [],
     recipientGroups: [],
+    actionUrl: '',
   };
+};
+
+const handleBulkDeleteBroadcasts = async (selectedBroadcasts: BroadcastDto[]) => {
+  console.log('[handleBulkDeleteBroadcasts] Called with:', selectedBroadcasts.length, 'broadcasts');
+  if (selectedBroadcasts.length === 0) return;
+
+  broadcastsToBulkDelete.value = selectedBroadcasts;
+  bulkDeleteDialogOpen.value = true;
+  console.log('[handleBulkDeleteBroadcasts] Dialog opened');
+};
+
+const executeBulkDeleteBroadcasts = async () => {
+  if (broadcastsToBulkDelete.value.length === 0) return;
+
+  try {
+    await Promise.all(
+      broadcastsToBulkDelete.value.map((b) => notificationsApi.deleteBroadcast(b.id))
+    );
+    const deletedIds = broadcastsToBulkDelete.value.map((b) => b.id);
+    broadcasts.value = broadcasts.value.filter((b) => !deletedIds.includes(b.id));
+    toast.success(`${broadcastsToBulkDelete.value.length} broadcast(s) deleted`);
+    bulkDeleteDialogOpen.value = false;
+    broadcastsToBulkDelete.value = [];
+  } catch (error) {
+    console.error('Failed to delete broadcasts:', error);
+    toast.error('Failed to delete some broadcasts');
+  }
 };
 
 const handleOpenBroadcastDialog = () => {
@@ -399,7 +435,7 @@ const handleSaveGroup = async () => {
 };
 
 const formatDate = (date: Date | string) => {
-  return new Date(date).toLocaleString('th-TH');
+  return format(new Date(date), 'dd-MMM-yyyy, HH:mm:ss');
 };
 
 onMounted(() => {
@@ -408,10 +444,10 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="p-6 space-y-6">
+  <div class="space-y-6">
     <!-- Dynamic Header Card -->
     <div
-      class="rounded-xl border border-border/60 bg-card/40 backdrop-blur-xl p-6 relative overflow-hidden shadow-sm"
+      class="rounded-xl border border-border/60 bg-card/40 backdrop-blur-xl p-6 relative overflow-hidden shadow-sm z-0"
     >
       <div class="absolute top-1/2 right-12 -translate-y-1/2 pointer-events-none opacity-[0.03]">
         <component :is="headerIcon" class="w-64 h-64 rotate-12" />
@@ -498,7 +534,12 @@ onMounted(() => {
 
       <!-- Broadcast Tab -->
       <TabsContent value="broadcast" class="space-y-6 pt-4">
-        <DataTable :columns="broadcastColumns" :data="broadcasts" />
+        <DataTable
+          :columns="broadcastColumns"
+          :data="broadcasts"
+          enable-selection
+          @delete-selected="handleBulkDeleteBroadcasts"
+        />
       </TabsContent>
 
       <!-- Groups Tab -->
@@ -626,7 +667,7 @@ onMounted(() => {
 
     <!-- Broadcast Dialog -->
     <Dialog v-model:open="isBroadcastDialogOpen">
-      <DialogContent class="sm:max-w-5xl max-h-[90vh] overflow-y-auto">
+      <DialogContent class="sm:max-w-5xl max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>{{ t('admin.notifications.sendManualBroadcast') }}</DialogTitle>
           <DialogDescription>{{
@@ -651,20 +692,6 @@ onMounted(() => {
                 :placeholder="t('admin.notifications.messagePlaceholder')"
                 rows="4"
               />
-            </div>
-            <div class="space-y-2">
-              <Label>{{ t('admin.notifications.type') }}</Label>
-              <Select v-model="broadcastForm.type">
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="INFO">INFO</SelectItem>
-                  <SelectItem value="SUCCESS">SUCCESS</SelectItem>
-                  <SelectItem value="WARNING">WARNING</SelectItem>
-                  <SelectItem value="ERROR">ERROR</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
 
             <!-- Recipients Section -->
@@ -820,8 +847,39 @@ onMounted(() => {
 
           <!-- Right Column: Preview -->
           <div class="space-y-4">
-            <div class="sticky top-0">
-              <h3 class="text-sm font-semibold mb-3">ตัวอย่างการแจ้งเตือน</h3>
+            <div class="sticky top-0 space-y-4">
+              <h3 class="text-sm font-semibold">ตัวอย่างการแจ้งเตือน</h3>
+
+              <!-- Type Selection -->
+              <div class="space-y-2">
+                <Label>{{ t('admin.notifications.type') }}</Label>
+                <Select v-model="broadcastForm.type">
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="INFO">INFO</SelectItem>
+                    <SelectItem value="SUCCESS">SUCCESS</SelectItem>
+                    <SelectItem value="WARNING">WARNING</SelectItem>
+                    <SelectItem value="ERROR">ERROR</SelectItem>
+                    <SelectItem value="REQUEST">REQUEST</SelectItem>
+                    <SelectItem value="APPROVE">APPROVE</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <!-- Action URL (Optional) -->
+              <div class="space-y-2">
+                <Label>Action URL (Optional)</Label>
+                <Input
+                  v-model="broadcastForm.actionUrl"
+                  placeholder="https://example.com/approval/123"
+                  type="url"
+                />
+                <p class="text-xs text-muted-foreground">
+                  Add a link for users to take action (e.g., approval page)
+                </p>
+              </div>
 
               <!-- Preview Card -->
               <Card
@@ -831,28 +889,19 @@ onMounted(() => {
                   broadcastForm.type === 'SUCCESS' ? 'border-green-500' : '',
                   broadcastForm.type === 'WARNING' ? 'border-yellow-500' : '',
                   broadcastForm.type === 'INFO' ? 'border-blue-500' : '',
+                  broadcastForm.type === 'REQUEST' ? 'border-purple-500' : '',
+                  broadcastForm.type === 'APPROVE' ? 'border-teal-500' : '',
                 ]"
               >
                 <CardHeader class="pb-3">
                   <div class="flex items-start justify-between">
-                    <div class="flex items-center gap-2">
-                      <Bell
-                        :class="[
-                          'w-5 h-5',
-                          broadcastForm.type === 'ERROR' ? 'text-red-500' : '',
-                          broadcastForm.type === 'SUCCESS' ? 'text-green-500' : '',
-                          broadcastForm.type === 'WARNING' ? 'text-yellow-500' : '',
-                          broadcastForm.type === 'INFO' ? 'text-blue-500' : '',
-                        ]"
-                      />
-                      <div>
-                        <CardTitle class="text-base">
-                          {{ broadcastForm.title || 'ชื่อการแจ้งเตือน' }}
-                        </CardTitle>
-                        <p class="text-xs text-muted-foreground mt-1">
-                          {{ new Date().toLocaleString('th-TH') }}
-                        </p>
-                      </div>
+                    <div>
+                      <CardTitle class="text-base">
+                        {{ broadcastForm.title || 'ชื่อการแจ้งเตือน' }}
+                      </CardTitle>
+                      <p class="text-xs text-muted-foreground mt-1">
+                        {{ new Date().toLocaleString('th-TH') }}
+                      </p>
                     </div>
                     <Badge
                       :class="[
@@ -862,6 +911,8 @@ onMounted(() => {
                           ? 'bg-yellow-500 hover:bg-yellow-600 text-black'
                           : '',
                         broadcastForm.type === 'ERROR' ? 'bg-red-500 hover:bg-red-600' : '',
+                        broadcastForm.type === 'REQUEST' ? 'bg-purple-500 hover:bg-purple-600' : '',
+                        broadcastForm.type === 'APPROVE' ? 'bg-teal-500 hover:bg-teal-600' : '',
                       ]"
                     >
                       {{ broadcastForm.type }}
@@ -1045,6 +1096,30 @@ onMounted(() => {
             class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
             {{ t('common.delete') }}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
+    <!-- Bulk Delete Confirmation Dialog -->
+    <AlertDialog v-model:open="bulkDeleteDialogOpen">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete Multiple Broadcasts</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to delete
+            <strong>{{ broadcastsToBulkDelete.length }}</strong> broadcast(s)?
+            <br />
+            This action cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            class="bg-destructive hover:bg-destructive/90"
+            @click="executeBulkDeleteBroadcasts"
+          >
+            Delete {{ broadcastsToBulkDelete.length }} Broadcast(s)
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

@@ -45,6 +45,7 @@ export class NotificationsController {
         recipientRoles?: string[];
         recipientUsers?: string[];
         recipientGroups?: string[];
+        actionUrl?: string;
     }, @Request() req: any) {
         return this.notificationsService.broadcast({
             ...body,

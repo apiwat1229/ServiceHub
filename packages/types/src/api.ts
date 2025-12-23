@@ -468,18 +468,19 @@ export interface NotificationDto {
     id: string;
     title: string;
     message: string;
-    type: 'INFO' | 'SUCCESS' | 'WARNING' | 'ERROR';
+    type: 'INFO' | 'SUCCESS' | 'WARNING' | 'ERROR' | 'REQUEST' | 'APPROVE';
     isRead: boolean;
     userId: string;
     createdAt: Date;
     readAt?: Date;
+    actionUrl?: string;
 }
 
 export interface BroadcastDto {
     id: string;
     title: string;
     message: string;
-    type: 'INFO' | 'SUCCESS' | 'WARNING' | 'ERROR';
+    type: 'INFO' | 'SUCCESS' | 'WARNING' | 'ERROR' | 'REQUEST' | 'APPROVE';
     senderId: string;
     recipientRoles?: string[];
     recipientUsers?: string[];
@@ -497,8 +498,8 @@ export class CreateBroadcastDto {
     message!: string;
 
     @IsOptional()
-    @IsIn(['INFO', 'SUCCESS', 'WARNING', 'ERROR'])
-    type?: 'INFO' | 'SUCCESS' | 'WARNING' | 'ERROR';
+    @IsIn(['INFO', 'SUCCESS', 'WARNING', 'ERROR', 'REQUEST', 'APPROVE'])
+    type?: 'INFO' | 'SUCCESS' | 'WARNING' | 'ERROR' | 'REQUEST' | 'APPROVE';
 
     @IsOptional()
     @IsArray()
@@ -511,6 +512,10 @@ export class CreateBroadcastDto {
     @IsOptional()
     @IsArray()
     recipientGroups?: string[];
+
+    @IsOptional()
+    @IsString()
+    actionUrl?: string;
 }
 
 export interface NotificationGroupDto {

@@ -46,6 +46,7 @@ export class NotificationsService {
         recipientUsers?: string[];
         recipientGroups?: string[];
         senderId?: string;
+        actionUrl?: string;
     }) {
         console.log('>>>>>>>> BROADCAST CALLED <<<<<<<<');
         console.log('Data:', JSON.stringify(data, null, 2));
@@ -129,6 +130,7 @@ export class NotificationsService {
                     userId: userId,
                     sourceApp: 'ADMIN_BROADCAST',
                     actionType: 'MANUAL_BROADCAST',
+                    actionUrl: data.actionUrl,
                     metadata: { senderId: data.senderId }
                 }
             });

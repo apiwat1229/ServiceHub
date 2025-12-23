@@ -546,7 +546,7 @@ onMounted(() => {
         :action="handleOpenCreate"
       />
 
-      <DataTable v-else :columns="columns" :data="filteredData" />
+      <DataTable v-else :columns="columns" :data="filteredData" enable-selection />
 
       <!-- Create/Edit Modal -->
       <Dialog v-model:open="isModalOpen">
