@@ -124,6 +124,30 @@
     "queue": "คิว"
   },
   "admin": {
+    "roles": {
+      "createRole": "สร้างบทบาทใหม่",
+      "editRole": "แก้ไขบทบาท",
+      "editDescription": "จัดการสิทธิ์การเข้าถึงและสิทธิ์",
+      "basicInfo": "ข้อมูลพื้นฐาน",
+      "roleName": "ชื่อบทบาท",
+      "roleNamePlaceholder": "เช่น ผู้จัดการ, พนักงาน, ผู้ดูแลระบบ",
+      "description": "คำอธิบาย",
+      "descriptionPlaceholder": "อธิบายหน้าที่และความรับผิดชอบของบทบาทนี้",
+      "icon": "ไอคอน",
+      "selectIcon": "เลือกไอคอนที่เหมาะสม",
+      "color": "สีประจำบทบาท",
+      "selectColor": "เลือกสีที่ต้องการ",
+      "roleAccess": "สิทธิ์การเข้าถึง",
+      "addRole": "เพิ่มบทบาท",
+      "assignUsers": "กำหนดผู้ใช้",
+      "totalRoles": "บทบาททั้งหมด",
+      "assignedUsers": "ผู้ใช้ที่กำหนดแล้ว",
+      "unassigned": "ยังไม่ได้กำหนด",
+      "managePermissions": "จัดการสิทธิ์"
+    },
+    "users": {
+      "fetchError": "โหลดข้อมูลผู้ใช้ไม่สำเร็จ"
+    },
     "notifications": {
       "title": "การจัดการการแจ้งเตือน",
       "subtitle": "สร้าง ดู และจัดการการแจ้งเตือนของระบบ",

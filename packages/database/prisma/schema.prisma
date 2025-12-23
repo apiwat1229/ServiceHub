@@ -370,6 +370,8 @@ model NotificationGroup {
   id          String   @id @default(uuid())
   name        String   @unique
   description String?
+  icon        String?
+  color       String?
   isActive    Boolean  @default(true)
   
   members     User[]   @relation("NotificationGroupMembers")

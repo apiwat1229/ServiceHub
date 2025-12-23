@@ -76,7 +76,7 @@ const routes = [
             {
                 path: 'notifications',
                 name: 'Notifications',
-                component: () => import('../views/Placeholder.vue'),
+                component: () => import('../views/admin/NotificationsManagement.vue'),
             },
             {
                 path: 'approvals',

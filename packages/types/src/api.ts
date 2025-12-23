@@ -1,6 +1,6 @@
 // API Request/Response Types
 import { Type } from 'class-transformer';
-import { IsArray, IsBoolean, IsDate, IsEmail, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsBoolean, IsDate, IsEmail, IsIn, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export interface ApiResponse<T = any> {
     success: boolean;
@@ -460,4 +460,98 @@ export class UpdateRoleDto {
     @IsOptional()
     @IsString()
     color?: string;
+}
+
+// ==================== Notification DTOs ====================
+
+export interface NotificationDto {
+    id: string;
+    title: string;
+    message: string;
+    type: 'INFO' | 'SUCCESS' | 'WARNING' | 'ERROR';
+    isRead: boolean;
+    userId: string;
+    createdAt: Date;
+    readAt?: Date;
+}
+
+export interface BroadcastDto {
+    id: string;
+    title: string;
+    message: string;
+    type: 'INFO' | 'SUCCESS' | 'WARNING' | 'ERROR';
+    senderId: string;
+    recipientRoles?: string[];
+    recipientUsers?: string[];
+    recipientGroups?: string[];
+    createdAt: Date;
+}
+
+export class CreateBroadcastDto {
+    @IsString()
+    @IsNotEmpty()
+    title!: string;
+
+    @IsString()
+    @IsNotEmpty()
+    message!: string;
+
+    @IsOptional()
+    @IsIn(['INFO', 'SUCCESS', 'WARNING', 'ERROR'])
+    type?: 'INFO' | 'SUCCESS' | 'WARNING' | 'ERROR';
+
+    @IsOptional()
+    @IsArray()
+    recipientRoles?: string[];
+
+    @IsOptional()
+    @IsArray()
+    recipientUsers?: string[];
+
+    @IsOptional()
+    @IsArray()
+    recipientGroups?: string[];
+}
+
+export interface NotificationGroupDto {
+    id: string;
+    name: string;
+    description?: string;
+    memberIds: string[];
+    icon?: string;
+    color?: string;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+export class CreateNotificationGroupDto {
+    @IsString()
+    @IsNotEmpty()
+    name!: string;
+
+    @IsOptional()
+    @IsString()
+    description?: string;
+
+    @IsOptional()
+    @IsArray()
+    memberIds?: string[];
+
+    @IsOptional()
+    @IsString()
+    icon?: string;
+
+    @IsOptional()
+    @IsString()
+    color?: string;
+}
+
+export interface NotificationSettingDto {
+    id: string;
+    sourceApp: string;
+    actionType: string;
+    isActive: boolean;
+    recipientRoles?: string[];
+    recipientUsers?: string[];
+    channels: string[];
 }

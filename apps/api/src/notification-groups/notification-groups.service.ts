@@ -5,15 +5,30 @@ import { PrismaService } from '../prisma/prisma.service';
 export class NotificationGroupsService {
     constructor(private prisma: PrismaService) { }
 
-    async create(data: { name: string; description?: string }) {
+    async create(data: { name: string; description?: string; icon?: string; color?: string; memberIds?: string[] }) {
+        const { memberIds, ...rest } = data;
         return this.prisma.notificationGroup.create({
-            data,
+            data: {
+                ...rest,
+                members: memberIds ? { connect: memberIds.map((id) => ({ id })) } : undefined,
+            },
+            include: { members: true },
         });
     }
 
     async findAll() {
         return this.prisma.notificationGroup.findMany({
             include: {
+                members: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true,
+                        email: true,
+                        avatar: true,
+                        role: true,
+                    },
+                },
                 _count: {
                     select: { members: true },
                 },
@@ -42,10 +57,30 @@ export class NotificationGroupsService {
         return group;
     }
 
-    async update(id: string, data: { name?: string; description?: string; isActive?: boolean }) {
+    async update(
+        id: string,
+        data: {
+            name?: string;
+            description?: string;
+            isActive?: boolean;
+            icon?: string;
+            color?: string;
+            memberIds?: string[];
+        },
+    ) {
+        const { memberIds, ...rest } = data;
+        const updateData: any = { ...rest };
+
+        if (memberIds) {
+            updateData.members = {
+                set: memberIds.map((uid) => ({ id: uid })),
+            };
+        }
+
         return this.prisma.notificationGroup.update({
             where: { id },
-            data,
+            data: updateData,
+            include: { members: true },
         });
     }
 

@@ -207,7 +207,7 @@ export const en = {
             sendBroadcast: "Send Broadcast",
             preview: "Preview",
             previewDescription: "Notifications will appear in the user's bell menu and dashboard.",
-            newGroup: "+ New Group",
+            newGroup: "New Group",
             editGroup: "Edit Group",
             groupName: "Group Name",
             description: "Description",

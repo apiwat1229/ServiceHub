@@ -4,7 +4,7 @@ import th from './locales/th.json';
 
 const i18n = createI18n({
     legacy: false, // use Composition API
-    locale: 'en',
+    locale: 'en', // Changed back to English as default
     fallbackLocale: 'en',
     messages: {
         en,

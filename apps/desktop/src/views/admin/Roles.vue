@@ -158,6 +158,17 @@ const INITIAL_ROLES = [
   },
 ];
 
+const PERMISSION_MODULES = [
+  { id: 'users', label: 'User Management' },
+  { id: 'roles', label: 'Roles & Permissions' },
+  { id: 'suppliers', label: 'Suppliers' },
+  { id: 'rubberTypes', label: 'Rubber Types' },
+  { id: 'notifications', label: 'Notifications' },
+  { id: 'bookings', label: 'Booking Queue' },
+];
+
+const PERMISSION_ACTIONS = ['read', 'create', 'update', 'delete', 'approve'] as const;
+
 // Helper function to get gradient colors for roles
 const getRoleGradient = (colorClass: string | undefined) => {
   const colorMap: Record<string, { from: string; to: string; shadow: string }> = {
@@ -383,6 +394,18 @@ const handleSaveRole = async () => {
   isRoleModalOpen.value = false;
 };
 
+const setPermission = (moduleId: string, action: string, value: boolean) => {
+  if (!editingRole.value) return;
+
+  // Deep clone to avoid direct mutation
+  const permissions = JSON.parse(JSON.stringify(editingRole.value.permissions || {}));
+
+  if (!permissions[moduleId]) permissions[moduleId] = {};
+  permissions[moduleId][action] = value;
+
+  editingRole.value.permissions = permissions;
+};
+
 const isDeleteUserModalOpen = ref(false);
 const userToDeleteId = ref<string | null>(null);
 
@@ -520,7 +543,7 @@ onMounted(() => {
           <!-- Watermark Icon -->
           <component
             :is="getRoleIcon(role.icon)"
-            class="absolute -right-3 -bottom-3 w-20 h-20 opacity-[0.03] group-hover:opacity-20 rotate-[-15deg] transition-all duration-500 group-hover:scale-110 group-hover:rotate-[-5deg] pointer-events-none"
+            class="absolute -right-5 -bottom-4 w-32 h-32 opacity-[0.03] group-hover:opacity-20 rotate-[-15deg] transition-all duration-500 group-hover:scale-110 group-hover:rotate-[-5deg] pointer-events-none"
             :style="{
               color: getRoleGradient(role.color).from,
             }"
@@ -614,12 +637,9 @@ onMounted(() => {
     <Dialog :open="isRoleModalOpen" @update:open="isRoleModalOpen = $event">
       <DialogContent class="sm:max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle v-if="editingRole?.id"
-            >{{ t('admin.roles.editRole') }}:
-            <span class="text-primary">{{ editingRole?.name }}</span></DialogTitle
-          >
+          <DialogTitle v-if="editingRole?.id">{{ t('admin.roles.editRole') }} </DialogTitle>
           <DialogTitle v-else>{{ t('admin.roles.createRole') }}</DialogTitle>
-          <DialogDescription>{{ t('admin.roles.editDescription') }}</DialogDescription>
+          <DialogDescription>{{ t('admin.roles.basicInfo') }}</DialogDescription>
         </DialogHeader>
 
         <div class="py-6 space-y-6" v-if="editingRole">
@@ -704,6 +724,60 @@ onMounted(() => {
                     <SelectItem value="bg-slate-500">Slate</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+            </div>
+
+            <!-- Role Permissions Section -->
+            <div class="space-y-4">
+              <h3 class="text-lg font-semibold">{{ t('admin.roles.roleAccess') }}</h3>
+
+              <div class="space-y-4">
+                <div
+                  v-for="module in PERMISSION_MODULES"
+                  :key="module.id"
+                  class="border rounded-lg p-4"
+                >
+                  <h4 class="font-medium mb-3">{{ module.label }}</h4>
+                  <div class="grid grid-cols-6 gap-3">
+                    <label
+                      v-for="action in PERMISSION_ACTIONS"
+                      :key="action"
+                      class="flex items-center space-x-2 cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        :checked="editingRole?.permissions?.[module.id]?.[action] || false"
+                        @change="
+                          (e) =>
+                            setPermission(module.id, action, (e.target as HTMLInputElement).checked)
+                        "
+                        class="rounded border-gray-300"
+                      />
+                      <span class="text-sm capitalize">{{ action }}</span>
+                    </label>
+                    <!-- All checkbox -->
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        :checked="
+                          PERMISSION_ACTIONS.every(
+                            (action) => editingRole?.permissions?.[module.id]?.[action]
+                          )
+                        "
+                        @change="
+                          (e) => {
+                            const checked = (e.target as HTMLInputElement).checked;
+                            PERMISSION_ACTIONS.forEach((action) =>
+                              setPermission(module.id, action, checked)
+                            );
+                          }
+                        "
+                        class="rounded border-gray-300"
+                      />
+                      <span class="text-sm font-semibold">All</span>
+                    </label>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

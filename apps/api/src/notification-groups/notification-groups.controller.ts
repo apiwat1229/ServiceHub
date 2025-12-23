@@ -6,7 +6,7 @@ export class NotificationGroupsController {
     constructor(private readonly groupsService: NotificationGroupsService) { }
 
     @Post()
-    create(@Body() body: { name: string; description?: string }) {
+    create(@Body() body: { name: string; description?: string; icon?: string; color?: string; memberIds?: string[] }) {
         return this.groupsService.create(body);
     }
 
@@ -23,7 +23,7 @@ export class NotificationGroupsController {
     @Patch(':id')
     update(
         @Param('id') id: string,
-        @Body() body: { name?: string; description?: string; isActive?: boolean },
+        @Body() body: { name?: string; description?: string; isActive?: boolean; icon?: string; color?: string; memberIds?: string[] },
     ) {
         return this.groupsService.update(id, body);
     }
