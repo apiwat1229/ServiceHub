@@ -36,6 +36,7 @@ import {
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
+import { toast } from 'vue-sonner';
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -112,7 +113,15 @@ onMounted(() => {
     // Add new notification to list
     if (!unreadNotifications.value.some((n) => n.id === newNotification.id)) {
       unreadNotifications.value.unshift(newNotification);
-      // Optional: Add audible alert here
+
+      // Show Toast
+      toast(newNotification.title, {
+        description: newNotification.message,
+        action: {
+          label: 'View',
+          onClick: () => router.push('/my-notifications'),
+        },
+      });
     }
   });
 });
@@ -172,15 +181,19 @@ onUnmounted(() => {
     <div class="flex items-center gap-4">
       <!-- Language Switcher -->
 
-      <!-- Bell Notification -->
+      <!-- Notifications -->
       <DropdownMenu>
         <DropdownMenuTrigger as-child>
-          <Button variant="ghost" size="icon" class="relative h-8 w-8">
-            <Bell class="w-5 h-5 text-muted-foreground" />
+          <Button variant="ghost" size="icon" class="relative group">
+            <Bell
+              class="w-5 h-5 transition-transform duration-500 ease-in-out"
+              :class="{ 'animate-bell-ring text-primary': unreadCount > 0 }"
+            />
             <span
               v-if="unreadCount > 0"
-              class="absolute top-1.5 right-1.5 flex h-2.5 w-2.5 items-center justify-center rounded-full bg-red-600 ring-2 ring-background"
+              class="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground animate-in zoom-in duration-300"
             >
+              {{ unreadCount > 9 ? '9+' : unreadCount }}
             </span>
           </Button>
         </DropdownMenuTrigger>
@@ -364,3 +377,35 @@ onUnmounted(() => {
     </Dialog>
   </header>
 </template>
+
+<style scoped>
+@keyframes bell-ring {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  15% {
+    transform: rotate(15deg);
+  }
+  30% {
+    transform: rotate(-15deg);
+  }
+  45% {
+    transform: rotate(10deg);
+  }
+  60% {
+    transform: rotate(-10deg);
+  }
+  75% {
+    transform: rotate(5deg);
+  }
+  85% {
+    transform: rotate(-5deg);
+  }
+}
+
+.animate-bell-ring {
+  animation: bell-ring 2s cubic-bezier(0.19, 1, 0.22, 1) infinite;
+  transform-origin: top center;
+}
+</style>
