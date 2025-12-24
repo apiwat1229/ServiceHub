@@ -227,7 +227,7 @@ onUnmounted(() => {
   >
     <div class="flex items-center gap-4">
       <!-- Navigation Controls -->
-      <div class="flex items-center gap-1 border-r border-border pr-4 mr-2">
+      <div class="flex items-center gap-1">
         <Button variant="ghost" size="icon" class="h-8 w-8" @click="router.back()" title="Back">
           <ArrowLeft class="w-4 h-4" />
         </Button>
@@ -259,8 +259,6 @@ onUnmounted(() => {
     </div>
 
     <div class="flex items-center gap-4">
-      <!-- Language Switcher -->
-
       <!-- Notifications -->
       <DropdownMenu>
         <DropdownMenuTrigger as-child>

@@ -14,16 +14,15 @@ const showSidebar = computed(() => {
 </script>
 
 <template>
-  <div class="flex h-screen bg-transparent text-foreground overflow-hidden font-sans">
-    <!-- Sidebar -->
-    <Sidebar v-if="showSidebar" />
+  <div class="flex h-screen bg-transparent text-foreground overflow-hidden font-sans flex-col">
+    <!-- Top Navbar -->
+    <Navbar :show-brand="true" />
 
-    <!-- Main Content Area -->
-    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
-      <!-- Top Navbar -->
-      <Navbar :show-brand="!showSidebar" />
+    <div class="flex flex-1 overflow-hidden">
+      <!-- Sidebar -->
+      <Sidebar v-if="showSidebar" />
 
-      <!-- Page Content -->
+      <!-- Main Content Area -->
       <main class="flex-1 overflow-x-hidden overflow-y-auto p-6">
         <router-view v-slot="{ Component }">
           <transition name="fade" mode="out-in">

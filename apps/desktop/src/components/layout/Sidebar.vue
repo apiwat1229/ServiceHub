@@ -35,16 +35,7 @@ const menuGroups = [
 </script>
 
 <template>
-  <aside class="w-64 bg-card border-r border-border min-h-screen flex flex-col">
-    <div class="h-12 px-6 border-b border-border flex items-center justify-center">
-      <!-- Logo Placeholder -->
-      <h1
-        class="text-xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent"
-      >
-        Admin Panel
-      </h1>
-    </div>
-
+  <aside class="w-64 h-full flex flex-col">
     <nav class="flex-1 p-4 space-y-6 overflow-y-auto">
       <div v-for="(group, index) in menuGroups" :key="index">
         <h4 class="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
@@ -71,7 +62,7 @@ const menuGroups = [
       </div>
     </nav>
 
-    <div class="p-4 border-t border-border">
+    <div class="p-4">
       <p class="text-xs text-center text-muted-foreground">Version 0.0.1</p>
     </div>
   </aside>
