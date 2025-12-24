@@ -30,10 +30,12 @@ export class NotificationsService {
             },
         });
 
-        // Emit real-time event
-        this.notificationsGateway.sendNotificationToUser(data.userId, notification);
+        const dto = this.mapToDto(notification);
 
-        return notification;
+        // Emit real-time event
+        this.notificationsGateway.sendNotificationToUser(data.userId, dto);
+
+        return dto;
     }
 
     // ...
@@ -178,6 +180,13 @@ export class NotificationsService {
             },
         });
     }
+    private mapToDto(notification: any) {
+        return {
+            ...notification,
+            isRead: notification.status === 'READ',
+        };
+    }
+
     async findAll(userId: string) {
         console.log(`[findAll] Fetching notifications for userId: ${userId}`);
         const results = await this.prisma.notification.findMany({
@@ -188,21 +197,24 @@ export class NotificationsService {
         if (results.length > 0) {
             console.log(`[findAll] Sample ID: ${results[0].id} | Title: ${results[0].title}`);
         }
-        return results;
+        return results.map(n => this.mapToDto(n));
     }
 
     async findUnread(userId: string) {
-        return this.prisma.notification.findMany({
+        const results = await this.prisma.notification.findMany({
             where: { userId, status: 'UNREAD' },
             orderBy: { createdAt: 'desc' },
         });
+        // Even for unread endpoint, returning the consistent DTO structure is good practice
+        return results.map(n => this.mapToDto(n));
     }
 
     async markAsRead(id: string, userId: string) {
-        return this.prisma.notification.update({
+        const result = await this.prisma.notification.update({
             where: { id, userId },
             data: { status: 'READ' },
         });
+        return this.mapToDto(result);
     }
 
     async delete(id: string, userId: string) {

@@ -19,8 +19,10 @@ import type { ColumnDef } from '@tanstack/vue-table';
 import { format } from 'date-fns';
 import { Bell, Check, CheckCheck, Trash2 } from 'lucide-vue-next';
 import { computed, h, onMounted, onUnmounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { toast } from 'vue-sonner';
 
+const router = useRouter();
 const notifications = ref<NotificationDto[]>([]);
 const isLoading = ref(true);
 const filter = ref<'all' | 'unread'>('all');
@@ -145,6 +147,15 @@ const executeBulkDelete = async () => {
   }
 };
 
+const handleNotificationClick = async (notification: NotificationDto) => {
+  if (!notification.isRead) {
+    await handleMarkAsRead(notification.id);
+  }
+  if (notification.actionUrl) {
+    router.push(notification.actionUrl);
+  }
+};
+
 const filteredNotifications = computed(() => {
   if (filter.value === 'unread') {
     return notifications.value.filter((n) => !n.isRead);
@@ -190,14 +201,26 @@ const notificationColumns: ColumnDef<NotificationDto>[] = [
     header: 'Title',
     cell: ({ row }) => {
       const isRead = row.original.isRead;
-      return h('div', { class: 'flex items-center gap-2' }, [
-        !isRead ? h('div', { class: 'w-2 h-2 rounded-full bg-primary animate-pulse' }) : null,
-        h(
-          'span',
-          { class: isRead ? 'font-medium text-muted-foreground' : 'font-semibold' },
-          row.original.title
-        ),
-      ]);
+      return h(
+        'div',
+        {
+          class: 'flex items-center gap-2 cursor-pointer group',
+          onClick: () => handleNotificationClick(row.original),
+        },
+        [
+          !isRead ? h('div', { class: 'w-2 h-2 rounded-full bg-primary animate-pulse' }) : null,
+          h(
+            'span',
+            {
+              class: [
+                isRead ? 'font-medium text-muted-foreground' : 'font-semibold',
+                'group-hover:underline text-foreground',
+              ],
+            },
+            row.original.title
+          ),
+        ]
+      );
     },
   },
   {

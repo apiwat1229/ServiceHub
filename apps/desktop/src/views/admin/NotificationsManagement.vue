@@ -222,14 +222,103 @@ const broadcastColumns: ColumnDef<BroadcastDto>[] = [
         APPROVE: { variant: 'default', class: 'bg-teal-500 hover:bg-teal-600' },
       };
       const config = variants[type] || variants.INFO;
-      return h(
-        Badge,
+
+      // Resolve Recipients
+      const { recipientGroups, recipientRoles, recipientUsers } = row.original;
+      let recipientText = 'All';
+
+      if (recipientGroups?.length) {
+        const groupNames = recipientGroups
+          .map((id) => groups.value.find((g) => g.id === id)?.name || 'Unknown Group')
+          .join(', ');
+        recipientText = `Group: ${groupNames}`;
+      } else if (recipientRoles?.length) {
+        recipientText = `Role: ${recipientRoles.join(', ')}`;
+      } else if (recipientUsers?.length) {
+        const userNames = recipientUsers
+          .map((id) => {
+            const u = users.value.find((user) => user.id === id);
+            return u?.displayName || u?.username || 'Unknown User';
+          })
+          .join(', ');
+        recipientText = `User: ${userNames}`;
+      }
+
+      return h('div', { class: 'flex flex-col gap-1 items-start' }, [
+        h(
+          Badge,
+          {
+            variant: config.variant,
+            class: config.class,
+          },
+          () => type
+        ),
+        h('div', { class: 'flex items-center text-xs text-muted-foreground gap-1' }, [
+          // h(recipientIcon, { class: 'w-3 h-3' }),
+          h('span', {}, recipientText),
+        ]),
+      ]);
+    },
+  },
+  {
+    id: 'status',
+    header: () => t('admin.notifications.status'),
+    cell: ({ row }) => {
+      const type = row.original.type;
+
+      const statusMap: Record<
+        string,
         {
-          variant: config.variant,
-          class: config.class,
+          label: string;
+          icon: any;
+          class: string;
+          variant: 'default' | 'secondary' | 'destructive' | 'outline';
+        }
+      > = {
+        APPROVE: {
+          label: 'Approved',
+          icon: CheckCircle2,
+          class: 'text-green-600 border-green-200 bg-green-50',
+          variant: 'outline',
         },
-        () => type
-      );
+        REQUEST: {
+          label: 'Pending',
+          icon: AlertCircle,
+          class: 'text-orange-600 border-orange-200 bg-orange-50',
+          variant: 'outline',
+        },
+        SUCCESS: {
+          label: 'Complete',
+          icon: CheckCircle2,
+          class: 'text-emerald-600 border-emerald-200 bg-emerald-50',
+          variant: 'outline',
+        },
+        ERROR: {
+          label: 'Failed',
+          icon: AlertTriangle,
+          class: 'text-red-600 border-red-200 bg-red-50',
+          variant: 'outline',
+        },
+        WARNING: {
+          label: 'Warning',
+          icon: AlertTriangle,
+          class: 'text-yellow-600 border-yellow-200 bg-yellow-50',
+          variant: 'outline',
+        },
+        INFO: {
+          label: 'Sent',
+          icon: CheckCircle2,
+          class: 'text-blue-600 border-blue-200 bg-blue-50',
+          variant: 'outline',
+        },
+      };
+
+      const config = statusMap[type] || statusMap.INFO;
+
+      return h(Badge, { variant: config.variant, class: config.class }, () => [
+        h(config.icon, { class: 'w-3 h-3 mr-1' }),
+        config.label,
+      ]);
     },
   },
   {

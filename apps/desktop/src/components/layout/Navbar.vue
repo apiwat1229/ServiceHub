@@ -98,6 +98,15 @@ const handleViewAll = () => {
   router.push('/my-notifications');
 };
 
+const handleNotificationClick = async (notification: NotificationDto) => {
+  await handleMarkAsRead(notification.id);
+  if (notification.actionUrl) {
+    router.push(notification.actionUrl);
+  } else {
+    router.push('/my-notifications');
+  }
+};
+
 onMounted(() => {
   fetchUnreadNotifications();
   socketService.connect();
@@ -286,16 +295,21 @@ onUnmounted(() => {
               <DropdownMenuItem
                 v-for="notification in unreadNotifications.slice(0, 5)"
                 :key="notification.id"
-                class="flex flex-col items-start gap-1 p-3 cursor-pointer focus:bg-muted/50"
-                @click="handleMarkAsRead(notification.id)"
+                class="flex flex-col items-start gap-1 p-3 cursor-pointer focus:bg-muted/50 border-b last:border-0"
+                @click="handleNotificationClick(notification)"
               >
                 <div class="flex items-start justify-between w-full gap-2">
-                  <span class="font-medium text-sm line-clamp-1">{{ notification.title }}</span>
-                  <span class="text-[10px] text-muted-foreground whitespace-nowrap">
+                  <div class="flex items-center gap-2 flex-1 overflow-hidden">
+                    <div class="h-2 w-2 min-w-[8px] rounded-full bg-primary"></div>
+                    <span class="font-semibold text-sm line-clamp-1 break-all">{{
+                      notification.title
+                    }}</span>
+                  </div>
+                  <span class="text-[10px] text-muted-foreground whitespace-nowrap flex-shrink-0">
                     {{ formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true }) }}
                   </span>
                 </div>
-                <p class="text-xs text-muted-foreground line-clamp-2">
+                <p class="text-xs text-muted-foreground line-clamp-2 pl-4">
                   {{ notification.message }}
                 </p>
               </DropdownMenuItem>
