@@ -252,9 +252,53 @@ const getRoleIcon = (iconName?: string) => {
   return ICON_MAP[iconName] || Shield;
 };
 
+const flattenPermissions = (permissionsObj: Record<string, Record<string, boolean>>) => {
+  const result: string[] = [];
+  Object.entries(permissionsObj).forEach(([moduleId, actions]) => {
+    Object.entries(actions).forEach(([action, isEnabled]) => {
+      if (isEnabled) {
+        result.push(`${moduleId}:${action}`);
+      }
+    });
+  });
+  return result;
+};
+
+const unflattenPermissions = (permissionsArr: string[]) => {
+  const result: Record<string, Record<string, boolean>> = {};
+  if (!Array.isArray(permissionsArr)) return result;
+
+  permissionsArr.forEach((perm) => {
+    if (typeof perm !== 'string') return;
+    const [moduleId, action] = perm.split(':');
+    if (moduleId && action) {
+      if (!result[moduleId]) result[moduleId] = {};
+      result[moduleId][action] = true;
+    }
+  });
+  return result;
+};
+
 const handleEditRole = (role: RoleWithMetadata) => {
   // Deep copy to avoid mutating direct state
-  editingRole.value = JSON.parse(JSON.stringify(role));
+  const roleCopy = JSON.parse(JSON.stringify(role));
+
+  // Convert string array to object for UI
+  // Check if permissions is array (new format) or object (legacy/buggy format)
+  if (Array.isArray(role.permissions)) {
+    roleCopy.permissions = unflattenPermissions(role.permissions as string[]);
+  } else if (typeof role.permissions === 'object' && role.permissions !== null) {
+    // If it's already an object (legacy JSON), keep it but ensures it matches UI structure
+    // Actually we should blindly use it, or try to migrate?
+    // Safe bet: use as is if object, but if string[] use unflatten.
+    // Given schema change, it SHOULD be string[] or empty.
+    // But if user has legacy data, handling both is safer.
+    // However, Typescript expects specific type. We cast.
+  } else {
+    roleCopy.permissions = {};
+  }
+
+  editingRole.value = roleCopy;
   isRoleModalOpen.value = true;
 };
 
@@ -265,7 +309,7 @@ const handleCreateRole = () => {
     description: '',
     icon: 'User',
     color: 'bg-slate-500',
-    permissions: {},
+    permissions: {}, // UI expects object
   };
   isRoleModalOpen.value = true;
 };
@@ -274,8 +318,10 @@ const handleSaveRole = async () => {
   if (!editingRole.value) return;
 
   try {
-    // Deep clone permissions to ensure a plain JSON object is sent
-    const permissionsPayload = JSON.parse(JSON.stringify(editingRole.value.permissions || {}));
+    // Flatten permissions object to string array for API
+    const permissionsPayload = flattenPermissions(
+      (editingRole.value.permissions as unknown as Record<string, Record<string, boolean>>) || {}
+    );
 
     if (editingRole.value.id) {
       // Update existing role

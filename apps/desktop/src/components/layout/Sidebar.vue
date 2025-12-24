@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { usePermissions } from '@/composables/usePermissions';
 import { cn } from '@/lib/utils';
 import {
   Activity,
   Bell,
+  Calendar,
   ClipboardCheck,
   Layers,
   LayoutDashboard,
@@ -10,28 +12,62 @@ import {
   Truck,
   Users,
 } from 'lucide-vue-next';
+import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 
 const route = useRoute();
+const { hasPermission, isAdmin } = usePermissions();
 
-const menuGroups = [
+const allMenuGroups = [
   {
     title: 'Main',
     items: [
-      { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
-      { name: 'Roles & Permissions', path: '/admin/roles', icon: Shield },
-      { name: 'Users Management', path: '/admin/users', icon: Users },
-      { name: 'Suppliers', path: '/admin/suppliers', icon: Truck },
-      { name: 'Rubber Types', path: '/admin/rubber-types', icon: Layers },
-      { name: 'Notifications', path: '/admin/notifications', icon: Bell },
-      { name: 'Approvals', path: '/admin/approvals', icon: ClipboardCheck },
+      { name: 'Dashboard', path: '/admin', icon: LayoutDashboard }, // Public for admin panel
+      { name: 'Roles & Permissions', path: '/admin/roles', icon: Shield, permission: 'roles:read' },
+      { name: 'Users Management', path: '/admin/users', icon: Users, permission: 'users:read' },
+      { name: 'Suppliers', path: '/admin/suppliers', icon: Truck, permission: 'suppliers:read' },
+      {
+        name: 'Rubber Types',
+        path: '/admin/rubber-types',
+        icon: Layers,
+        permission: 'rubberTypes:read',
+      },
+      {
+        name: 'Notifications',
+        path: '/admin/notifications',
+        icon: Bell,
+        permission: 'notifications:read',
+      },
+      {
+        name: 'Booking Queue',
+        path: '/bookings',
+        icon: Calendar,
+        permission: 'bookings:read',
+      },
+      { name: 'Approvals', path: '/admin/approvals', icon: ClipboardCheck }, // Pending permission module
     ],
   },
   {
     title: 'System',
-    items: [{ name: 'Analytics', path: '/admin/analytics', icon: Activity }],
+    items: [{ name: 'Analytics', path: '/admin/analytics', icon: Activity }], // Pending permission module
   },
 ];
+
+const menuGroups = computed(() => {
+  return allMenuGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => {
+        // If no permission required, show it
+        if (!item.permission) return true;
+        // If admin, always show (unless logic changes)
+        if (isAdmin.value) return true;
+        // Otherwise check permission
+        return hasPermission(item.permission);
+      }),
+    }))
+    .filter((group) => group.items.length > 0); // Hide empty groups
+});
 </script>
 
 <template>

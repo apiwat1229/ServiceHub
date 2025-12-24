@@ -428,7 +428,7 @@ model Role {
   description String?
   icon        String?
   color       String?
-  permissions Json    @default("[]") // Array of permission strings
+  permissions String[] @default([]) // Array of permission strings
   isActive    Boolean @default(true) @map("is_active")
 
   // Relations

@@ -44,6 +44,11 @@ const routes = [
                 name: 'Profile',
                 component: () => import('../views/Profile.vue'),
             },
+            {
+                path: 'bookings',
+                name: 'BookingQueue',
+                component: () => import('../views/admin/BookingQueue.vue'),
+            },
         ]
     },
     {
@@ -100,6 +105,11 @@ const routes = [
                 name: 'Notifications',
                 component: () => import('../views/admin/NotificationsManagement.vue'),
             },
+            {
+                path: 'bookings',
+                redirect: '/bookings',
+            },
+
             {
                 path: 'approvals',
                 name: 'Approvals',

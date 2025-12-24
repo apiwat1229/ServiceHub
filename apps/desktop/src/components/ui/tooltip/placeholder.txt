@@ -1,0 +1,22 @@
+<script setup lang="ts">
+import { TooltipProvider, TooltipRoot, TooltipTrigger, TooltipContent } from 'radix-vue'
+import { cn } from '@/lib/utils'
+
+defineOptions({
+  inheritAttrs: false
+})
+</script>
+
+<script lang="ts">
+// We can export components here or use separate files.
+// For simplicity in this environment, let's create a barrel file approach if possible, 
+// or define them here if standard single-file component structure allows.
+// However, Radix Vue usually encourages composition.
+// Let's create separate files to follow the standard Shadcn pattern properly.
+</script>
+
+<template>
+  <!-- This file is just a placeholder if we were doing single file, 
+       but we will create distinct files instead for TooltipProvider.vue etc. 
+       Skipping content here to write separate files. -->
+</template>

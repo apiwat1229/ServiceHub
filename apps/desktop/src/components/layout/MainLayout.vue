@@ -1,15 +1,14 @@
 <script setup lang="ts">
-import { useAuthStore } from '@/stores/auth';
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import Navbar from './Navbar.vue';
 import Sidebar from './Sidebar.vue';
 
-const authStore = useAuthStore();
+// const authStore = useAuthStore();
 const route = useRoute();
 
 const showSidebar = computed(() => {
-  return authStore.user?.role === 'ADMIN' && route.path.startsWith('/admin');
+  return route.path.startsWith('/admin');
 });
 </script>
 
