@@ -234,7 +234,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="h-full flex-1 flex-col space-y-8 p-8 md:flex">
+  <div class="h-full flex-1 flex-col space-y-4 p-4 md:flex">
     <!-- Header -->
     <div class="flex items-center justify-between space-y-2">
       <div>
@@ -257,7 +257,7 @@ onMounted(() => {
     </div>
 
     <!-- Filters/Selection -->
-    <Card class="p-4">
+    <Card class="p-3">
       <div class="flex flex-col lg:flex-row gap-6 items-center justify-between">
         <!-- Left: Inputs -->
         <div class="flex flex-col sm:flex-row gap-4 flex-1 w-full lg:w-auto">
@@ -329,23 +329,23 @@ onMounted(() => {
 
     <!-- Stats -->
     <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      <Card class="p-4 flex flex-col items-center justify-center text-center">
+      <Card class="p-3 flex flex-col items-center justify-center text-center">
         <p class="text-sm text-muted-foreground mb-1">Total Queues Today</p>
         <p class="text-3xl font-bold">{{ totalDailyQueues }}</p>
       </Card>
-      <Card class="p-4 flex flex-col items-center justify-center text-center">
+      <Card class="p-3 flex flex-col items-center justify-center text-center">
         <p class="text-sm text-muted-foreground mb-1">Current Queue</p>
         <p class="text-3xl font-bold text-primary">
           {{ queues.length > 0 ? Math.max(...queues.map((q) => Number(q.queueNo) || 0)) : '-' }}
         </p>
       </Card>
-      <Card class="p-4 flex flex-col items-center justify-center text-center">
+      <Card class="p-3 flex flex-col items-center justify-center text-center">
         <p class="text-sm text-muted-foreground mb-1">Next Queue</p>
         <p class="text-3xl font-bold text-green-600">
           {{ nextQueueNo !== null ? nextQueueNo : '-' }}
         </p>
       </Card>
-      <Card class="p-4 flex flex-col items-center justify-center text-center">
+      <Card class="p-3 flex flex-col items-center justify-center text-center">
         <p class="text-sm text-muted-foreground mb-1">Available</p>
         <p class="text-3xl font-bold text-blue-600">
           {{
@@ -379,10 +379,10 @@ onMounted(() => {
       <Card
         v-for="queue in queues"
         :key="queue.id"
-        class="p-4 transition-all hover:shadow-md border-l-4"
+        class="p-3 transition-all hover:shadow-md border-l-4"
         :style="{ borderLeftColor: DAY_COLORS[selectedDateJS.getDay()].queueBg }"
       >
-        <div class="flex justify-between items-center mb-3">
+        <div class="flex justify-between items-center mb-2">
           <span class="font-semibold text-sm">Queue Number : {{ queue.queueNo }}</span>
           <div class="flex items-center gap-1">
             <TooltipProvider>
@@ -414,14 +414,18 @@ onMounted(() => {
           </div>
         </div>
 
-        <div class="space-y-2 text-sm">
+        <div class="space-y-1 text-sm">
           <div>
             <p class="text-xs text-muted-foreground">Supplier Code</p>
             <p class="font-medium">{{ queue.supplierCode }}</p>
           </div>
           <div>
             <p class="text-xs text-muted-foreground">Supplier Name</p>
-            <p class="truncate" :title="queue.supplierName">{{ queue.supplierName }}</p>
+            <p class="font-medium break-words">{{ queue.supplierName }}</p>
+          </div>
+          <div v-if="queue.truckType || queue.truckRegister">
+            <p class="text-xs text-muted-foreground">Truck</p>
+            <p>{{ [queue.truckType, queue.truckRegister].filter(Boolean).join(' - ') }}</p>
           </div>
           <div>
             <p class="text-xs text-muted-foreground">Type</p>
@@ -460,11 +464,46 @@ onMounted(() => {
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Confirm Delete</AlertDialogTitle>
-          <AlertDialogDescription class="space-y-2">
-            <div v-if="bookingToDelete" class="bg-muted/50 p-3 rounded-md text-sm text-foreground">
-              <p><strong>Queue:</strong> {{ bookingToDelete.queueNo }}</p>
-              <p><strong>Code:</strong> {{ bookingToDelete.bookingCode }}</p>
-              <p><strong>Supplier:</strong> {{ bookingToDelete.supplierName }}</p>
+          <AlertDialogDescription class="space-y-4">
+            <div
+              v-if="bookingToDelete"
+              class="bg-muted/50 p-4 rounded-md text-sm text-foreground space-y-3 border"
+            >
+              <div class="grid grid-cols-[100px_1fr] gap-2">
+                <span class="text-muted-foreground">Queue Number:</span>
+                <span class="font-bold">{{ bookingToDelete.queueNo }}</span>
+              </div>
+              <div class="grid grid-cols-[100px_1fr] gap-2">
+                <span class="text-muted-foreground">Supplier Code:</span>
+                <span>{{ bookingToDelete.supplierCode }}</span>
+              </div>
+              <div class="grid grid-cols-[100px_1fr] gap-2">
+                <span class="text-muted-foreground">Supplier Name:</span>
+                <span class="break-words font-medium">{{ bookingToDelete.supplierName }}</span>
+              </div>
+              <div
+                v-if="bookingToDelete.truckType || bookingToDelete.truckRegister"
+                class="grid grid-cols-[100px_1fr] gap-2"
+              >
+                <span class="text-muted-foreground">Truck:</span>
+                <span>{{
+                  [bookingToDelete.truckType, bookingToDelete.truckRegister]
+                    .filter(Boolean)
+                    .join(' - ')
+                }}</span>
+              </div>
+              <div class="grid grid-cols-[100px_1fr] gap-2">
+                <span class="text-muted-foreground">Type:</span>
+                <span>{{
+                  RUBBER_TYPE_MAP[bookingToDelete.rubberType] ||
+                  bookingToDelete.rubberTypeName ||
+                  bookingToDelete.rubberType
+                }}</span>
+              </div>
+              <div class="grid grid-cols-[100px_1fr] gap-2">
+                <span class="text-muted-foreground">Booking Code:</span>
+                <span>{{ bookingToDelete.bookingCode }}</span>
+              </div>
             </div>
             <p>Are you sure you want to delete this booking? This action cannot be undone.</p>
           </AlertDialogDescription>
