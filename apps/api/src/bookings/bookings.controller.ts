@@ -35,6 +35,26 @@ export class BookingsController {
         return this.bookingsService.checkIn(id, body);
     }
 
+    @Patch(':id/start-drain')
+    startDrain(@Param('id') id: string) {
+        return this.bookingsService.startDrain(id);
+    }
+
+    @Patch(':id/stop-drain')
+    stopDrain(@Param('id') id: string) {
+        return this.bookingsService.stopDrain(id);
+    }
+
+    @Patch(':id/weight-in')
+    saveWeightIn(@Param('id') id: string, @Body() body: any) {
+        return this.bookingsService.saveWeightIn(id, body);
+    }
+
+    @Patch(':id/weight-out')
+    saveWeightOut(@Param('id') id: string, @Body() body: any) {
+        return this.bookingsService.saveWeightOut(id, body);
+    }
+
     @Delete(':id')
     remove(@Param('id') id: string, @Request() req: any) {
         return this.bookingsService.remove(id, req.user);

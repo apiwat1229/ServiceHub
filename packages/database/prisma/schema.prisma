@@ -253,6 +253,13 @@ model Booking {
   note      String?   @map("note")
   checkinAt DateTime? @map("checkin_at")
 
+  // Weight Scale Process
+  startDrainAt DateTime? @map("start_drain_at")
+  stopDrainAt  DateTime? @map("stop_drain_at")
+  weightIn     Float?    @map("weight_in")
+  weightOut    Float?    @map("weight_out")
+  rubberSource String?   @map("rubber_source")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 

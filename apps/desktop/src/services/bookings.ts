@@ -45,4 +45,24 @@ export const bookingsApi = {
         const response = await api.patch(`/bookings/${id}/check-in`, data);
         return response.data;
     },
+
+    startDrain: async (id: string) => {
+        const response = await api.patch(`/bookings/${id}/start-drain`);
+        return response.data;
+    },
+
+    stopDrain: async (id: string) => {
+        const response = await api.patch(`/bookings/${id}/stop-drain`);
+        return response.data;
+    },
+
+    saveWeightIn: async (id: string, data: any) => {
+        const response = await api.patch(`/bookings/${id}/weight-in`, data);
+        return response.data;
+    },
+
+    saveWeightOut: async (id: string, data: any) => {
+        const response = await api.patch(`/bookings/${id}/weight-out`, data);
+        return response.data;
+    },
 };

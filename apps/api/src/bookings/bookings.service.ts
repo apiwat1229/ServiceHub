@@ -172,6 +172,40 @@ export class BookingsService {
         return updated;
     }
 
+    async startDrain(id: string) {
+        return this.prisma.booking.update({
+            where: { id },
+            data: { startDrainAt: new Date() },
+        });
+    }
+
+    async stopDrain(id: string) {
+        return this.prisma.booking.update({
+            where: { id },
+            data: { stopDrainAt: new Date() },
+        });
+    }
+
+    async saveWeightIn(id: string, data: any) {
+        return this.prisma.booking.update({
+            where: { id },
+            data: {
+                rubberSource: data.rubberSource,
+                rubberType: data.rubberType,
+                weightIn: parseFloat(data.weightIn),
+            },
+        });
+    }
+
+    async saveWeightOut(id: string, data: any) {
+        return this.prisma.booking.update({
+            where: { id },
+            data: {
+                weightOut: parseFloat(data.weightOut),
+            },
+        });
+    }
+
     async findAll(date?: string, slot?: string, code?: string) {
         const where: any = {};
 
