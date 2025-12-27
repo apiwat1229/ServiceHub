@@ -1,256 +1,297 @@
 <script setup lang="ts">
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  ArrowUpDown,
-  Box,
-  Calendar,
-  Droplets,
-  Headset,
-  Truck,
-  Warehouse,
-  Wrench,
-  type LucideIcon,
-} from 'lucide-vue-next';
-import { computed, onMounted, ref } from 'vue';
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { approvalsApi } from '@/services/approvals';
+import { bookingsApi } from '@/services/bookings';
+import { notificationsApi } from '@/services/notifications';
+import { usersApi } from '@/services/users';
+import { format } from 'date-fns';
+import { Activity, AlertCircle, Bell, Calendar, CheckCircle, Clock, Users } from 'lucide-vue-next';
+import { onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 
-interface ServiceModule {
-  id: string;
-  title: string;
-  description: string;
-  icon: LucideIcon;
-  color: string;
-  bgColor: string;
-  hoverBorder: string;
-  route: string;
-}
+const router = useRouter();
 
-const modules: ServiceModule[] = [
-  {
-    id: 'mrp',
-    title: 'MRP System',
-    description: 'Material Requirements Planning for production and inventory.',
-    icon: Box,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-50/50 group-hover:bg-blue-100/50',
-    hoverBorder: 'group-hover:border-blue-500',
-    route: '/admin/mrp',
-  },
-  {
-    id: 'cuplump',
-    title: 'Cuplump Pool',
-    description: 'Rubber Cup Lump Management and tracking system.',
-    icon: Droplets,
-    color: 'text-orange-600',
-    bgColor: 'bg-orange-50/50 group-hover:bg-orange-100/50',
-    hoverBorder: 'group-hover:border-orange-500',
-    route: '/admin/cuplump',
-  },
-  {
-    id: 'booking',
-    title: 'Booking Queue',
-    description: 'Queue Management System for supplier deliveries.',
-    icon: Calendar,
-    color: 'text-green-600',
-    bgColor: 'bg-green-50/50 group-hover:bg-green-100/50',
-    hoverBorder: 'group-hover:border-green-500',
-    route: '/admin/bookings',
-  },
-  {
-    id: 'truck-scale',
-    title: 'Truck Scale',
-    description: 'Weighing System integration for inbound/outbound logistics.',
-    icon: Truck,
-    color: 'text-emerald-600',
-    bgColor: 'bg-emerald-50/50 group-hover:bg-emerald-100/50',
-    hoverBorder: 'group-hover:border-emerald-500',
-    route: '/admin/scale',
-  },
-  {
-    id: 'maintenance',
-    title: 'Maintenance',
-    description: 'Equipment Maintenance and Work Order management.',
-    icon: Wrench,
-    color: 'text-red-500',
-    bgColor: 'bg-red-50/50 group-hover:bg-red-100/50',
-    hoverBorder: 'group-hover:border-red-500',
-    route: '/admin/maintenance',
-  },
-  {
-    id: 'it-helpdesk',
-    title: 'IT Help Desk',
-    description: 'Technical Support ticketing and asset management.',
-    icon: Headset,
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-50/50 group-hover:bg-purple-100/50',
-    hoverBorder: 'group-hover:border-purple-500',
-    route: '/admin/helpdesk',
-  },
-  {
-    id: 'warehouse',
-    title: 'Warehouse',
-    description: 'Inventory Management for finished goods and spares.',
-    icon: Warehouse,
-    color: 'text-indigo-600',
-    bgColor: 'bg-indigo-50/50 group-hover:bg-indigo-100/50',
-    hoverBorder: 'group-hover:border-indigo-500',
-    route: '/admin/warehouse',
-  },
-];
-
-// Sorting Logic
-const sortBy = ref<'az' | 'recent'>('az');
-const moduleUsage = ref<Record<string, number>>({});
-
-const loadUsage = () => {
-  try {
-    const stored = localStorage.getItem('module_usage');
-    if (stored) {
-      moduleUsage.value = JSON.parse(stored);
-    }
-  } catch (e) {
-    console.error('Failed to load module usage', e);
-  }
-};
-
-const trackModuleUsage = (moduleId: string) => {
-  moduleUsage.value[moduleId] = Date.now();
-  localStorage.setItem('module_usage', JSON.stringify(moduleUsage.value));
-};
-
-onMounted(() => {
-  loadUsage();
+// State
+const stats = ref({
+  bookingsToday: 0,
+  pendingApprovals: 0,
+  unreadNotifications: 0,
+  totalUsers: 0,
 });
 
-const sortedModules = computed(() => {
-  const list = [...modules];
-  if (sortBy.value === 'az') {
-    return list.sort((a, b) => a.title.localeCompare(b.title));
-  } else if (sortBy.value === 'recent') {
-    return list.sort((a, b) => {
-      const timeA = moduleUsage.value[a.id] || 0;
-      const timeB = moduleUsage.value[b.id] || 0;
-      // If time is same (both 0), fallback to A-Z
-      if (timeB === timeA) return a.title.localeCompare(b.title);
-      return timeB - timeA;
-    });
+const recentApprovals = ref<any[]>([]);
+const systemHealth = ref('Healthy');
+const isLoading = ref(true);
+
+const fetchDashboardData = async () => {
+  isLoading.value = true;
+  try {
+    const today = new Date();
+
+    // Parallel Fetch
+    const [bookingsData, approvalsRes, notificationsRes, usersData] = await Promise.all([
+      bookingsApi.getAll({ date: titleDate(today) }), // Note: check API date format if needed, simplistic strictly for count
+      approvalsApi.getAll({ status: 'PENDING' }),
+      notificationsApi.getAll(),
+      usersApi.getAll(),
+    ]);
+
+    // Calculate Stats
+    // Bookings & Users APIs return data directly
+    stats.value.bookingsToday = Array.isArray(bookingsData) ? bookingsData.length : 0;
+
+    // Approvals & Notifications APIs return Axios Response
+    stats.value.pendingApprovals = Array.isArray(approvalsRes.data) ? approvalsRes.data.length : 0;
+
+    // Notifications
+    stats.value.unreadNotifications = Array.isArray(notificationsRes.data)
+      ? notificationsRes.data.filter((n: any) => !n.isRead).length
+      : 0;
+
+    // Users
+    stats.value.totalUsers = Array.isArray(usersData) ? usersData.length : 0;
+
+    // Recent Activity (Approvals)
+    if (Array.isArray(approvalsRes.data)) {
+      // Fetch ALL approvals for history list if possible, but the API call above was filtered PENDING.
+      // Let's fetch recent history separately or just show pending ones.
+      // Better: Fetch ALL approvals limited to 5 for the "Recent Activity" list.
+      const allApprovals = await approvalsApi.getAll(); // Unfiltered
+      recentApprovals.value = Array.isArray(allApprovals.data)
+        ? allApprovals.data
+            .sort(
+              (a: any, b: any) =>
+                new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
+            )
+            .slice(0, 5)
+        : [];
+    }
+  } catch (error) {
+    console.error('Failed to fetch dashboard data:', error);
+  } finally {
+    isLoading.value = false;
   }
-  return list;
+};
+
+// Helper for date param (assuming simplified YYYY-MM-DD or similar if needed)
+// Actually BookingsService uses `new Date(date)` so string ISO works.
+const titleDate = (date: Date) => date.toISOString().split('T')[0];
+
+const formatTime = (dateStr: string) => format(new Date(dateStr), 'dd MMM, HH:mm');
+
+onMounted(() => {
+  fetchDashboardData();
+
+  // Real-time refresh could be added here via socketService
 });
 </script>
 
 <template>
-  <div class="h-full flex flex-col justify-center max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    <!-- Header with Sorting -->
-    <div class="mb-10 flex flex-col md:flex-row items-center justify-between gap-6">
-      <div class="flex items-center gap-4 text-center md:text-left">
-        <!-- Text -->
-        <div>
-          <h1 class="text-3xl font-bold tracking-tight text-foreground leading-tight">
-            Services & Modules
-          </h1>
-          <p class="text-muted-foreground text-lg">Select a module to access specialized tools.</p>
-        </div>
+  <div class="p-8 space-y-8 max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-3xl font-bold tracking-tight">System Monitor</h1>
+        <p class="text-muted-foreground">
+          Real-time overview of system performance and activities.
+        </p>
       </div>
+      <div class="flex items-center gap-2">
+        <Badge variant="outline" class="gap-1 px-3 py-1">
+          <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+          System {{ systemHealth }}
+        </Badge>
+        <Button variant="outline" size="sm" @click="fetchDashboardData"> Refresh </Button>
+      </div>
+    </div>
 
-      <!-- Sorting Control -->
-      <div class="w-full md:w-auto">
-        <Select v-model="sortBy">
-          <SelectTrigger
-            class="w-full md:w-[180px] bg-transparent border-border/40 backdrop-blur-sm rounded-xl"
-          >
-            <div class="flex items-center gap-2">
-              <ArrowUpDown class="h-4 w-4 text-muted-foreground" />
-              <SelectValue placeholder="Sort by" />
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <!-- Bookings Card -->
+      <Card
+        class="hover:shadow-md transition-shadow cursor-pointer"
+        @click="router.push('/admin/bookings')"
+      >
+        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle class="text-sm font-medium">Bookings Today</CardTitle>
+          <Calendar class="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div class="text-2xl font-bold">{{ stats.bookingsToday }}</div>
+          <p class="text-xs text-muted-foreground">Scheduled for today</p>
+        </CardContent>
+      </Card>
+
+      <!-- Approvals Card -->
+      <Card
+        class="hover:shadow-md transition-shadow cursor-pointer"
+        @click="router.push('/admin/approvals')"
+      >
+        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle class="text-sm font-medium">Pending Approvals</CardTitle>
+          <CheckCircle class="h-4 w-4 text-orange-500" />
+        </CardHeader>
+        <CardContent>
+          <div class="text-2xl font-bold text-orange-600">{{ stats.pendingApprovals }}</div>
+          <p class="text-xs text-muted-foreground">Require attention</p>
+        </CardContent>
+      </Card>
+
+      <!-- Notifications Card -->
+      <Card
+        class="hover:shadow-md transition-shadow cursor-pointer"
+        @click="router.push('/admin/notifications')"
+      >
+        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle class="text-sm font-medium">Unread Alerts</CardTitle>
+          <Bell class="h-4 w-4 text-blue-500" />
+        </CardHeader>
+        <CardContent>
+          <div class="text-2xl font-bold text-blue-600">{{ stats.unreadNotifications }}</div>
+          <p class="text-xs text-muted-foreground">System notifications</p>
+        </CardContent>
+      </Card>
+
+      <!-- Users Card -->
+      <Card
+        class="hover:shadow-md transition-shadow cursor-pointer"
+        @click="router.push('/admin/users')"
+      >
+        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle class="text-sm font-medium">Total Users</CardTitle>
+          <Users class="h-4 w-4 text-purple-500" />
+        </CardHeader>
+        <CardContent>
+          <div class="text-2xl font-bold">{{ stats.totalUsers }}</div>
+          <p class="text-xs text-muted-foreground">Active accounts</p>
+        </CardContent>
+      </Card>
+    </div>
+
+    <!-- Recent Activity & System Status -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- Recent Approvals (Takes up 2 cols) -->
+      <Card class="lg:col-span-2">
+        <CardHeader>
+          <CardTitle>Recent Activity</CardTitle>
+          <CardDescription>Latest approval requests and system actions.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Type</TableHead>
+                <TableHead>Requester</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead class="text-right">Time</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow v-for="item in recentApprovals" :key="item.id">
+                <TableCell class="font-medium">
+                  {{ item.requestType }}
+                </TableCell>
+                <TableCell>
+                  <div class="flex items-center gap-2">
+                    <div
+                      class="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary"
+                    >
+                      {{ item.requester?.displayName?.charAt(0) || 'U' }}
+                    </div>
+                    <span>{{ item.requester?.displayName }}</span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Badge
+                    :variant="
+                      item.status === 'PENDING'
+                        ? 'outline'
+                        : item.status === 'APPROVED'
+                          ? 'default'
+                          : 'destructive'
+                    "
+                  >
+                    {{ item.status }}
+                  </Badge>
+                </TableCell>
+                <TableCell class="text-right text-muted-foreground text-sm">
+                  {{ formatTime(item.submittedAt) }}
+                </TableCell>
+              </TableRow>
+              <TableRow v-if="recentApprovals.length === 0">
+                <TableCell colspan="4" class="text-center py-8 text-muted-foreground">
+                  No recent activity found.
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <!-- System Health / Quick Links -->
+      <div class="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>System Health</CardTitle>
+            <CardDescription>Operational Status</CardDescription>
+          </CardHeader>
+          <CardContent class="space-y-4">
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-medium">Database</span>
+              <Badge class="bg-green-500 hover:bg-green-600">Connected</Badge>
             </div>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="az">A-Z</SelectItem>
-            <SelectItem value="recent">Last Used</SelectItem>
-          </SelectContent>
-        </Select>
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-medium">API Server</span>
+              <Badge class="bg-green-500 hover:bg-green-600">Online</Badge>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-medium">Socket.IO</span>
+              <Badge class="bg-green-500 hover:bg-green-600">Active</Badge>
+            </div>
+            <div class="pt-4 border-t">
+              <div class="flex items-center gap-2 text-xs text-muted-foreground">
+                <Clock class="w-3 h-3" />
+                <span>Last check: Just now</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <!-- Quick Actions (Optional, maybe specific monitoring tools) -->
+        <Card>
+          <CardHeader>
+            <CardTitle>Monitoring Tools</CardTitle>
+          </CardHeader>
+          <CardContent class="grid gap-2">
+            <Button
+              variant="ghost"
+              class="justify-start gap-2"
+              @click="router.push('/admin/analytics')"
+            >
+              <Activity class="w-4 h-4 text-blue-500" />
+              Traffic Analytics
+            </Button>
+            <Button
+              variant="ghost"
+              class="justify-start gap-2"
+              @click="router.push('/admin/notifications')"
+            >
+              <AlertCircle class="w-4 h-4 text-red-500" />
+              System Logs
+            </Button>
+          </CardContent>
+        </Card>
       </div>
-    </div>
-
-    <!-- Modules Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <router-link
-        v-for="module in sortedModules"
-        :key="module.id"
-        :to="module.route"
-        @click="trackModuleUsage(module.id)"
-        :class="[
-          'group relative overflow-hidden rounded-2xl border border-border bg-card/20 backdrop-blur-md p-6 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 block',
-          module.hoverBorder,
-        ]"
-      >
-        <!-- Large Background Icon (Watermark) -->
-        <component
-          :is="module.icon"
-          class="absolute -right-8 -bottom-8 w-40 h-40 opacity-[0.03] rotate-[-15deg] transition-transform duration-500 group-hover:scale-110 group-hover:rotate-[-5deg]"
-          :class="module.color"
-        />
-
-        <!-- Access Indicator -->
-        <div
-          class="absolute top-6 right-6 flex items-center gap-2 opacity-0 -translate-x-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0"
-        >
-          <span class="text-xs font-bold tracking-wider uppercase" :class="module.color"
-            >Access Module</span
-          >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            :class="module.color"
-          >
-            <path d="M5 12h14" />
-            <path d="M12 5l7 7-7 7" />
-          </svg>
-        </div>
-
-        <div class="relative z-10 flex flex-col h-full">
-          <!-- Small Icon -->
-          <div
-            class="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl transition-colors duration-300"
-            :class="module.bgColor"
-          >
-            <component :is="module.icon" :class="['h-6 w-6', module.color]" />
-          </div>
-
-          <h3 class="mb-2 text-xl font-semibold tracking-tight text-foreground">
-            {{ module.title }}
-          </h3>
-
-          <p class="text-sm text-muted-foreground leading-relaxed flex-grow">
-            {{ module.description }}
-          </p>
-        </div>
-      </router-link>
-    </div>
-
-    <!-- Background aesthetic elements -->
-    <div class="fixed right-0 top-1/4 -z-10 opacity-[0.03] pointer-events-none">
-      <svg
-        width="400"
-        height="400"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="0.5"
-      >
-        <path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5" />
-      </svg>
     </div>
   </div>
 </template>

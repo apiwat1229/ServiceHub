@@ -52,7 +52,7 @@ export interface CreateApprovalRequestDto {
     expiresAt?: string;
 }
 
-const approvalsApi = {
+export const approvalsApi = {
     // Get all approval requests
     getAll: (params?: {
         status?: string;
