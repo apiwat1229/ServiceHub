@@ -198,8 +198,12 @@ function handleDeleteClick(booking: any) {
 async function confirmDelete() {
   if (!bookingToDelete.value) return;
   try {
-    await bookingsApi.delete(bookingToDelete.value.id);
-    toast.success('Booking deleted');
+    const res = await bookingsApi.delete(bookingToDelete.value.id);
+    if (res && res.status === 'PENDING_APPROVAL') {
+      toast.info('คำขอยกเลิกถูกส่งไปขออนุมัติแล้ว');
+    } else {
+      toast.success('Booking deleted');
+    }
     fetchQueues();
   } catch (err) {
     console.error('Delete error:', err);

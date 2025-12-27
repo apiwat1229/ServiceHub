@@ -557,6 +557,7 @@ export interface NotificationSettingDto {
     actionType: string;
     isActive: boolean;
     recipientRoles?: string[];
+    recipientGroups?: string[];
     recipientUsers?: string[];
     channels: string[];
 }

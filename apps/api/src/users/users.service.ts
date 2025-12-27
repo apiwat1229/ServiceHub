@@ -111,6 +111,13 @@ export class UsersService {
                         icon: true,
                     },
                 },
+                roleRecord: {
+                    select: {
+                        id: true,
+                        name: true,
+                        permissions: true,
+                    }
+                },
                 hod: {
                     select: {
                         id: true,
@@ -150,6 +157,13 @@ export class UsersService {
                 failedLoginAttempts: true,
                 forceChangePassword: true,
                 permissions: true,
+                roleRecord: {
+                    select: {
+                        id: true,
+                        name: true,
+                        permissions: true,
+                    }
+                },
                 hod: {
                     select: {
                         id: true,

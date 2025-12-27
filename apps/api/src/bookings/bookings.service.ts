@@ -27,13 +27,15 @@ function genBookingCode(date: Date, queueNo: number): string {
     return `${yy}${mm}${dd}${q}`;
 }
 
+import { ApprovalsService } from '../approvals/approvals.service';
 import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class BookingsService {
     constructor(
         private prisma: PrismaService,
-        private notificationsService: NotificationsService
+        private notificationsService: NotificationsService,
+        private approvalsService: ApprovalsService
     ) { }
 
     async create(data: any) {
@@ -66,32 +68,17 @@ export class BookingsService {
         // Filter for the specific slot we are trying to book
         const existingBookings = dayBookings.filter(b => b.slot === slot);
 
-        console.log('Found Existing Bookings for Slot:', existingBookings.length);
-        console.log('Existing Queue Numbers:', existingBookings.map(b => b.bookingCode));
-
         // Check if slot is full
         if (slotConfig.limit && existingBookings.length >= slotConfig.limit) {
             throw new BadRequestException('This time slot is full');
         }
 
         // Check for duplicate booking (Same Supplier, Same Truck, Same Slot)
-        // If truckRegister is provided, ensuring same truck doesn't book twice.
-        // If no truckRegister, assumed to be same entity? Let's check strict duplicate only if truck register exists or just loose warning?
-        // Let's refine: Block if Same Supplier AND Same Truck Register. 
-        // If truckRegister is empty, maybe allow? Or block?
-        // Better: Find if there is a booking with same Supplier AND Same TruckRegister in this slot.
         if (truckRegister) {
             const duplicateBooking = dayBookings.find(b => b.supplierId === supplierId && b.slot === slot && b.truckRegister === truckRegister);
             if (duplicateBooking) {
                 throw new BadRequestException(`This truck (${truckRegister}) already has a booking for this slot.`);
             }
-        } else {
-            // If no truck register provided, maybe allow multiple? 
-            // Or check if there's a booking without truck register for this supplier?
-            // For now, let's just relax the check to rely on Truck Register uniqueness if provided.
-            // If the user wants to book multiple "unknown trucks", maybe we shouldn't block.
-            // But to be safe, if truckRegister is empty, we check if there is ANY booking for this supplier with empty truck register in this slot?
-            // Let's just remove the generic supplier check to allow same supplier multiple bookings (different trucks).
         }
 
         // Calculate next queue number
@@ -102,15 +89,11 @@ export class BookingsService {
             if (usedNumbers.length === 0) {
                 queueNo = slotConfig.start;
             } else {
-                // Find gap or append
                 queueNo = slotConfig.start;
-                // Simple strategy for unlimited: just take (max + 1) or fill gaps?
-                // Using fill-gaps strategy to be consistent with limited logic
                 for (const num of usedNumbers) {
                     if (num === queueNo) {
                         queueNo++;
                     } else {
-                        // Found a gap
                         break;
                     }
                 }
@@ -168,11 +151,12 @@ export class BookingsService {
         if (code) {
             where.bookingCode = code;
         } else {
-            // Only apply date/slot filter if code is NOT provided
-            // (or both, depending on logic, but likely code implies precise lookup)
-            if (date) where.date = date;
+            if (date) where.date = new Date(date);
             if (slot) where.slot = slot;
         }
+
+        // Default: Exclude soft deleted items
+        where.deletedAt = null;
 
         return this.prisma.booking.findMany({
             where,
@@ -192,8 +176,40 @@ export class BookingsService {
         return booking;
     }
 
-    async update(id: string, data: any) {
-        await this.findOne(id); // Check if exists
+    async update(id: string, data: any, user?: any) {
+        const booking = await this.findOne(id); // Check if exists
+
+        // Permission Check logic
+        const permissions: string[] = user?.roleRecord?.permissions || user?.permissions || [];
+        const canApprove = permissions.includes('bookings:approve') || permissions.includes('bookings:all');
+        const isAdmin = user?.role === 'ADMIN' || user?.role === 'admin' || user?.role === 'SUPER_ADMIN' || canApprove;
+
+        if (!isAdmin && user) {
+            console.log(`[BookingsService] User ${user.displayName} is not admin/approver. Creating approval request for UPDATE.`);
+            const request = await this.approvalsService.createRequest(user.id, {
+                requestType: 'แก้ไขการจอง (Booking Update)',
+                entityType: 'Booking',
+                entityId: id,
+                actionType: 'UPDATE',
+                currentData: booking,
+                proposedData: data,
+                reason: 'แก้ไขรายละเอียดการจอง',
+                sourceApp: 'Booking',
+            });
+
+            // Notify Approvers
+            await this.triggerNotification('Booking', 'APPROVAL_REQUEST', {
+                title: 'Approval Requested: Booking Update',
+                message: `User ${user.displayName} requested to update Booking ${booking.bookingCode}.`,
+                actionUrl: `/admin/approvals/${request.id}`,
+            });
+
+            return {
+                status: 'PENDING_APPROVAL',
+                message: 'คำขอแก้ไขถูกส่งไปยังผู้อนุมัติแล้ว',
+                requestId: request.id
+            };
+        }
 
         const result = await this.prisma.booking.update({
             where: { id },
@@ -218,14 +234,44 @@ export class BookingsService {
         return result;
     }
 
-    async remove(id: string) {
-        const booking = await this.findOne(id); // Check if exists
+    async remove(id: string, user?: any) {
+        const booking = await this.findOne(id);
+
+        const permissions: string[] = user?.roleRecord?.permissions || user?.permissions || [];
+        const canApprove = permissions.includes('bookings:approve') || permissions.includes('bookings:all');
+        const isAdmin = user?.role === 'ADMIN' || user?.role === 'admin' || user?.role === 'SUPER_ADMIN' || canApprove;
+
+        if (!isAdmin && user) {
+            console.log(`[BookingsService] User ${user.displayName} is not admin/approver. Creating approval request for DELETE.`);
+            const request = await this.approvalsService.createRequest(user.id, {
+                requestType: 'ยกเลิกการจอง (Booking Cancellation)',
+                entityType: 'Booking',
+                entityId: id,
+                actionType: 'DELETE',
+                currentData: booking,
+                proposedData: {},
+                reason: 'ต้องการยกเลิกการจอง',
+                sourceApp: 'Booking',
+            });
+
+            // Notify Approvers
+            await this.triggerNotification('Booking', 'APPROVAL_REQUEST', {
+                title: 'Approval Requested: Booking Cancellation',
+                message: `User ${user.displayName} requested to cancel Booking ${booking.bookingCode}.`,
+                actionUrl: `/admin/approvals/${request.id}`,
+            });
+
+            return {
+                status: 'PENDING_APPROVAL',
+                message: 'คำขอยกเลิกถูกส่งไปยังผู้อนุมัติแล้ว',
+                requestId: request.id
+            };
+        }
 
         const result = await this.prisma.booking.delete({
             where: { id },
         });
 
-        // Trigger Notification
         await this.triggerNotification('Booking', 'DELETE', {
             title: 'Booking Cancelled',
             message: `Booking ${booking.bookingCode} (${booking.supplierName}) at ${booking.slot} has been cancelled.`,
@@ -259,7 +305,9 @@ export class BookingsService {
                     where: {
                         OR: [
                             { role: { in: recipientRoles } },
-                            { roleRecord: { name: { in: recipientRoles } } }
+                            { roleRecord: { name: { in: recipientRoles } } },
+                            // Also check by ID if role IDs are stored
+                            { roleRecord: { id: { in: recipientRoles } } }
                         ]
                     },
                     select: { id: true }
@@ -286,7 +334,7 @@ export class BookingsService {
                     userId: userId,
                     title: payload.title,
                     message: payload.message,
-                    type: 'INFO',
+                    type: 'REQUEST', // Use REQUEST type regarding approval
                     sourceApp,
                     actionType,
                     actionUrl: payload.actionUrl
@@ -297,7 +345,6 @@ export class BookingsService {
 
         } catch (error) {
             console.error('Error triggering notification:', error);
-            // Don't fail the main request just because notification failed
         }
     }
 

@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Request } from '@nestjs/common';
 import { BookingsService } from './bookings.service';
 
 @Controller('bookings')
@@ -26,12 +26,12 @@ export class BookingsController {
     }
 
     @Patch(':id')
-    update(@Param('id') id: string, @Body() updateDto: any) {
-        return this.bookingsService.update(id, updateDto);
+    update(@Param('id') id: string, @Body() updateDto: any, @Request() req: any) {
+        return this.bookingsService.update(id, updateDto, req.user);
     }
 
     @Delete(':id')
-    remove(@Param('id') id: string) {
-        return this.bookingsService.remove(id);
+    remove(@Param('id') id: string, @Request() req: any) {
+        return this.bookingsService.remove(id, req.user);
     }
 }

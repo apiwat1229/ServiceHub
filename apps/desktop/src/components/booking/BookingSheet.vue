@@ -179,7 +179,11 @@ async function handleSubmit() {
     loading.value = true;
     if (isEditMode.value && props.editingBooking?.id) {
       const updated = await bookingsApi.update(props.editingBooking.id, payload);
-      toast.success('Updated successfully');
+      if (updated && updated.status === 'PENDING_APPROVAL') {
+        toast.info('คำขอแก้ไขถูกส่งไปขออนุมัติแล้ว');
+      } else {
+        toast.success('Updated successfully');
+      }
       emit('success', updated);
     } else {
       const created = await bookingsApi.create(payload as any);

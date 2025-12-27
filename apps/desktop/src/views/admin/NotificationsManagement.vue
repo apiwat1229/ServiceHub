@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -16,28 +16,28 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Checkbox } from '@/components/ui/checkbox';
 import DataTable from '@/components/ui/data-table/DataTable.vue';
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from '@/components/ui/dialog';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import MultiSelect from '@/components/ui/multi-select/MultiSelect.vue';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
@@ -45,33 +45,34 @@ import { notificationsApi } from '@/services/notifications';
 import { rolesApi } from '@/services/roles';
 import { usersApi } from '@/services/users';
 import type {
-    BroadcastDto,
-    CreateBroadcastDto,
-    CreateNotificationGroupDto,
-    NotificationGroupDto,
-    NotificationSettingDto,
-    RoleDto,
-    UserDto,
+  BroadcastDto,
+  CreateBroadcastDto,
+  CreateNotificationGroupDto,
+  NotificationGroupDto,
+  NotificationSettingDto,
+  RoleDto,
+  UserDto,
 } from '@my-app/types';
 import type { ColumnDef } from '@tanstack/vue-table';
 import { format } from 'date-fns';
 import {
-    AlertCircle,
-    AlertTriangle,
-    Bell,
-    Briefcase,
-    CheckCircle2,
-    Edit2,
-    Info,
-    Layers,
-    Lock,
-    MoreHorizontal,
-    Plus,
-    Send,
-    Settings,
-    Shield,
-    Trash2,
-    Users,
+  AlertCircle,
+  AlertTriangle,
+  ArrowLeft,
+  Bell,
+  Briefcase,
+  CheckCircle2,
+  Edit2,
+  Info,
+  Layers,
+  Lock,
+  MoreHorizontal,
+  Plus,
+  Send,
+  Settings,
+  Shield,
+  Trash2,
+  Users,
 } from 'lucide-vue-next';
 import { computed, h, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -185,7 +186,31 @@ const settingDefinitions = [
   { sourceApp: 'Booking', actionType: 'CREATE', label: 'New Booking Created' },
   { sourceApp: 'Booking', actionType: 'UPDATE', label: 'Booking Updated' },
   { sourceApp: 'Booking', actionType: 'DELETE', label: 'Booking Cancelled' },
+  { sourceApp: 'Booking', actionType: 'APPROVAL_REQUEST', label: 'Approval Requested' },
+  { sourceApp: 'Booking', actionType: 'APPROVE', label: 'Request Approved' },
+  { sourceApp: 'Booking', actionType: 'REJECT', label: 'Request Rejected' },
 ];
+
+const selectedCategory = ref<string | null>(null);
+
+const categories = computed(() => {
+  const apps = new Set(settingDefinitions.map((d) => d.sourceApp));
+  return Array.from(apps);
+});
+
+const filteredSettings = computed(() => {
+  if (!selectedCategory.value) return [];
+  return settingDefinitions.filter((d) => d.sourceApp === selectedCategory.value);
+});
+
+const getCategoryIcon = (category: string) => {
+  switch (category) {
+    case 'Booking':
+      return Briefcase;
+    default:
+      return Settings;
+  }
+};
 
 const fetchSettings = async () => {
   try {
@@ -424,11 +449,12 @@ const broadcastColumns: ColumnDef<BroadcastDto>[] = [
 const fetchData = async () => {
   loading.value = true;
   try {
-    const [broadcastsRes, groupsRes, rolesRes, usersRes] = await Promise.all([
+    const [broadcastsRes, groupsRes, rolesRes, usersRes, settingsRes] = await Promise.all([
       notificationsApi.getBroadcastHistory(),
       notificationsApi.getGroups(),
       rolesApi.getAll(),
       usersApi.getAll(),
+      notificationsApi.getSettings(),
     ]);
     broadcasts.value = broadcastsRes.data || [];
     groups.value = (groupsRes.data || []).map((g: any) => ({
@@ -440,6 +466,7 @@ const fetchData = async () => {
       ...u,
       username: u.username ?? null,
     })) as UserDto[];
+    settings.value = settingsRes.data || [];
   } catch (error) {
     console.error('Failed to fetch data:', error);
     toast.error(t('common.errorLoading'));
@@ -813,14 +840,46 @@ onMounted(() => {
 
       <!-- Settings Tab -->
       <TabsContent value="settings" class="space-y-6 pt-4">
-        <Card>
+        <div v-if="!selectedCategory" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- Category Cards -->
+          <Card
+            v-for="category in categories"
+            :key="category"
+            class="cursor-pointer hover:border-primary/50 transition-all hover:shadow-md group relative overflow-hidden"
+            @click="selectedCategory = category"
+          >
+            <div
+              class="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"
+            />
+            <CardHeader>
+              <div
+                class="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center mb-2 text-primary"
+              >
+                <component :is="getCategoryIcon(category)" class="w-5 h-5" />
+              </div>
+              <CardTitle>{{ category }} System</CardTitle>
+              <CardDescription>Configure notifications for {{ category }} module</CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
+
+        <Card v-else>
           <CardHeader>
-            <CardTitle>{{ t('admin.notificationSettings.title') }}</CardTitle>
-            <CardDescription>{{ t('admin.notificationSettings.subtitle') }}</CardDescription>
+            <div class="flex items-center gap-4">
+              <Button variant="ghost" size="icon" @click="selectedCategory = null">
+                <ArrowLeft class="w-4 h-4" />
+              </Button>
+              <div>
+                <CardTitle>{{ selectedCategory }} Settings</CardTitle>
+                <CardDescription
+                  >Manage notifications for {{ selectedCategory }} events</CardDescription
+                >
+              </div>
+            </div>
           </CardHeader>
           <CardContent class="space-y-6">
             <div
-              v-for="def in settingDefinitions"
+              v-for="def in filteredSettings"
               :key="def.sourceApp + def.actionType"
               class="flex flex-col gap-4 border-b last:border-0 pb-6 last:pb-0"
             >

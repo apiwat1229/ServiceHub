@@ -56,7 +56,8 @@ export class ApprovalsService {
         });
 
         // Notify admins/approvers
-        await this.notifyApprovers(request);
+        // await this.notifyApprovers(request); 
+        // DISABLED: Handled by BookingsService (or caller) via Notification Settings to avoid duplicates.
 
         return request;
     }
@@ -206,7 +207,9 @@ export class ApprovalsService {
             remark: dto.remark,
         });
 
-        // Notify requester
+        const actionUrl = `/approvals/${request.id}`;
+
+        // Notify requester (Always)
         await this.notificationsService.create({
             userId: request.requesterId,
             title: 'คำขออนุมัติได้รับการอนุมัติ',
@@ -215,8 +218,15 @@ export class ApprovalsService {
             sourceApp: 'APPROVALS',
             actionType: 'APPROVED',
             entityId: request.id,
-            actionUrl: `/approvals/${request.id}`,
+            actionUrl: actionUrl,
         });
+
+        // Notify other configured roles (via Settings)
+        await this.triggerSystemNotification(request.sourceApp || 'APPROVALS', 'APPROVE', {
+            title: `Request Approved: ${request.requestType}`,
+            message: `Request by ${request.requester.displayName} was approved by ${approver.displayName}`,
+            actionUrl: actionUrl,
+        }, request.requesterId); // Exclude requester as they are already notified
 
         // Apply the approved changes
         await this.applyApprovedChanges(updated);
@@ -243,6 +253,11 @@ export class ApprovalsService {
                         where: { id: entityId },
                         data: proposedData,
                     });
+                } else if (entityType === 'Booking') {
+                    await this.prisma.booking.update({
+                        where: { id: entityId },
+                        data: proposedData,
+                    });
                 }
             } else if (actionType === 'DELETE') {
                 // Apply soft delete based on entity type
@@ -261,6 +276,15 @@ export class ApprovalsService {
                             deletedAt: new Date(),
                             deletedBy: request.approverId,
                         } as any, // Type assertion until Prisma regenerates
+                    });
+                } else if (entityType === 'Booking') {
+                    // Booking Soft Delete
+                    await this.prisma.booking.update({
+                        where: { id: entityId },
+                        data: {
+                            deletedAt: new Date(),
+                            deletedBy: request.approverId,
+                        } as any,
                     });
                 }
             }
@@ -310,6 +334,9 @@ export class ApprovalsService {
             remark: dto.remark,
         });
 
+        const actionUrl = `/approvals/${request.id}`;
+
+        // Notify requester (Always)
         await this.notificationsService.create({
             userId: request.requesterId,
             title: 'คำขออนุมัติถูกปฏิเสธ',
@@ -318,8 +345,15 @@ export class ApprovalsService {
             sourceApp: 'APPROVALS',
             actionType: 'REJECTED',
             entityId: request.id,
-            actionUrl: `/approvals/${request.id}`,
+            actionUrl: actionUrl,
         });
+
+        // Notify other configured roles (via Settings)
+        await this.triggerSystemNotification(request.sourceApp || 'APPROVALS', 'REJECT', {
+            title: `Request Rejected: ${request.requestType}`,
+            message: `Request by ${request.requester.displayName} was rejected by ${approver.displayName}`,
+            actionUrl: actionUrl,
+        }, request.requesterId);
 
         return updated;
     }
@@ -554,7 +588,80 @@ export class ApprovalsService {
     }
 
     /**
-     * Notify approvers about new request
+     * Trigger system notification based on settings
+     */
+    private async triggerSystemNotification(sourceApp: string, actionType: string, payload: { title: string; message: string; actionUrl?: string }, excludeUserId?: string) {
+        try {
+            // 1. Get Settings
+            const settings = await this.prisma.notificationSetting.findUnique({
+                where: {
+                    sourceApp_actionType: { sourceApp, actionType }
+                }
+            });
+
+            if (!settings || !settings.isActive) {
+                return;
+            }
+
+            const recipientRoles = (settings.recipientRoles as unknown as string[]) || [];
+            const recipientGroups = (settings.recipientGroups as unknown as string[]) || [];
+
+            let targetUserIds: string[] = [];
+
+            // 2. Find Users with these Roles
+            if (recipientRoles.length > 0) {
+                const users = await this.prisma.user.findMany({
+                    where: {
+                        OR: [
+                            { role: { in: recipientRoles } },
+                            { roleRecord: { name: { in: recipientRoles } } },
+                            { roleRecord: { id: { in: recipientRoles } } } // Check ID too
+                        ]
+                    },
+                    select: { id: true }
+                });
+                targetUserIds.push(...users.map(u => u.id));
+            }
+
+            // 3. Find Users in these Groups
+            if (recipientGroups.length > 0) {
+                const groups = await this.prisma.notificationGroup.findMany({
+                    where: { id: { in: recipientGroups } },
+                    include: { members: { select: { id: true } } }
+                });
+                const groupUserIds = groups.flatMap(g => g.members.map(m => m.id));
+                targetUserIds.push(...groupUserIds);
+            }
+
+            // Deduplicate
+            targetUserIds = [...new Set(targetUserIds)];
+
+            // Exclude specified user (e.g., requester)
+            if (excludeUserId) {
+                targetUserIds = targetUserIds.filter(id => id !== excludeUserId);
+            }
+
+            // 4. Send Notification
+            for (const userId of targetUserIds) {
+                await this.notificationsService.create({
+                    userId: userId,
+                    title: payload.title,
+                    message: payload.message,
+                    type: actionType === 'REJECT' ? 'ERROR' : 'APPROVE',
+                    sourceApp,
+                    actionType,
+                    actionUrl: payload.actionUrl
+                });
+            }
+
+        } catch (error) {
+            console.error('[ApprovalsService] Error triggering notification:', error);
+        }
+    }
+
+    /**
+     * Notify approvers about new request (Legacy / Fallback)
+     * Currently disabled in favor of System Notification Settings in BookingsService
      */
     private async notifyApprovers(request: any) {
         // Get all admins (simplified - in production, use notification settings)
