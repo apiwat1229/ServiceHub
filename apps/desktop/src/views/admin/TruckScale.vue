@@ -26,7 +26,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { approvalsApi } from '@/services/approvals';
 import { bookingsApi } from '@/services/bookings';
 import { masterApi } from '@/services/master';
 import { rubberTypesApi } from '@/services/rubberTypes';
@@ -181,6 +183,7 @@ const fetchBookings = async () => {
     const response = await bookingsApi.getAll({ date: selectedDate.value });
     // Assuming backend returns array directly as per previous fix
     bookings.value = Array.isArray(response) ? response : (response as any).data || [];
+    if (bookings.value.length > 0) console.log('[TruckScale] Booking Data:', bookings.value[0]);
   } catch (error) {
     console.error('Failed to fetch bookings:', error);
     toast.error('Failed to load bookings');
@@ -278,6 +281,40 @@ const dashboardStats = computed(() => {
 
 // Scale In Logic
 const startDrainDialogOpen = ref(false);
+const requestEditDialogOpen = ref(false);
+const selectedRequestEditBooking = ref<any>(null);
+const requestEditReason = ref('');
+
+const openRequestEdit = (booking: any) => {
+  selectedRequestEditBooking.value = booking;
+  requestEditReason.value = '';
+  requestEditDialogOpen.value = true;
+};
+
+const confirmRequestEdit = async () => {
+  if (!selectedRequestEditBooking.value) return;
+  if (!requestEditReason.value) {
+    toast.error('กรุณาระบุเหตุผล');
+    return;
+  }
+  try {
+    await approvalsApi.create({
+      requestType: 'EDIT',
+      entityType: 'BOOKING',
+      entityId: selectedRequestEditBooking.value.id,
+      sourceApp: 'DESKTOP',
+      actionType: 'EDIT_WEIGHT_IN',
+      reason: requestEditReason.value,
+      currentData: { weightIn: selectedRequestEditBooking.value.weightIn },
+    });
+    toast.success('ส่งคำขอแก้ไขเรียบร้อยแล้ว');
+    requestEditDialogOpen.value = false;
+    fetchBookings();
+  } catch (error) {
+    console.error('Request edit failed:', error);
+    toast.error('ส่งคำขอแก้ไขล้มเหลว');
+  }
+};
 const stopDrainDialogOpen = ref(false);
 const weightInDialogOpen = ref(false);
 const selectedDrainBooking = ref<any>(null);
@@ -541,16 +578,30 @@ const scaleInColumns: ColumnDef<any>[] = [
     header: 'Action',
     cell: ({ row }) => {
       const hasWeight = !!row.original.weightIn;
+      const canEdit = row.original.canEditWeightIn; // Assuming backend provides this flag
+
       if (hasWeight) {
+        if (canEdit) {
+          return h(
+            Button,
+            {
+              size: 'sm',
+              variant: 'outline',
+              class: 'text-blue-600 border-blue-200 bg-blue-50',
+              onClick: () => openWeightIn(row.original),
+            },
+            () => 'แก้ไข'
+          );
+        }
         return h(
           Button,
           {
             size: 'sm',
             variant: 'outline',
-            class: 'text-blue-600 border-blue-200 bg-blue-50',
-            onClick: () => openWeightIn(row.original),
+            class: 'text-orange-600 border-orange-200 bg-orange-50',
+            onClick: () => openRequestEdit(row.original),
           },
-          () => 'แก้ไข'
+          () => 'ขอแก้ไข'
         );
       }
       return h(
@@ -1741,6 +1792,32 @@ onUnmounted(() => {
           <Button class="bg-green-600 hover:bg-green-700 w-full" @click="confirmWeightOut"
             >ยืนยัน</Button
           >
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <!-- Request Edit Dialog -->
+    <Dialog v-model:open="requestEditDialogOpen">
+      <DialogContent class="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>ขออนุมัติแก้ไขน้ำหนักขาเข้า</DialogTitle>
+          <DialogDescription> ระบุเหตุผลที่ต้องการแก้ไข เพื่อส่งคำขออนุมัติ </DialogDescription>
+        </DialogHeader>
+
+        <div class="grid gap-4 py-4">
+          <div class="grid gap-2">
+            <Label>เหตุผลการแก้ไข</Label>
+            <Textarea
+              v-model="requestEditReason"
+              placeholder="เช่น ลงน้ำหนักผิด, เปลี่ยนรถ ฯลฯ"
+              class="min-h-[100px]"
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" @click="requestEditDialogOpen = false">ยกเลิก</Button>
+          <Button class="bg-blue-600 hover:bg-blue-700" @click="confirmRequestEdit">ส่งคำขอ</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
