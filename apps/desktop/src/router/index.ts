@@ -139,12 +139,12 @@ const routes = [
     },
     {
         path: '/scale',
-        name: 'TruckScale',
         component: () => import('@/components/layout/MainLayout.vue'),
         meta: { requiresAuth: true },
         children: [
             {
                 path: '',
+                name: 'TruckScale',
                 component: () => import('../views/admin/TruckScale.vue'),
             }
         ]

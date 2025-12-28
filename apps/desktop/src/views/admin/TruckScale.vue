@@ -3,19 +3,36 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import DataTable from '@/components/ui/data-table/DataTable.vue';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { bookingsApi } from '@/services/bookings';
+import { socketService } from '@/services/socket';
 import { useAuthStore } from '@/stores/auth';
 import { getLocalTimeZone, today } from '@internationalized/date';
 import type { ColumnDef } from '@tanstack/vue-table';
 import { format } from 'date-fns';
-import { Calendar as CalendarIcon, CheckCircle, Clock, Search, Truck } from 'lucide-vue-next';
-import { computed, h, onMounted, ref, watch } from 'vue';
+import {
+  Calendar as CalendarIcon,
+  CheckCircle,
+  Clock,
+  Search,
+  Settings,
+  Truck,
+} from 'lucide-vue-next';
+import { computed, h, onMounted, onUnmounted, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 
 // State
@@ -23,6 +40,31 @@ const activeTab = ref('checkin');
 const bookings = ref<any[]>([]);
 const isLoading = ref(false);
 const searchQuery = ref('');
+const settingsOpen = ref(false);
+const settings = ref({
+  autoRefresh: true,
+  sound: false,
+});
+
+// Load Settings
+const STORAGE_KEY_SETTINGS = 'truck_scale_settings';
+const loadSettings = () => {
+  const saved = localStorage.getItem(STORAGE_KEY_SETTINGS);
+  if (saved) {
+    try {
+      settings.value = JSON.parse(saved);
+    } catch (e) {
+      console.error('Error loading settings', e);
+    }
+  }
+};
+watch(
+  settings,
+  (newVal) => {
+    localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(newVal));
+  },
+  { deep: true }
+);
 
 // Date Handling
 const selectedDateObject = ref<any>(today(getLocalTimeZone()));
@@ -235,14 +277,19 @@ const openWeightIn = (booking: any) => {
 };
 
 const confirmStartDrain = async () => {
-  if (!selectedDrainBooking.value) return;
+  console.log('Confirm Start Drain clicked:', selectedDrainBooking.value);
+  if (!selectedDrainBooking.value) {
+    console.error('No booking selected for drain start');
+    return;
+  }
   try {
     await bookingsApi.startDrain(selectedDrainBooking.value.id);
     toast.success('Started Drain');
     startDrainDialogOpen.value = false;
     fetchBookings();
-  } catch (e) {
-    toast.error('Failed to start');
+  } catch (e: any) {
+    console.error('Start drain error:', e);
+    toast.error('Failed to start: ' + (e.response?.data?.message || e.message));
   }
 };
 
@@ -584,8 +631,44 @@ const dashboardColumns: ColumnDef<any>[] = [
 ];
 
 onMounted(async () => {
+  loadSettings();
   await authStore.fetchUser();
   fetchBookings();
+
+  // Socket Listener
+  socketService.on('notification', () => {
+    // Only refresh if autoRefresh is on
+    if (settings.value.autoRefresh) {
+      // Debounce slightly or just fetch
+      console.log('[TruckScale] Notification received, refreshing data...');
+      fetchBookings();
+    }
+
+    // Play Sound
+    if (settings.value.sound) {
+      // Simple beep using browser API if possible, or create an Audio context
+      // Since we don't have assets, we can try a simple audio object if a URL existed,
+      // or just log it for now. Users often demand a real sound, so we can try a data URI beep suitable for notification.
+      try {
+        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(500, audioCtx.currentTime);
+        gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 0.1);
+      } catch (e) {
+        console.error('Audio play failed', e);
+      }
+    }
+  });
+});
+
+onUnmounted(() => {
+  socketService.off('notification');
 });
 </script>
 
@@ -628,6 +711,51 @@ onMounted(async () => {
             Weight Summary Dashboard
           </TabsTrigger>
         </TabsList>
+
+        <!-- Settings Button -->
+        <Dialog v-model:open="settingsOpen">
+          <DialogTrigger as-child>
+            <Button variant="outline" size="icon" class="ml-2">
+              <Settings class="w-4 h-4" />
+            </Button>
+          </DialogTrigger>
+          <DialogContent class="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Settings</DialogTitle>
+              <DialogDescription>
+                Configure notification and auto-refresh settings.
+              </DialogDescription>
+            </DialogHeader>
+            <div class="grid gap-4 py-4">
+              <div class="flex items-center justify-between space-x-2">
+                <Label htmlFor="auto-refresh" class="flex flex-col space-y-1">
+                  <span>Auto Refresh</span>
+                  <span class="font-normal leading-snug text-muted-foreground">
+                    Automatically refresh data when a new notification arrives.
+                  </span>
+                </Label>
+                <Checkbox
+                  id="auto-refresh"
+                  :checked="settings.autoRefresh"
+                  @update:checked="(v) => (settings.autoRefresh = v)"
+                />
+              </div>
+              <div class="flex items-center justify-between space-x-2">
+                <Label htmlFor="sound" class="flex flex-col space-y-1">
+                  <span>Notification Sound</span>
+                  <span class="font-normal leading-snug text-muted-foreground">
+                    Play a sound when a notification is received.
+                  </span>
+                </Label>
+                <Checkbox
+                  id="sound"
+                  :checked="settings.sound"
+                  @update:checked="(v) => (settings.sound = v)"
+                />
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <TabsContent value="checkin" class="space-y-6 mt-0">
@@ -1068,6 +1196,9 @@ onMounted(async () => {
         <div v-if="checkInStep === 1">
           <DialogHeader class="mb-4">
             <DialogTitle class="text-xl">บันทึก Check-in</DialogTitle>
+            <DialogDescription class="sr-only"
+              >Form to record truck check-in details.</DialogDescription
+            >
           </DialogHeader>
 
           <!-- Booking Details Card -->
@@ -1179,6 +1310,7 @@ onMounted(async () => {
         <div v-else class="flex flex-col items-center justify-center py-6 text-center space-y-6">
           <DialogHeader class="mb-2">
             <DialogTitle class="text-2xl font-bold">ยืนยันการ Check-in</DialogTitle>
+            <DialogDescription class="sr-only">Confirm check-in details.</DialogDescription>
           </DialogHeader>
 
           <div class="space-y-2">
@@ -1228,88 +1360,178 @@ onMounted(async () => {
 
     <!-- Start Drain Dialog -->
     <Dialog v-model:open="startDrainDialogOpen">
-      <DialogContent>
+      <DialogContent class="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>ยืนยันเริ่มจับเวลา Drain</DialogTitle>
+          <DialogDescription class="sr-only">Confirm to start drain timer.</DialogDescription>
         </DialogHeader>
-        <div class="bg-muted p-4 rounded-lg flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <div class="bg-white p-2 rounded border"><Truck class="w-6 h-6 text-blue-600" /></div>
-            <div>
-              <div class="font-bold text-lg">{{ selectedDrainBooking?.truckRegister }}</div>
-              <div class="text-sm text-muted-foreground">{{ selectedDrainBooking?.truckType }}</div>
+
+        <div class="space-y-4 py-2">
+          <!-- Truck Card -->
+          <div class="bg-muted/50 p-4 rounded-xl flex items-center justify-between border">
+            <div class="flex items-center gap-3">
+              <div class="bg-background p-2.5 rounded-lg border shadow-sm">
+                <Truck class="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <div class="font-bold text-lg leading-none mb-1">
+                  {{ selectedDrainBooking?.truckRegister }}
+                </div>
+                <div
+                  class="text-xs text-muted-foreground bg-white px-2 py-0.5 rounded border inline-block"
+                >
+                  {{ selectedDrainBooking?.truckType }}
+                </div>
+              </div>
+            </div>
+            <Badge class="bg-blue-600 hover:bg-blue-700 text-base px-3 py-0.5 shadow-sm">
+              Q {{ selectedDrainBooking?.queueNo }}
+            </Badge>
+          </div>
+
+          <!-- Details List -->
+          <div class="space-y-3 px-1">
+            <div class="grid grid-cols-[100px_1fr] text-sm">
+              <span class="text-muted-foreground">Supplier :</span>
+              <span class="font-medium text-foreground truncate">{{
+                selectedDrainBooking?.supplierName
+              }}</span>
+            </div>
+            <div class="grid grid-cols-[100px_1fr] text-sm">
+              <span class="text-muted-foreground">Booking Code :</span>
+              <span class="font-medium font-mono text-foreground">{{
+                selectedDrainBooking?.bookingCode
+              }}</span>
+            </div>
+            <div class="grid grid-cols-[100px_1fr] text-sm">
+              <span class="text-muted-foreground">Rubber Type :</span>
+              <span class="font-medium text-foreground">{{
+                selectedDrainBooking?.rubberType
+              }}</span>
             </div>
           </div>
-          <Badge class="bg-blue-600">Q {{ selectedDrainBooking?.queueNo }}</Badge>
+
+          <div class="border-t my-2"></div>
+
+          <!-- Time Action -->
+          <div
+            class="flex justify-between items-center bg-green-50 p-4 rounded-xl border border-green-100"
+          >
+            <span class="text-green-700 font-medium text-sm">เวลาเริ่ม (Start):</span>
+            <span
+              class="text-green-700 font-mono text-xl font-bold bg-white px-3 py-1 rounded-lg border border-green-200 shadow-sm"
+            >
+              {{ format(new Date(), 'HH:mm') }}
+            </span>
+          </div>
         </div>
 
-        <div class="border-t my-4"></div>
-
-        <div class="flex justify-between items-center bg-gray-50 p-4 rounded-lg">
-          <span class="text-gray-500">เวลาเริ่ม (Start):</span>
-          <span class="text-green-600 font-mono text-xl font-bold bg-green-100 px-3 py-1 rounded">{{
-            format(new Date(), 'HH:mm')
-          }}</span>
-        </div>
-
-        <DialogFooter class="gap-2 sm:gap-0 mt-4">
-          <Button variant="outline" @click="startDrainDialogOpen = false">ยกเลิก</Button>
-          <Button class="bg-green-600 hover:bg-green-700" @click="confirmStartDrain">ยืนยัน</Button>
+        <DialogFooter class="gap-2 sm:gap-0 mt-2">
+          <Button variant="outline" @click="startDrainDialogOpen = false" class="h-10"
+            >ยกเลิก</Button
+          >
+          <Button class="bg-green-600 hover:bg-green-700 h-10 px-8" @click="confirmStartDrain"
+            >ยืนยัน</Button
+          >
         </DialogFooter>
       </DialogContent>
     </Dialog>
 
     <!-- Stop Drain Dialog -->
     <Dialog v-model:open="stopDrainDialogOpen">
-      <DialogContent>
+      <DialogContent class="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>ยืนยันหยุดจับเวลา Drain</DialogTitle>
+          <DialogDescription class="sr-only">Confirm to stop drain timer.</DialogDescription>
         </DialogHeader>
-        <div class="bg-muted p-4 rounded-lg flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <div class="bg-white p-2 rounded border"><Truck class="w-6 h-6 text-blue-600" /></div>
-            <div>
-              <div class="font-bold text-lg">{{ selectedDrainBooking?.truckRegister }}</div>
-              <div class="text-sm text-muted-foreground">{{ selectedDrainBooking?.truckType }}</div>
+
+        <div class="space-y-4 py-2">
+          <!-- Truck Card -->
+          <div class="bg-muted/50 p-4 rounded-xl flex items-center justify-between border">
+            <div class="flex items-center gap-3">
+              <div class="bg-background p-2.5 rounded-lg border shadow-sm">
+                <Truck class="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <div class="font-bold text-lg leading-none mb-1">
+                  {{ selectedDrainBooking?.truckRegister }}
+                </div>
+                <div
+                  class="text-xs text-muted-foreground bg-white px-2 py-0.5 rounded border inline-block"
+                >
+                  {{ selectedDrainBooking?.truckType }}
+                </div>
+              </div>
+            </div>
+            <Badge class="bg-blue-600 hover:bg-blue-700 text-base px-3 py-0.5 shadow-sm">
+              Q {{ selectedDrainBooking?.queueNo }}
+            </Badge>
+          </div>
+
+          <!-- Details List -->
+          <div class="space-y-3 px-1">
+            <div class="grid grid-cols-[100px_1fr] text-sm">
+              <span class="text-muted-foreground">Supplier :</span>
+              <span class="font-medium text-foreground truncate">{{
+                selectedDrainBooking?.supplierName
+              }}</span>
+            </div>
+            <div class="grid grid-cols-[100px_1fr] text-sm">
+              <span class="text-muted-foreground">Booking Code :</span>
+              <span class="font-medium font-mono text-foreground">{{
+                selectedDrainBooking?.bookingCode
+              }}</span>
+            </div>
+            <div class="grid grid-cols-[100px_1fr] text-sm">
+              <span class="text-muted-foreground">Rubber Type :</span>
+              <span class="font-medium text-foreground">{{
+                selectedDrainBooking?.rubberType
+              }}</span>
             </div>
           </div>
-          <Badge class="bg-blue-600">Q {{ selectedDrainBooking?.queueNo }}</Badge>
-        </div>
 
-        <div class="grid grid-cols-2 gap-4 mt-6">
-          <div class="border p-4 rounded-lg">
-            <div class="text-sm text-gray-500 mb-1">Start Time</div>
-            <div class="text-green-600 font-bold text-xl flex items-center gap-2">
-              <Clock class="w-4 h-4" />
-              {{
-                selectedDrainBooking?.startDrainAt
-                  ? format(new Date(selectedDrainBooking.startDrainAt), 'HH:mm')
-                  : '-'
-              }}
+          <div class="border-t my-2"></div>
+
+          <!-- Time Comparison -->
+          <div class="grid grid-cols-2 gap-3">
+            <div class="border p-3 rounded-lg bg-background">
+              <div class="text-xs text-muted-foreground mb-1">Start Time</div>
+              <div class="text-green-600 font-bold text-lg flex items-center gap-1.5">
+                <Clock class="w-4 h-4" />
+                {{
+                  selectedDrainBooking?.startDrainAt
+                    ? format(new Date(selectedDrainBooking.startDrainAt), 'HH:mm')
+                    : '-'
+                }}
+              </div>
+            </div>
+            <div class="border p-3 rounded-lg bg-red-50 border-red-100">
+              <div class="text-xs text-red-500 mb-1">Stop Time</div>
+              <div class="text-red-600 font-bold text-lg flex items-center gap-1.5">
+                <Clock class="w-4 h-4" /> {{ format(new Date(), 'HH:mm') }}
+              </div>
             </div>
           </div>
-          <div class="border p-4 rounded-lg bg-red-50 border-red-100">
-            <div class="text-sm text-red-500 mb-1">Stop Time</div>
-            <div class="text-red-600 font-bold text-xl flex items-center gap-2">
-              <Clock class="w-4 h-4" /> {{ format(new Date(), 'HH:mm') }}
+
+          <div
+            class="bg-orange-50 border border-orange-100 p-3 rounded-lg flex justify-between items-center"
+          >
+            <div class="flex items-center gap-2 text-orange-700 text-sm font-medium">
+              <span>⏳ รวมเวลา (Duration)</span>
+            </div>
+            <div class="text-xl font-bold text-orange-700">
+              {{ calculateDuration(selectedDrainBooking?.startDrainAt, new Date()) }}
             </div>
           </div>
         </div>
 
-        <div
-          class="bg-orange-50 border border-orange-100 p-4 rounded-lg flex justify-between items-center mt-4"
-        >
-          <div class="flex items-center gap-2 text-orange-700">
-            <span>⏳ รวมเวลา (Duration)</span>
-          </div>
-          <div class="text-2xl font-bold text-foreground">
-            {{ calculateDuration(selectedDrainBooking?.startDrainAt, new Date()) }}
-          </div>
-        </div>
-
-        <DialogFooter class="gap-2 sm:gap-0 mt-4">
-          <Button variant="outline" @click="stopDrainDialogOpen = false">ยกเลิก</Button>
-          <Button class="bg-red-600 hover:bg-red-700" @click="confirmStopDrain">ยืนยัน</Button>
+        <DialogFooter class="gap-2 sm:gap-0 mt-2">
+          <Button variant="outline" @click="stopDrainDialogOpen = false" class="h-10"
+            >ยกเลิก</Button
+          >
+          <Button class="bg-red-600 hover:bg-red-700 h-10 px-8" @click="confirmStopDrain"
+            >ยืนยันจบ</Button
+          >
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -1348,7 +1570,6 @@ onMounted(async () => {
               v-model="weightInData.weightIn"
               type="number"
               class="text-lg font-medium"
-              ```
               placeholder="0"
             />
           </div>
