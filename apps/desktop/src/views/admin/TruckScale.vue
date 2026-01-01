@@ -163,11 +163,11 @@ const openCheckInDialog = (booking: any) => {
 const handleNextStep = () => {
   // Basic validation
   if (!checkInData.value.truckType) {
-    toast.error('กรุณาเลือกประเภทรถ');
+    toast.error('Please select truck type');
     return;
   }
   if (!checkInData.value.truckRegister || !checkInData.value.truckRegister.trim()) {
-    toast.error('กรุณาระบุเลขทะเบียนรถ');
+    toast.error('Please enter truck registration number');
     return;
   }
   checkInStep.value = 2;
@@ -254,7 +254,7 @@ const openWeightOut = (booking: any) => {
 const handleWeightOutNext = () => {
   // Validate
   if (!weightOutData.value.weightOut || weightOutData.value.weightOut <= 0) {
-    toast.error('กรุณาระบุน้ำหนักขาออก');
+    toast.error('Please enter weight out');
     return;
   }
   weightOutDialogOpen.value = false;
@@ -265,7 +265,7 @@ const confirmWeightOut = async () => {
   if (!selectedDrainBooking.value) return;
   try {
     await bookingsApi.saveWeightOut(selectedDrainBooking.value.id, weightOutData.value);
-    toast.success('บันทึกน้ำหนักขาออกสำเร็จ');
+    toast.success('Weight out saved successfully');
     confirmCheckoutDialogOpen.value = false;
     fetchBookings();
   } catch (e) {
@@ -304,7 +304,7 @@ const openRequestEdit = (booking: any) => {
 const confirmRequestEdit = async () => {
   if (!selectedRequestEditBooking.value) return;
   if (!requestEditReason.value) {
-    toast.error('กรุณาระบุเหตุผล');
+    toast.error('Please provide a reason');
     return;
   }
   try {
@@ -317,12 +317,12 @@ const confirmRequestEdit = async () => {
       reason: requestEditReason.value,
       currentData: { weightIn: selectedRequestEditBooking.value.weightIn },
     });
-    toast.success('ส่งคำขอแก้ไขเรียบร้อยแล้ว');
+    toast.success('Edit request sent successfully');
     requestEditDialogOpen.value = false;
     fetchBookings();
   } catch (error) {
     console.error('Request edit failed:', error);
-    toast.error('ส่งคำขอแก้ไขล้มเหลว');
+    toast.error('Failed to send edit request');
   }
 };
 const stopDrainDialogOpen = ref(false);
@@ -427,7 +427,7 @@ const confirmStopDrain = async () => {
   const durationMins = Math.floor((end - start) / 60000);
 
   if (durationMins < 40 && !stopDrainReason.value.trim()) {
-    toast.error('กรุณาระบุเหตุผล (เนื่องจากใช้เวลาต่ำกว่า 40 นาที)');
+    toast.error('Please provide a reason (duration less than 40 minutes)');
     return;
   }
 
@@ -456,11 +456,11 @@ const saveWeightIn = async () => {
 };
 
 const calculateDuration = (start: string | Date, end: string | Date) => {
-  if (!start || !end) return '00 นาที';
+  if (!start || !end) return '00 min';
   const s = new Date(start).getTime();
   const e = new Date(end).getTime();
   const diff = Math.floor((e - s) / 60000); // minutes
-  return `${diff} นาที`;
+  return `${diff} min`;
 };
 
 // Columns
@@ -547,12 +547,12 @@ const scaleInColumns: ColumnDef<any>[] = [
   },
   {
     accessorKey: 'truckRegister',
-    header: 'ทะเบียนรถ',
+    header: 'License Plate',
     cell: ({ row }) => row.original.truckRegister || '-',
   },
   {
     accessorKey: 'truckType',
-    header: 'ประเภท',
+    header: 'Type',
     cell: ({ row }) => row.original.truckType || '-',
   },
   {
@@ -610,14 +610,14 @@ const scaleInColumns: ColumnDef<any>[] = [
           end: row.original.stopDrainAt,
         });
       }
-      return '00 นาที';
+      return '00 min';
     },
   },
   {
     accessorKey: 'weightIn',
     header: 'Weight In',
     cell: ({ row }) =>
-      row.original.weightIn ? `${row.original.weightIn.toLocaleString()} กก.` : '-',
+      row.original.weightIn ? `${row.original.weightIn.toLocaleString()} kg` : '-',
   },
   {
     id: 'action',
@@ -636,7 +636,7 @@ const scaleInColumns: ColumnDef<any>[] = [
               class: 'text-blue-600 border-blue-200 bg-blue-50',
               onClick: () => openWeightIn(row.original),
             },
-            () => 'แก้ไข'
+            () => 'Edit'
           );
         }
         return h(
@@ -647,7 +647,7 @@ const scaleInColumns: ColumnDef<any>[] = [
             class: 'text-orange-600 border-orange-200 bg-orange-50',
             onClick: () => openRequestEdit(row.original),
           },
-          () => 'ขอแก้ไข'
+          () => 'Request Edit'
         );
       }
       return h(
@@ -657,7 +657,7 @@ const scaleInColumns: ColumnDef<any>[] = [
           class: 'bg-gray-200 text-gray-700 hover:bg-gray-300',
           onClick: () => openWeightIn(row.original),
         },
-        () => 'บันทึก'
+        () => 'Save'
       );
     },
   },
@@ -667,7 +667,7 @@ const scaleOutColumns: ColumnDef<any>[] = [
   ...scaleInColumns.slice(0, 3), // Supplier, Queue, Truck
   {
     accessorKey: 'truckType',
-    header: 'ประเภท',
+    header: 'Type',
     cell: ({ row }) => row.original.truckType || '-',
   },
   {
@@ -691,14 +691,14 @@ const scaleOutColumns: ColumnDef<any>[] = [
           end: row.original.stopDrainAt,
         });
       }
-      return '00 นาที';
+      return '00 min';
     },
   },
   {
     accessorKey: 'weightIn',
     header: 'Weight In',
     cell: ({ row }) =>
-      row.original.weightIn ? `${row.original.weightIn.toLocaleString()} กก.` : '-',
+      row.original.weightIn ? `${row.original.weightIn.toLocaleString()} kg` : '-',
   },
   {
     id: 'action',
@@ -711,7 +711,7 @@ const scaleOutColumns: ColumnDef<any>[] = [
           class: 'bg-blue-100 text-blue-600 hover:bg-blue-200 border-none shadow-none',
           onClick: () => openWeightOut(row.original),
         },
-        () => 'บันทึก'
+        () => 'Save'
       );
     },
   },
@@ -720,7 +720,7 @@ const scaleOutColumns: ColumnDef<any>[] = [
 const dashboardColumns: ColumnDef<any>[] = [
   {
     accessorKey: 'date',
-    header: 'วันที่',
+    header: 'Date',
     cell: ({ row }) => format(new Date(row.original.date), 'dd-MMM-yyyy'),
   },
   {
@@ -730,23 +730,23 @@ const dashboardColumns: ColumnDef<any>[] = [
   },
   {
     accessorKey: 'truckRegister',
-    header: 'ทะเบียนรถ',
+    header: 'License Plate',
     cell: ({ row }) => row.original.truckRegister || '-',
   },
   {
     accessorKey: 'truckType',
-    header: 'ประเภท',
+    header: 'Type',
     cell: ({ row }) => row.original.truckType || '-',
   },
   {
-    header: 'Rubber Type / จังหวัด',
+    header: 'Rubber Type / Province',
     cell: ({ row }) =>
       h('div', { class: 'flex flex-col' }, [
         h('span', { class: 'font-medium' }, row.original.rubberType || '-'),
         h(
           'span',
           { class: 'text-xs text-muted-foreground' },
-          row.original.rubberSource || 'ไม่ระบุจังหวัด'
+          row.original.rubberSource || 'Province not specified'
         ),
       ]),
   },
@@ -1302,8 +1302,10 @@ onUnmounted(() => {
                 <div
                   class="rounded-lg border bg-background px-4 py-2 flex flex-col justify-center gap-1 border-l-4 border-l-blue-500 shadow-sm min-w-[150px]"
                 >
-                  <span class="text-xs text-muted-foreground font-medium">จำนวนเที่ยว</span>
-                  <span class="text-xl font-bold leading-none">{{ dashboardStats.count }} คัน</span>
+                  <span class="text-xs text-muted-foreground font-medium">Total Trips</span>
+                  <span class="text-xl font-bold leading-none"
+                    >{{ dashboardStats.count }} trips</span
+                  >
                 </div>
 
                 <div
@@ -1354,7 +1356,7 @@ onUnmounted(() => {
         <!-- STEP 1: FORM -->
         <div v-if="checkInStep === 1">
           <DialogHeader class="mb-4">
-            <DialogTitle class="text-xl">บันทึก Check-in</DialogTitle>
+            <DialogTitle class="text-xl">Check-in Record</DialogTitle>
             <DialogDescription class="sr-only"
               >Form to record truck check-in details.</DialogDescription
             >
@@ -1364,7 +1366,7 @@ onUnmounted(() => {
           <div class="bg-muted/30 rounded-lg p-4 mb-6 border">
             <div class="flex items-center gap-2 mb-4">
               <div class="w-1 h-6 bg-blue-600 rounded-full"></div>
-              <span class="font-semibold text-base">รายละเอียด Booking</span>
+              <span class="font-semibold text-base">Booking Details</span>
               <Badge
                 variant="secondary"
                 class="ml-auto bg-blue-100 text-blue-700 hover:bg-blue-100 text-lg px-3 py-1"
@@ -1375,7 +1377,7 @@ onUnmounted(() => {
 
             <div class="space-y-2 text-sm">
               <div class="grid grid-cols-[100px_1fr] items-center">
-                <span class="text-muted-foreground">วันที่</span>
+                <span class="text-muted-foreground">Date</span>
                 <span class="font-medium">
                   {{
                     selectedBooking?.date
@@ -1385,7 +1387,7 @@ onUnmounted(() => {
                 </span>
               </div>
               <div class="grid grid-cols-[100px_1fr] items-center">
-                <span class="text-muted-foreground">ช่วงเวลา</span>
+                <span class="text-muted-foreground">Time Slot</span>
                 <span class="font-medium">
                   {{ selectedBooking?.startTime }} - {{ selectedBooking?.endTime }}
                 </span>
@@ -1408,7 +1410,7 @@ onUnmounted(() => {
             <!-- Row 1: Time & Recorder -->
             <div class="grid grid-cols-2 gap-4">
               <div class="grid gap-2">
-                <Label>เวลา Check-in</Label>
+                <Label>Check-in Time</Label>
                 <Input
                   :model-value="checkInTime ? format(checkInTime, 'HH:mm') : '-'"
                   readonly
@@ -1416,7 +1418,7 @@ onUnmounted(() => {
                 />
               </div>
               <div class="grid gap-2">
-                <Label>ผู้บันทึก</Label>
+                <Label>Recorder</Label>
                 <Input :model-value="recorderName" readonly class="bg-muted" />
               </div>
             </div>
@@ -1424,23 +1426,23 @@ onUnmounted(() => {
             <!-- Row 2: Truck Info -->
             <div class="grid grid-cols-2 gap-4">
               <div class="grid gap-2">
-                <Label>ประเภทตัวรถ <span class="text-destructive">*</span></Label>
+                <Label>Truck Type <span class="text-destructive">*</span></Label>
                 <Select v-model="checkInData.truckType">
                   <SelectTrigger>
-                    <SelectValue placeholder="เลือกประเภทรถ" />
+                    <SelectValue placeholder="Select truck type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="กระบะ">กระบะ</SelectItem>
-                    <SelectItem value="6 ล้อ">6 ล้อ</SelectItem>
-                    <SelectItem value="10 ล้อ">10 ล้อ</SelectItem>
-                    <SelectItem value="10 ล้อ พ่วง">10 ล้อ (พ่วง)</SelectItem>
-                    <SelectItem value="เทรลเลอร์">เทรลเลอร์</SelectItem>
+                    <SelectItem value="กระบะ">Pickup</SelectItem>
+                    <SelectItem value="6 ล้อ">6-Wheeler</SelectItem>
+                    <SelectItem value="10 ล้อ">10-Wheeler</SelectItem>
+                    <SelectItem value="10 ล้อ พ่วง">10-Wheeler (Trailer)</SelectItem>
+                    <SelectItem value="เทรลเลอร์">Trailer</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div class="grid grid-cols-2 gap-4">
                 <div class="grid gap-2 col-span-2">
-                  <Label>เลขทะเบียน <span class="text-destructive">*</span></Label>
+                  <Label>License Plate <span class="text-destructive">*</span></Label>
                   <Input v-model="checkInData.truckRegister" placeholder="Ex. 1กข 1234" />
                 </div>
               </div>
@@ -1448,19 +1450,19 @@ onUnmounted(() => {
 
             <!-- Note -->
             <div class="grid gap-2">
-              <Label>หมายเหตุ</Label>
+              <Label>Note</Label>
               <Textarea
                 v-model="checkInData.note"
-                placeholder="รายละเอียดเพิ่มเติม (ถ้ามี)"
+                placeholder="Additional details (if any)"
                 class="min-h-[100px]"
               />
             </div>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" @click="checkInDialogOpen = false"> ปิด </Button>
+            <Button variant="outline" @click="checkInDialogOpen = false"> Close </Button>
             <Button class="bg-blue-600 hover:bg-blue-700" @click="handleNextStep">
-              ยืนยัน Check-in
+              Confirm Check-in
             </Button>
           </DialogFooter>
         </div>
@@ -1468,12 +1470,12 @@ onUnmounted(() => {
         <!-- STEP 2: CONFIRMATION -->
         <div v-else class="flex flex-col items-center justify-center py-6 text-center space-y-6">
           <DialogHeader class="mb-2">
-            <DialogTitle class="text-2xl font-bold">ยืนยันการ Check-in</DialogTitle>
+            <DialogTitle class="text-2xl font-bold">Confirm Check-in</DialogTitle>
             <DialogDescription class="sr-only">Confirm check-in details.</DialogDescription>
           </DialogHeader>
 
           <div class="space-y-2">
-            <p class="text-muted-foreground text-sm">กรุณาตรวจสอบความถูกต้องก่อนยืนยัน</p>
+            <p class="text-muted-foreground text-sm">Please verify before confirming</p>
           </div>
 
           <div class="bg-muted/30 border rounded-xl p-6 w-full max-w-sm mx-auto space-y-6">
@@ -1486,7 +1488,7 @@ onUnmounted(() => {
             </div>
 
             <div class="space-y-2">
-              <div class="text-sm text-muted-foreground font-medium">เวลา Check-in</div>
+              <div class="text-sm text-muted-foreground font-medium">Check-in Time</div>
               <div
                 class="text-3xl font-extrabold text-blue-600 bg-blue-50 py-3 rounded-lg border border-blue-100"
               >
@@ -1508,9 +1510,9 @@ onUnmounted(() => {
           </div>
 
           <div class="flex gap-4 w-full max-w-sm justify-center pt-4">
-            <Button variant="outline" class="w-full h-11" @click="checkInStep = 1"> ยกเลิก </Button>
+            <Button variant="outline" class="w-full h-11" @click="checkInStep = 1"> Cancel </Button>
             <Button class="w-full h-11 bg-blue-600 hover:bg-blue-700" @click="confirmCheckIn">
-              ยืนยัน
+              Confirm
             </Button>
           </div>
         </div>
@@ -1521,7 +1523,7 @@ onUnmounted(() => {
     <Dialog v-model:open="startDrainDialogOpen">
       <DialogContent class="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>ยืนยันเริ่มจับเวลา Drain</DialogTitle>
+          <DialogTitle>Confirm Start Drain Timer</DialogTitle>
           <DialogDescription class="sr-only">Confirm to start drain timer.</DialogDescription>
         </DialogHeader>
 
@@ -1576,7 +1578,7 @@ onUnmounted(() => {
           <div
             class="flex justify-between items-center bg-green-50 p-4 rounded-xl border border-green-100"
           >
-            <span class="text-green-700 font-medium text-sm">เวลาเริ่ม (Start):</span>
+            <span class="text-green-700 font-medium text-sm">Start Time:</span>
             <span
               class="text-green-700 font-mono text-xl font-bold bg-white px-3 py-1 rounded-lg border border-green-200 shadow-sm"
             >
@@ -1587,10 +1589,10 @@ onUnmounted(() => {
 
         <DialogFooter class="gap-2 sm:gap-0 mt-2">
           <Button variant="outline" @click="startDrainDialogOpen = false" class="h-10"
-            >ยกเลิก</Button
+            >Cancel</Button
           >
           <Button class="bg-green-600 hover:bg-green-700 h-10 px-8" @click="confirmStartDrain"
-            >ยืนยัน</Button
+            >Confirm</Button
           >
         </DialogFooter>
       </DialogContent>
@@ -1600,7 +1602,7 @@ onUnmounted(() => {
     <Dialog v-model:open="stopDrainDialogOpen">
       <DialogContent class="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>ยืนยันหยุดจับเวลา Drain</DialogTitle>
+          <DialogTitle>Confirm Stop Drain Timer</DialogTitle>
           <DialogDescription class="sr-only">Confirm to stop drain timer.</DialogDescription>
         </DialogHeader>
 
@@ -1676,7 +1678,7 @@ onUnmounted(() => {
             class="bg-orange-50 border border-orange-100 p-3 rounded-lg flex justify-between items-center"
           >
             <div class="flex items-center gap-2 text-orange-700 text-sm font-medium">
-              <span>⏳ รวมเวลา (Duration)</span>
+              <span>⏳ Total Duration</span>
             </div>
             <div class="text-xl font-bold text-orange-700">
               {{ calculateDuration(selectedDrainBooking?.startDrainAt, new Date()) }}
@@ -1692,10 +1694,10 @@ onUnmounted(() => {
             "
             class="grid gap-2"
           >
-            <Label class="text-red-600">เหตุผล (ระบุเนื่องจากใช้เวลาต่ำกว่า 40 นาที) *</Label>
+            <Label class="text-red-600">Reason (required if duration less than 40 minutes) *</Label>
             <Textarea
               v-model="stopDrainReason"
-              placeholder="ระบุสาเหตุ..."
+              placeholder="Specify reason..."
               class="resize-none"
               rows="3"
             />
@@ -1704,10 +1706,10 @@ onUnmounted(() => {
 
         <DialogFooter class="gap-2 sm:gap-0 mt-2">
           <Button variant="outline" @click="stopDrainDialogOpen = false" class="h-10"
-            >ยกเลิก</Button
+            >Cancel</Button
           >
           <Button class="bg-red-600 hover:bg-red-700 h-10 px-8" @click="confirmStopDrain"
-            >ยืนยันจบ</Button
+            >Confirm Stop</Button
           >
         </DialogFooter>
       </DialogContent>
@@ -1717,7 +1719,7 @@ onUnmounted(() => {
     <Dialog v-model:open="weightInDialogOpen">
       <DialogContent class="sm:max-w-4xl">
         <DialogHeader>
-          <DialogTitle>บันทึกน้ำหนักขาเข้า (กก.)</DialogTitle>
+          <DialogTitle>Record Weight In (kg)</DialogTitle>
           <DialogDescription class="sr-only">
             Record weight in data including rubber source and type.
           </DialogDescription>
@@ -1732,31 +1734,31 @@ onUnmounted(() => {
           <div class="space-y-4">
             <h3 class="font-semibold text-lg border-b pb-2 flex items-center gap-2">
               <div class="w-1 h-5 bg-primary rounded-full"></div>
-              ส่วนหัว (Main)
+              Main Truck
             </h3>
             <div class="grid gap-4">
               <div class="grid gap-2">
-                <Label>ที่มาของยาง</Label>
+                <Label>Rubber Source</Label>
                 <Combobox
                   v-model="weightInData.rubberSource"
                   :options="provinceOptions"
-                  placeholder="ระบุที่มา"
-                  search-placeholder="ค้นหาจังหวัด..."
-                  empty-text="ไม่พบจังหวัด"
+                  placeholder="Specify source"
+                  search-placeholder="Search province..."
+                  empty-text="Province not found"
                 />
               </div>
               <div class="grid gap-2">
-                <Label>ประเภทยาง</Label>
+                <Label>Rubber Type</Label>
                 <Combobox
                   v-model="weightInData.rubberType"
                   :options="rubberTypeOptions"
-                  placeholder="เลือกประเภทยาง"
-                  search-placeholder="ค้นหาประเภทยาง..."
-                  empty-text="ไม่พบประเภทยาง"
+                  placeholder="Select rubber type"
+                  search-placeholder="Search rubber type..."
+                  empty-text="Rubber type not found"
                 />
               </div>
               <div class="grid gap-2">
-                <Label>น้ำหนัก (กก.)</Label>
+                <Label>Weight (kg)</Label>
                 <Input
                   v-model="formattedWeightIn"
                   class="text-lg font-medium"
@@ -1787,31 +1789,31 @@ onUnmounted(() => {
           <div class="space-y-4">
             <h3 class="font-semibold text-lg border-b pb-2 flex items-center gap-2">
               <div class="w-1 h-5 bg-orange-500 rounded-full"></div>
-              ส่วนพ่วง (Trailer)
+              Trailer
             </h3>
             <div class="grid gap-4">
               <div class="grid gap-2">
-                <Label>ที่มาของยาง</Label>
+                <Label>Rubber Source</Label>
                 <Combobox
                   v-model="weightInData.trailerRubberSource"
                   :options="provinceOptions"
-                  placeholder="ระบุที่มา"
-                  search-placeholder="ค้นหาจังหวัด..."
-                  empty-text="ไม่พบจังหวัด"
+                  placeholder="Specify source"
+                  search-placeholder="Search province..."
+                  empty-text="Province not found"
                 />
               </div>
               <div class="grid gap-2">
-                <Label>ประเภทยาง</Label>
+                <Label>Rubber Type</Label>
                 <Combobox
                   v-model="weightInData.trailerRubberType"
                   :options="rubberTypeOptions"
-                  placeholder="เลือกประเภทยาง"
-                  search-placeholder="ค้นหาประเภทยาง..."
-                  empty-text="ไม่พบประเภทยาง"
+                  placeholder="Select rubber type"
+                  search-placeholder="Search rubber type..."
+                  empty-text="Rubber type not found"
                 />
               </div>
               <div class="grid gap-2">
-                <Label>น้ำหนัก (กก.)</Label>
+                <Label>Weight (kg)</Label>
                 <Input
                   v-model="formattedTrailerWeightIn"
                   class="text-lg font-medium"
@@ -1842,27 +1844,27 @@ onUnmounted(() => {
         <!-- Standard Layout (No Trailer) -->
         <div v-else class="grid grid-cols-2 gap-4 py-4">
           <div class="grid gap-2">
-            <Label>ที่มาของยาง</Label>
+            <Label>Rubber Source</Label>
             <Combobox
               v-model="weightInData.rubberSource"
               :options="provinceOptions"
-              placeholder="ระบุที่มา"
-              search-placeholder="ค้นหาจังหวัด..."
-              empty-text="ไม่พบจังหวัด"
+              placeholder="Specify source"
+              search-placeholder="Search province..."
+              empty-text="Province not found"
             />
           </div>
           <div class="grid gap-2">
-            <Label>ประเภทยาง</Label>
+            <Label>Rubber Type</Label>
             <Combobox
               v-model="weightInData.rubberType"
               :options="rubberTypeOptions"
-              placeholder="เลือกประเภทยาง"
-              search-placeholder="ค้นหาประเภทยาง..."
-              empty-text="ไม่พบประเภทยาง"
+              placeholder="Select rubber type"
+              search-placeholder="Search rubber type..."
+              empty-text="Rubber type not found"
             />
           </div>
           <div class="grid gap-2 col-span-2">
-            <Label>น้ำหนัก (กก.)</Label>
+            <Label>Weight (kg)</Label>
             <Input
               v-model="formattedWeightIn"
               class="text-lg font-medium"
@@ -1884,8 +1886,8 @@ onUnmounted(() => {
         </div>
 
         <DialogFooter>
-          <Button variant="outline" @click="weightInDialogOpen = false">ยกเลิก</Button>
-          <Button class="bg-blue-600 hover:bg-blue-700" @click="saveWeightIn">บันทึก</Button>
+          <Button variant="outline" @click="weightInDialogOpen = false">Cancel</Button>
+          <Button class="bg-blue-600 hover:bg-blue-700" @click="saveWeightIn">Save</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -1894,12 +1896,12 @@ onUnmounted(() => {
     <Dialog v-model:open="weightOutDialogOpen">
       <DialogContent class="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>บันทึกน้ำหนักขาออก (กก.)</DialogTitle>
+          <DialogTitle>Record Weight Out (kg)</DialogTitle>
         </DialogHeader>
 
         <div class="grid gap-4 py-4">
           <div class="grid gap-2">
-            <Label>น้ำหนักขาออก</Label>
+            <Label>Weight Out</Label>
             <Input
               v-model="weightOutData.weightOut"
               type="number"
@@ -1910,8 +1912,8 @@ onUnmounted(() => {
         </div>
 
         <DialogFooter class="flex justify-between sm:justify-end gap-2">
-          <Button variant="outline" @click="weightOutDialogOpen = false">ยกเลิก</Button>
-          <Button class="bg-blue-600 hover:bg-blue-700" @click="handleWeightOutNext">บันทึก</Button>
+          <Button variant="outline" @click="weightOutDialogOpen = false">Cancel</Button>
+          <Button class="bg-blue-600 hover:bg-blue-700" @click="handleWeightOutNext">Save</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -1920,7 +1922,7 @@ onUnmounted(() => {
     <Dialog v-model:open="confirmCheckoutDialogOpen">
       <DialogContent class="max-w-md">
         <DialogHeader>
-          <DialogTitle>ยืนยันบันทึกน้ำหนักขาออก (Check-OUT)</DialogTitle>
+          <DialogTitle>Confirm Weight Out Record (Check-OUT)</DialogTitle>
         </DialogHeader>
 
         <div class="bg-muted/30 border rounded-lg p-4 mb-4">
@@ -1942,36 +1944,36 @@ onUnmounted(() => {
 
         <div class="border rounded-lg p-4 space-y-3">
           <div class="flex justify-between items-center text-sm">
-            <span class="text-muted-foreground">น้ำหนักขาเข้า:</span>
+            <span class="text-muted-foreground">Weight In:</span>
             <span class="font-medium text-lg"
-              >{{ selectedDrainBooking?.weightIn?.toLocaleString() }} กก.</span
+              >{{ selectedDrainBooking?.weightIn?.toLocaleString() }} kg</span
             >
           </div>
           <div class="flex justify-between items-center text-sm border-b pb-3">
-            <span class="text-muted-foreground">น้ำหนักขาออกสุทธิ</span>
+            <span class="text-muted-foreground">Net Weight Out</span>
             <span class="font-bold text-xl text-green-600"
-              >{{ Number(weightOutData.weightOut).toLocaleString() }} กก.</span
+              >{{ Number(weightOutData.weightOut).toLocaleString() }} kg</span
             >
           </div>
           <div class="flex justify-between items-center pt-1">
-            <span class="text-blue-600 font-medium">น้ำหนักสุทธิ (Net Weight)</span>
+            <span class="text-blue-600 font-medium">Net Weight</span>
             <span class="font-bold text-2xl text-blue-600">
               {{
                 Math.abs(
                   (selectedDrainBooking?.weightIn || 0) - Number(weightOutData.weightOut)
                 ).toLocaleString()
               }}
-              กก.
+              kg
             </span>
           </div>
         </div>
 
         <DialogFooter class="mt-4 gap-2">
           <Button variant="outline" class="w-full" @click="confirmCheckoutDialogOpen = false"
-            >ยกเลิก</Button
+            >Cancel</Button
           >
           <Button class="bg-green-600 hover:bg-green-700 w-full" @click="confirmWeightOut"
-            >ยืนยัน</Button
+            >Confirm</Button
           >
         </DialogFooter>
       </DialogContent>
@@ -1981,13 +1983,15 @@ onUnmounted(() => {
     <Dialog v-model:open="requestEditDialogOpen">
       <DialogContent class="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>ขออนุมัติแก้ไขน้ำหนักขาเข้า</DialogTitle>
-          <DialogDescription> ระบุเหตุผลที่ต้องการแก้ไข เพื่อส่งคำขออนุมัติ </DialogDescription>
+          <DialogTitle>Request Approval to Edit Weight In</DialogTitle>
+          <DialogDescription>
+            Specify the reason for editing to send approval request
+          </DialogDescription>
         </DialogHeader>
 
         <div class="grid gap-4 py-4">
           <div class="grid gap-2">
-            <Label>เหตุผลการแก้ไข</Label>
+            <Label>Reason for Edit</Label>
             <Textarea
               v-model="requestEditReason"
               placeholder="เช่น ลงน้ำหนักผิด, เปลี่ยนรถ ฯลฯ"
@@ -1997,8 +2001,10 @@ onUnmounted(() => {
         </div>
 
         <DialogFooter>
-          <Button variant="outline" @click="requestEditDialogOpen = false">ยกเลิก</Button>
-          <Button class="bg-blue-600 hover:bg-blue-700" @click="confirmRequestEdit">ส่งคำขอ</Button>
+          <Button variant="outline" @click="requestEditDialogOpen = false">Cancel</Button>
+          <Button class="bg-blue-600 hover:bg-blue-700" @click="confirmRequestEdit"
+            >Send Request</Button
+          >
         </DialogFooter>
       </DialogContent>
     </Dialog>

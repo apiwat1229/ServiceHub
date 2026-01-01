@@ -30,7 +30,7 @@ const filters = ref({
 const columns = [
   {
     accessorKey: 'requestType',
-    header: 'ประเภท',
+    header: 'Type',
     cell: ({ row }: any) => {
       const isVoided = row.original.status === 'VOID';
       return h(
@@ -44,18 +44,18 @@ const columns = [
   },
   {
     accessorKey: 'status',
-    header: 'สถานะ',
+    header: 'Status',
     cell: ({ row }: any) => h(ApprovalStatusBadge, { status: row.original.status }),
   },
   {
     accessorKey: 'requester',
-    header: 'ผู้ขอ',
+    header: 'Requester',
     cell: ({ row }: any) =>
       row.original.requester?.displayName || row.original.requester?.email || '-',
   },
   {
     accessorKey: 'submittedAt',
-    header: 'วันที่ส่ง',
+    header: 'Submitted Date',
     cell: ({ row }: any) => {
       const date = new Date(row.original.submittedAt);
       return new Intl.DateTimeFormat('th-TH', {
@@ -69,7 +69,7 @@ const columns = [
   },
   {
     id: 'actions',
-    header: 'จัดการ',
+    header: 'Actions',
     cell: ({ row }: any) =>
       h(
         Button,
@@ -77,7 +77,7 @@ const columns = [
           size: 'sm',
           onClick: () => router.push(`/admin/approvals/${row.original.id}`),
         },
-        () => 'ดูรายละเอียด'
+        () => 'View Details'
       ),
   },
 ];
@@ -91,7 +91,7 @@ const fetchApprovals = async () => {
     });
     approvals.value = response.data;
   } catch (error: any) {
-    handleApiError(error, 'ไม่สามารถโหลดรายการคำขอได้');
+    handleApiError(error, 'Failed to load approval requests');
   } finally {
     isLoading.value = false;
   }
@@ -106,35 +106,35 @@ onMounted(() => {
   <div class="space-y-6">
     <div class="flex justify-between items-center">
       <div>
-        <h1 class="text-3xl font-bold">คำขออนุมัติ</h1>
-        <p class="text-muted-foreground">จัดการคำขออนุมัติทั้งหมด</p>
+        <h1 class="text-3xl font-bold">Approval Requests</h1>
+        <p class="text-muted-foreground">Manage all approval requests</p>
       </div>
     </div>
 
     <!-- Filters -->
     <Card>
       <CardHeader>
-        <CardTitle>ตัวกรอง</CardTitle>
-        <CardDescription>กรองรายการคำขออนุมัติ</CardDescription>
+        <CardTitle>Filters</CardTitle>
+        <CardDescription>Filter approval requests</CardDescription>
       </CardHeader>
       <CardContent>
         <div class="flex flex-wrap gap-4">
           <!-- Status Filter -->
           <div class="w-64">
-            <Label>สถานะ</Label>
+            <Label>Status</Label>
             <Select v-model="filters.status" @update:model-value="fetchApprovals">
               <SelectTrigger>
-                <SelectValue placeholder="ทุกสถานะ" />
+                <SelectValue placeholder="All Statuses" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">ทุกสถานะ</SelectItem>
-                <SelectItem value="PENDING">รออนุมัติ</SelectItem>
-                <SelectItem value="APPROVED">อนุมัติแล้ว</SelectItem>
-                <SelectItem value="REJECTED">ปฏิเสธ</SelectItem>
-                <SelectItem value="RETURNED">ส่งคืนแก้ไข</SelectItem>
-                <SelectItem value="CANCELLED">ยกเลิก</SelectItem>
-                <SelectItem value="VOID">โมฆะ</SelectItem>
-                <SelectItem value="EXPIRED">หมดอายุ</SelectItem>
+                <SelectItem value="">All Statuses</SelectItem>
+                <SelectItem value="PENDING">Pending Approval</SelectItem>
+                <SelectItem value="APPROVED">Approved</SelectItem>
+                <SelectItem value="REJECTED">Rejected</SelectItem>
+                <SelectItem value="RETURNED">Returned for Edit</SelectItem>
+                <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                <SelectItem value="VOID">Void</SelectItem>
+                <SelectItem value="EXPIRED">Expired</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -151,7 +151,7 @@ onMounted(() => {
                   }
                 "
               />
-              <Label>แสดงรายการที่ถูกลบ</Label>
+              <Label>Show Deleted Items</Label>
             </div>
           </div>
         </div>

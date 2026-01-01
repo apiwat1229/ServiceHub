@@ -307,7 +307,7 @@ const getRubberTypeColor = (code: string, name?: string) => {
     const n = name.toLowerCase();
     if (n.includes('eudr'))
       return 'bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100';
-    if (n.includes('north east') || n.includes('ตะวันออกเฉียงเหนือ'))
+    if (n.includes('north east') || n.includes('northeast'))
       return 'bg-red-100 text-red-800 border-red-200 hover:bg-red-100';
   }
 
@@ -586,11 +586,11 @@ onMounted(() => {
                   <Select v-model="formData.title">
                     <SelectTrigger><SelectValue placeholder="Select Title" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="นาย">นาย</SelectItem>
-                      <SelectItem value="นาง">นาง</SelectItem>
-                      <SelectItem value="นางสาว">นางสาว</SelectItem>
-                      <SelectItem value="บริษัท">บริษัท</SelectItem>
-                      <SelectItem value="หจก.">หจก.</SelectItem>
+                      <SelectItem value="นาย">Mr.</SelectItem>
+                      <SelectItem value="นาง">Mrs.</SelectItem>
+                      <SelectItem value="นางสาว">Ms.</SelectItem>
+                      <SelectItem value="บริษัท">Company</SelectItem>
+                      <SelectItem value="หจก.">Partnership</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

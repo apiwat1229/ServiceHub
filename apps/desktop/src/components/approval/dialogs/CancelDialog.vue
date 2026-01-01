@@ -36,13 +36,13 @@ const handleCancel = async () => {
       reason: reason.value || undefined,
     });
 
-    toast.success('ยกเลิกคำขอเรียบร้อยแล้ว');
+    toast.success('Request cancelled successfully');
 
     emit('success');
     isOpen.value = false;
     reason.value = '';
   } catch (err: any) {
-    handleApiError(err, 'ไม่สามารถยกเลิกคำขอได้');
+    handleApiError(err, 'Failed to cancel request');
   } finally {
     isLoading.value = false;
   }
@@ -53,23 +53,23 @@ const handleCancel = async () => {
   <Dialog v-model:open="isOpen">
     <DialogContent>
       <DialogHeader>
-        <DialogTitle>ยกเลิกคำขอ</DialogTitle>
-        <DialogDescription> คุณต้องการยกเลิกคำขอนี้หรือไม่? </DialogDescription>
+        <DialogTitle>Cancel Request</DialogTitle>
+        <DialogDescription> Are you sure you want to cancel this request? </DialogDescription>
       </DialogHeader>
 
       <div class="space-y-4">
         <div>
-          <Label>เหตุผล (ไม่บังคับ)</Label>
-          <Textarea v-model="reason" placeholder="ระบุเหตุผล..." :disabled="isLoading" />
+          <Label>Reason (Optional)</Label>
+          <Textarea v-model="reason" placeholder="Enter reason..." :disabled="isLoading" />
         </div>
       </div>
 
       <DialogFooter>
-        <Button variant="outline" @click="isOpen = false" :disabled="isLoading"> ปิด </Button>
+        <Button variant="outline" @click="isOpen = false" :disabled="isLoading"> Close </Button>
         <Button variant="destructive" @click="handleCancel" :disabled="isLoading">
           <Loader2 v-if="isLoading" class="w-4 h-4 mr-2 animate-spin" />
           <Ban v-else class="w-4 h-4 mr-2" />
-          {{ isLoading ? 'กำลังดำเนินการ...' : 'ยกเลิกคำขอ' }}
+          {{ isLoading ? 'Processing...' : 'Cancel Request' }}
         </Button>
       </DialogFooter>
     </DialogContent>

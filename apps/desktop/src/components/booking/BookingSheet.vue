@@ -65,11 +65,11 @@ const form = ref({
 });
 
 const TRUCK_TYPES = [
-  { value: 'กระบะ', label: 'กระบะ' },
-  { value: '6 ล้อ', label: '6 ล้อ' },
-  { value: '10 ล้อ', label: '10 ล้อ' },
-  { value: '10 ล้อ พ่วง', label: '10 ล้อ (พ่วง)' },
-  { value: 'เทรลเลอร์', label: 'เทรลเลอร์' },
+  { value: 'กระบะ', label: 'Pickup' },
+  { value: '6 ล้อ', label: '6-Wheeler' },
+  { value: '10 ล้อ', label: '10-Wheeler' },
+  { value: '10 ล้อ พ่วง', label: '10-Wheeler (Trailer)' },
+  { value: 'เทรลเลอร์', label: 'Trailer' },
 ];
 
 // --- Computeds ---
@@ -180,7 +180,7 @@ async function handleSubmit() {
     if (isEditMode.value && props.editingBooking?.id) {
       const updated = await bookingsApi.update(props.editingBooking.id, payload);
       if (updated && updated.status === 'PENDING_APPROVAL') {
-        toast.info('คำขอแก้ไขถูกส่งไปขออนุมัติแล้ว');
+        toast.info('Edit request has been sent for approval');
       } else {
         toast.success('Updated successfully');
       }

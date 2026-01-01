@@ -50,7 +50,7 @@ const fetchRequest = async () => {
     request.value = requestRes.data;
     history.value = historyRes.data;
   } catch (error: any) {
-    handleApiError(error, 'ไม่สามารถโหลดข้อมูลคำขอได้');
+    handleApiError(error, 'Failed to load request data');
     router.push('/approvals');
   } finally {
     isLoading.value = false;
@@ -83,7 +83,7 @@ onMounted(() => {
     <!-- Back Button -->
     <Button variant="ghost" @click="router.push('/approvals')">
       <ArrowLeft class="w-4 h-4 mr-2" />
-      กลับไปรายการ
+      Back to List
     </Button>
 
     <!-- Header -->
@@ -97,9 +97,7 @@ onMounted(() => {
             {{ request.requestType }}
           </h1>
           <p class="text-muted-foreground">ID: {{ request.id }}</p>
-          <Badge v-if="isVoided" variant="destructive" class="mt-2">
-            โมฆะ - ไม่สามารถใช้งานได้
-          </Badge>
+          <Badge v-if="isVoided" variant="destructive" class="mt-2"> VOID - Cannot be used </Badge>
         </div>
         <ApprovalStatusBadge :status="request.status" />
       </div>
@@ -109,7 +107,7 @@ onMounted(() => {
     <VoidedWatermark :is-voided="isVoided">
       <Card>
         <CardHeader>
-          <CardTitle>รายละเอียดคำขอ</CardTitle>
+          <CardTitle>Request Details</CardTitle>
         </CardHeader>
         <CardContent class="space-y-4">
           <div class="grid grid-cols-2 gap-4">
@@ -181,7 +179,7 @@ onMounted(() => {
     <!-- Actions -->
     <Card v-if="currentUser">
       <CardHeader>
-        <CardTitle>การจัดการ</CardTitle>
+        <CardTitle>Management</CardTitle>
       </CardHeader>
       <CardContent>
         <ApprovalActions
@@ -200,7 +198,7 @@ onMounted(() => {
     <!-- History Timeline -->
     <Card>
       <CardHeader>
-        <CardTitle>ประวัติการทำรายการ</CardTitle>
+        <CardTitle>Transaction History</CardTitle>
       </CardHeader>
       <CardContent>
         <ApprovalHistoryTimeline :history="history" />
@@ -233,6 +231,6 @@ onMounted(() => {
 
   <!-- Loading State -->
   <div v-else-if="isLoading" class="flex items-center justify-center min-h-[400px]">
-    <p class="text-muted-foreground">กำลังโหลด...</p>
+    <p class="text-muted-foreground">Loading...</p>
   </div>
 </template>

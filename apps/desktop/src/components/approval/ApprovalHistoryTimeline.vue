@@ -17,14 +17,14 @@ const props = defineProps<{
 }>();
 
 const actionConfig: Record<string, { label: string; icon: any; color: string }> = {
-  CREATED: { label: 'สร้างคำขอ', icon: Plus, color: 'text-blue-600' },
-  APPROVED: { label: 'อนุมัติ', icon: CheckCircle2, color: 'text-green-600' },
-  REJECTED: { label: 'ปฏิเสธ', icon: XCircle, color: 'text-red-600' },
-  RETURNED: { label: 'ส่งคืนแก้ไข', icon: ArrowLeft, color: 'text-blue-600' },
-  CANCELLED: { label: 'ยกเลิก', icon: Ban, color: 'text-gray-600' },
-  VOIDED: { label: 'ทำเป็นโมฆะ', icon: Slash, color: 'text-red-600' },
-  EXPIRED: { label: 'หมดอายุ', icon: AlertTriangle, color: 'text-orange-600' },
-  DELETED: { label: 'ลบ', icon: XCircle, color: 'text-gray-600' },
+  CREATED: { label: 'Request Created', icon: Plus, color: 'text-blue-600' },
+  APPROVED: { label: 'Approved', icon: CheckCircle2, color: 'text-green-600' },
+  REJECTED: { label: 'Rejected', icon: XCircle, color: 'text-red-600' },
+  RETURNED: { label: 'Returned for Edit', icon: ArrowLeft, color: 'text-blue-600' },
+  CANCELLED: { label: 'Cancelled', icon: Ban, color: 'text-gray-600' },
+  VOIDED: { label: 'Voided', icon: Slash, color: 'text-red-600' },
+  EXPIRED: { label: 'Expired', icon: AlertTriangle, color: 'text-orange-600' },
+  DELETED: { label: 'Deleted', icon: XCircle, color: 'text-gray-600' },
 };
 
 const formatDate = (dateString: string) => {
@@ -46,7 +46,7 @@ const getConfig = (action: string) => {
 <template>
   <div class="space-y-4">
     <div v-if="history.length === 0" class="text-center py-8 text-muted-foreground">
-      ไม่มีประวัติการทำรายการ
+      No transaction history
     </div>
 
     <!-- Timeline -->
@@ -83,27 +83,27 @@ const getConfig = (action: string) => {
 
             <div class="space-y-2">
               <p class="text-sm">
-                <span class="font-medium">ผู้ดำเนินการ:</span>
+                <span class="font-medium">Performed by:</span>
                 {{ log.actorName }}
               </p>
 
               <p v-if="log.remark" class="text-sm">
-                <span class="font-medium">หมายเหตุ:</span>
+                <span class="font-medium">Note:</span>
                 {{ log.remark }}
               </p>
 
               <!-- Show changes if available -->
               <div v-if="log.oldValue || log.newValue" class="mt-3 pt-3 border-t">
-                <p class="text-xs font-medium text-muted-foreground mb-2">การเปลี่ยนแปลง:</p>
+                <p class="text-xs font-medium text-muted-foreground mb-2">Changes:</p>
                 <div class="grid grid-cols-2 gap-2 text-xs">
                   <div v-if="log.oldValue && Object.keys(log.oldValue).length > 0">
-                    <p class="font-medium text-muted-foreground mb-1">ก่อน:</p>
+                    <p class="font-medium text-muted-foreground mb-1">Before:</p>
                     <pre class="bg-muted p-2 rounded text-xs overflow-auto">{{
                       JSON.stringify(log.oldValue, null, 2)
                     }}</pre>
                   </div>
                   <div v-if="log.newValue && Object.keys(log.newValue).length > 0">
-                    <p class="font-medium text-muted-foreground mb-1">หลัง:</p>
+                    <p class="font-medium text-muted-foreground mb-1">After:</p>
                     <pre class="bg-muted p-2 rounded text-xs overflow-auto">{{
                       JSON.stringify(log.newValue, null, 2)
                     }}</pre>

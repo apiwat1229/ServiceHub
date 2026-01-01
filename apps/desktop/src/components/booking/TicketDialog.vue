@@ -70,20 +70,20 @@ const formattedDate = computed(() => {
 
 // --- Helpers ---
 function thaiDateWithWeekday(dateField: Date): string {
-  const weekdays = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+  const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const months = [
-    'ม.ค.',
-    'ก.พ.',
-    'มี.ค.',
-    'เม.ย.',
-    'พ.ค.',
-    'มิ.ย.',
-    'ก.ค.',
-    'ส.ค.',
-    'ก.ย.',
-    'ต.ค.',
-    'พ.ย.',
-    'ธ.ค.',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
 
   const weekday = weekdays[dateField.getDay()];
@@ -172,7 +172,7 @@ const handleCopyTicketImage = async () => {
                 @error="(e: any) => (e.target.style.display = 'none')"
               />
             </div>
-            <span class="text-lg font-bold">บัตรคิว CL</span>
+            <span class="text-lg font-bold">Queue Ticket CL</span>
           </div>
 
           <!-- Details -->
@@ -242,10 +242,10 @@ const handleCopyTicketImage = async () => {
 
           <!-- Warning -->
           <div class="text-center my-4 leading-tight">
-            <p class="text-xs font-semibold">สามารถนำรถมาจอดค้างคืนเพื่อรอ</p>
-            <p class="text-xs font-semibold">ที่หน้าโรงงานได้</p>
+            <p class="text-xs font-semibold">Vehicles can park overnight</p>
+            <p class="text-xs font-semibold">in front of the factory</p>
             <p class="text-xs font-bold text-red-600 mt-2">
-              * ห้ามจอดรถบนทางเข้าหน้าโรงงานเด็ดขาด *
+              * Do NOT park on the factory entrance road *
             </p>
           </div>
 

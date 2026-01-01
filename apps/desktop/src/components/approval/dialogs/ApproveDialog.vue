@@ -36,13 +36,13 @@ const handleApprove = async () => {
       remark: remark.value || undefined,
     });
 
-    toast.success('อนุมัติคำขอเรียบร้อยแล้ว');
+    toast.success('Request approved successfully');
 
     emit('success');
     isOpen.value = false;
     remark.value = '';
   } catch (err: any) {
-    handleApiError(err, 'ไม่สามารถอนุมัติคำขอได้');
+    handleApiError(err, 'Failed to approve request');
   } finally {
     isLoading.value = false;
   }
@@ -53,19 +53,19 @@ const handleApprove = async () => {
   <Dialog v-model:open="isOpen">
     <DialogContent>
       <DialogHeader>
-        <DialogTitle>อนุมัติคำขอ</DialogTitle>
-        <DialogDescription> คุณต้องการอนุมัติคำขอนี้หรือไม่? </DialogDescription>
+        <DialogTitle>Approve Request</DialogTitle>
+        <DialogDescription> Do you want to approve this request? </DialogDescription>
       </DialogHeader>
 
       <div class="space-y-4">
         <div>
-          <Label>หมายเหตุ (ไม่บังคับ)</Label>
-          <Textarea v-model="remark" placeholder="ระบุหมายเหตุ..." :disabled="isLoading" />
+          <Label>Remark (Optional)</Label>
+          <Textarea v-model="remark" placeholder="Enter remark..." :disabled="isLoading" />
         </div>
       </div>
 
       <DialogFooter>
-        <Button variant="outline" @click="isOpen = false" :disabled="isLoading"> ยกเลิก </Button>
+        <Button variant="outline" @click="isOpen = false" :disabled="isLoading"> Cancel </Button>
         <Button
           class="bg-green-600 hover:bg-green-700"
           @click="handleApprove"
@@ -73,7 +73,7 @@ const handleApprove = async () => {
         >
           <Loader2 v-if="isLoading" class="w-4 h-4 mr-2 animate-spin" />
           <CheckCircle2 v-else class="w-4 h-4 mr-2" />
-          {{ isLoading ? 'กำลังดำเนินการ...' : 'อนุมัติ' }}
+          {{ isLoading ? 'Processing...' : 'Approve' }}
         </Button>
       </DialogFooter>
     </DialogContent>

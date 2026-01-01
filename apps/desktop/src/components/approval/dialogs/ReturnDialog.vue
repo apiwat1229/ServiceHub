@@ -32,7 +32,7 @@ const isFormValid = computed(() => remark.value.trim().length > 0);
 
 const handleReturn = async () => {
   if (!isFormValid.value) {
-    error.value = 'กรุณาระบุเหตุผลในการส่งคืน';
+    error.value = 'Please provide a reason for return';
     return;
   }
 
@@ -44,13 +44,13 @@ const handleReturn = async () => {
       remark: remark.value,
     });
 
-    toast.success('ส่งคืนคำขอเรียบร้อยแล้ว');
+    toast.success('Request returned successfully');
 
     emit('success');
     isOpen.value = false;
     remark.value = '';
   } catch (err: any) {
-    handleApiError(err, 'ไม่สามารถส่งคืนคำขอได้');
+    handleApiError(err, 'Failed to return request');
   } finally {
     isLoading.value = false;
   }
@@ -61,15 +61,15 @@ const handleReturn = async () => {
   <Dialog v-model:open="isOpen">
     <DialogContent>
       <DialogHeader>
-        <DialogTitle>ส่งคืนคำขอเพื่อแก้ไข</DialogTitle>
+        <DialogTitle>Return Request for Edit</DialogTitle>
       </DialogHeader>
 
       <div class="space-y-4">
         <div>
-          <Label>เหตุผลในการส่งคืน *</Label>
+          <Label>Reason for Return *</Label>
           <Textarea
             v-model="remark"
-            placeholder="กรุณาระบุเหตุผล เช่น: กรุณาเพิ่มรายละเอียด..."
+            placeholder="Please provide a reason, e.g.: Please add more details..."
             :disabled="isLoading"
             required
           />
@@ -78,7 +78,7 @@ const handleReturn = async () => {
       </div>
 
       <DialogFooter>
-        <Button variant="outline" @click="isOpen = false" :disabled="isLoading"> ยกเลิก </Button>
+        <Button variant="outline" @click="isOpen = false" :disabled="isLoading"> Cancel </Button>
         <Button
           class="border-blue-500 text-blue-600 hover:bg-blue-50"
           variant="outline"
@@ -87,7 +87,7 @@ const handleReturn = async () => {
         >
           <Loader2 v-if="isLoading" class="w-4 h-4 mr-2 animate-spin" />
           <ArrowLeft v-else class="w-4 h-4 mr-2" />
-          {{ isLoading ? 'กำลังดำเนินการ...' : 'ส่งคืนแก้ไข' }}
+          {{ isLoading ? 'Processing...' : 'Return for Edit' }}
         </Button>
       </DialogFooter>
     </DialogContent>

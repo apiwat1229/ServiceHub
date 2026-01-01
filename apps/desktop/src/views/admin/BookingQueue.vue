@@ -200,7 +200,7 @@ async function confirmDelete() {
   try {
     const res = await bookingsApi.delete(bookingToDelete.value.id);
     if (res && res.status === 'PENDING_APPROVAL') {
-      toast.info('คำขอยกเลิกถูกส่งไปขออนุมัติแล้ว');
+      toast.info('Cancellation request has been sent for approval');
     } else {
       toast.success('Booking deleted');
     }

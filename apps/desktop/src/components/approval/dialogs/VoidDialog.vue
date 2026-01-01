@@ -33,7 +33,7 @@ const isFormValid = computed(() => reason.value.trim().length > 0);
 
 const handleVoid = async () => {
   if (!isFormValid.value) {
-    error.value = 'กรุณาระบุเหตุผลในการทำเป็นโมฆะ';
+    error.value = 'Please provide a reason for voiding';
     return;
   }
 
@@ -45,13 +45,13 @@ const handleVoid = async () => {
       reason: reason.value,
     });
 
-    toast.success('ทำรายการเป็นโมฆะเรียบร้อยแล้ว');
+    toast.success('Request voided successfully');
 
     emit('success');
     isOpen.value = false;
     reason.value = '';
   } catch (err: any) {
-    handleApiError(err, 'ไม่สามารถทำรายการเป็นโมฆะได้');
+    handleApiError(err, 'Failed to void request');
   } finally {
     isLoading.value = false;
   }
@@ -62,18 +62,18 @@ const handleVoid = async () => {
   <Dialog v-model:open="isOpen">
     <DialogContent>
       <DialogHeader>
-        <DialogTitle>ทำรายการเป็นโมฆะ</DialogTitle>
+        <DialogTitle>Void Request</DialogTitle>
         <DialogDescription class="text-red-600">
-          ⚠️ การทำรายการเป็นโมฆะจะยกเลิกการอนุมัติที่ผ่านมา
+          ⚠️ Voiding will cancel the previous approval
         </DialogDescription>
       </DialogHeader>
 
       <div class="space-y-4">
         <div>
-          <Label>เหตุผลในการทำเป็นโมฆะ *</Label>
+          <Label>Reason for Voiding *</Label>
           <Textarea
             v-model="reason"
-            placeholder="เช่น: ระบุยอดเงินผิด"
+            placeholder="e.g.: Incorrect amount entered"
             :disabled="isLoading"
             required
           />
@@ -82,11 +82,11 @@ const handleVoid = async () => {
       </div>
 
       <DialogFooter>
-        <Button variant="outline" @click="isOpen = false" :disabled="isLoading"> ยกเลิก </Button>
+        <Button variant="outline" @click="isOpen = false" :disabled="isLoading"> Cancel </Button>
         <Button variant="destructive" @click="handleVoid" :disabled="!isFormValid || isLoading">
           <Loader2 v-if="isLoading" class="w-4 h-4 mr-2 animate-spin" />
           <Slash v-else class="w-4 h-4 mr-2" />
-          {{ isLoading ? 'กำลังดำเนินการ...' : 'ทำเป็นโมฆะ' }}
+          {{ isLoading ? 'Processing...' : 'Void' }}
         </Button>
       </DialogFooter>
     </DialogContent>

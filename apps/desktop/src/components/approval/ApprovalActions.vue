@@ -52,13 +52,13 @@ const canEdit = computed(() => {
     <!-- Approve Button -->
     <Button v-if="canApprove" @click="emit('approve')" class="bg-green-600 hover:bg-green-700">
       <CheckCircle2 class="w-4 h-4 mr-2" />
-      อนุมัติ
+      Approve
     </Button>
 
     <!-- Reject Button -->
     <Button v-if="canApprove" @click="emit('reject')" variant="destructive">
       <XCircle class="w-4 h-4 mr-2" />
-      ปฏิเสธ
+      Reject
     </Button>
 
     <!-- Return Button -->
@@ -69,25 +69,25 @@ const canEdit = computed(() => {
       class="border-blue-500 text-blue-600 hover:bg-blue-50"
     >
       <ArrowLeft class="w-4 h-4 mr-2" />
-      ส่งคืนแก้ไข
+      Return for Edit
     </Button>
 
     <!-- Cancel Button -->
     <Button v-if="canCancel" @click="emit('cancel')" variant="outline">
       <Ban class="w-4 h-4 mr-2" />
-      ยกเลิกคำขอ
+      Cancel Request
     </Button>
 
     <!-- Void Button -->
     <Button v-if="canVoid" @click="emit('void')" variant="destructive">
       <Slash class="w-4 h-4 mr-2" />
-      ทำเป็นโมฆะ
+      Void
     </Button>
 
     <!-- Edit Button -->
     <Button v-if="canEdit" @click="emit('edit')" variant="default">
       <Edit class="w-4 h-4 mr-2" />
-      แก้ไขคำขอ
+      Edit Request
     </Button>
 
     <!-- No actions available -->
@@ -95,7 +95,7 @@ const canEdit = computed(() => {
       v-if="!canApprove && !canCancel && !canVoid && !canEdit"
       class="text-sm text-muted-foreground"
     >
-      ไม่มีการดำเนินการที่สามารถทำได้
+      No actions available
     </p>
   </div>
 </template>

@@ -32,7 +32,7 @@ const durationText = computed(() => {
 
   // Calculate difference in milliseconds
   const diff = endDate.getTime() - startDate.getTime();
-  if (diff < 0) return '00 นาที';
+  if (diff < 0) return '00 min';
 
   // formatting
   const minutes = Math.floor(diff / 60000); // Total minutes
@@ -41,9 +41,9 @@ const durationText = computed(() => {
   const m = minutes % 60;
 
   if (h > 0) {
-    return `${h} ชม. ${m} นาที`;
+    return `${h} hr ${m} min`;
   }
-  return `${m} นาที`;
+  return `${m} min`;
 });
 </script>
 

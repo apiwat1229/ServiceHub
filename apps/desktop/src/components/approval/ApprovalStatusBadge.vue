@@ -18,37 +18,37 @@ const props = defineProps<{
 const statusConfig = computed(() => {
   const configs: Record<string, { label: string; variant: string; icon: any }> = {
     PENDING: {
-      label: 'รออนุมัติ',
+      label: 'Pending Approval',
       variant: 'warning',
       icon: Clock,
     },
     APPROVED: {
-      label: 'อนุมัติแล้ว',
+      label: 'Approved',
       variant: 'success',
       icon: CheckCircle2,
     },
     REJECTED: {
-      label: 'ปฏิเสธ',
+      label: 'Rejected',
       variant: 'destructive',
       icon: XCircle,
     },
     RETURNED: {
-      label: 'ส่งคืนแก้ไข',
+      label: 'Returned for Edit',
       variant: 'info',
       icon: ArrowLeft,
     },
     CANCELLED: {
-      label: 'ยกเลิก',
+      label: 'Cancelled',
       variant: 'secondary',
       icon: Ban,
     },
     VOID: {
-      label: 'โมฆะ',
+      label: 'Void',
       variant: 'destructive',
       icon: Slash,
     },
     EXPIRED: {
-      label: 'หมดอายุ',
+      label: 'Expired',
       variant: 'secondary',
       icon: AlertTriangle,
     },

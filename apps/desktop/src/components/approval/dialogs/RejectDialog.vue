@@ -32,7 +32,7 @@ const isFormValid = computed(() => remark.value.trim().length > 0);
 
 const handleReject = async () => {
   if (!isFormValid.value) {
-    error.value = 'กรุณาระบุเหตุผลในการปฏิเสธ';
+    error.value = 'Please provide a reason for rejection';
     return;
   }
 
@@ -44,13 +44,13 @@ const handleReject = async () => {
       remark: remark.value,
     });
 
-    toast.success('ปฏิเสธคำขอเรียบร้อยแล้ว');
+    toast.success('Request rejected successfully');
 
     emit('success');
     isOpen.value = false;
     remark.value = '';
   } catch (err: any) {
-    handleApiError(err, 'ไม่สามารถปฏิเสธคำขอได้');
+    handleApiError(err, 'Failed to reject request');
   } finally {
     isLoading.value = false;
   }
@@ -61,15 +61,15 @@ const handleReject = async () => {
   <Dialog v-model:open="isOpen">
     <DialogContent>
       <DialogHeader>
-        <DialogTitle>ปฏิเสธคำขอ</DialogTitle>
+        <DialogTitle>Reject Request</DialogTitle>
       </DialogHeader>
 
       <div class="space-y-4">
         <div>
-          <Label>เหตุผลในการปฏิเสธ *</Label>
+          <Label>Reason for Rejection *</Label>
           <Textarea
             v-model="remark"
-            placeholder="กรุณาระบุเหตุผล..."
+            placeholder="Please provide a reason..."
             :disabled="isLoading"
             required
           />
@@ -78,11 +78,11 @@ const handleReject = async () => {
       </div>
 
       <DialogFooter>
-        <Button variant="outline" @click="isOpen = false" :disabled="isLoading"> ยกเลิก </Button>
+        <Button variant="outline" @click="isOpen = false" :disabled="isLoading"> Cancel </Button>
         <Button variant="destructive" @click="handleReject" :disabled="!isFormValid || isLoading">
           <Loader2 v-if="isLoading" class="w-4 h-4 mr-2 animate-spin" />
           <XCircle v-else class="w-4 h-4 mr-2" />
-          {{ isLoading ? 'กำลังดำเนินการ...' : 'ปฏิเสธ' }}
+          {{ isLoading ? 'Processing...' : 'Reject' }}
         </Button>
       </DialogFooter>
     </DialogContent>

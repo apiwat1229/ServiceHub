@@ -514,7 +514,7 @@ const handleSendBroadcast = async () => {
     (broadcastForm.value.recipientGroups?.length ?? 0) > 0;
 
   if (!hasRecipients) {
-    toast.error('กรุณาเลือกผู้รับการแจ้งเตือนอย่างน้อย 1 ช่อง (Users, Roles หรือ Groups)');
+    toast.error('Please select at least 1 recipient type (Users, Roles, or Groups)');
     return;
   }
 
@@ -1055,7 +1055,7 @@ onMounted(() => {
               </div>
 
               <!-- Preview Label -->
-              <h3 class="text-sm font-semibold">ตัวอย่างการแจ้งเตือน</h3>
+              <h3 class="text-sm font-semibold">Notification Preview</h3>
 
               <!-- Preview Card -->
               <div
@@ -1102,10 +1102,10 @@ onMounted(() => {
                       broadcastForm.type === 'REQUEST' ? 'text-purple-600' : '',
                     ]"
                   >
-                    {{ broadcastForm.title || 'ชื่อการแจ้งเตือน' }}
+                    {{ broadcastForm.title || 'Notification Title' }}
                   </div>
                   <div class="text-sm text-gray-600 break-words">
-                    {{ broadcastForm.message || 'ข้อความการแจ้งเตือนจะแสดงที่นี่...' }}
+                    {{ broadcastForm.message || 'Notification message will be displayed here...' }}
                   </div>
                 </div>
 
@@ -1128,9 +1128,9 @@ onMounted(() => {
 
               <!-- Preview Info -->
               <div class="mt-4 p-3 bg-muted rounded-lg text-xs space-y-1">
-                <p class="font-semibold">หมายเหตุ:</p>
-                <p>• การแจ้งเตือนจะแสดงในรูปแบบนี้</p>
-                <p>• สีจะเปลี่ยนตามประเภทที่เลือก</p>
+                <p class="font-semibold">Note:</p>
+                <p>• Notification will be displayed in this format</p>
+                <p>• Color will change based on selected type</p>
               </div>
             </div>
           </div>
