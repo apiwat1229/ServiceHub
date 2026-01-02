@@ -109,21 +109,22 @@ This will:
 **Quick Start (Recommended for Web Development):**
 
 ```bash
-npm run dev:web
+npm run dev
 ```
 
 This starts both API server and Vite dev server for browser-based development.
 
 **Available Development Commands:**
 
-| Command               | Description           | Use Case                                   |
-| --------------------- | --------------------- | ------------------------------------------ |
-| `npm run dev:web`     | API + Vite (web mode) | 🌐 **Recommended** for browser development |
-| `npm run dev`         | API + Electron        | 🖥️ Desktop app development                 |
-| `npm run dev:api`     | API server only       | 🔧 Backend development                     |
-| `npm run dev:vite`    | Vite dev server only  | 🎨 Frontend development                    |
-| `npm run dev:desktop` | Electron app only     | ⚡ Desktop app testing                     |
-| `npm run dev:db`      | PostgreSQL (Docker)   | 🗄️ Start database                          |
+| Command            | Description           | Use Case                                   |
+| ------------------ | --------------------- | ------------------------------------------ |
+| `npm run dev`      | API + Vite (web mode) | 🌐 **Recommended** for browser development |
+| `npm run dev:web`  | API + Vite (web mode) | 🌐 Same as `npm run dev`                   |
+| `npm run dev:app`  | Electron app only     | 🖥️ Desktop app development                 |
+| `npm run dev:api`  | API server only       | 🔧 Backend development                     |
+| `npm run dev:vite` | Vite dev server only  | 🎨 Frontend development                    |
+| `npm run dev:db`   | PostgreSQL (Docker)   | 🗄️ Start database                          |
+| `npm run kill`     | Kill all dev servers  | 🛑 Stop all running processes              |
 
 **Access Points:**
 
@@ -136,7 +137,7 @@ This starts both API server and Vite dev server for browser-based development.
 1. **For Web Development** (Most Common):
 
    ```bash
-   npm run dev:web
+   npm run dev
    ```
 
    Then open http://localhost:5173/ in your browser.
@@ -144,14 +145,21 @@ This starts both API server and Vite dev server for browser-based development.
 2. **For Desktop App Development**:
 
    ```bash
-   npm run dev
+   npm run dev:app
    ```
 
    Electron window will open automatically.
 
 3. **For Backend Only**:
+
    ```bash
    npm run dev:api
+   ```
+
+4. **Stop All Servers**:
+
+   ```bash
+   npm run kill
    ```
 
 ## 🔐 Credentials & Authentication
