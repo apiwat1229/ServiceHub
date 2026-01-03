@@ -71,9 +71,15 @@ const routes = [
     },
     {
         path: '/mrp',
-        name: 'MRP System',
-        component: () => import('../views/admin/Mrp.vue'),
-        meta: { requiresAuth: true }
+        component: () => import('@/components/layout/MainLayout.vue'),
+        meta: { requiresAuth: true },
+        children: [
+            {
+                path: '',
+                name: 'MRP System',
+                component: () => import('../views/admin/Mrp.vue'),
+            }
+        ]
     },
     {
         path: '/admin',
@@ -114,6 +120,21 @@ const routes = [
             {
                 path: 'purchasing',
                 name: 'Purchasing',
+                component: () => import('../views/Placeholder.vue'),
+            },
+            {
+                path: 'cuplump',
+                name: 'Cuplump',
+                component: () => import('../views/admin/Cuplump.vue'),
+            },
+            {
+                path: 'cuplump/:id',
+                name: 'CuplumpDetail',
+                component: () => import('../views/admin/CuplumpDetail.vue'),
+            },
+            {
+                path: 'uss',
+                name: 'USS',
                 component: () => import('../views/Placeholder.vue'),
             },
             {

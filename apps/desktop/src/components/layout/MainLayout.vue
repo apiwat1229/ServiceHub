@@ -8,6 +8,9 @@ import Sidebar from './Sidebar.vue';
 const route = useRoute();
 
 const showSidebar = computed(() => {
+  if (route.path.startsWith('/admin/cuplump') || route.path.startsWith('/admin/uss')) {
+    return false;
+  }
   return route.path.startsWith('/admin');
 });
 </script>

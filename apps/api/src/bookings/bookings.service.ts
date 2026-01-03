@@ -447,4 +447,65 @@ export class BookingsService {
             slots: slotStats,
         };
     }
+    // Samples
+    async getSamples(bookingId: string) {
+        return this.prisma.bookingLabSample.findMany({
+            where: { bookingId },
+            orderBy: { sampleNo: 'asc' },
+        });
+    }
+
+    async saveSample(bookingId: string, data: any) {
+        // If ID provided, update. Else create.
+        if (data.id) {
+            return this.prisma.bookingLabSample.update({
+                where: { id: data.id },
+                data: {
+                    beforePress: data.beforePress ? parseFloat(data.beforePress) : null,
+                    basketWeight: data.basketWeight ? parseFloat(data.basketWeight) : null,
+                    cuplumpWeight: data.cuplumpWeight ? parseFloat(data.cuplumpWeight) : null,
+                    afterPress: data.afterPress ? parseFloat(data.afterPress) : null,
+                    percentCp: data.percentCp ? parseFloat(data.percentCp) : null,
+                    beforeBaking1: data.beforeBaking1 ? parseFloat(data.beforeBaking1) : null,
+                    beforeBaking2: data.beforeBaking2 ? parseFloat(data.beforeBaking2) : null,
+                    beforeBaking3: data.beforeBaking3 ? parseFloat(data.beforeBaking3) : null,
+                    // If sampleNo needs update? Usually locked.
+                }
+            });
+        }
+
+        // Create
+        // Auto-assign sampleNo if not provided
+        let sampleNo = data.sampleNo;
+        if (!sampleNo) {
+            const last = await this.prisma.bookingLabSample.findFirst({
+                where: { bookingId, isTrailer: data.isTrailer || false },
+                orderBy: { sampleNo: 'desc' }
+            });
+            sampleNo = (last?.sampleNo || 0) + 1;
+        }
+
+        return this.prisma.bookingLabSample.create({
+            data: {
+                bookingId,
+                sampleNo,
+                isTrailer: data.isTrailer || false,
+                beforePress: data.beforePress ? parseFloat(data.beforePress) : null,
+                basketWeight: data.basketWeight ? parseFloat(data.basketWeight) : null,
+                cuplumpWeight: data.cuplumpWeight ? parseFloat(data.cuplumpWeight) : null,
+                afterPress: data.afterPress ? parseFloat(data.afterPress) : null,
+                percentCp: data.percentCp ? parseFloat(data.percentCp) : null,
+                beforeBaking1: data.beforeBaking1 ? parseFloat(data.beforeBaking1) : null,
+                beforeBaking2: data.beforeBaking2 ? parseFloat(data.beforeBaking2) : null,
+                beforeBaking3: data.beforeBaking3 ? parseFloat(data.beforeBaking3) : null,
+            }
+        });
+    }
+
+    async deleteSample(bookingId: string, sampleId: string) {
+        // Verify ownership?
+        return this.prisma.bookingLabSample.delete({
+            where: { id: sampleId }
+        });
+    }
 }

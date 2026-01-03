@@ -70,4 +70,20 @@ export const bookingsApi = {
         const response = await api.patch(`/bookings/${id}`, { status: 'APPROVED' });
         return response.data;
     },
+
+    // Lab Samples
+    getSamples: async (bookingId: string) => {
+        const response = await api.get(`/bookings/${bookingId}/samples`);
+        return response.data;
+    },
+
+    saveSample: async (bookingId: string, data: any) => {
+        const response = await api.post(`/bookings/${bookingId}/samples`, data);
+        return response.data;
+    },
+
+    deleteSample: async (bookingId: string, sampleId: string) => {
+        const response = await api.delete(`/bookings/${bookingId}/samples/${sampleId}`);
+        return response.data;
+    },
 };

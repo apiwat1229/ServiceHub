@@ -1,10 +1,19 @@
 <script setup lang="ts">
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
 import {
   ArrowUpDown,
+  Droplets,
   Factory,
   FlaskConical,
   Leaf,
+  Sheet,
   ShoppingCart,
   Truck,
   Warehouse,
@@ -12,6 +21,7 @@ import {
 } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useRouter } from 'vue-router';
 
 interface MrpModule {
   id: string;
@@ -25,6 +35,17 @@ interface MrpModule {
 }
 
 const { t } = useI18n();
+const router = useRouter();
+
+const showReceivingDialog = ref(false);
+
+const handleModuleClick = (module: MrpModule) => {
+  if (module.id === 'receiving') {
+    showReceivingDialog.value = true;
+  } else {
+    router.push(module.route);
+  }
+};
 
 const modules = computed<MrpModule[]>(() => [
   {
@@ -159,10 +180,11 @@ const filteredModules = computed(() => {
 
     <!-- Modules Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <router-link
+      <div
         v-for="module in filteredModules"
         :key="module.id"
-        :to="module.route"
+        @click="handleModuleClick(module)"
+        class="cursor-pointer"
         :class="[
           'group relative overflow-hidden rounded-2xl border border-border bg-card/20 backdrop-blur-md p-6 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 block',
           module.hoverBorder,
@@ -215,7 +237,54 @@ const filteredModules = computed(() => {
             {{ module.description }}
           </p>
         </div>
-      </router-link>
+      </div>
     </div>
+
+    <!-- Receiving Selection Dialog -->
+    <Dialog v-model:open="showReceivingDialog">
+      <DialogContent class="sm:max-w-[600px]">
+        <DialogHeader>
+          <DialogTitle>{{ t('services.receiving.name') }}</DialogTitle>
+          <DialogDescription>
+            {{ t('services.receiving.description') }}
+          </DialogDescription>
+        </DialogHeader>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
+          <!-- Cuplump -->
+          <button
+            @click="router.push('/admin/cuplump')"
+            class="flex flex-col items-center justify-center gap-4 p-6 rounded-xl border border-border/50 bg-card hover:bg-accent/50 hover:border-sidebar-primary/50 transition-all group"
+          >
+            <div
+              class="p-4 rounded-full bg-orange-50 text-orange-600 group-hover:scale-110 transition-transform"
+            >
+              <Droplets class="w-8 h-8" />
+            </div>
+            <div class="text-center">
+              <h3 class="font-semibold text-lg">{{ t('services.cuplump.name') }}</h3>
+              <p class="text-sm text-muted-foreground mt-1">
+                {{ t('services.cuplump.description') }}
+              </p>
+            </div>
+          </button>
+
+          <!-- USS -->
+          <button
+            @click="router.push('/admin/uss')"
+            class="flex flex-col items-center justify-center gap-4 p-6 rounded-xl border border-border/50 bg-card hover:bg-accent/50 hover:border-sidebar-primary/50 transition-all group"
+          >
+            <div
+              class="p-4 rounded-full bg-blue-50 text-blue-600 group-hover:scale-110 transition-transform"
+            >
+              <Sheet class="w-8 h-8" />
+            </div>
+            <div class="text-center">
+              <h3 class="font-semibold text-lg">{{ t('services.uss.name') || 'USS' }}</h3>
+              <p class="text-sm text-muted-foreground mt-1">{{ t('services.uss.description') }}</p>
+            </div>
+          </button>
+        </div>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>

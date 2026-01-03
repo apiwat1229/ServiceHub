@@ -55,6 +55,21 @@ export class BookingsController {
         return this.bookingsService.saveWeightOut(id, body);
     }
 
+    @Get(':id/samples')
+    getSamples(@Param('id') id: string) {
+        return this.bookingsService.getSamples(id);
+    }
+
+    @Post(':id/samples')
+    saveSample(@Param('id') id: string, @Body() body: any) {
+        return this.bookingsService.saveSample(id, body);
+    }
+
+    @Delete(':id/samples/:sampleId')
+    deleteSample(@Param('id') id: string, @Param('sampleId') sampleId: string) {
+        return this.bookingsService.deleteSample(id, sampleId);
+    }
+
     @Delete(':id')
     remove(@Param('id') id: string, @Request() req: any) {
         return this.bookingsService.remove(id, req.user);

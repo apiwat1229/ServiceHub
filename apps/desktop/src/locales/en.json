@@ -76,7 +76,7 @@
       "description": "Material Requirements Planning for production and inventory."
     },
     "cuplump": {
-      "name": "Cuplump Pool",
+      "name": "Cuplump",
       "description": "Rubber Cup Lump Management and tracking system."
     },
     "booking": {
@@ -98,6 +98,10 @@
     "warehouse": {
       "name": "Warehouse",
       "description": "Inventory Management for finished goods and spares."
+    },
+    "uss": {
+      "name": "Rubber Sheet",
+      "description": "Rubber Sheet receiving operations."
     },
     "shipping": {
       "name": "Shipping",
@@ -714,6 +718,43 @@
       "sound": "Notification Sound",
       "soundDesc": "Play a sound when a notification is received."
     }
+  },
+  "cuplump": {
+    "title": "Cuplump",
+    "lotNo": "Lot Number",
+    "supplier": "Supplier",
+    "truck": "Truck",
+    "rubberType": "Rubber Type",
+    "moisture": "MOISTURE",
+    "drcEst": "DRC EST.",
+    "avgCp": "AVG %CP",
+    "grossWeight": "Gross Weight",
+    "netWeight": "Net Weight",
+    "all": "All",
+    "complete": "Complete",
+    "incomplete": "Incomplete",
+    "kg": "Kg.",
+    "noData": "No data found",
+    "mainInfo": "Main Info",
+    "date": "Date",
+    "recordedItems": "Recorded Items",
+    "specialReceiving": "Special Receiving / New Sample",
+    "beforePress": "Before Press",
+    "basket": "Basket",
+    "cuplump": "Cuplump",
+    "afterPress": "After Press",
+    "percentCp": "%CP",
+    "beforeBaking": "Before Baking",
+    "action": "Action",
+    "saveRecord": "Save Record",
+    "clear": "Clear",
+    "noSamples": "No samples recorded yet.",
+    "confirmDelete": "Delete this item?",
+    "sampleSaved": "Sample saved",
+    "sampleDeleted": "Sample deleted",
+    "enterBeforePress": "Please enter Before Press weight",
+    "failedToSave": "Failed to save sample",
+    "failedToDelete": "Failed to delete"
   },
   "approval": {
     "title": "Approval Requests",

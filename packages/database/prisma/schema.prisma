@@ -274,6 +274,8 @@ model Booking {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  labSamples BookingLabSample[]
+
   // Soft Delete
   deletedAt DateTime? @map("deleted_at")
   deletedBy String?   @map("deleted_by")
@@ -282,6 +284,31 @@ model Booking {
   @@index([bookingCode])
   @@index([deletedAt])
   @@map("bookings")
+}
+
+model BookingLabSample {
+  id        String  @id @default(uuid())
+  bookingId String  @map("booking_id")
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  sampleNo Int     @map("sample_no")
+  isTrailer Boolean @default(false) @map("is_trailer")
+
+  // Lab Data
+  beforePress   Float? @map("before_press")
+  basketWeight  Float? @map("basket_weight")
+  cuplumpWeight Float? @map("cuplump_weight") // Calculated? Or stored? Storing is safer.
+  afterPress    Float? @map("after_press")
+  percentCp     Float? @map("percent_cp")
+
+  beforeBaking1 Float? @map("before_baking_1")
+  beforeBaking2 Float? @map("before_baking_2")
+  beforeBaking3 Float? @map("before_baking_3")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("booking_lab_samples")
 }
 
 // ==========================================
