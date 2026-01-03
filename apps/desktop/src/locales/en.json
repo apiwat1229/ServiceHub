@@ -11,6 +11,7 @@
     "approved": "Approved",
     "close": "Close",
     "search": "Search",
+    "searchModules": "Search modules...",
     "filter": "Filter",
     "export": "Export",
     "import": "Import",
@@ -97,6 +98,26 @@
     "warehouse": {
       "name": "Warehouse",
       "description": "Inventory Management for finished goods and spares."
+    },
+    "shipping": {
+      "name": "Shipping",
+      "description": "Truck dispatch, gate-out QR & shipment confirmation."
+    },
+    "receiving": {
+      "name": "Raw Material Receiving",
+      "description": "Cuplump & USS receiving operations, weighing, and yard management."
+    },
+    "qa": {
+      "name": "Quality Assurance",
+      "description": "QR for sample tracking, test results & approvals."
+    },
+    "production": {
+      "name": "Production",
+      "description": "Line tracking, WIP QR labels & process confirmation."
+    },
+    "purchasing": {
+      "name": "Purchasing",
+      "description": "Procurement management and supplier coordination."
     },
     "accessModule": "ACCESS MODULE"
   },

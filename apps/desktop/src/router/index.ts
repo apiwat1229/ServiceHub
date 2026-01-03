@@ -70,6 +70,12 @@ const routes = [
         meta: { requiresAuth: true }
     },
     {
+        path: '/mrp',
+        name: 'MRP System',
+        component: () => import('../views/admin/Mrp.vue'),
+        meta: { requiresAuth: true }
+    },
+    {
         path: '/admin',
         name: 'AdminPanel',
         component: () => import('@/components/layout/MainLayout.vue'),
@@ -104,6 +110,11 @@ const routes = [
                 path: 'notifications',
                 name: 'Notifications',
                 component: () => import('../views/admin/NotificationsManagement.vue'),
+            },
+            {
+                path: 'purchasing',
+                name: 'Purchasing',
+                component: () => import('../views/Placeholder.vue'),
             },
             {
                 path: 'bookings',

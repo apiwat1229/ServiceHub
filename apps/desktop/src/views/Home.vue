@@ -42,7 +42,7 @@ const modules = computed<ServiceModule[]>(() => [
     color: 'text-blue-600',
     bgColor: 'bg-blue-50/50 group-hover:bg-blue-100/50',
     hoverBorder: 'group-hover:border-blue-500',
-    route: '/admin/mrp',
+    route: '/mrp',
   },
   {
     id: 'cuplump',
@@ -107,6 +107,7 @@ const modules = computed<ServiceModule[]>(() => [
 ]);
 
 // Sorting Logic
+const searchQuery = ref('');
 const sortBy = ref<'az' | 'recent'>('az');
 const moduleUsage = ref<Record<string, number>>({});
 
@@ -131,7 +132,15 @@ onMounted(() => {
 });
 
 const sortedModules = computed(() => {
-  const list = [...modules.value];
+  let list = [...modules.value];
+
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase();
+    list = list.filter(
+      (m) => m.title.toLowerCase().includes(query) || m.description.toLowerCase().includes(query)
+    );
+  }
+
   if (sortBy.value === 'az') {
     return list.sort((a, b) => a.title.localeCompare(b.title));
   } else if (sortBy.value === 'recent') {
@@ -161,22 +170,35 @@ const sortedModules = computed(() => {
         </div>
       </div>
 
-      <!-- Sorting Control -->
-      <div class="w-full md:w-auto">
-        <Select v-model="sortBy">
-          <SelectTrigger
-            class="w-full md:w-[180px] bg-transparent border-border/40 backdrop-blur-sm rounded-xl"
-          >
-            <div class="flex items-center gap-2">
-              <ArrowUpDown class="h-4 w-4 text-muted-foreground" />
-              <SelectValue :placeholder="t('common.sortBy')" />
-            </div>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="az">{{ t('common.sortAZ') }}</SelectItem>
-            <SelectItem value="recent">{{ t('common.sortRecent') }}</SelectItem>
-          </SelectContent>
-        </Select>
+      <!-- Controls -->
+      <div class="flex gap-4 w-full md:w-auto">
+        <!-- Search -->
+        <div class="relative w-full md:w-64">
+          <input
+            v-model="searchQuery"
+            type="text"
+            :placeholder="t('common.searchModules') || 'Search modules...'"
+            class="w-full h-10 px-4 rounded-xl border border-border/40 bg-card/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/60"
+          />
+        </div>
+
+        <!-- Sort -->
+        <div class="w-full md:w-auto">
+          <Select v-model="sortBy">
+            <SelectTrigger
+              class="w-full md:w-[180px] bg-transparent border-border/40 backdrop-blur-sm rounded-xl"
+            >
+              <div class="flex items-center gap-2">
+                <ArrowUpDown class="h-4 w-4 text-muted-foreground" />
+                <SelectValue :placeholder="t('common.sortBy')" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="az">{{ t('common.sortAZ') }}</SelectItem>
+              <SelectItem value="recent">{{ t('common.sortRecent') }}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
     </div>
 
