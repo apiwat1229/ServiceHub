@@ -20,6 +20,21 @@ export class BookingsController {
         return this.bookingsService.getStats(date);
     }
 
+    @Get(':id/samples')
+    getSamples(@Param('id') id: string) {
+        return this.bookingsService.getSamples(id);
+    }
+
+    @Post(':id/samples')
+    saveSample(@Param('id') id: string, @Body() body: any) {
+        return this.bookingsService.saveSample(id, body);
+    }
+
+    @Delete(':id/samples/:sampleId')
+    deleteSample(@Param('id') id: string, @Param('sampleId') sampleId: string) {
+        return this.bookingsService.deleteSample(id, sampleId);
+    }
+
     @Get(':id')
     findOne(@Param('id') id: string) {
         return this.bookingsService.findOne(id);
@@ -55,20 +70,7 @@ export class BookingsController {
         return this.bookingsService.saveWeightOut(id, body);
     }
 
-    @Get(':id/samples')
-    getSamples(@Param('id') id: string) {
-        return this.bookingsService.getSamples(id);
-    }
-
-    @Post(':id/samples')
-    saveSample(@Param('id') id: string, @Body() body: any) {
-        return this.bookingsService.saveSample(id, body);
-    }
-
-    @Delete(':id/samples/:sampleId')
-    deleteSample(@Param('id') id: string, @Param('sampleId') sampleId: string) {
-        return this.bookingsService.deleteSample(id, sampleId);
-    }
+    // Samples routes moved up
 
     @Delete(':id')
     remove(@Param('id') id: string, @Request() req: any) {

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent } from '@/components/ui/card';
 import DataTable from '@/components/ui/data-table/DataTable.vue';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { bookingsApi } from '@/services/bookings';
@@ -11,13 +12,14 @@ import { getLocalTimeZone, today } from '@internationalized/date';
 import type { ColumnDef } from '@tanstack/vue-table';
 import { format } from 'date-fns';
 import { Calendar as CalendarIcon, Edit, Search } from 'lucide-vue-next';
+import { VisuallyHidden } from 'radix-vue';
 import { computed, h, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRouter } from 'vue-router';
 import { toast } from 'vue-sonner';
+import CuplumpDetailContent from './components/CuplumpDetailContent.vue';
 
 const { t } = useI18n();
-const router = useRouter();
+// const router = useRouter(); // Router might not be needed for nav anymore if fully modal based
 
 // State
 const bookings = ref<any[]>([]);
@@ -39,6 +41,19 @@ watch(selectedDate, (newVal) => {
 const handleDateSelect = (newDate: any) => {
   selectedDateObject.value = newDate;
   isDatePopoverOpen.value = false;
+};
+
+// Modal Logic
+const isDetailOpen = ref(false);
+const selectedBooking = ref<any>(null);
+
+const handleRowClick = (row: any) => {
+  selectedBooking.value = {
+    bookingId: row.originalId,
+    isTrailer: row.isTrailerPart,
+    partLabel: row.partLabel,
+  };
+  isDetailOpen.value = true;
 };
 
 // Fetch Data
@@ -273,15 +288,9 @@ const columns: ColumnDef<any>[] = [
         {
           variant: 'ghost',
           size: 'icon',
-          onClick: () => {
-            router.push({
-              name: 'CuplumpDetail',
-              params: { id: row.original.originalId },
-              query: {
-                isTrailer: row.original.isTrailerPart ? 'true' : 'false',
-                partLabel: row.original.partLabel,
-              },
-            });
+          onClick: (e: any) => {
+            e.stopPropagation(); // Prevent duplicate trigger if row click exists
+            handleRowClick(row.original);
           },
         },
         () => h(Edit, { class: 'w-4 h-4 text-muted-foreground' })
@@ -369,14 +378,16 @@ onMounted(() => {
           </Button>
           <Button
             size="sm"
-            @variant="activeTab === 'incomplete' ? 'secondary' : 'ghost'"
+            :variant="activeTab === 'incomplete' ? 'secondary' : 'ghost'"
             @click="activeTab = 'incomplete'"
             class="gap-2 text-orange-600"
+            :class="{ 'bg-orange-100/50 hover:bg-orange-100/70': activeTab === 'incomplete' }"
           >
             {{ t('cuplump.incomplete') }}
-            <Badge class="ml-1 bg-orange-100 text-orange-700 hover:bg-orange-100">{{
-              stats.incomplete
-            }}</Badge>
+            <Badge
+              class="ml-1 bg-orange-100 text-orange-700 hover:bg-orange-100 border-orange-200"
+              >{{ stats.incomplete }}</Badge
+            >
           </Button>
         </div>
 
@@ -406,7 +417,29 @@ onMounted(() => {
 
     <!-- Data Table -->
     <div class="flex-1 overflow-hidden">
-      <DataTable :columns="columns" :data="processedBookings" :loading="isLoading" />
+      <DataTable
+        :columns="columns"
+        :data="processedBookings"
+        :loading="isLoading"
+        @row-click="handleRowClick"
+      />
     </div>
+
+    <!-- Detail Modal -->
+    <Dialog v-model:open="isDetailOpen">
+      <DialogContent class="max-w-[95vw] h-[95vh] overflow-y-auto flex flex-col p-6">
+        <VisuallyHidden>
+          <DialogTitle>{{ t('cuplump.mainInfo') }}</DialogTitle>
+          <DialogDescription>Booking Details</DialogDescription>
+        </VisuallyHidden>
+        <CuplumpDetailContent
+          v-if="selectedBooking"
+          :booking-id="selectedBooking.bookingId"
+          :is-trailer="selectedBooking.isTrailer"
+          :part-label="selectedBooking.partLabel"
+          @close="isDetailOpen = false"
+        />
+      </DialogContent>
+    </Dialog>
   </div>
 </template>

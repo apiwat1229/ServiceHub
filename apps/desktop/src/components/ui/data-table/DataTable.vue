@@ -39,6 +39,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   deleteSelected: [selectedRows: TData[]];
+  rowClick: [row: TData];
 }>();
 
 const sorting = ref<SortingState>([]);
@@ -122,6 +123,8 @@ const { t } = useI18n();
               v-for="row in table.getRowModel().rows"
               :key="row.id"
               :data-state="row.getIsSelected() ? 'selected' : undefined"
+              @click="emit('rowClick', row.original)"
+              class="cursor-pointer hover:bg-muted/50"
             >
               <TableCell v-for="cell in row.getVisibleCells()" :key="cell.id">
                 <FlexRender :render="cell.column.columnDef.cell" :props="cell.getContext()" />
