@@ -955,18 +955,23 @@ const dashboardColumns: ColumnDef<any>[] = [
   {
     id: 'actions',
     header: () => t('common.actions'),
-    cell: ({ row }) =>
-      h('div', { class: 'flex gap-2' }, [
-        h(
-          Button,
-          {
-            size: 'icon',
-            variant: 'ghost',
-            class: 'h-8 w-8 bg-green-50 text-green-600 hover:bg-green-100',
-            onClick: () => openBookingDetail(row.original),
-          },
-          () => h(CheckCircle, { class: 'w-4 h-4' })
-        ),
+    cell: ({ row }) => {
+      const buttons = [];
+      if (row.original.status !== 'APPROVED') {
+        buttons.push(
+          h(
+            Button,
+            {
+              size: 'icon',
+              variant: 'ghost',
+              class: 'h-8 w-8 bg-green-50 text-green-600 hover:bg-green-100',
+              onClick: () => openBookingDetail(row.original),
+            },
+            () => h(CheckCircle, { class: 'w-4 h-4' })
+          )
+        );
+      }
+      buttons.push(
         h(
           Button,
           {
@@ -976,8 +981,10 @@ const dashboardColumns: ColumnDef<any>[] = [
             onClick: () => openTimeLog(row.original),
           },
           () => h(Clock, { class: 'w-4 h-4' })
-        ),
-      ]),
+        )
+      );
+      return h('div', { class: 'flex gap-2' }, buttons);
+    },
   },
 ];
 
@@ -2579,210 +2586,172 @@ onUnmounted(() => {
             </div>
           </div>
 
-          <div class="relative pl-6 space-y-2 my-4">
-            <!-- Vertical Line -->
-            <div
-              class="absolute left-2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-200 via-green-200 to-orange-200"
-            ></div>
-
+          <Timeline class="space-y-8 max-w-md mx-auto">
             <!-- Check-in -->
-            <div class="relative flex items-baseline gap-3">
-              <div
-                class="absolute -left-[18px] w-4 h-4 rounded-full bg-blue-500 border-2 border-background"
-              ></div>
-              <span class="text-sm font-medium text-blue-700 dark:text-blue-400 min-w-[100px]"
-                >Check-in</span
-              >
-              <span class="text-base font-bold">{{
-                selectedDetailBooking?.checkinAt
-                  ? format(new Date(selectedDetailBooking.checkinAt), 'HH:mm')
-                  : '-'
-              }}</span>
-            </div>
+            <TimelineItem dot-color="bg-blue-500">
+              <div class="grid grid-cols-[140px_1fr] items-baseline">
+                <span class="text-sm font-medium text-muted-foreground">{{
+                  t('truckScale.checkIn') || 'Check-in'
+                }}</span>
+                <span class="text-base font-bold text-foreground">{{
+                  selectedDetailBooking?.checkinAt
+                    ? format(new Date(selectedDetailBooking.checkinAt), 'HH:mm')
+                    : '-'
+                }}</span>
+              </div>
+            </TimelineItem>
 
             <!-- Weight In -->
-            <div class="relative flex items-baseline gap-3">
-              <div
-                class="absolute -left-[18px] w-4 h-4 rounded-full bg-green-500 border-2 border-background"
-              ></div>
-              <span class="text-sm font-medium text-green-700 dark:text-green-400 min-w-[100px]"
-                >Weight In</span
-              >
-              <div
-                v-if="
-                  selectedDetailBooking?.trailerWeightIn &&
-                  selectedDetailBooking.trailerWeightIn > 0
-                "
-                class="flex flex-col gap-0.5"
-              >
-                <div class="flex items-center gap-2">
-                  <span class="text-xs text-muted-foreground"
-                    >{{ t('truckScale.mainTruck') }}:</span
-                  >
+            <TimelineItem dot-color="bg-green-500">
+              <div class="grid grid-cols-[140px_1fr] items-baseline">
+                <span class="text-sm font-medium text-muted-foreground">{{
+                  t('truckScale.weightIn') || 'Weight In'
+                }}</span>
+                <div
+                  v-if="
+                    selectedDetailBooking?.trailerWeightIn &&
+                    selectedDetailBooking.trailerWeightIn > 0
+                  "
+                  class="flex flex-col"
+                >
                   <span class="text-base font-bold text-green-600">{{
                     selectedDetailBooking?.weightIn
-                      ? selectedDetailBooking.weightIn.toLocaleString() + ' kg'
+                      ? selectedDetailBooking.weightIn.toLocaleString() + ' Kg.'
                       : '-'
                   }}</span>
+                  <span class="text-xs text-muted-foreground"
+                    >(+Trailer {{ selectedDetailBooking.trailerWeightIn.toLocaleString() }})</span
+                  >
                 </div>
-                <div class="flex items-center gap-2">
-                  <span class="text-xs text-muted-foreground">{{ t('truckScale.trailer') }}:</span>
-                  <span class="text-base font-bold text-green-600">{{
-                    selectedDetailBooking.trailerWeightIn.toLocaleString() + ' kg'
-                  }}</span>
-                </div>
+                <span v-else class="text-base font-bold text-green-600">{{
+                  selectedDetailBooking?.weightIn
+                    ? selectedDetailBooking.weightIn.toLocaleString() + ' Kg.'
+                    : '-'
+                }}</span>
               </div>
-              <span v-else class="text-base font-bold text-green-600">{{
-                selectedDetailBooking?.weightIn
-                  ? selectedDetailBooking.weightIn.toLocaleString() + ' Kg.'
-                  : '-'
-              }}</span>
-            </div>
+            </TimelineItem>
 
             <!-- Start Drain -->
-            <div class="relative flex items-baseline gap-3">
-              <div
-                class="absolute -left-[18px] w-4 h-4 rounded-full bg-yellow-500 border-2 border-background"
-              ></div>
-              <span class="text-sm font-medium text-yellow-700 dark:text-yellow-400 min-w-[100px]"
-                >Start Drain</span
-              >
-              <span class="text-base font-bold">{{
-                selectedDetailBooking?.startDrainAt
-                  ? format(new Date(selectedDetailBooking.startDrainAt), 'HH:mm')
-                  : '-'
-              }}</span>
-            </div>
+            <TimelineItem dot-color="bg-yellow-500">
+              <div class="grid grid-cols-[140px_1fr] items-baseline">
+                <span class="text-sm font-medium text-muted-foreground">{{
+                  t('truckScale.startDrain') || 'Start Drain'
+                }}</span>
+                <span class="text-base font-bold text-foreground">{{
+                  selectedDetailBooking?.startDrainAt
+                    ? format(new Date(selectedDetailBooking.startDrainAt), 'HH:mm')
+                    : '-'
+                }}</span>
+              </div>
+            </TimelineItem>
 
             <!-- Stop Drain -->
-            <div class="relative flex items-baseline gap-3">
-              <div
-                class="absolute -left-[18px] w-4 h-4 rounded-full bg-orange-500 border-2 border-background"
-              ></div>
-              <span class="text-sm font-medium text-orange-700 dark:text-orange-400 min-w-[100px]"
-                >Stop Drain</span
-              >
-              <span class="text-base font-bold">{{
-                selectedDetailBooking?.stopDrainAt
-                  ? format(new Date(selectedDetailBooking.stopDrainAt), 'HH:mm')
-                  : '-'
-              }}</span>
-            </div>
+            <TimelineItem dot-color="bg-orange-500">
+              <div class="grid grid-cols-[140px_1fr] items-baseline">
+                <span class="text-sm font-medium text-muted-foreground">{{
+                  t('truckScale.stopDrain') || 'Stop Drain'
+                }}</span>
+                <span class="text-base font-bold text-foreground">{{
+                  selectedDetailBooking?.stopDrainAt
+                    ? format(new Date(selectedDetailBooking.stopDrainAt), 'HH:mm')
+                    : '-'
+                }}</span>
+              </div>
+            </TimelineItem>
 
             <!-- Total Drain -->
-            <div
+            <TimelineItem
               v-if="selectedDetailBooking?.startDrainAt && selectedDetailBooking?.stopDrainAt"
-              class="relative flex items-baseline gap-3"
+              dot-color="bg-orange-500"
             >
-              <div
-                class="absolute -left-[18px] w-4 h-4 rounded-full bg-amber-500 border-2 border-background"
-              ></div>
-              <span class="text-sm font-medium text-amber-700 dark:text-amber-400 min-w-[100px]"
-                >Total Drain</span
-              >
-              <span class="text-base font-bold text-amber-600">
-                {{
-                  Math.floor(
-                    (new Date(selectedDetailBooking.stopDrainAt).getTime() -
-                      new Date(selectedDetailBooking.startDrainAt).getTime()) /
-                      60000
-                  )
-                }}
-                Min
-              </span>
-            </div>
+              <div class="grid grid-cols-[140px_1fr] items-baseline">
+                <span class="text-sm font-medium text-muted-foreground">{{
+                  t('truckScale.totalDrain') || 'Total Drain'
+                }}</span>
+                <span class="text-base font-bold text-orange-600">
+                  {{
+                    Math.floor(
+                      (new Date(selectedDetailBooking.stopDrainAt).getTime() -
+                        new Date(selectedDetailBooking.startDrainAt).getTime()) /
+                        60000
+                    )
+                  }}
+                  {{ t('liveDuration.min') || 'Min' }}
+                </span>
+              </div>
+            </TimelineItem>
 
             <!-- Weight Out -->
-            <div class="relative flex items-baseline gap-3">
-              <div
-                class="absolute -left-[18px] w-4 h-4 rounded-full bg-red-500 border-2 border-background"
-              ></div>
-              <span class="text-sm font-medium text-red-700 dark:text-red-400 min-w-[100px]"
-                >Weight Out</span
-              >
-              <div
-                v-if="
-                  selectedDetailBooking?.trailerWeightOut &&
-                  selectedDetailBooking.trailerWeightOut > 0
-                "
-                class="flex flex-col gap-0.5"
-              >
-                <div class="flex items-center gap-2">
-                  <span class="text-xs text-muted-foreground"
-                    >{{ t('truckScale.mainTruck') }}:</span
-                  >
-                  <span class="text-base font-bold text-red-600">{{
-                    selectedDetailBooking?.weightOut
-                      ? selectedDetailBooking.weightOut.toLocaleString() + ' Kg.'
-                      : '-'
-                  }}</span>
-                </div>
-                <div class="flex items-center gap-2">
-                  <span class="text-xs text-muted-foreground">{{ t('truckScale.trailer') }}:</span>
-                  <span class="text-base font-bold text-red-600">{{
-                    selectedDetailBooking.trailerWeightOut.toLocaleString() + ' Kg.'
-                  }}</span>
-                </div>
-              </div>
-              <span v-else class="text-base font-bold text-red-600">{{
-                selectedDetailBooking?.weightOut
-                  ? selectedDetailBooking.weightOut.toLocaleString() + ' Kg.'
-                  : '-'
-              }}</span>
-            </div>
-
-            <!-- Net Weight Summary -->
-            <div
-              v-if="selectedDetailBooking?.weightIn && selectedDetailBooking?.weightOut"
-              class="relative flex items-baseline gap-3 pt-2 border-t mt-2"
-            >
-              <div
-                class="absolute -left-[18px] w-4 h-4 rounded-full bg-purple-500 border-2 border-background"
-              ></div>
-              <span class="text-sm font-medium text-purple-700 dark:text-purple-400 min-w-[100px]"
-                >Net Weight</span
-              >
-              <span class="text-lg font-bold text-purple-900 dark:text-purple-100">
-                {{
-                  Math.abs(
-                    selectedDetailBooking.weightIn - selectedDetailBooking.weightOut
-                  ).toLocaleString()
-                }}
-                Kg.
-              </span>
-            </div>
-
-            <!-- Approved Log -->
-            <div
-              v-if="selectedDetailBooking?.status === 'APPROVED'"
-              class="relative flex items-baseline gap-3 pt-2 mt-1"
-            >
-              <div
-                class="absolute -left-[18px] w-4 h-4 rounded-full bg-blue-600 border-2 border-background flex items-center justify-center"
-              >
-                <CheckCircle class="w-2.5 h-2.5 text-white" />
-              </div>
-              <span class="text-sm font-medium text-blue-700 dark:text-blue-400 min-w-[100px]"
-                >Approved</span
-              >
-              <span class="text-base font-bold text-blue-700">
-                {{
-                  selectedDetailBooking?.approvedAt
-                    ? format(new Date(selectedDetailBooking.approvedAt), 'HH:mm')
+            <TimelineItem dot-color="bg-red-500">
+              <div class="grid grid-cols-[140px_1fr] items-baseline">
+                <span class="text-sm font-medium text-muted-foreground">{{
+                  t('truckScale.weightOut') || 'Weight Out'
+                }}</span>
+                <span class="text-base font-bold text-red-600">{{
+                  selectedDetailBooking?.weightOut
+                    ? selectedDetailBooking.weightOut.toLocaleString() + ' Kg.'
                     : '-'
-                }}
-              </span>
-            </div>
-          </div>
+                }}</span>
+              </div>
+            </TimelineItem>
+
+            <!-- Net Weight -->
+            <TimelineItem
+              v-if="selectedDetailBooking?.weightIn && selectedDetailBooking?.weightOut"
+              dot-color="bg-purple-600"
+              class="pt-4 border-t border-dashed"
+            >
+              <div class="grid grid-cols-[140px_1fr] items-baseline">
+                <span class="text-sm font-medium text-muted-foreground">{{
+                  t('truckScale.netWeight') || 'Net Weight'
+                }}</span>
+                <span class="text-xl font-bold text-purple-600">
+                  {{
+                    Math.abs(
+                      selectedDetailBooking.weightIn +
+                        (selectedDetailBooking.trailerWeightIn || 0) -
+                        (selectedDetailBooking.weightOut +
+                          (selectedDetailBooking.trailerWeightOut || 0))
+                    ).toLocaleString()
+                  }}
+                  Kg.
+                </span>
+              </div>
+            </TimelineItem>
+
+            <!-- Approved -->
+            <TimelineItem
+              v-if="selectedDetailBooking?.status === 'APPROVED'"
+              dot-color="bg-blue-600"
+            >
+              <template #dot>
+                <CheckCircle class="w-full h-full text-white p-0.5" />
+              </template>
+              <div class="grid grid-cols-[140px_1fr] items-baseline">
+                <span class="text-sm font-medium text-blue-600">{{
+                  t('common.approved') || 'Approved'
+                }}</span>
+                <span class="text-base font-bold text-blue-700">
+                  {{
+                    selectedDetailBooking?.approvedAt
+                      ? format(new Date(selectedDetailBooking.approvedAt), 'HH:mm')
+                      : '-'
+                  }}
+                </span>
+              </div>
+            </TimelineItem>
+          </Timeline>
         </div>
 
-        <DialogFooter class="mt-2">
-          <Button class="w-full" variant="outline" @click="timeLogDialogOpen = false">{{
-            t('common.close')
-          }}</Button>
+        <DialogFooter class="mt-6">
+          <Button
+            class="w-full bg-background border hover:bg-muted text-foreground"
+            variant="outline"
+            @click="timeLogDialogOpen = false"
+            >{{ t('common.close') }}</Button
+          >
         </DialogFooter>
       </DialogContent>
     </Dialog>
   </div>
 </template>
-```

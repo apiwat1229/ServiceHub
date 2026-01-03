@@ -141,6 +141,7 @@
     "totalBookings": "การจองทั้งหมด",
     "completed": "เสร็จสิ้น",
     "pending": "รอดำเนินการ",
+    "deliveryCompleted": "จัดส่งเสร็จแล้ว",
     "queue": "คิว"
   },
   "admin": {

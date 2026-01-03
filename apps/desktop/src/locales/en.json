@@ -141,6 +141,7 @@
     "totalBookings": "Total Bookings",
     "completed": "Completed",
     "pending": "Pending",
+    "deliveryCompleted": "Delivery Completed",
     "queue": "Queue"
   },
   "admin": {

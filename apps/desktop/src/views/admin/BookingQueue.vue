@@ -458,7 +458,7 @@ watch(selectedSlot, (newSlot) => {
           <span class="font-semibold text-sm"
             >{{ t('bookingQueue.queueNumber') }} : {{ queue.queueNo }}</span
           >
-          <div class="flex items-center gap-1">
+          <div v-if="queue.status !== 'APPROVED'" class="flex items-center gap-1">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger as-child>
@@ -485,6 +485,13 @@ watch(selectedSlot, (newSlot) => {
                 <TooltipContent>{{ t('common.delete') }}</TooltipContent>
               </Tooltip>
             </TooltipProvider>
+          </div>
+          <div v-else>
+            <span
+              class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10"
+            >
+              {{ t('booking.deliveryCompleted') || 'Delivery Completed' }}
+            </span>
           </div>
         </div>
 
