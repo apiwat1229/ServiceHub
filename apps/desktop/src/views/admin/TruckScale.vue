@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { usePermissions } from '@/composables/usePermissions';
 import { cn } from '@/lib/utils';
 import { approvalsApi } from '@/services/approvals';
 import { bookingsApi } from '@/services/bookings';
@@ -38,6 +39,7 @@ import { getLocalTimeZone, today } from '@internationalized/date';
 import type { ColumnDef } from '@tanstack/vue-table';
 import { format } from 'date-fns';
 import {
+  AlertCircle,
   Calendar as CalendarIcon,
   CheckCircle,
   Clock,
@@ -132,6 +134,7 @@ const checkInDialogOpen = ref(false);
 const checkInStep = ref(1); // 1 = Form, 2 = Confirmation
 const selectedBooking = ref<any>(null);
 const checkInTime = ref<Date | null>(null);
+const confirmApproveOpen = ref(false);
 
 const recorderName = computed(() => {
   const user = authStore.user as any;
@@ -203,6 +206,31 @@ const fetchBookings = async () => {
     bookings.value = [];
   } finally {
     isLoading.value = false;
+  }
+};
+
+const { isAdmin } = usePermissions();
+
+// Approval Logic
+const canApprove = computed(() => {
+  return (
+    authStore.hasPermission('approvals:approve') ||
+    isAdmin.value ||
+    authStore.user?.role === 'SUPERVISOR'
+  );
+});
+
+const confirmApproveBooking = async () => {
+  if (!selectedDetailBooking.value?.id) return;
+  try {
+    await bookingsApi.approve(selectedDetailBooking.value.id);
+    toast.success(t('truckScale.toast.approveSuccess') || t('common.success'));
+    confirmApproveOpen.value = false;
+    detailDialogOpen.value = false;
+    fetchBookings();
+  } catch (error) {
+    console.error('Approve failed:', error);
+    toast.error(t('truckScale.toast.approveFailed') || t('common.error'));
   }
 };
 
@@ -2395,6 +2423,9 @@ onUnmounted(() => {
       <DialogContent class="max-w-md">
         <DialogHeader>
           <DialogTitle>{{ t('truckScale.bookingDetails') || 'Booking Details' }}</DialogTitle>
+          <DialogDescription class="sr-only">
+            Details of the booking including weight and time logs
+          </DialogDescription>
         </DialogHeader>
 
         <div class="bg-muted/30 border rounded-lg p-4 mb-4">
@@ -2449,8 +2480,67 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <DialogFooter>
-          <Button class="w-full" @click="detailDialogOpen = false">{{ t('common.close') }}</Button>
+        <DialogFooter class="gap-2 sm:gap-0">
+          <Button variant="outline" class="w-full sm:w-auto" @click="detailDialogOpen = false">{{
+            t('common.close')
+          }}</Button>
+          <Popover
+            v-if="canApprove && selectedDetailBooking?.status !== 'APPROVED'"
+            v-model:open="confirmApproveOpen"
+          >
+            <PopoverTrigger as-child>
+              <Button class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white">
+                <CheckCircle class="w-4 h-4 mr-2" />
+                {{ t('common.approve') || 'Approve' }}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent class="w-[320px] p-0" align="end" side="top">
+              <div class="p-4">
+                <div class="flex items-start gap-4">
+                  <div class="p-2 bg-amber-100 rounded-full shrink-0">
+                    <AlertCircle class="w-5 h-5 text-amber-600" />
+                  </div>
+                  <div class="space-y-1 pt-1">
+                    <h4 class="font-semibold text-base leading-none">
+                      {{ t('truckScale.confirmApprove') || 'Approve Booking' }}
+                    </h4>
+                    <p class="text-sm text-muted-foreground">
+                      {{
+                        t('approval.dialogs.approve.description') ||
+                        'Are you sure you want to approve this booking?'
+                      }}
+                    </p>
+                  </div>
+                </div>
+                <div class="flex justify-end gap-3 mt-5">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    class="h-9 px-4"
+                    @click="confirmApproveOpen = false"
+                  >
+                    {{ t('common.cancel') }}
+                  </Button>
+                  <Button
+                    size="sm"
+                    class="h-9 px-4 bg-green-600 hover:bg-green-700 text-white"
+                    @click="confirmApproveBooking"
+                  >
+                    {{ t('common.confirm') }}
+                  </Button>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+          <Button
+            v-if="selectedDetailBooking?.status === 'APPROVED'"
+            variant="outline"
+            disabled
+            class="w-full sm:w-auto bg-green-50 text-green-600 border-green-200 opacity-100 cursor-not-allowed"
+          >
+            <CheckCircle class="w-4 h-4 mr-2" />
+            {{ t('common.approved') }}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -2469,6 +2559,7 @@ onUnmounted(() => {
                 : ''
             }}</span>
           </DialogTitle>
+          <DialogDescription class="sr-only">Timeline of booking events</DialogDescription>
         </DialogHeader>
 
         <div class="overflow-y-auto flex-1 px-1">
@@ -2658,6 +2749,28 @@ onUnmounted(() => {
                   ).toLocaleString()
                 }}
                 Kg.
+              </span>
+            </div>
+
+            <!-- Approved Log -->
+            <div
+              v-if="selectedDetailBooking?.status === 'APPROVED'"
+              class="relative flex items-baseline gap-3 pt-2 mt-1"
+            >
+              <div
+                class="absolute -left-[18px] w-4 h-4 rounded-full bg-blue-600 border-2 border-background flex items-center justify-center"
+              >
+                <CheckCircle class="w-2.5 h-2.5 text-white" />
+              </div>
+              <span class="text-sm font-medium text-blue-700 dark:text-blue-400 min-w-[100px]"
+                >Approved</span
+              >
+              <span class="text-base font-bold text-blue-700">
+                {{
+                  selectedDetailBooking?.approvedAt
+                    ? format(new Date(selectedDetailBooking.approvedAt), 'HH:mm')
+                    : '-'
+                }}
               </span>
             </div>
           </div>

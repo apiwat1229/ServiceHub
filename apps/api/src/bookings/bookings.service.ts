@@ -278,17 +278,25 @@ export class BookingsService {
             };
         }
 
+        const updateData: any = {
+            supplierId: data.supplierId,
+            supplierCode: data.supplierCode,
+            supplierName: data.supplierName,
+            truckType: data.truckType,
+            truckRegister: data.truckRegister,
+            rubberType: data.rubberType,
+            recorder: data.recorder,
+        };
+
+        if (data.status === 'APPROVED') {
+            updateData.status = 'APPROVED';
+            updateData.approvedBy = user?.displayName || user?.username || 'System';
+            updateData.approvedAt = new Date();
+        }
+
         const result = await this.prisma.booking.update({
             where: { id },
-            data: {
-                supplierId: data.supplierId,
-                supplierCode: data.supplierCode,
-                supplierName: data.supplierName,
-                truckType: data.truckType,
-                truckRegister: data.truckRegister,
-                rubberType: data.rubberType,
-                recorder: data.recorder,
-            },
+            data: updateData,
         });
 
         // Trigger Notification

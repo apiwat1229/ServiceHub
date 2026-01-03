@@ -231,14 +231,20 @@ const fetchData = async () => {
     // Fetch roles and users from backend
     const [rolesData, usersData] = await Promise.all([rolesApi.getAll(), usersApi.getAll()]);
 
-    // Map roles with user counts from backend
-    roles.value = rolesData.map((role) => ({
-      ...role,
-      usersCount: (role as any).userCount || 0,
-      avatars: [],
-    }));
-
     users.value = usersData;
+
+    // Map roles with user counts calculated from loaded users
+    roles.value = rolesData.map((role) => {
+      const roleUsers = usersData.filter((u) => (u.role as string) === role.id);
+      return {
+        ...role,
+        usersCount: roleUsers.length,
+        avatars: roleUsers
+          .slice(0, 5)
+          .map((u) => u.avatar || '')
+          .filter(Boolean),
+      };
+    });
   } catch (error) {
     console.error('Failed to load roles:', error);
     toast.error('Failed to load roles');

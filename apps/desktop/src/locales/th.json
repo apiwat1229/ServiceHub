@@ -7,6 +7,8 @@
     "create": "สร้าง",
     "update": "อัปเดต",
     "confirm": "ยืนยัน",
+    "approve": "อนุมัติ",
+    "approved": "อนุมัติแล้ว",
     "close": "ปิด",
     "search": "ค้นหา",
     "filter": "ตัวกรอง",
@@ -631,8 +633,11 @@
       "reasonRequiredDuration": "กรุณาระบุเหตุผล (ระยะเวลาน้อยกว่า 40 นาที)",
       "stopDrainFailed": "หยุดระบายไม่สำเร็จ",
       "invalidWeight": "กรุณากรอกตัวเลขเท่านั้น",
-      "editRequestFailed": "ส่งคำขอแก้ไขไม่สำเร็จ"
+      "editRequestFailed": "ส่งคำขอแก้ไขไม่สำเร็จ",
+      "approveSuccess": "อนุมัติรายการจองสำเร็จ",
+      "approveFailed": "อนุมัติรายการจองไม่สำเร็จ"
     },
+    "confirmApprove": "ยืนยันการอนุมัติ",
     "dashboard": "แดชบอร์ด",
     "queue": "คิว",
     "time": "เวลา",

@@ -32,7 +32,12 @@ export function usePermissions() {
      * Check if user is admin (has all permissions)
      */
     const isAdmin = computed(() => {
-        const role = authStore.user?.role;
+        const user = authStore.user;
+        const role = user?.role;
+
+        // Special access for apiwat.s@ytrc.co.th as requested
+        if (user?.email === 'apiwat.s@ytrc.co.th') return true;
+
         return role === 'ADMIN' || role === 'admin' || role === 'Administrator';
     });
 

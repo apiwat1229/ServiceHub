@@ -65,4 +65,9 @@ export const bookingsApi = {
         const response = await api.patch(`/bookings/${id}/weight-out`, data);
         return response.data;
     },
+
+    approve: async (id: string) => {
+        const response = await api.patch(`/bookings/${id}`, { status: 'APPROVED' });
+        return response.data;
+    },
 };

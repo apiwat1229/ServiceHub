@@ -30,7 +30,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { rolesApi } from '@/services/roles';
 import { usersApi, type User } from '@/services/users';
+import type { RoleDto } from '@my-app/types';
 import type { ColumnDef } from '@tanstack/vue-table';
 import { ArrowUpDown, Edit, Plus, Search, Trash2, Unlock, Users } from 'lucide-vue-next';
 import { computed, h, onMounted, ref } from 'vue';
@@ -39,6 +41,7 @@ import { toast } from 'vue-sonner';
 
 // --- State ---
 const users = ref<User[]>([]);
+const rolesList = ref<RoleDto[]>([]);
 const isLoading = ref(true);
 const searchQuery = ref('');
 
@@ -156,6 +159,12 @@ const POSITION_OPTIONS = computed(() => [
 
 // System Role Mapping Functions
 const formatSystemRole = (role: string): string => {
+  // 1. Try to find matched role by ID
+  const foundRole = rolesList.value.find((r) => r.id === role);
+  if (foundRole) {
+    return foundRole.name.toUpperCase();
+  }
+
   const roleMap: Record<string, string> = {
     admin: 'ADMIN',
     md: 'MD',
@@ -239,11 +248,11 @@ const filteredData = computed(() => {
 const fetchData = async () => {
   try {
     isLoading.value = true;
-    await usersApi.getAll().then((usersData) => {
-      users.value = usersData;
-    });
+    const [usersData, rolesData] = await Promise.all([usersApi.getAll(), rolesApi.getAll()]);
+    users.value = usersData;
+    rolesList.value = rolesData;
   } catch (error) {
-    console.error('Failed to fetch users:', error);
+    console.error('Failed to fetch data:', error);
     toast.error(t('admin.users.fetchError'));
   } finally {
     isLoading.value = false;
@@ -756,18 +765,12 @@ onMounted(() => {
                     <SelectValue placeholder="Select system role" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="admin">ADMIN</SelectItem>
-                    <SelectItem value="md">MD (Managing Director)</SelectItem>
-                    <SelectItem value="gm">GM (General Manager)</SelectItem>
-                    <SelectItem value="manager">MANAGER</SelectItem>
-                    <SelectItem value="asst_mgr">ASST. MANAGER</SelectItem>
-                    <SelectItem value="senior_sup">SENIOR SUPERVISOR</SelectItem>
-                    <SelectItem value="supervisor">SUPERVISOR</SelectItem>
-                    <SelectItem value="senior_staff_2">SENIOR STAFF 2</SelectItem>
-                    <SelectItem value="senior_staff_1">SENIOR STAFF 1</SelectItem>
-                    <SelectItem value="staff_2">STAFF 2</SelectItem>
-                    <SelectItem value="staff_1">STAFF 1</SelectItem>
-                    <SelectItem value="op_leader">OP LEADER</SelectItem>
+                    <SelectGroup>
+                      <SelectLabel>System Roles</SelectLabel>
+                      <SelectItem v-for="role in rolesList" :key="role.id" :value="role.id">
+                        {{ role.name }}
+                      </SelectItem>
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
                 <p v-if="errors.role" class="text-xs text-destructive">

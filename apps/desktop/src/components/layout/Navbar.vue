@@ -18,6 +18,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { usePermissions } from '@/composables/usePermissions';
 import { notificationsApi } from '@/services/notifications';
 import { socketService } from '@/services/socket';
 import { useAuthStore } from '@/stores/auth';
@@ -43,6 +44,8 @@ const authStore = useAuthStore();
 const router = useRouter();
 const route = useRoute();
 const showThemeSettings = ref(false);
+
+const { isAdmin } = usePermissions();
 
 const props = defineProps<{
   showBrand?: boolean;
@@ -342,7 +345,7 @@ onUnmounted(() => {
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
 
-          <DropdownMenuItem v-if="authStore.user?.role === 'ADMIN'" @click="router.push('/admin')">
+          <DropdownMenuItem v-if="isAdmin" @click="router.push('/admin')">
             <LayoutDashboard class="mr-2 h-4 w-4" />
             <span>Admin Panel</span>
           </DropdownMenuItem>

