@@ -391,6 +391,12 @@
       "dialog": {
         "labels": {
           "province": "จังหวัด"
+        },
+        "placeholders": {
+          "searchProvince": "ค้นหาจังหวัด..."
+        },
+        "errors": {
+          "provinceNotFound": "ไม่พบจังหวัด"
         }
       }
     },
@@ -624,6 +630,7 @@
       "startDrainFailed": "เริ่มระบายไม่สำเร็จ",
       "reasonRequiredDuration": "กรุณาระบุเหตุผล (ระยะเวลาน้อยกว่า 40 นาที)",
       "stopDrainFailed": "หยุดระบายไม่สำเร็จ",
+      "invalidWeight": "กรุณากรอกตัวเลขเท่านั้น",
       "editRequestFailed": "ส่งคำขอแก้ไขไม่สำเร็จ"
     },
     "dashboard": "แดชบอร์ด",
@@ -654,6 +661,7 @@
     "weight": "น้ำหนัก",
     "mainTruck": "รถแม่",
     "trailer": "รถลูก",
+    "sameAsMainTruck": "เหมือนรถแม่",
     "totalDuration": "ระยะเวลารวม",
     "startTime": "เวลาเริ่ม",
     "stopTime": "เวลาหยุด",

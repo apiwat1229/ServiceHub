@@ -820,12 +820,20 @@ onMounted(() => {
               Available Users
               <Badge
                 v-if="
-                  users.filter((u) => !(u.role as string) || (u.role as string) === '').length > 0
+                  users.filter((u) => {
+                    if (!u.role) return true;
+                    return !roles.some((r) => r.id === u.role);
+                  }).length > 0
                 "
                 variant="secondary"
                 class="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
               >
-                {{ users.filter((u) => !(u.role as string) || (u.role as string) === '').length }}
+                {{
+                  users.filter((u) => {
+                    if (!u.role) return true;
+                    return !roles.some((r) => r.id === u.role);
+                  }).length
+                }}
               </Badge>
             </TabsTrigger>
           </TabsList>
@@ -840,7 +848,16 @@ onMounted(() => {
           <TabsContent value="available" class="mt-4">
             <DataTable
               :columns="userColumns"
-              :data="users.filter((u) => !(u.role as string) || (u.role as string) === '')"
+              :data="
+                users.filter((u) => {
+                  // User is available if:
+                  // 1. Role is empty/null
+                  // 2. OR Role ID does not exist in the current roles list (legacy role or deleted role)
+                  if (!u.role) return true;
+                  const roleExists = roles.some((r) => r.id === u.role);
+                  return !roleExists;
+                })
+              "
             />
           </TabsContent>
         </Tabs>

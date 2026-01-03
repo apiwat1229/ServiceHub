@@ -369,6 +369,12 @@
       "dialog": {
         "labels": {
           "province": "Province"
+        },
+        "placeholders": {
+          "searchProvince": "Search province..."
+        },
+        "errors": {
+          "provinceNotFound": "Province not found"
         }
       }
     },
@@ -630,6 +636,7 @@
       "startDrainFailed": "Failed to start drain",
       "reasonRequiredDuration": "Please provide a reason (duration less than 40 minutes)",
       "stopDrainFailed": "Failed to stop drain",
+      "invalidWeight": "Please enter numbers only",
       "editRequestFailed": "Failed to send edit request"
     },
     "dashboard": "Dashboard",
@@ -661,6 +668,7 @@
     "weight": "Weight",
     "mainTruck": "Main Truck",
     "trailer": "Trailer",
+    "sameAsMainTruck": "Same as Main Truck",
     "totalDuration": "Total Duration",
     "startTime": "Start Time",
     "stopTime": "Stop Time",

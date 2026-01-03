@@ -246,11 +246,14 @@ const filteredBookings = computed(() => {
 // Scale Out & Dashboard Logic
 const weightOutDialogOpen = ref(false);
 const confirmCheckoutDialogOpen = ref(false);
-const weightOutData = ref<{ weightOut: number | null }>({ weightOut: 0 });
+const weightOutData = ref<{ weightOut: number | null; trailerWeightOut: number | null }>({
+  weightOut: 0,
+  trailerWeightOut: 0,
+});
 
 const openWeightOut = (booking: any) => {
   selectedDrainBooking.value = booking;
-  weightOutData.value = { weightOut: 0 };
+  weightOutData.value = { weightOut: 0, trailerWeightOut: 0 };
   weightOutDialogOpen.value = true;
 };
 
@@ -382,6 +385,15 @@ const formattedTrailerWeightIn = computed({
   },
 });
 
+// Check if Rubber Types are the same
+const isSameRubberType = computed(() => {
+  return (
+    weightInData.value.rubberType !== '' &&
+    weightInData.value.trailerRubberType !== '' &&
+    weightInData.value.rubberType === weightInData.value.trailerRubberType
+  );
+});
+
 const rubberTypeOptions = computed(() => {
   return rubberTypes.value.map((t) => ({
     value: t.name,
@@ -465,8 +477,38 @@ const confirmStopDrain = async () => {
 
 const saveWeightIn = async () => {
   if (!selectedDrainBooking.value) return;
+
+  const isTrailerTruck = ['10 ล้อ พ่วง', '10 ล้อ (พ่วง)'].includes(
+    selectedDrainBooking.value.truckType
+  );
+
+  // Check if both Main and Trailer have the same Rubber Type
+  const sameRubberType =
+    isTrailerTruck &&
+    weightInData.value.rubberType === weightInData.value.trailerRubberType &&
+    weightInData.value.rubberType !== '' &&
+    weightInData.value.trailerRubberType !== '';
+
+  let dataToSend;
+
+  if (sameRubberType) {
+    // Case 1: Same Rubber Type → Combine into 1 record
+    dataToSend = {
+      rubberSource: weightInData.value.rubberSource,
+      rubberType: weightInData.value.rubberType,
+      weightIn: weightInData.value.weightIn + weightInData.value.trailerWeightIn,
+      // Don't send trailer data
+      trailerRubberSource: '',
+      trailerRubberType: '',
+      trailerWeightIn: 0,
+    };
+  } else {
+    // Case 2: Different Rubber Type → Keep as 2 records
+    dataToSend = weightInData.value;
+  }
+
   try {
-    await bookingsApi.saveWeightIn(selectedDrainBooking.value.id, weightInData.value);
+    await bookingsApi.saveWeightIn(selectedDrainBooking.value.id, dataToSend);
     toast.success('Weight In Saved');
     weightInDialogOpen.value = false;
     fetchBookings();
@@ -637,8 +679,30 @@ const scaleInColumns: ColumnDef<any>[] = [
   {
     accessorKey: 'weightIn',
     header: () => t('truckScale.weightIn') || 'Weight In',
-    cell: ({ row }) =>
-      row.original.weightIn ? `${row.original.weightIn.toLocaleString()} kg` : '-',
+    cell: ({ row }) => {
+      const booking = row.original;
+      if (!booking.weightIn) return '-';
+
+      // Check if there are separate weights for main truck and trailer
+      const hasTrailerWeight = booking.trailerWeightIn && booking.trailerWeightIn > 0;
+
+      if (hasTrailerWeight) {
+        // Display both weights
+        return h('div', { class: 'flex flex-col gap-0.5 text-xs' }, [
+          h('div', { class: 'flex items-center gap-1' }, [
+            h('span', { class: 'text-muted-foreground' }, t('truckScale.mainTruck') || 'Main:'),
+            h('span', { class: 'font-medium' }, `${booking.weightIn.toLocaleString()} kg`),
+          ]),
+          h('div', { class: 'flex items-center gap-1' }, [
+            h('span', { class: 'text-muted-foreground' }, t('truckScale.trailer') || 'Trailer:'),
+            h('span', { class: 'font-medium' }, `${booking.trailerWeightIn.toLocaleString()} kg`),
+          ]),
+        ]);
+      }
+
+      // Single weight (no trailer or combined)
+      return `${booking.weightIn.toLocaleString()} kg`;
+    },
   },
   {
     id: 'action',
@@ -719,8 +783,30 @@ const scaleOutColumns: ColumnDef<any>[] = [
   {
     accessorKey: 'weightIn',
     header: () => t('truckScale.weightIn'),
-    cell: ({ row }) =>
-      row.original.weightIn ? `${row.original.weightIn.toLocaleString()} kg` : '-',
+    cell: ({ row }) => {
+      const booking = row.original;
+      if (!booking.weightIn) return '-';
+
+      // Check if there are separate weights for main truck and trailer
+      const hasTrailerWeight = booking.trailerWeightIn && booking.trailerWeightIn > 0;
+
+      if (hasTrailerWeight) {
+        // Display both weights
+        return h('div', { class: 'flex flex-col gap-0.5 text-xs' }, [
+          h('div', { class: 'flex items-center gap-1' }, [
+            h('span', { class: 'text-muted-foreground' }, t('truckScale.mainTruck') || 'Main:'),
+            h('span', { class: 'font-medium' }, `${booking.weightIn.toLocaleString()} kg`),
+          ]),
+          h('div', { class: 'flex items-center gap-1' }, [
+            h('span', { class: 'text-muted-foreground' }, t('truckScale.trailer') || 'Trailer:'),
+            h('span', { class: 'font-medium' }, `${booking.trailerWeightIn.toLocaleString()} kg`),
+          ]),
+        ]);
+      }
+
+      // Single weight (no trailer or combined)
+      return `${booking.weightIn.toLocaleString()} kg`;
+    },
   },
   {
     id: 'action',
@@ -777,14 +863,58 @@ const dashboardColumns: ColumnDef<any>[] = [
   {
     accessorKey: 'weightIn',
     header: () => t('truckScale.weightIn') || 'Weight In',
-    cell: ({ row }) =>
-      row.original.weightIn ? `${row.original.weightIn.toLocaleString()} Kg.` : '-',
+    cell: ({ row }) => {
+      const booking = row.original;
+      if (!booking.weightIn) return '-';
+
+      // Check if there are separate weights for main truck and trailer
+      const hasTrailerWeight = booking.trailerWeightIn && booking.trailerWeightIn > 0;
+
+      if (hasTrailerWeight) {
+        // Display both weights
+        return h('div', { class: 'flex flex-col gap-0.5 text-xs' }, [
+          h('div', { class: 'flex items-center gap-1' }, [
+            h('span', { class: 'text-muted-foreground' }, t('truckScale.mainTruck') || 'Main:'),
+            h('span', { class: 'font-medium' }, `${booking.weightIn.toLocaleString()} kg`),
+          ]),
+          h('div', { class: 'flex items-center gap-1' }, [
+            h('span', { class: 'text-muted-foreground' }, t('truckScale.trailer') || 'Trailer:'),
+            h('span', { class: 'font-medium' }, `${booking.trailerWeightIn.toLocaleString()} kg`),
+          ]),
+        ]);
+      }
+
+      // Single weight (no trailer or combined)
+      return `${booking.weightIn.toLocaleString()} Kg.`;
+    },
   },
   {
     accessorKey: 'weightOut',
     header: () => t('truckScale.weightOut'),
-    cell: ({ row }) =>
-      row.original.weightOut ? `${row.original.weightOut.toLocaleString()} Kg.` : '-',
+    cell: ({ row }) => {
+      const booking = row.original;
+      if (!booking.weightOut) return '-';
+
+      // Check if there are separate weights for main truck and trailer
+      const hasTrailerWeight = booking.trailerWeightOut && booking.trailerWeightOut > 0;
+
+      if (hasTrailerWeight) {
+        // Display both weights
+        return h('div', { class: 'flex flex-col gap-0.5 text-xs' }, [
+          h('div', { class: 'flex items-center gap-1' }, [
+            h('span', { class: 'text-muted-foreground' }, t('truckScale.mainTruck') || 'Main:'),
+            h('span', { class: 'font-medium' }, `${booking.weightOut.toLocaleString()} kg`),
+          ]),
+          h('div', { class: 'flex items-center gap-1' }, [
+            h('span', { class: 'text-muted-foreground' }, t('truckScale.trailer') || 'Trailer:'),
+            h('span', { class: 'font-medium' }, `${booking.trailerWeightOut.toLocaleString()} kg`),
+          ]),
+        ]);
+      }
+
+      // Single weight (no trailer or combined)
+      return `${booking.weightOut.toLocaleString()} Kg.`;
+    },
   },
   {
     id: 'netWeight',
@@ -1828,16 +1958,6 @@ onUnmounted(() => {
             </h3>
             <div class="grid gap-4">
               <div class="grid gap-2">
-                <Label>{{ t('truckScale.rubberSource') }}</Label>
-                <Combobox
-                  v-model="weightInData.rubberSource"
-                  :options="provinceOptions"
-                  :placeholder="t('truckScale.specifySource')"
-                  :search-placeholder="t('admin.suppliers.dialog.placeholders.searchProvince')"
-                  :empty-text="t('admin.suppliers.dialog.errors.provinceNotFound')"
-                />
-              </div>
-              <div class="grid gap-2">
                 <Label>{{ t('truckScale.rubberType') }}</Label>
                 <Combobox
                   v-model="weightInData.rubberType"
@@ -1845,6 +1965,16 @@ onUnmounted(() => {
                   :placeholder="t('truckScale.selectRubberType')"
                   :search-placeholder="t('truckScale.searchRubberType')"
                   :empty-text="t('truckScale.rubberTypeNotFound')"
+                />
+              </div>
+              <div class="grid gap-2">
+                <Label>{{ t('truckScale.rubberSource') }}</Label>
+                <Combobox
+                  v-model="weightInData.rubberSource"
+                  :options="provinceOptions"
+                  :placeholder="t('truckScale.specifySource')"
+                  :search-placeholder="t('admin.suppliers.dialog.placeholders.searchProvince')"
+                  :empty-text="t('admin.suppliers.dialog.errors.provinceNotFound')"
                 />
               </div>
               <div class="grid gap-2">
@@ -1867,6 +1997,9 @@ onUnmounted(() => {
                         ].includes(e.key)
                       ) {
                         e.preventDefault();
+                        toast.error(
+                          t('truckScale.toast.invalidWeight') || 'Please enter numbers only'
+                        );
                       }
                     }
                   "
@@ -1883,23 +2016,33 @@ onUnmounted(() => {
             </h3>
             <div class="grid gap-4">
               <div class="grid gap-2">
-                <Label>{{ t('truckScale.rubberSource') }}</Label>
-                <Combobox
-                  v-model="weightInData.trailerRubberSource"
-                  :options="provinceOptions"
-                  :placeholder="t('truckScale.specifySource')"
-                  :search-placeholder="t('admin.suppliers.dialog.placeholders.searchProvince')"
-                  :empty-text="t('admin.suppliers.dialog.errors.provinceNotFound')"
-                />
-              </div>
-              <div class="grid gap-2">
                 <Label>{{ t('truckScale.rubberType') }}</Label>
                 <Combobox
                   v-model="weightInData.trailerRubberType"
                   :options="rubberTypeOptions"
-                  :placeholder="t('truckScale.selectRubberType')"
+                  :placeholder="
+                    isSameRubberType
+                      ? t('truckScale.sameAsMainTruck')
+                      : t('truckScale.selectRubberType')
+                  "
                   :search-placeholder="t('truckScale.searchRubberType')"
                   :empty-text="t('truckScale.rubberTypeNotFound')"
+                  :disabled="isSameRubberType"
+                />
+              </div>
+              <div class="grid gap-2">
+                <Label>{{ t('truckScale.rubberSource') }}</Label>
+                <Combobox
+                  v-model="weightInData.trailerRubberSource"
+                  :options="provinceOptions"
+                  :placeholder="
+                    isSameRubberType
+                      ? t('truckScale.sameAsMainTruck')
+                      : t('truckScale.specifySource')
+                  "
+                  :search-placeholder="t('admin.suppliers.dialog.placeholders.searchProvince')"
+                  :empty-text="t('admin.suppliers.dialog.errors.provinceNotFound')"
+                  :disabled="isSameRubberType"
                 />
               </div>
               <div class="grid gap-2">
@@ -1907,7 +2050,8 @@ onUnmounted(() => {
                 <Input
                   v-model="formattedTrailerWeightIn"
                   class="text-lg font-medium"
-                  placeholder="0"
+                  :placeholder="isSameRubberType ? t('truckScale.sameAsMainTruck') : '0'"
+                  :disabled="isSameRubberType"
                   @keydown="
                     (e: KeyboardEvent) => {
                       if (
@@ -1922,6 +2066,9 @@ onUnmounted(() => {
                         ].includes(e.key)
                       ) {
                         e.preventDefault();
+                        toast.error(
+                          t('truckScale.toast.invalidWeight') || 'Please enter numbers only'
+                        );
                       }
                     }
                   "
@@ -1972,6 +2119,7 @@ onUnmounted(() => {
                     )
                   ) {
                     e.preventDefault();
+                    toast.error(t('truckScale.toast.invalidWeight') || 'Please enter numbers only');
                   }
                 }
               "
@@ -1992,29 +2140,97 @@ onUnmounted(() => {
 
     <!-- Weight Out Dialog -->
     <Dialog v-model:open="weightOutDialogOpen">
-      <DialogContent class="sm:max-w-sm">
+      <DialogContent class="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{{ t('truckScale.recordWeightOut') }} (kg)</DialogTitle>
         </DialogHeader>
 
-        <div class="grid gap-4 py-4">
-          <div class="grid gap-2">
-            <Label>{{ t('truckScale.weightOutLabel') }}</Label>
-            <Input
-              :model-value="
-                weightOutData.weightOut ? Number(weightOutData.weightOut).toLocaleString() : ''
-              "
-              @input="
-                (e: any) => {
-                  const value = e.target.value.replace(/[^0-9]/g, '');
-                  weightOutData.weightOut = value ? Number(value) : null;
-                  e.target.value = value ? Number(value).toLocaleString() : '';
-                }
-              "
-              type="text"
-              class="text-xl h-12"
-              placeholder="0"
-            />
+        <div class="grid gap-6 py-4">
+          <!-- Main Truck -->
+          <div class="space-y-4">
+            <h3 class="font-semibold text-lg border-b pb-2 flex items-center gap-2">
+              <div class="w-1 h-5 bg-blue-500 rounded-full"></div>
+              {{ t('truckScale.mainTruck') }}
+            </h3>
+            <div class="grid gap-2">
+              <Label>{{ t('truckScale.weight') }} (kg)</Label>
+              <Input
+                :model-value="
+                  weightOutData.weightOut ? Number(weightOutData.weightOut).toLocaleString() : ''
+                "
+                @input="
+                  (e: any) => {
+                    const value = e.target.value.replace(/[^0-9]/g, '');
+                    weightOutData.weightOut = value ? Number(value) : null;
+                    e.target.value = value ? Number(value).toLocaleString() : '';
+                  }
+                "
+                @keydown="
+                  (e: KeyboardEvent) => {
+                    if (
+                      !/^[0-9]$/.test(e.key) &&
+                      !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter'].includes(
+                        e.key
+                      )
+                    ) {
+                      e.preventDefault();
+                      toast.error(
+                        t('truckScale.toast.invalidWeight') || 'Please enter numbers only'
+                      );
+                    }
+                  }
+                "
+                type="text"
+                class="text-xl h-12"
+                placeholder="0"
+              />
+            </div>
+          </div>
+
+          <!-- Trailer -->
+          <div
+            v-if="selectedDrainBooking?.trailerWeightIn && selectedDrainBooking.trailerWeightIn > 0"
+            class="space-y-4"
+          >
+            <h3 class="font-semibold text-lg border-b pb-2 flex items-center gap-2">
+              <div class="w-1 h-5 bg-orange-500 rounded-full"></div>
+              {{ t('truckScale.trailer') }}
+            </h3>
+            <div class="grid gap-2">
+              <Label>{{ t('truckScale.weight') }} (kg)</Label>
+              <Input
+                :model-value="
+                  weightOutData.trailerWeightOut
+                    ? Number(weightOutData.trailerWeightOut).toLocaleString()
+                    : ''
+                "
+                @input="
+                  (e: any) => {
+                    const value = e.target.value.replace(/[^0-9]/g, '');
+                    weightOutData.trailerWeightOut = value ? Number(value) : null;
+                    e.target.value = value ? Number(value).toLocaleString() : '';
+                  }
+                "
+                @keydown="
+                  (e: KeyboardEvent) => {
+                    if (
+                      !/^[0-9]$/.test(e.key) &&
+                      !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter'].includes(
+                        e.key
+                      )
+                    ) {
+                      e.preventDefault();
+                      toast.error(
+                        t('truckScale.toast.invalidWeight') || 'Please enter numbers only'
+                      );
+                    }
+                  }
+                "
+                type="text"
+                class="text-xl h-12"
+                placeholder="0"
+              />
+            </div>
           </div>
         </div>
 
@@ -2054,24 +2270,76 @@ onUnmounted(() => {
         </div>
 
         <div class="border rounded-lg p-4 space-y-3">
-          <div class="flex justify-between items-center text-sm">
-            <span class="text-muted-foreground">{{ t('truckScale.weightIn') }}:</span>
-            <span class="font-medium text-lg"
-              >{{ selectedDrainBooking?.weightIn?.toLocaleString() }} kg</span
+          <!-- Weight In Section -->
+          <div class="space-y-2">
+            <div class="flex justify-between items-center text-sm">
+              <span class="text-muted-foreground">{{ t('truckScale.weightIn') }}:</span>
+              <span class="font-medium text-lg">
+                {{
+                  (
+                    (selectedDrainBooking?.weightIn || 0) +
+                    (selectedDrainBooking?.trailerWeightIn || 0)
+                  ).toLocaleString()
+                }}
+                kg
+              </span>
+            </div>
+            <div
+              v-if="
+                selectedDrainBooking?.trailerWeightIn && selectedDrainBooking.trailerWeightIn > 0
+              "
+              class="pl-4 space-y-1 text-xs text-muted-foreground"
             >
+              <div class="flex justify-between">
+                <span>• {{ t('truckScale.mainTruck') }}:</span>
+                <span>{{ selectedDrainBooking?.weightIn?.toLocaleString() }} kg</span>
+              </div>
+              <div class="flex justify-between">
+                <span>• {{ t('truckScale.trailer') }}:</span>
+                <span>{{ selectedDrainBooking?.trailerWeightIn?.toLocaleString() }} kg</span>
+              </div>
+            </div>
           </div>
-          <div class="flex justify-between items-center text-sm border-b pb-3">
-            <span class="text-muted-foreground">{{ t('truckScale.netWeightOut') }}</span>
-            <span class="font-bold text-xl text-green-600"
-              >{{ Number(weightOutData.weightOut).toLocaleString() }} kg</span
+
+          <!-- Weight Out Section -->
+          <div class="space-y-2 border-b pb-3">
+            <div class="flex justify-between items-center text-sm">
+              <span class="text-muted-foreground">{{ t('truckScale.netWeightOut') }}</span>
+              <span class="font-bold text-xl text-green-600">
+                {{
+                  (
+                    Number(weightOutData.weightOut || 0) +
+                    Number(weightOutData.trailerWeightOut || 0)
+                  ).toLocaleString()
+                }}
+                kg
+              </span>
+            </div>
+            <div
+              v-if="weightOutData.trailerWeightOut && weightOutData.trailerWeightOut > 0"
+              class="pl-4 space-y-1 text-xs text-muted-foreground"
             >
+              <div class="flex justify-between">
+                <span>• {{ t('truckScale.mainTruck') }}:</span>
+                <span>{{ Number(weightOutData.weightOut || 0).toLocaleString() }} kg</span>
+              </div>
+              <div class="flex justify-between">
+                <span>• {{ t('truckScale.trailer') }}:</span>
+                <span>{{ Number(weightOutData.trailerWeightOut || 0).toLocaleString() }} kg</span>
+              </div>
+            </div>
           </div>
+
+          <!-- Net Weight -->
           <div class="flex justify-between items-center pt-1">
             <span class="text-blue-600 font-medium">{{ t('truckScale.netWeight') }}</span>
             <span class="font-bold text-2xl text-blue-600">
               {{
                 Math.abs(
-                  (selectedDrainBooking?.weightIn || 0) - Number(weightOutData.weightOut)
+                  (selectedDrainBooking?.weightIn || 0) +
+                    (selectedDrainBooking?.trailerWeightIn || 0) -
+                    (Number(weightOutData.weightOut || 0) +
+                      Number(weightOutData.trailerWeightOut || 0))
                 ).toLocaleString()
               }}
               kg
@@ -2249,7 +2517,31 @@ onUnmounted(() => {
               <span class="text-sm font-medium text-green-700 dark:text-green-400 min-w-[100px]"
                 >Weight In</span
               >
-              <span class="text-base font-bold text-green-600">{{
+              <div
+                v-if="
+                  selectedDetailBooking?.trailerWeightIn &&
+                  selectedDetailBooking.trailerWeightIn > 0
+                "
+                class="flex flex-col gap-0.5"
+              >
+                <div class="flex items-center gap-2">
+                  <span class="text-xs text-muted-foreground"
+                    >{{ t('truckScale.mainTruck') }}:</span
+                  >
+                  <span class="text-base font-bold text-green-600">{{
+                    selectedDetailBooking?.weightIn
+                      ? selectedDetailBooking.weightIn.toLocaleString() + ' kg'
+                      : '-'
+                  }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs text-muted-foreground">{{ t('truckScale.trailer') }}:</span>
+                  <span class="text-base font-bold text-green-600">{{
+                    selectedDetailBooking.trailerWeightIn.toLocaleString() + ' kg'
+                  }}</span>
+                </div>
+              </div>
+              <span v-else class="text-base font-bold text-green-600">{{
                 selectedDetailBooking?.weightIn
                   ? selectedDetailBooking.weightIn.toLocaleString() + ' Kg.'
                   : '-'
@@ -2281,7 +2573,7 @@ onUnmounted(() => {
               >
               <span class="text-base font-bold">{{
                 selectedDetailBooking?.stopDrainAt
-                  ? format(new Date(selectedDetailBooking.stopDrainAt), 'HH:mm:ss')
+                  ? format(new Date(selectedDetailBooking.stopDrainAt), 'HH:mm')
                   : '-'
               }}</span>
             </div>
@@ -2317,9 +2609,33 @@ onUnmounted(() => {
               <span class="text-sm font-medium text-red-700 dark:text-red-400 min-w-[100px]"
                 >Weight Out</span
               >
-              <span class="text-base font-bold text-red-600">{{
+              <div
+                v-if="
+                  selectedDetailBooking?.trailerWeightOut &&
+                  selectedDetailBooking.trailerWeightOut > 0
+                "
+                class="flex flex-col gap-0.5"
+              >
+                <div class="flex items-center gap-2">
+                  <span class="text-xs text-muted-foreground"
+                    >{{ t('truckScale.mainTruck') }}:</span
+                  >
+                  <span class="text-base font-bold text-red-600">{{
+                    selectedDetailBooking?.weightOut
+                      ? selectedDetailBooking.weightOut.toLocaleString() + ' Kg.'
+                      : '-'
+                  }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs text-muted-foreground">{{ t('truckScale.trailer') }}:</span>
+                  <span class="text-base font-bold text-red-600">{{
+                    selectedDetailBooking.trailerWeightOut.toLocaleString() + ' Kg.'
+                  }}</span>
+                </div>
+              </div>
+              <span v-else class="text-base font-bold text-red-600">{{
                 selectedDetailBooking?.weightOut
-                  ? selectedDetailBooking.weightOut.toLocaleString() + ' Kg'
+                  ? selectedDetailBooking.weightOut.toLocaleString() + ' Kg.'
                   : '-'
               }}</span>
             </div>
