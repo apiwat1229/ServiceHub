@@ -234,6 +234,14 @@ const fetchBookings = async () => {
 
 const { isAdmin } = usePermissions();
 
+const canWrite = computed(() => {
+  return (
+    authStore.hasPermission('truckScale:create') ||
+    authStore.hasPermission('truckScale:update') ||
+    isAdmin.value
+  );
+});
+
 // Approval Logic
 const canApprove = computed(() => {
   return (
@@ -697,13 +705,18 @@ const columns: ColumnDef<any>[] = [
           'Checked In ' + format(new Date(row.original.checkinAt), 'HH:mm'),
         ]);
       }
+
       return h(
         Button,
         {
           size: 'sm',
           variant: 'outline',
-          class: 'gap-1 text-orange-600 border-orange-200 hover:bg-orange-50',
-          onClick: () => openCheckInDialog(row.original),
+          class: cn(
+            'gap-1 text-orange-600 border-orange-200 hover:bg-orange-50',
+            !canWrite.value && 'opacity-50 cursor-not-allowed'
+          ),
+          disabled: !canWrite.value,
+          onClick: () => canWrite.value && openCheckInDialog(row.original),
         },
         () => [h(Clock, { class: 'w-3 h-3' }), 'Check In']
       );
@@ -759,6 +772,7 @@ const scaleInColumns: ColumnDef<any>[] = [
           )
         );
       }
+
       return h(
         'div',
         { class: 'flex justify-center' },
@@ -766,8 +780,12 @@ const scaleInColumns: ColumnDef<any>[] = [
           Button,
           {
             size: 'sm',
-            class: 'bg-green-100 text-green-700 hover:bg-green-200 border-none shadow-none',
-            onClick: () => openStartDrain(row.original),
+            class: cn(
+              'bg-green-100 text-green-700 hover:bg-green-200 border-none shadow-none',
+              !canWrite.value && 'opacity-50 cursor-not-allowed'
+            ),
+            disabled: !canWrite.value,
+            onClick: () => canWrite.value && openStartDrain(row.original),
           },
           () => t('truckScale.startDrain')
         )
@@ -778,12 +796,6 @@ const scaleInColumns: ColumnDef<any>[] = [
     accessorKey: 'stopDrainAt',
     header: () => h('div', { class: 'text-center' }, t('truckScale.stopDrain') || 'Stop Drain'),
     cell: ({ row }) => {
-      if (!row.original.startDrainAt)
-        return h(
-          'div',
-          { class: 'flex justify-center' },
-          h(Button, { size: 'sm', disabled: true, variant: 'secondary' }, () => 'Stop')
-        ); // Disabled if not started
       if (row.original.stopDrainAt) {
         return h(
           'div',
@@ -795,6 +807,14 @@ const scaleInColumns: ColumnDef<any>[] = [
           )
         );
       }
+
+      if (!row.original.startDrainAt)
+        return h(
+          'div',
+          { class: 'flex justify-center' },
+          h(Button, { size: 'sm', disabled: true, variant: 'secondary' }, () => 'Stop')
+        ); // Disabled if not started
+
       return h(
         'div',
         { class: 'flex justify-center' },
@@ -802,8 +822,12 @@ const scaleInColumns: ColumnDef<any>[] = [
           Button,
           {
             size: 'sm',
-            class: 'bg-red-100 text-red-700 hover:bg-red-200 border-none shadow-none',
-            onClick: () => openStopDrain(row.original),
+            class: cn(
+              'bg-red-100 text-red-700 hover:bg-red-200 border-none shadow-none',
+              !canWrite.value && 'opacity-50 cursor-not-allowed'
+            ),
+            disabled: !canWrite.value,
+            onClick: () => canWrite.value && openStopDrain(row.original),
           },
           () => t('truckScale.stopDrain')
         )
@@ -871,8 +895,12 @@ const scaleInColumns: ColumnDef<any>[] = [
             {
               size: 'sm',
               variant: 'outline',
-              class: 'text-blue-600 border-blue-200 bg-blue-50',
-              onClick: () => openWeightIn(row.original),
+              class: cn(
+                'text-blue-600 border-blue-200 bg-blue-50',
+                !canWrite.value && 'opacity-50 cursor-not-allowed'
+              ),
+              disabled: !canWrite.value,
+              onClick: () => canWrite.value && openWeightIn(row.original),
             },
             () => t('common.edit')
           );
@@ -882,8 +910,12 @@ const scaleInColumns: ColumnDef<any>[] = [
             {
               size: 'sm',
               variant: 'outline',
-              class: 'text-orange-600 border-orange-200 bg-orange-50',
-              onClick: () => openRequestEdit(row.original),
+              class: cn(
+                'text-orange-600 border-orange-200 bg-orange-50',
+                !canWrite.value && 'opacity-50 cursor-not-allowed'
+              ),
+              disabled: !canWrite.value,
+              onClick: () => canWrite.value && openRequestEdit(row.original),
             },
             () => t('truckScale.requestEdit')
           );
@@ -908,8 +940,12 @@ const scaleInColumns: ColumnDef<any>[] = [
             Button,
             {
               size: 'sm',
-              class: 'bg-blue-600 hover:bg-blue-700 text-white gap-2 shadow-sm',
-              onClick: () => openWeightIn(row.original),
+              class: cn(
+                'bg-blue-600 hover:bg-blue-700 text-white gap-2 shadow-sm',
+                !canWrite.value && 'opacity-50 cursor-not-allowed'
+              ),
+              disabled: !canWrite.value,
+              onClick: () => canWrite.value && openWeightIn(row.original),
             },
             () => [h(Weight, { class: 'w-3 h-3' }), t('truckScale.weightInAction') || 'Weight In']
           );
@@ -989,8 +1025,12 @@ const scaleOutColumns: ColumnDef<any>[] = [
         Button,
         {
           size: 'sm',
-          class: 'bg-blue-100 text-blue-600 hover:bg-blue-200 border-none shadow-none',
-          onClick: () => openWeightOut(row.original),
+          class: cn(
+            'bg-blue-100 text-blue-600 hover:bg-blue-200 border-none shadow-none',
+            !canWrite.value && 'opacity-50 cursor-not-allowed'
+          ),
+          disabled: !canWrite.value,
+          onClick: () => canWrite.value && openWeightOut(row.original),
         },
         () => t('common.save')
       );
@@ -1109,8 +1149,14 @@ const dashboardColumns: ColumnDef<any>[] = [
             {
               size: 'icon',
               variant: 'ghost',
-              class: 'h-8 w-8 bg-green-50 text-green-600 hover:bg-green-100',
-              onClick: () => openBookingDetail(row.original),
+              class: cn(
+                'h-8 w-8',
+                canApprove.value
+                  ? 'bg-green-50 text-green-600 hover:bg-green-100'
+                  : 'opacity-50 cursor-not-allowed text-muted-foreground'
+              ),
+              disabled: !canApprove.value,
+              onClick: () => canApprove.value && openBookingDetail(row.original),
             },
             () => h(CheckCircle, { class: 'w-4 h-4' })
           )
