@@ -34,6 +34,8 @@ export class UsersService {
                 ...createUserDto,
                 password: hashedPassword,
                 forceChangePassword: true,
+                // Sync roleId if role is provided
+                ...(createUserDto.role ? { roleId: createUserDto.role } : {}),
             },
         });
     }
@@ -81,6 +83,7 @@ export class UsersService {
                         icon: true,
                     },
                 },
+                preferences: true,
             } as any,
         });
     }
@@ -103,6 +106,7 @@ export class UsersService {
                 createdAt: true,
                 updatedAt: true,
                 permissions: true,
+                preferences: true,
                 notificationGroups: {
                     select: {
                         id: true,
@@ -157,6 +161,7 @@ export class UsersService {
                 failedLoginAttempts: true,
                 forceChangePassword: true,
                 permissions: true,
+                preferences: true,
                 roleRecord: {
                     select: {
                         id: true,
@@ -172,6 +177,24 @@ export class UsersService {
                         email: true,
                     }
                 },
+            } as any,
+        });
+    }
+
+    async findByIdWithPassword(id: string): Promise<any> {
+        return this.prisma.user.findUnique({
+            where: { id },
+            select: {
+                id: true,
+                email: true,
+                password: true, // Explicitly select password
+                role: true,
+                username: true,
+                firstName: true,
+                lastName: true,
+                displayName: true,
+                status: true,
+                forceChangePassword: true,
             } as any,
         });
     }
@@ -202,6 +225,14 @@ export class UsersService {
                 failedLoginAttempts: true,
                 forceChangePassword: true,
                 permissions: true,
+                preferences: true,
+                roleRecord: {
+                    select: {
+                        id: true,
+                        name: true,
+                        permissions: true,
+                    }
+                },
                 hod: {
                     select: {
                         id: true,
@@ -230,7 +261,9 @@ export class UsersService {
             status,
             avatar,
             pinCode,
-        } = updateUserDto;
+            preferences,
+            forceChangePassword,
+        } = updateUserDto as any; // Cast as any to access preferences if not in DTO
 
         const dataToUpdate: any = {
             username,
@@ -243,7 +276,21 @@ export class UsersService {
             role,
             status,
             avatar,
+            customPreferences: preferences, // Rename to avoid conflict if any, or just keep preferences if schema allows
+            forceChangePassword, // Update forceChangePassword status
         };
+
+        // Sync roleId with role
+        // If role is being updated
+        if (role !== undefined) {
+            // If role has value, set roleId to it. If role is empty string, set roleId to null
+            dataToUpdate.roleId = role ? role : null;
+        }
+
+        // Add back preferences if it was lost in my manual object construction above (it was in original)
+        if (preferences) {
+            dataToUpdate.preferences = preferences;
+        }
 
         if (password) {
             dataToUpdate.password = await bcrypt.hash(password, 10);
@@ -271,6 +318,7 @@ export class UsersService {
                 avatar: true,
                 createdAt: true,
                 updatedAt: true,
+                preferences: true,
             } as any,
         });
     }

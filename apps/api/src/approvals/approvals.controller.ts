@@ -12,7 +12,10 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ApprovalStatus } from '@prisma/client';
+import { APPROVALS_APPROVE, APPROVALS_VIEW } from '../auth/constants/permissions';
+import { Permissions } from '../auth/decorators/permissions.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { ApprovalsService } from './approvals.service';
 import {
     ApproveDto,
@@ -25,7 +28,7 @@ import {
 
 @ApiTags('approvals')
 @Controller('approvals')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 @ApiBearerAuth()
 export class ApprovalsController {
     constructor(private readonly approvalsService: ApprovalsService) { }
@@ -40,6 +43,7 @@ export class ApprovalsController {
     @Get()
     @ApiOperation({ summary: 'Get all approval requests' })
     @ApiResponse({ status: 200, description: 'List of approval requests' })
+    @Permissions(APPROVALS_VIEW)
     findAll(
         @Query('status') status?: ApprovalStatus,
         @Query('entityType') entityType?: string,
@@ -63,6 +67,7 @@ export class ApprovalsController {
     @ApiOperation({ summary: 'Get single approval request by ID' })
     @ApiResponse({ status: 200, description: 'Approval request details' })
     @ApiResponse({ status: 404, description: 'Request not found' })
+    @Permissions(APPROVALS_VIEW)
     findOne(@Param('id') id: string) {
         return this.approvalsService.findOne(id);
     }
@@ -78,6 +83,7 @@ export class ApprovalsController {
     @ApiOperation({ summary: 'Approve a pending request' })
     @ApiResponse({ status: 200, description: 'Request approved successfully' })
     @ApiResponse({ status: 400, description: 'Invalid state transition' })
+    @Permissions(APPROVALS_APPROVE)
     approve(@Param('id') id: string, @Body() dto: ApproveDto, @Request() req: any) {
         return this.approvalsService.approve(id, req.user.id, dto);
     }
@@ -86,6 +92,7 @@ export class ApprovalsController {
     @ApiOperation({ summary: 'Reject a pending request' })
     @ApiResponse({ status: 200, description: 'Request rejected successfully' })
     @ApiResponse({ status: 400, description: 'Invalid state transition' })
+    @Permissions(APPROVALS_APPROVE)
     reject(@Param('id') id: string, @Body() dto: RejectDto, @Request() req: any) {
         return this.approvalsService.reject(id, req.user.id, dto);
     }
@@ -94,6 +101,7 @@ export class ApprovalsController {
     @ApiOperation({ summary: 'Return a request for modification' })
     @ApiResponse({ status: 200, description: 'Request returned successfully' })
     @ApiResponse({ status: 400, description: 'Invalid state transition' })
+    @Permissions(APPROVALS_APPROVE)
     returnForModification(@Param('id') id: string, @Body() dto: ReturnDto, @Request() req: any) {
         return this.approvalsService.return(id, req.user.id, dto);
     }
@@ -110,6 +118,7 @@ export class ApprovalsController {
     @ApiOperation({ summary: 'Void an approved request (admin only)' })
     @ApiResponse({ status: 200, description: 'Request voided successfully' })
     @ApiResponse({ status: 400, description: 'Only approved requests can be voided' })
+    @Permissions(APPROVALS_APPROVE)
     void(@Param('id') id: string, @Body() dto: VoidDto, @Request() req: any) {
         return this.approvalsService.void(id, req.user.id, dto);
     }
@@ -117,6 +126,7 @@ export class ApprovalsController {
     @Delete(':id')
     @ApiOperation({ summary: 'Soft delete an approval request' })
     @ApiResponse({ status: 200, description: 'Request deleted successfully' })
+    @Permissions(APPROVALS_APPROVE)
     softDelete(@Param('id') id: string, @Request() req: any) {
         return this.approvalsService.softDelete(id, req.user.id);
     }

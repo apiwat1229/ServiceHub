@@ -32,7 +32,8 @@ import { Card } from '@/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useRoute } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
+import { useRoute, useRouter } from 'vue-router';
 
 // --- Constants ---
 const TIME_SLOTS: any[] = [
@@ -74,7 +75,7 @@ const SLOT_QUEUE_CONFIG: Record<string, { start: number; limit: number | null }>
 
 // --- State ---
 const { t } = useI18n();
-// const authStore = useAuthStore();
+const authStore = useAuthStore();
 const selectedDate = ref(fromDate(new Date(), getLocalTimeZone())) as Ref<DateValue>;
 const selectedSlot = ref<string>('08:00-09:00'); // Default slot
 const queues = ref<any[]>([]);
@@ -187,6 +188,10 @@ function handleCreateBooking() {
 }
 
 function handleEdit(booking: any) {
+  console.log('[BookingQueue] Editing booking:', booking);
+  console.log('[BookingQueue] rubberType value:', booking.rubberType);
+  console.log('[BookingQueue] rubber_type value:', booking.rubber_type);
+  console.log('[BookingQueue] All booking keys:', Object.keys(booking));
   editingBooking.value = booking;
   sheetOpen.value = true;
 }
@@ -279,6 +284,13 @@ onMounted(async () => {
     }
   }
 
+  // Check Read Permission
+  if (!authStore.hasPermission('bookings:read')) {
+    toast.error("You don't have permission to view Booking Queue");
+    useRouter().push('/'); // Assuming router is available or import it
+    return;
+  }
+
   // Always fetch queues after setting state
   fetchQueues();
 });
@@ -314,10 +326,15 @@ watch(selectedSlot, (newSlot) => {
       <div class="flex items-center space-x-2">
         <Button variant="outline" size="sm" @click="fetchQueues">
           <RefreshCw class="mr-2 h-4 w-4" />
-          <RefreshCw class="mr-2 h-4 w-4" />
+
           {{ t('bookingQueue.refresh') }}
         </Button>
-        <Button size="sm" :disabled="isSlotFull" @click="handleCreateBooking">
+        <Button
+          size="sm"
+          :disabled="isSlotFull"
+          @click="handleCreateBooking"
+          v-if="authStore.hasPermission('bookings:create')"
+        >
           <Plus class="mr-2 h-4 w-4" />
           {{ isSlotFull ? t('bookingQueue.slotFull') : t('bookingQueue.addBooking') }}
         </Button>
@@ -459,7 +476,7 @@ watch(selectedSlot, (newSlot) => {
             >{{ t('bookingQueue.queueNumber') }} : {{ queue.queueNo }}</span
           >
           <div v-if="queue.status !== 'APPROVED'" class="flex items-center gap-1">
-            <TooltipProvider>
+            <TooltipProvider v-if="authStore.hasPermission('bookings:update')">
               <Tooltip>
                 <TooltipTrigger as-child>
                   <Button variant="ghost" size="icon" class="h-8 w-8" @click="handleEdit(queue)">
@@ -470,7 +487,7 @@ watch(selectedSlot, (newSlot) => {
               </Tooltip>
             </TooltipProvider>
 
-            <TooltipProvider>
+            <TooltipProvider v-if="authStore.hasPermission('bookings:delete')">
               <Tooltip>
                 <TooltipTrigger as-child>
                   <Button

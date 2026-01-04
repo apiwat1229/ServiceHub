@@ -288,8 +288,15 @@ const handleOpenEdit = (item: User) => {
 };
 
 const handleSubmit = async () => {
+  // Validate Password for New Users
+  if (!editingItem.value && !formData.value.password) {
+    errors.value.password = t('validation.required');
+    toast.error(t('validation.checkFields'));
+    return;
+  }
+
   try {
-    const payload: Partial<User> = {
+    const payload: Partial<User> & { roleId?: string } = {
       username: formData.value.username,
       email: formData.value.email,
       firstName: formData.value.firstName,
@@ -301,9 +308,17 @@ const handleSubmit = async () => {
       status: formData.value.status,
       employeeId: formData.value.employeeId,
       pinCode: formData.value.pinCode,
-      // hodId: formData.value.hodId, // Uncomment if used
+      // hodId: formData.value.hodId,
       forceChangePassword: formData.value.forceChangePassword,
     };
+
+    // If role is a UUID (from Role selection), set roleId as well
+    if (payload.role && payload.role.length > 30) {
+      payload.roleId = payload.role as string;
+      // Optionally find the role name to set the legacy 'role' string if simpler?
+      // But for now, linking roleId is crucial for relations.
+      // We keep 'role' as the UUID string too just in case backend expects it there.
+    }
 
     if (formData.value.password) {
       payload.password = formData.value.password;
@@ -842,9 +857,13 @@ onMounted(() => {
                   v-model="formData.password"
                   type="password"
                   :placeholder="editingItem ? t('admin.users.leaveBlankToKeep') : '••••••'"
+                  :class="{ 'border-destructive': errors.password }"
                 />
                 <p v-if="editingItem" class="text-xs text-muted-foreground">
                   {{ t('admin.users.passwordHint') }}
+                </p>
+                <p v-if="errors.password" class="text-xs text-destructive">
+                  {{ errors.password }}
                 </p>
               </div>
               <div class="flex items-center space-x-2 mt-8 col-span-2">

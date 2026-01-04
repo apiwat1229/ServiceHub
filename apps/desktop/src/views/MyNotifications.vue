@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import TicketDialog from '@/components/booking/TicketDialog.vue';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import DataTable from '@/components/ui/data-table/DataTable.vue';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { bookingsApi } from '@/services/bookings';
 import { notificationsApi } from '@/services/notifications';
 import { socketService } from '@/services/socket';
 import type { NotificationDto } from '@my-app/types';
@@ -28,6 +30,10 @@ const notifications = ref<NotificationDto[]>([]);
 const isLoading = ref(true);
 const filter = ref<'all' | 'unread'>('all');
 
+// Ticket Preview
+const isTicketPreviewOpen = ref(false);
+const previewTicket = ref<any>(null);
+
 // Delete confirmation
 const deleteDialogOpen = ref(false);
 const notificationToDelete = ref<{ id: string; title: string } | null>(null);
@@ -42,6 +48,10 @@ const markAllReadDialogOpen = ref(false);
 // Bulk delete confirmation
 const bulkDeleteDialogOpen = ref(false);
 const notificationsToBulkDelete = ref<NotificationDto[]>([]);
+
+// Data unavailable dialog
+const isErrorDialogOpen = ref(false);
+const errorDialogMessage = ref('');
 
 const confirmDelete = (id: string, title: string) => {
   notificationToDelete.value = { id, title };
@@ -152,8 +162,79 @@ const handleNotificationClick = async (notification: NotificationDto) => {
   if (!notification.isRead) {
     await handleMarkAsRead(notification.id);
   }
-  if (notification.actionUrl) {
+
+  // Handle specific action URL for bookings
+  if (notification.actionUrl && notification.actionUrl.startsWith('/bookings/')) {
+    const bookingId = notification.actionUrl.split('/').pop();
+    if (bookingId) {
+      let booking;
+      try {
+        // Prepare fetch promise based on ID format (UUID vs Short Code)
+        const isUuid = bookingId.length > 30;
+
+        if (isUuid) {
+          booking = await bookingsApi.getById(bookingId);
+        } else {
+          const bookings = await bookingsApi.getAll({ code: bookingId });
+          if (bookings && bookings.length > 0) {
+            booking = bookings[0];
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to fetch booking preview:', error);
+      }
+
+      if (booking) {
+        // Transform for TicketDialog with robust fallback for different DTO shapes
+        previewTicket.value = {
+          date: booking.date || booking.bookingDate,
+          startTime: booking.startTime || booking.slot || booking.timeSlot,
+          truckType: booking.truckType,
+          truckRegister: booking.truckRegister || booking.truckLicensePlate,
+          rubberType: booking.rubberType,
+          supplierCode: booking.supplierCode || booking.supplier?.code,
+          supplierName: booking.supplierName || booking.supplier?.name,
+          bookingCode: booking.bookingCode,
+          queueNo: booking.queueNo || booking.queueNumber,
+          recorder:
+            booking.recorder ||
+            booking.createdBy?.displayName ||
+            booking.createdBy?.username ||
+            'System',
+          status: booking.status,
+          deletedAt: booking.deletedAt,
+        };
+
+        isTicketPreviewOpen.value = true;
+        return; // Stop navigation
+      } else {
+        console.error('Booking not found by ID or Code:', bookingId);
+
+        if (
+          notification.title.toLowerCase().includes('cancel') ||
+          notification.message.toLowerCase().includes('cancel')
+        ) {
+          // toast.info('Booking was cancelled and data is no longer available.');
+          errorDialogMessage.value = 'Booking was cancelled and data is no longer available.';
+          isErrorDialogOpen.value = true;
+          return; // Stop navigation prevents 404
+        }
+
+        // Generic Not Found
+        // toast.error('Booking data not found.');
+        errorDialogMessage.value = 'Booking data not found.';
+        isErrorDialogOpen.value = true;
+        return; // Stop navigation prevents 404
+      }
+    }
+  }
+
+  // Default navigation for non-booking actions
+  if (notification.actionUrl && !notification.actionUrl.startsWith('/bookings/')) {
     router.push(notification.actionUrl);
+  } else if (notification.actionUrl && notification.actionUrl.startsWith('/bookings/')) {
+    // If we are here, it means it was a booking URL but logic above failed/didn't return.
+    // Do nothing to avoid 404 since there is no /bookings/:id page.
   }
 };
 
@@ -492,6 +573,24 @@ onUnmounted(() => {
           >
             Delete {{ notificationsToBulkDelete.length }} Notification(s)
           </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
+    <!-- Ticket Preview Dialog -->
+    <TicketDialog v-model:open="isTicketPreviewOpen" :ticket="previewTicket" />
+
+    <!-- Error/Info Dialog (For Missing Data) -->
+    <AlertDialog v-model:open="isErrorDialogOpen">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Data Unavailable</AlertDialogTitle>
+          <AlertDialogDescription>
+            {{ errorDialogMessage }}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogAction @click="isErrorDialogOpen = false">OK</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

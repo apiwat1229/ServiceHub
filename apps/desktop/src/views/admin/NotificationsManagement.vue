@@ -179,6 +179,8 @@ const groups = ref<NotificationGroupDto[]>([]);
 const roles = ref<RoleDto[]>([]);
 const users = ref<UserDto[]>([]);
 const loading = ref(false);
+const hasUnsavedChanges = ref(false);
+const isSaving = ref(false);
 
 // Settings
 const settings = ref<NotificationSettingDto[]>([]);
@@ -234,25 +236,85 @@ const getSetting = (sourceApp: string, actionType: string) => {
   );
 };
 
-const saveSetting = async (
+const handleSettingChange = (
   sourceApp: string,
   actionType: string,
   isActive: any, // Checkbox checked value can be boolean or 'indeterminate'
   roles: string[],
   groups: string[]
 ) => {
+  // Update Local State
+  const existingIndex = settings.value.findIndex(
+    (s) => s.sourceApp === sourceApp && s.actionType === actionType
+  );
+
+  const newSetting = {
+    sourceApp,
+    actionType,
+    isActive: isActive === true,
+    recipientRoles: roles,
+    recipientGroups: groups,
+    recipientUsers: [],
+    channels: [], // Default empty channels
+    // Preserve ID if it existed, otherwise it will be undefined (new setting)
+    id: existingIndex > -1 ? settings.value[existingIndex].id : undefined,
+  } as unknown as NotificationSettingDto;
+
+  if (existingIndex > -1) {
+    // Update existing
+    settings.value[existingIndex] = { ...settings.value[existingIndex], ...newSetting };
+  } else {
+    // Add new
+    settings.value.push(newSetting);
+  }
+
+  // Mark as dirty
+  hasUnsavedChanges.value = true;
+};
+
+const saveAllChanges = async () => {
+  if (!hasUnsavedChanges.value) return;
+
+  isSaving.value = true;
   try {
-    await notificationsApi.updateSetting({
-      sourceApp,
-      actionType,
-      isActive: isActive === true,
-      recipientRoles: roles,
-      recipientGroups: groups,
-    });
-    toast.success('Setting updated');
-    fetchSettings();
-  } catch (err) {
-    toast.error('Failed to update setting');
+    // Filter settings related to current category (or all if we want globally)
+    // For now, let's just save ALL modified settings in the local state state
+    // effectively by iterating over what we have for the filtered category or all?
+    // Let's iterate all local settings that match the current category to be safe,
+    // or arguably we should just save EVERYTHING in settings.value.
+
+    // NOTE: The API updates one by one. In a real app we might want a bulk update endpoint.
+    // We will loop through all settings.value and update them.
+    // Optimization: In a real app we would track exactly WHICH IDs changed.
+    // But here we rely on the fact that `handleSettingChange` updated `settings.value`.
+
+    // Let's just update the ones for the currently selected category to avoid saving unrelated stuff unnecessarily
+    // (though saving all is safer consistency-wise).
+
+    const settingsToSave = selectedCategory.value
+      ? settings.value.filter((s) => s.sourceApp === selectedCategory.value)
+      : settings.value;
+
+    await Promise.all(
+      settingsToSave.map((setting) =>
+        notificationsApi.updateSetting({
+          sourceApp: setting.sourceApp,
+          actionType: setting.actionType,
+          isActive: setting.isActive,
+          recipientRoles: setting.recipientRoles,
+          recipientGroups: setting.recipientGroups,
+        })
+      )
+    );
+
+    toast.success('Settings saved successfully');
+    hasUnsavedChanges.value = false;
+    // fetchSettings(); // Optional: re-fetch to sync
+  } catch (error) {
+    console.error('Failed to save settings:', error);
+    toast.error('Failed to save settings');
+  } finally {
+    isSaving.value = false;
   }
 };
 
@@ -282,6 +344,21 @@ const groupForm = ref<CreateNotificationGroupDto>({
   icon: 'Users',
   color: 'bg-blue-600',
 });
+
+// Member Selection Logic
+// const memberSearchQuery = ref(''); // No longer used directly, as DataTable handles search
+// Keeping filteredUsers in case we need it later, or removing it if unused.
+// Actually filteredUsers was used by selectAllFiltered which is now removed.
+// So we can remove filteredUsers too if it's unused.
+
+const toggleMember = (userId: string) => {
+  const current = groupForm.value.memberIds || [];
+  if (current.includes(userId)) {
+    groupForm.value.memberIds = current.filter((id) => id !== userId);
+  } else {
+    groupForm.value.memberIds = [...current, userId];
+  }
+};
 
 // Broadcast Columns
 const broadcastColumns: ColumnDef<BroadcastDto>[] = [
@@ -442,6 +519,69 @@ const broadcastColumns: ColumnDef<BroadcastDto>[] = [
     },
   },
 ];
+
+// Group Member Columns (Dynamic based on selection)
+const groupMemberColumns = computed<ColumnDef<UserDto>[]>(() => [
+  {
+    accessorKey: 'user',
+    header: 'User',
+    cell: ({ row }) => {
+      const user = row.original;
+      return h('div', { class: 'flex items-center gap-3' }, [
+        h(Avatar, { class: 'w-9 h-9 border' }, () => [
+          h(AvatarImage, { src: user.avatar || '' }),
+          h(AvatarFallback, {}, user.displayName?.charAt(0) || 'U'),
+        ]),
+        h('div', { class: 'flex flex-col' }, [
+          h('span', { class: 'font-medium text-sm' }, user.displayName || user.username || ''),
+          h('span', { class: 'text-xs text-muted-foreground' }, user.email || ''),
+        ]),
+      ]);
+    },
+  },
+  {
+    accessorKey: 'department',
+    header: () => h('div', { class: 'text-center w-full' }, 'Department'),
+    cell: ({ row }) =>
+      h('div', { class: 'flex justify-center' }, [
+        h(
+          Badge,
+          { variant: 'outline', class: 'font-normal' },
+          () => row.original.department || '-'
+        ),
+      ]),
+  },
+  {
+    id: 'actions',
+    header: () => h('div', { class: 'text-right' }, 'Action'),
+    cell: ({ row }) => {
+      const isSelected = groupForm.value.memberIds?.includes(row.original.id);
+      return h('div', { class: 'text-right' }, [
+        isSelected
+          ? h(
+              Button,
+              {
+                variant: 'ghost',
+                size: 'sm',
+                class: 'h-8 px-2 text-red-600 hover:text-red-700 hover:bg-red-50',
+                onClick: () => toggleMember(row.original.id),
+              },
+              () => [h(Trash2, { class: 'w-4 h-4 mr-1' }), 'Remove']
+            )
+          : h(
+              Button,
+              {
+                variant: 'ghost',
+                size: 'sm',
+                class: 'h-8 px-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50',
+                onClick: () => toggleMember(row.original.id),
+              },
+              () => [h(Plus, { class: 'w-4 h-4 mr-1' }), 'Add']
+            ),
+      ]);
+    },
+  },
+]);
 
 // Removed groupColumns as we are switching to card layout
 
@@ -865,16 +1005,36 @@ onMounted(() => {
 
         <Card v-else>
           <CardHeader>
-            <div class="flex items-center gap-4">
-              <Button variant="ghost" size="icon" @click="selectedCategory = null">
-                <ArrowLeft class="w-4 h-4" />
-              </Button>
-              <div>
-                <CardTitle>{{ selectedCategory }} Settings</CardTitle>
-                <CardDescription
-                  >Manage notifications for {{ selectedCategory }} events</CardDescription
-                >
+            <div class="flex items-center justify-between w-full">
+              <div class="flex items-center gap-4">
+                <Button variant="ghost" size="icon" @click="selectedCategory = null">
+                  <ArrowLeft class="w-4 h-4" />
+                </Button>
+                <div>
+                  <CardTitle>{{ selectedCategory }} Settings</CardTitle>
+                  <CardDescription
+                    >Manage notifications for {{ selectedCategory }} events</CardDescription
+                  >
+                </div>
               </div>
+              <Button
+                @click="saveAllChanges"
+                :disabled="!hasUnsavedChanges || isSaving"
+                class="gap-2"
+              >
+                <div
+                  v-if="isSaving"
+                  class="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"
+                />
+                <span v-else class="flex items-center gap-2">
+                  <component
+                    :is="hasUnsavedChanges ? 'div' : 'div'"
+                    class="h-2 w-2 rounded-full"
+                    :class="hasUnsavedChanges ? 'bg-orange-400' : 'bg-transparent'"
+                  />
+                  Save Changes
+                </span>
+              </Button>
             </div>
           </CardHeader>
           <CardContent class="space-y-6">
@@ -896,7 +1056,7 @@ onMounted(() => {
                     :checked="getSetting(def.sourceApp, def.actionType).isActive ?? true"
                     @update:checked="
                       (val: boolean) =>
-                        saveSetting(
+                        handleSettingChange(
                           def.sourceApp,
                           def.actionType,
                           val,
@@ -917,7 +1077,7 @@ onMounted(() => {
                     "
                     @update:modelValue="
                       (val) =>
-                        saveSetting(
+                        handleSettingChange(
                           def.sourceApp,
                           def.actionType,
                           getSetting(def.sourceApp, def.actionType).isActive,
@@ -937,7 +1097,7 @@ onMounted(() => {
                     "
                     @update:modelValue="
                       (val) =>
-                        saveSetting(
+                        handleSettingChange(
                           def.sourceApp,
                           def.actionType,
                           getSetting(def.sourceApp, def.actionType).isActive,
@@ -1145,123 +1305,114 @@ onMounted(() => {
     </Dialog>
     <!-- Group Dialog -->
     <Dialog v-model:open="isGroupDialogOpen">
-      <DialogContent>
+      <DialogContent class="sm:max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{{
             editingGroup ? t('admin.notifications.editGroup') : t('admin.notifications.newGroup')
           }}</DialogTitle>
         </DialogHeader>
-        <div class="space-y-4 py-4">
-          <div class="space-y-2">
-            <Label>{{ t('admin.notifications.groupName') }}</Label>
-            <Input v-model="groupForm.name" />
-          </div>
-          <div class="space-y-2">
-            <Label>{{ t('admin.notifications.description') }}</Label>
-            <Textarea v-model="groupForm.description" rows="3" />
-          </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 py-4">
+          <!-- Left Column: Group Settings -->
+          <div class="space-y-6 lg:col-span-1 border-r pr-0 lg:pr-6">
+            <h3 class="font-semibold text-lg flex items-center gap-2">
+              <Settings class="w-5 h-5" />
+              Group Settings
+            </h3>
 
-          <!-- Members Selection -->
-          <div class="space-y-2">
-            <Label>{{ t('admin.notifications.members') }}</Label>
-            <Select
-              :model-value="''"
-              @update:model-value="
-                (val) => {
-                  if (val && !groupForm.memberIds?.includes(val)) {
-                    groupForm.memberIds = [...(groupForm.memberIds || []), val];
-                  }
-                }
-              "
-            >
-              <SelectTrigger>
-                <SelectValue :placeholder="t('admin.notifications.selectUsersPlaceholder')" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem
-                  v-for="user in users"
-                  :key="user.id"
-                  :value="user.id"
-                  :disabled="groupForm.memberIds?.includes(user.id)"
-                >
-                  <div class="flex items-center gap-2">
-                    <Avatar class="w-5 h-5">
-                      <AvatarImage :src="user.avatar || ''" />
-                      <AvatarFallback>{{ user.firstName?.charAt(0) || 'U' }}</AvatarFallback>
-                    </Avatar>
-                    <span>{{ user.displayName || user.email }}</span>
-                    <span v-if="user.department" class="text-xs text-muted-foreground"
-                      >({{ user.department }})</span
-                    >
+            <div class="space-y-4">
+              <div class="space-y-2">
+                <Label>{{ t('admin.notifications.groupName') }}</Label>
+                <Input v-model="groupForm.name" />
+              </div>
+              <div class="space-y-2">
+                <Label>{{ t('admin.notifications.description') }}</Label>
+                <Textarea v-model="groupForm.description" rows="3" />
+              </div>
+
+              <!-- Icon Selection -->
+              <div class="space-y-2">
+                <Label>Icon</Label>
+                <div class="flex flex-wrap gap-3">
+                  <div
+                    v-for="icon in AVAILABLE_ICONS"
+                    :key="icon"
+                    @click="groupForm.icon = icon"
+                    class="cursor-pointer p-2 rounded-lg border-2 transition-all hover:bg-muted"
+                    :class="
+                      groupForm.icon === icon
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-transparent bg-muted/50 text-muted-foreground'
+                    "
+                  >
+                    <component :is="ICON_MAP[icon]" class="w-5 h-5" />
                   </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
+                </div>
+              </div>
 
-            <!-- Selected Members Badges -->
-            <div
-              v-if="groupForm.memberIds && groupForm.memberIds.length > 0"
-              class="flex flex-wrap gap-2 mt-2 p-2 border rounded-md bg-muted/50 max-h-32 overflow-y-auto"
-            >
-              <Badge
-                v-for="userId in groupForm.memberIds"
-                :key="userId"
-                variant="secondary"
-                class="gap-1 pl-1 pr-2 py-1 items-center"
-              >
-                <Avatar class="w-4 h-4 mr-1">
-                  <AvatarImage :src="getUserAvatar(userId)" />
-                  <AvatarFallback class="text-[8px]">U</AvatarFallback>
-                </Avatar>
-                {{
-                  users.find((u) => u.id === userId)?.displayName ||
-                  users.find((u) => u.id === userId)?.email
-                }}
-                <button
-                  @click="groupForm.memberIds = groupForm.memberIds.filter((id) => id !== userId)"
-                  class="ml-1 text-muted-foreground hover:text-destructive transition-colors rounded-full p-0.5"
-                >
-                  <div class="h-3 w-3 flex items-center justify-center">×</div>
-                </button>
-              </Badge>
-            </div>
-          </div>
-
-          <!-- Icon Selection -->
-          <div class="space-y-2">
-            <Label>Icon</Label>
-            <div class="flex flex-wrap gap-3">
-              <div
-                v-for="icon in AVAILABLE_ICONS"
-                :key="icon"
-                @click="groupForm.icon = icon"
-                class="cursor-pointer p-2 rounded-lg border-2 transition-all hover:bg-muted"
-                :class="
-                  groupForm.icon === icon
-                    ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-transparent bg-muted/50 text-muted-foreground'
-                "
-              >
-                <component :is="ICON_MAP[icon]" class="w-5 h-5" />
+              <!-- Color Selection -->
+              <div class="space-y-2">
+                <Label>Color</Label>
+                <div class="flex flex-wrap gap-3">
+                  <div
+                    v-for="color in AVAILABLE_COLORS"
+                    :key="color"
+                    @click="groupForm.color = color"
+                    class="h-8 w-8 rounded-full cursor-pointer transition-all hover:scale-110 ring-2 ring-offset-2"
+                    :class="[
+                      color.replace('bg-', 'bg-'),
+                      groupForm.color === color ? 'ring-primary' : 'ring-transparent',
+                    ]"
+                  ></div>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Color Selection -->
-          <div class="space-y-2">
-            <Label>Color</Label>
-            <div class="flex flex-wrap gap-3">
-              <div
-                v-for="color in AVAILABLE_COLORS"
-                :key="color"
-                @click="groupForm.color = color"
-                class="h-8 w-8 rounded-full cursor-pointer transition-all hover:scale-110 ring-2 ring-offset-2"
-                :class="[
-                  color.replace('bg-', 'bg-'),
-                  groupForm.color === color ? 'ring-primary' : 'ring-transparent',
-                ]"
-              ></div>
-            </div>
+          <!-- Right Column: Member Management (Roles Style) -->
+          <div class="space-y-6 lg:col-span-2">
+            <h3 class="font-semibold text-lg flex items-center gap-2">
+              <Users class="w-5 h-5" />
+              Member Management
+            </h3>
+
+            <Tabs default-value="assigned" class="w-full">
+              <TabsList class="grid w-full grid-cols-2 mb-4">
+                <TabsTrigger value="assigned" class="relative">
+                  Assigned Members
+                  <Badge
+                    v-if="(groupForm.memberIds?.length || 0) > 0"
+                    class="ml-2 h-5 min-w-5 rounded-full px-1 flex items-center justify-center text-xs"
+                  >
+                    {{ groupForm.memberIds?.length }}
+                  </Badge>
+                </TabsTrigger>
+                <TabsTrigger value="available" class="relative">
+                  Available Users
+                  <Badge
+                    class="ml-2 h-5 min-w-5 rounded-full px-1 flex items-center justify-center text-xs"
+                    variant="secondary"
+                  >
+                    {{ (users.length || 0) - (groupForm.memberIds?.length || 0) }}
+                  </Badge>
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="assigned" class="space-y-4">
+                <DataTable
+                  :columns="groupMemberColumns"
+                  :data="users.filter((u) => groupForm.memberIds?.includes(u.id))"
+                  :search-keys="['displayName', 'username', 'email']"
+                />
+              </TabsContent>
+
+              <TabsContent value="available" class="space-y-4">
+                <DataTable
+                  :columns="groupMemberColumns"
+                  :data="users.filter((u) => !groupForm.memberIds?.includes(u.id))"
+                  :search-keys="['displayName', 'username', 'email']"
+                />
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
         <DialogFooter>

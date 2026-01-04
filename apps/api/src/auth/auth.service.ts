@@ -156,36 +156,24 @@ export class AuthService {
     }
 
     async changePassword(userId: string, oldPass: string, newPass: string) {
-        // 1. Get user to get current password hash
-        const user = await this.usersService.findOne(userId); // findOne typically returns user without password if select is used?
-        // Wait, usersService.findOne selects specific fields. Currently it does NOT select password.
-        // I need to use findByEmail or a new method `findForAuth` that returns password.
+        // 1. Get user with password by ID directly
+        const user = await this.usersService.findByIdWithPassword(userId);
 
-        // I can use `this.usersService.findByEmailOrUsername(user.email)` if I have email?
-        // findOne does NOT return password.
-        // But `findByEmail` DOES return password (in `select`).
-        // So I can use `user.email` from `findOne` to call `findByEmail`.
-        // Or I can just use `prisma` directly if I injected it? No, explicit dependency is better.
-        // Let's rely on `findByEmail` or add `findWithPassword`.
-
-        // Actually, users.service `findByEmail` (step 220) selects `password: true`.
-        // users.service `findOne` (step 175) does NOT select password.
-
-        const fullUser = await this.usersService.findByEmail(user.email);
-
-        if (!fullUser || !fullUser.password) {
+        if (!user || !user.password) {
+            console.error(`[ChangePassword] User ${userId} not found or has no password`);
             throw new UnauthorizedException('User not found');
         }
 
-        const isMatch = await bcrypt.compare(oldPass, fullUser.password);
+        const isMatch = await bcrypt.compare(oldPass, user.password);
         if (!isMatch) {
-            throw new UnauthorizedException('Old password is incorrect');
+            console.error(`[ChangePassword] Password mismatch for user ${userId} (${user.email || user.username})`);
+            // Add debug info to exception
+            const debugInfo = `OldPassLen: ${oldPass.length}, HashLen: ${user.password.length}`;
+            throw new UnauthorizedException(`Old password is incorrect. (${debugInfo})`);
         }
 
-        const hashedPassword = await bcrypt.hash(newPass, 10);
-
         await this.usersService.update(userId, {
-            password: hashedPassword,
+            password: newPass,
             forceChangePassword: false,
         });
 

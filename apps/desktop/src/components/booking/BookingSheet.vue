@@ -96,19 +96,26 @@ const displayBookingCode = computed(() => {
 // --- Watchers ---
 watch(
   () => props.open,
-  (isOpen) => {
+  async (isOpen) => {
     if (isOpen) {
-      fetchMasterData();
+      // Fetch master data first
+      await fetchMasterData();
+
       if (isEditMode.value && props.editingBooking) {
-        // Fill form
+        // Fill form after data is loaded
+        // Handle both camelCase (rubberType) and snake_case (rubber_type) from API
+        const rubberTypeValue =
+          props.editingBooking.rubberType || props.editingBooking.rubber_type || '';
+
         form.value = {
           supplierId: props.editingBooking.supplierId || '',
           truckType: props.editingBooking.truckType || '',
           truckRegister: props.editingBooking.truckRegister || '',
-          rubberType: props.editingBooking.rubberType || '',
+          rubberType: rubberTypeValue,
           supplierCode: props.editingBooking.supplierCode || '',
           supplierName: props.editingBooking.supplierName || '',
         };
+        console.log('[BookingSheet] Edit mode - rubberType:', form.value.rubberType);
       } else {
         // Reset form
         form.value = {

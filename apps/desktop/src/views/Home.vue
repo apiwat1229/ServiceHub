@@ -6,6 +6,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useAuthStore } from '@/stores/auth';
 import {
   ArrowUpDown,
   Box,
@@ -29,9 +30,11 @@ interface ServiceModule {
   bgColor: string;
   hoverBorder: string;
   route: string;
+  permission?: string; // Optional permission required to access this module
 }
 
 const { t } = useI18n();
+const authStore = useAuthStore();
 
 const modules = computed<ServiceModule[]>(() => [
   {
@@ -43,6 +46,7 @@ const modules = computed<ServiceModule[]>(() => [
     bgColor: 'bg-blue-50/50 group-hover:bg-blue-100/50',
     hoverBorder: 'group-hover:border-blue-500',
     route: '/mrp',
+    permission: 'mrp:read',
   },
   {
     id: 'cuplump',
@@ -53,6 +57,7 @@ const modules = computed<ServiceModule[]>(() => [
     bgColor: 'bg-orange-50/50 group-hover:bg-orange-100/50',
     hoverBorder: 'group-hover:border-orange-500',
     route: '/admin/cuplump',
+    permission: 'bookings:read', // Cuplump is part of booking system
   },
   {
     id: 'booking',
@@ -63,6 +68,7 @@ const modules = computed<ServiceModule[]>(() => [
     bgColor: 'bg-green-50/50 group-hover:bg-green-100/50',
     hoverBorder: 'group-hover:border-green-500',
     route: '/admin/bookings',
+    permission: 'bookings:read',
   },
   {
     id: 'truck-scale',
@@ -73,6 +79,7 @@ const modules = computed<ServiceModule[]>(() => [
     bgColor: 'bg-emerald-50/50 group-hover:bg-emerald-100/50',
     hoverBorder: 'group-hover:border-emerald-500',
     route: '/scale',
+    permission: 'truckScale:read',
   },
   {
     id: 'maintenance',
@@ -134,6 +141,33 @@ onMounted(() => {
 const sortedModules = computed(() => {
   let list = [...modules.value];
 
+  console.log('[Home] User permissions:', authStore.userPermissions);
+  console.log('[Home] User object:', authStore.user);
+  console.log('[Home] Total modules before filter:', list.length);
+
+  // If user is not loaded yet (no user object), show all modules temporarily
+  // This prevents modules from disappearing during page reload
+  if (!authStore.user) {
+    console.log('[Home] User not loaded yet, showing all modules');
+    return list;
+  }
+
+  // Filter by permissions - only show modules user has access to
+  list = list.filter((m) => {
+    // If no permission required, show the module
+    if (!m.permission) {
+      console.log(`[Home] Module "${m.id}" - no permission required, showing`);
+      return true;
+    }
+    // Otherwise check if user has the required permission
+    const hasAccess = authStore.hasPermission(m.permission);
+    console.log(`[Home] Module "${m.id}" - requires "${m.permission}", has access: ${hasAccess}`);
+    return hasAccess;
+  });
+
+  console.log('[Home] Total modules after filter:', list.length);
+
+  // Filter by search query
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase();
     list = list.filter(
@@ -141,6 +175,7 @@ const sortedModules = computed(() => {
     );
   }
 
+  // Sort by selected option
   if (sortBy.value === 'az') {
     return list.sort((a, b) => a.title.localeCompare(b.title));
   } else if (sortBy.value === 'recent') {

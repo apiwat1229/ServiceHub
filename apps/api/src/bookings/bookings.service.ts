@@ -227,10 +227,9 @@ export class BookingsService {
         } else {
             if (date) where.date = new Date(date);
             if (slot) where.slot = slot;
+            // Default: Exclude soft deleted items unless searching by code
+            where.deletedAt = null;
         }
-
-        // Default: Exclude soft deleted items
-        where.deletedAt = null;
 
         return this.prisma.booking.findMany({
             where,
@@ -243,6 +242,7 @@ export class BookingsService {
             where: { id },
         });
 
+        // Allow finding deleted bookings? Yes, findUnique returns them.
         if (!booking) {
             throw new NotFoundException(`Booking with ID ${id} not found`);
         }
@@ -323,43 +323,65 @@ export class BookingsService {
         const canApprove = permissions.includes('bookings:approve') || permissions.includes('bookings:all');
         const isAdmin = user?.role === 'ADMIN' || user?.role === 'admin' || user?.role === 'SUPER_ADMIN' || canApprove;
 
+        console.log(`[BookingsService] Delete Request by ${user?.username} (${user?.id})`);
+        console.log(`[BookingsService] Roles: ${user?.role}, Admin/Approve: ${isAdmin}`);
+
+        /*
         if (!isAdmin && user) {
             console.log(`[BookingsService] User ${user.displayName} is not admin/approver. Creating approval request for DELETE.`);
-            const request = await this.approvalsService.createRequest(user.id, {
-                requestType: 'ยกเลิกการจอง (Booking Cancellation)',
-                entityType: 'Booking',
-                entityId: id,
-                actionType: 'DELETE',
-                currentData: booking,
-                proposedData: {},
-                reason: 'ต้องการยกเลิกการจอง',
-                sourceApp: 'Booking',
-            });
+            try {
+                const request = await this.approvalsService.createRequest(user.id, {
+                    requestType: 'ยกเลิกการจอง (Booking Cancellation)',
+                    entityType: 'Booking',
+                    entityId: id,
+                    actionType: 'DELETE',
+                    currentData: booking,
+                    proposedData: {},
+                    reason: 'ต้องการยกเลิกการจอง',
+                    sourceApp: 'Booking',
+                });
 
-            // Notify Approvers
-            await this.triggerNotification('Booking', 'APPROVAL_REQUEST', {
-                title: 'Approval Requested: Booking Cancellation',
-                message: `User ${user.displayName} requested to cancel Booking ${booking.bookingCode}.`,
-                actionUrl: `/admin/approvals/${request.id}`,
-            });
+                // Notify Approvers
+                await this.triggerNotification('Booking', 'APPROVAL_REQUEST', {
+                    title: 'Approval Requested: Booking Cancellation',
+                    message: `User ${user.displayName} requested to cancel Booking ${booking.bookingCode}.`,
+                    actionUrl: `/admin/approvals/${request.id}`,
+                });
 
-            return {
-                status: 'PENDING_APPROVAL',
-                message: 'คำขอยกเลิกถูกส่งไปยังผู้อนุมัติแล้ว',
-                requestId: request.id
-            };
+                return {
+                    status: 'PENDING_APPROVAL',
+                    message: 'คำขอยกเลิกถูกส่งไปยังผู้อนุมัติแล้ว',
+                    requestId: request.id
+                };
+            } catch (error) {
+                console.error('[BookingsService] Error creating approval request:', error);
+                throw error;
+            }
         }
+        */
 
-        const result = await this.prisma.booking.delete({
-            where: { id },
-        });
+        // Switch to Soft Delete to preserve data for historical view
+        try {
+            const result = await this.prisma.booking.update({
+                where: { id },
+                data: {
+                    deletedAt: new Date(),
+                    deletedBy: user?.displayName || user?.username || 'System',
+                    status: 'CANCELLED'
+                }
+            });
 
-        await this.triggerNotification('Booking', 'DELETE', {
-            title: 'Booking Cancelled',
-            message: `Booking ${booking.bookingCode} (${booking.supplierName}) at ${booking.slot} has been cancelled.`,
-        });
+            await this.triggerNotification('Booking', 'DELETE', {
+                title: 'Booking Cancelled',
+                message: `Booking ${booking.bookingCode} (${booking.supplierName}) at ${booking.slot} has been cancelled.`,
+                actionUrl: `/bookings/${booking.bookingCode}`,
+            });
 
-        return result;
+            return result;
+        } catch (error) {
+            console.error('[BookingsService] Error deleting booking:', error);
+            throw error;
+        }
     }
 
     private async triggerNotification(sourceApp: string, actionType: string, payload: { title: string; message: string; actionUrl?: string }) {

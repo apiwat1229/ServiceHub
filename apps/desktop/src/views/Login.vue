@@ -13,6 +13,7 @@ import { useAuthStore } from '../stores/auth';
 const loginError = ref('');
 const showChangePasswordDialog = ref(false);
 const tempToken = ref('');
+const emailForChange = ref('');
 const loginFormRef = ref<InstanceType<typeof LoginForm> | null>(null);
 
 const { t } = useI18n();
@@ -63,6 +64,7 @@ async function handleLogin({
     // Handle force password change
     if (err.response?.data?.code === 'MUST_CHANGE_PASSWORD') {
       tempToken.value = err.response.data.tempToken;
+      emailForChange.value = email;
       showChangePasswordDialog.value = true;
       return;
     }
@@ -103,8 +105,9 @@ function handlePasswordChangeSuccess() {
 
     <!-- Change Password Dialog -->
     <ChangePasswordDialog
-      :open="showChangePasswordDialog"
+      v-model:open="showChangePasswordDialog"
       :temp-token="tempToken"
+      :email="emailForChange"
       @success="handlePasswordChangeSuccess"
     />
   </div>

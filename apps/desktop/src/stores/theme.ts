@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
 import { storage } from '../services/storage';
+import { usersApi } from '../services/users';
+import { useAuthStore } from './auth';
 
 export const useThemeStore = defineStore('theme', () => {
     const themeColor = ref(storage.get('theme_color') || 'zinc');
@@ -105,26 +107,79 @@ export const useThemeStore = defineStore('theme', () => {
         }
     };
 
+
+
+    // --- Backend Sync Logic ---
+
+    // Debounced save function to avoid API spam
+    const saveToBackend = async () => {
+        const authStore = useAuthStore();
+        if (!authStore.user?.id) return;
+
+        const preferences = {
+            themeColor: themeColor.value,
+            fontSize: fontSize.value,
+            fontFamily: fontFamily.value,
+            isDark: isDark.value,
+        };
+
+        try {
+            await usersApi.update(authStore.user.id, { preferences });
+            // Also update the user object in store to reflect latest changes locally
+            if (authStore.user) {
+                authStore.user.preferences = preferences;
+            }
+        } catch (error) {
+            console.error('Failed to save theme preferences:', error);
+        }
+    };
+
+    // Simple debounce implementation if lodash not available or to keep it light
+    let timeout: any;
+    const debouncedSave = () => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {
+            saveToBackend();
+        }, 1000);
+    };
+
+    // Load preferences from user object (call this on login/init)
+    const loadFromUser = (user: any) => {
+        if (!user?.preferences) return;
+
+        const prefs = user.preferences;
+        if (prefs.themeColor) themeColor.value = prefs.themeColor;
+        if (prefs.fontSize) fontSize.value = prefs.fontSize;
+        if (prefs.fontFamily) fontFamily.value = prefs.fontFamily;
+        if (typeof prefs.isDark === 'boolean') isDark.value = prefs.isDark;
+
+        applyTheme();
+    };
+
     // Persist changes
     watch(themeColor, (val) => {
         storage.set('theme_color', val);
         applyTheme();
+        debouncedSave();
     });
 
     watch(fontSize, (val) => {
         storage.set('font_size', val);
         applyTheme();
+        debouncedSave();
     });
 
     watch(fontFamily, (val) => {
         storage.set('font_family', val);
         applyTheme();
+        debouncedSave();
     });
 
 
     watch(isDark, (val) => {
         storage.set('is_dark', val);
         applyTheme();
+        debouncedSave();
     });
 
     // Initialize
@@ -137,5 +192,6 @@ export const useThemeStore = defineStore('theme', () => {
         colors,
         isDark,
         toggleDark: () => (isDark.value = !isDark.value),
+        loadFromUser,
     };
 });

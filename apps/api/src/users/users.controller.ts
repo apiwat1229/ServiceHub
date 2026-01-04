@@ -1,4 +1,4 @@
-import { CreateUserDto, Role, UpdateUserDto } from '@my-app/types';
+import { CreateUserDto, UpdateUserDto } from '@my-app/types';
 import {
     Body,
     Controller,
@@ -15,46 +15,52 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { existsSync, mkdirSync } from 'fs';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
-import { Roles } from '../auth/decorators/roles.decorator';
+import { Permissions } from '../auth/decorators/permissions.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { UsersService } from './users.service';
 
 @Controller('users')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class UsersController {
     constructor(private readonly usersService: UsersService) { }
 
     @Post()
-    @Roles(Role.ADMIN)
+    @Post()
+    @Permissions('users:create')
     create(@Body() createUserDto: CreateUserDto) {
         return this.usersService.create(createUserDto);
     }
 
     @Get()
-    @Roles(Role.ADMIN)
+    @Get()
+    @Permissions('users:read')
     findAll() {
         return this.usersService.findAll();
     }
 
     @Get(':id')
+    @Permissions('users:read')
     findOne(@Param('id') id: string) {
         return this.usersService.findOne(id);
     }
 
     @Patch(':id')
+    @Permissions('users:update')
     update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
         return this.usersService.update(id, updateUserDto);
     }
 
     @Delete(':id')
-    @Roles(Role.ADMIN)
+    @Delete(':id')
+    @Permissions('users:delete')
     remove(@Param('id') id: string) {
         return this.usersService.remove(id);
     }
 
     @Patch(':id/unlock')
-    @Roles(Role.ADMIN)
+    @Patch(':id/unlock')
+    @Permissions('users:update')
     async unlockUser(@Param('id') id: string) {
         return this.usersService.unlockUser(id);
     }
@@ -75,6 +81,7 @@ export class UsersController {
             }
         })
     }))
+    @Permissions('users:update')
     async uploadAvatar(@Param('id') id: string, @UploadedFile() file: Express.Multer.File) {
         return this.usersService.updateAvatar(id, `/uploads/avatars/${file.filename}`);
     }

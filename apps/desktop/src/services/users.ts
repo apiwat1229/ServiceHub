@@ -35,6 +35,7 @@ export interface User {
     password?: string;
     pinCode?: string;
     hodId?: string;
+    preferences?: any;
 }
 
 export const usersApi = {

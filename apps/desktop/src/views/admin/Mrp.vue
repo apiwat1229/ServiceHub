@@ -7,6 +7,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
+import { useAuthStore } from '@/stores/auth';
 import {
   ArrowUpDown,
   Droplets,
@@ -19,9 +20,10 @@ import {
   Warehouse,
   type LucideIcon,
 } from 'lucide-vue-next';
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
+import { toast } from 'vue-sonner';
 
 interface MrpModule {
   id: string;
@@ -36,8 +38,19 @@ interface MrpModule {
 
 const { t } = useI18n();
 const router = useRouter();
+const authStore = useAuthStore();
 
 const showReceivingDialog = ref(false);
+
+// Permission check
+onMounted(() => {
+  if (!authStore.hasPermission('mrp:read')) {
+    toast.error(t('errors.noPermission'), {
+      description: t('errors.noPermissionDescription'),
+    });
+    router.push('/');
+  }
+});
 
 const handleModuleClick = (module: MrpModule) => {
   if (module.id === 'receiving') {

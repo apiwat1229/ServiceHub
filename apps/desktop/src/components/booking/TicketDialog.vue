@@ -257,6 +257,16 @@ const handleCopyTicketImage = async () => {
             </div>
           </div>
 
+          <!-- Cancelled Status Indicator -->
+          <div
+            v-if="ticket.status === 'CANCELLED' || ticket.deletedAt"
+            class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 border-red-600 border-4 rounded-xl p-2 rotate-[-15deg] opacity-80 pointer-events-none"
+          >
+            <span class="text-4xl font-extrabold text-red-600 uppercase tracking-widest"
+              >CANCELLED</span
+            >
+          </div>
+
           <!-- Warning -->
           <div class="text-center my-4 leading-tight">
             <p class="text-xs font-semibold">{{ t('ticketDialog.parkingInfo') }}</p>

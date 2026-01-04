@@ -160,6 +160,7 @@ export class NotificationsService {
         isActive?: boolean;
         recipientRoles?: string[];
         recipientUsers?: string[];
+        recipientGroups?: string[];
         channels?: string[];
     }) {
         return this.prisma.notificationSetting.upsert({
@@ -173,6 +174,7 @@ export class NotificationsService {
                 isActive: data.isActive,
                 recipientRoles: data.recipientRoles ? (data.recipientRoles as any) : undefined,
                 recipientUsers: data.recipientUsers ? (data.recipientUsers as any) : undefined,
+                recipientGroups: data.recipientGroups ? (data.recipientGroups as any) : undefined,
                 channels: data.channels ? (data.channels as any) : undefined,
             },
             create: {
@@ -181,6 +183,7 @@ export class NotificationsService {
                 isActive: data.isActive ?? true,
                 recipientRoles: (data.recipientRoles || []) as any,
                 recipientUsers: (data.recipientUsers || []) as any,
+                recipientGroups: (data.recipientGroups || []) as any,
                 channels: (data.channels || ['IN_APP']) as any,
             },
         });

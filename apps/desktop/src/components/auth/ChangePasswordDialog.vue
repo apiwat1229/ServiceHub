@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuthStore } from '@/stores/auth';
 import axios from 'axios';
-import { AlertCircle, Check, X } from 'lucide-vue-next';
+import { AlertCircle, Check, Eye as EyeIcon, EyeOff as EyeOffIcon, X } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { toast } from 'vue-sonner';
@@ -20,6 +20,7 @@ import { toast } from 'vue-sonner';
 const props = defineProps<{
   open: boolean;
   tempToken: string;
+  email: string;
 }>();
 
 const emit = defineEmits<{
@@ -35,6 +36,9 @@ const newPassword = ref('');
 const confirmPassword = ref('');
 const loading = ref(false);
 const error = ref('');
+const showOldPassword = ref(false);
+const showNewPassword = ref(false);
+const showConfirmPassword = ref(false);
 
 // Password strength validation
 const passwordStrength = computed(() => {
@@ -97,8 +101,7 @@ const handleSubmit = async () => {
     toast.success('Password changed successfully!');
 
     // Now login with new password
-    const userEmail = authStore.user?.email || '';
-    await authStore.login({ email: userEmail, password: newPassword.value }, false);
+    await authStore.login({ email: props.email, password: newPassword.value }, false);
 
     emit('success');
     router.push('/');
@@ -109,11 +112,16 @@ const handleSubmit = async () => {
     loading.value = false;
   }
 };
+
+const handleCancel = () => {
+  router.push('/login');
+  emit('update:open', false);
+};
 </script>
 
 <template>
   <Dialog :open="open" @update:open="() => {}">
-    <DialogContent class="sm:max-w-md" :can-close="false">
+    <DialogContent class="sm:max-w-md" :hide-close="true">
       <DialogHeader>
         <DialogTitle>Change Password Required</DialogTitle>
         <DialogDescription>
@@ -122,6 +130,9 @@ const handleSubmit = async () => {
       </DialogHeader>
 
       <form @submit.prevent="handleSubmit" class="space-y-4">
+        <!-- Hidden username field to help password managers -->
+        <input type="text" :value="email" autocomplete="username" class="hidden" readonly />
+
         <Alert v-if="error" variant="destructive">
           <AlertCircle class="h-4 w-4" />
           <AlertDescription>{{ error }}</AlertDescription>
@@ -129,24 +140,52 @@ const handleSubmit = async () => {
 
         <div class="space-y-2">
           <Label for="old-password">Current Password</Label>
-          <Input
-            id="old-password"
-            type="password"
-            v-model="oldPassword"
-            placeholder="Enter your current password"
-            required
-          />
+          <div class="relative">
+            <Input
+              id="old-password"
+              :type="showOldPassword ? 'text' : 'password'"
+              v-model="oldPassword"
+              placeholder="Enter your current password"
+              required
+              class="pr-10"
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              class="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+              @click="showOldPassword = !showOldPassword"
+              tabindex="-1"
+            >
+              <EyeIcon v-if="!showOldPassword" class="h-4 w-4 text-muted-foreground" />
+              <EyeOffIcon v-else class="h-4 w-4 text-muted-foreground" />
+            </Button>
+          </div>
         </div>
 
         <div class="space-y-2">
           <Label for="new-password">New Password</Label>
-          <Input
-            id="new-password"
-            type="password"
-            v-model="newPassword"
-            placeholder="Enter your new password"
-            required
-          />
+          <div class="relative">
+            <Input
+              id="new-password"
+              :type="showNewPassword ? 'text' : 'password'"
+              v-model="newPassword"
+              placeholder="Enter your new password"
+              required
+              class="pr-10"
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              class="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+              @click="showNewPassword = !showNewPassword"
+              tabindex="-1"
+            >
+              <EyeIcon v-if="!showNewPassword" class="h-4 w-4 text-muted-foreground" />
+              <EyeOffIcon v-else class="h-4 w-4 text-muted-foreground" />
+            </Button>
+          </div>
 
           <!-- Password Strength Indicator -->
           <div v-if="newPassword" class="space-y-2">
@@ -186,21 +225,40 @@ const handleSubmit = async () => {
 
         <div class="space-y-2">
           <Label for="confirm-password">Confirm New Password</Label>
-          <Input
-            id="confirm-password"
-            type="password"
-            v-model="confirmPassword"
-            placeholder="Confirm your new password"
-            required
-          />
+          <div class="relative">
+            <Input
+              id="confirm-password"
+              :type="showConfirmPassword ? 'text' : 'password'"
+              v-model="confirmPassword"
+              placeholder="Confirm your new password"
+              required
+              class="pr-10"
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              class="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+              @click="showConfirmPassword = !showConfirmPassword"
+              tabindex="-1"
+            >
+              <EyeIcon v-if="!showConfirmPassword" class="h-4 w-4 text-muted-foreground" />
+              <EyeOffIcon v-else class="h-4 w-4 text-muted-foreground" />
+            </Button>
+          </div>
           <p v-if="confirmPassword && newPassword !== confirmPassword" class="text-sm text-red-500">
             Passwords do not match
           </p>
         </div>
 
-        <Button type="submit" class="w-full" :disabled="!isValid || loading">
-          {{ loading ? 'Changing Password...' : 'Change Password' }}
-        </Button>
+        <div class="flex gap-2">
+          <Button type="button" variant="outline" class="w-full" @click="handleCancel">
+            Logout
+          </Button>
+          <Button type="submit" class="w-full" :disabled="!isValid || loading">
+            {{ loading ? 'Changing...' : 'Change Password' }}
+          </Button>
+        </div>
       </form>
     </DialogContent>
   </Dialog>

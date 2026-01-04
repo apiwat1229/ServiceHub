@@ -65,6 +65,7 @@ export class NotificationsController {
         isActive?: boolean;
         recipientRoles?: string[];
         recipientUsers?: string[];
+        recipientGroups?: string[];
         channels?: string[];
     }) {
         return this.notificationsService.updateSetting(
@@ -74,6 +75,7 @@ export class NotificationsController {
                 isActive: body.isActive,
                 recipientRoles: body.recipientRoles,
                 recipientUsers: body.recipientUsers,
+                recipientGroups: body.recipientGroups,
                 channels: body.channels,
             }
         );

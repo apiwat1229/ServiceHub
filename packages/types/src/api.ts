@@ -128,6 +128,14 @@ export class CreateUserDto {
     @IsOptional()
     @IsString()
     avatar?: string;
+
+    @IsOptional()
+    @IsString()
+    roleId?: string;
+
+    @IsOptional()
+    @IsBoolean()
+    forceChangePassword?: boolean;
 }
 
 export class UpdateUserDto {
@@ -195,6 +203,13 @@ export class UpdateUserDto {
     @IsDate()
     @Type(() => Date)
     lastLoginAt?: Date;
+
+    @IsOptional()
+    preferences?: any;
+
+    @IsOptional()
+    @IsString()
+    roleId?: string;
 }
 
 export class CreateSupplierDto {

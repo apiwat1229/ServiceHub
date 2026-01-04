@@ -52,6 +52,18 @@ export const BOOKINGS_DELETE = 'bookings:delete';
 // ==================== Analytics ====================
 export const ANALYTICS_VIEW = 'analytics:view';
 
+// ==================== MRP System ====================
+export const MRP_READ = 'mrp:read';
+export const MRP_CREATE = 'mrp:create';
+export const MRP_UPDATE = 'mrp:update';
+export const MRP_DELETE = 'mrp:delete';
+
+// ==================== Truck Scale ====================
+export const TRUCK_SCALE_READ = 'truckScale:read';
+export const TRUCK_SCALE_CREATE = 'truckScale:create';
+export const TRUCK_SCALE_UPDATE = 'truckScale:update';
+export const TRUCK_SCALE_DELETE = 'truckScale:delete';
+
 /**
  * Get all permissions as an array
  */
@@ -65,7 +77,9 @@ export const ALL_PERMISSIONS = [
     NOTIFICATIONS_READ, NOTIFICATIONS_CREATE, NOTIFICATIONS_DELETE,
     ROLES_READ, ROLES_CREATE, ROLES_UPDATE, ROLES_DELETE,
     BOOKINGS_READ, BOOKINGS_CREATE, BOOKINGS_UPDATE, BOOKINGS_DELETE,
-    ANALYTICS_VIEW
+    ANALYTICS_VIEW,
+    MRP_READ, MRP_CREATE, MRP_UPDATE, MRP_DELETE,
+    TRUCK_SCALE_READ, TRUCK_SCALE_CREATE, TRUCK_SCALE_UPDATE, TRUCK_SCALE_DELETE
 ];
 
 /**
@@ -85,5 +99,7 @@ export const PERMISSION_GROUPS = {
     NOTIFICATIONS: [NOTIFICATIONS_READ, NOTIFICATIONS_CREATE, NOTIFICATIONS_DELETE],
     ROLES: [ROLES_READ, ROLES_CREATE, ROLES_UPDATE, ROLES_DELETE],
     BOOKINGS: [BOOKINGS_READ, BOOKINGS_CREATE, BOOKINGS_UPDATE, BOOKINGS_DELETE],
-    ANALYTICS: [ANALYTICS_VIEW]
+    ANALYTICS: [ANALYTICS_VIEW],
+    MRP: [MRP_READ, MRP_CREATE, MRP_UPDATE, MRP_DELETE],
+    TRUCK_SCALE: [TRUCK_SCALE_READ, TRUCK_SCALE_CREATE, TRUCK_SCALE_UPDATE, TRUCK_SCALE_DELETE]
 };

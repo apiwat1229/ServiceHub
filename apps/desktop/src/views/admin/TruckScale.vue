@@ -58,7 +58,11 @@ import {
 } from 'lucide-vue-next';
 import { computed, h, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useRouter } from 'vue-router';
 import { toast } from 'vue-sonner';
+
+const { t } = useI18n();
+const router = useRouter();
 
 // State
 const activeTab = ref('checkin');
@@ -70,8 +74,6 @@ const settings = ref({
   autoRefresh: true,
   sound: false,
 });
-
-const { t } = useI18n();
 
 const provinces = ref<any[]>([]);
 const rubberTypes = ref<any[]>([]);
@@ -1132,6 +1134,22 @@ const dashboardColumns: ColumnDef<any>[] = [
 ];
 
 onMounted(async () => {
+  // Permission check with detailed logging
+  console.log('[TruckScale] Checking permissions...');
+  console.log('[TruckScale] User:', authStore.user);
+  console.log('[TruckScale] User permissions:', authStore.userPermissions);
+  console.log('[TruckScale] Has truckScale:read?', authStore.hasPermission('truckScale:read'));
+
+  if (!authStore.hasPermission('truckScale:read')) {
+    console.log('[TruckScale] Permission denied! Redirecting to home...');
+    toast.error(t('errors.noPermission'), {
+      description: t('errors.noPermissionDescription'),
+    });
+    router.push('/');
+    return;
+  }
+
+  console.log('[TruckScale] Permission granted. Loading page...');
   loadSettings();
   fetchMasterData();
   await authStore.fetchUser();

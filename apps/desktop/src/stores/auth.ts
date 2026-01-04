@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import api from '../services/api';
 import { storage } from '../services/storage';
+import { useThemeStore } from './theme';
 
 export const useAuthStore = defineStore('auth', {
     state: () => ({
@@ -61,6 +62,10 @@ export const useAuthStore = defineStore('auth', {
                 this.accessToken = response.data.accessToken;
                 this.user = response.data.user;
 
+                // Load preferences
+                const themeStore = useThemeStore();
+                themeStore.loadFromUser(this.user);
+
                 // Always set axios header
                 // api.defaults.headers.common['Authorization'] = `Bearer ${this.accessToken}`;
 
@@ -94,6 +99,11 @@ export const useAuthStore = defineStore('auth', {
             try {
                 const response = await api.get('/auth/me');
                 this.user = response.data;
+
+                // Load preferences
+                const themeStore = useThemeStore();
+                themeStore.loadFromUser(this.user);
+
                 // If we are "remembering" (persisting), update the store too
                 // For simplicity, if we have a token in storage, we update the user in storage
                 if (storage.get('accessToken')) {
