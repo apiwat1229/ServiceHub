@@ -99,8 +99,10 @@ const processedBookings = computed(() => {
       // Stats (Mock or real if available)
       moisture: b.moisture || '-',
       drcEst: b.drcEst || '-',
+      drcRequested: b.drcRequested || '-',
+      drcActual: b.drcActual || '-',
       cpAvg: b.cpAvg || '-',
-      lotNo: b.lotNo || '1251226-' + b.queueNo + '/1', // Mock Lot logic if missing
+      lotNo: b.lotNo || '-',
     });
 
     // 2. Trailer Part
@@ -427,7 +429,7 @@ onMounted(() => {
 
     <!-- Detail Modal -->
     <Dialog v-model:open="isDetailOpen">
-      <DialogContent class="max-w-[95vw] h-[95vh] overflow-y-auto flex flex-col p-6">
+      <DialogContent class="max-w-[95vw] h-auto max-h-[95vh] overflow-y-auto flex flex-col p-6">
         <VisuallyHidden>
           <DialogTitle>{{ t('cuplump.mainInfo') }}</DialogTitle>
           <DialogDescription>Booking Details</DialogDescription>
@@ -438,6 +440,7 @@ onMounted(() => {
           :is-trailer="selectedBooking.isTrailer"
           :part-label="selectedBooking.partLabel"
           @close="isDetailOpen = false"
+          @update="fetchBookings"
         />
       </DialogContent>
     </Dialog>

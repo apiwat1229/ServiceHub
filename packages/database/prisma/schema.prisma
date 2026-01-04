@@ -247,6 +247,13 @@ model Booking {
 
   // Rubber Information
   rubberType String @map("rubber_type")
+  lotNo      String? @map("lot_no")
+
+  // Lab Results (Main)
+  moisture     Float? @map("moisture")
+  drcEst       Float? @map("drc_est")
+  drcRequested Float? @map("drc_requested")
+  drcActual    Float? @map("drc_actual")
 
   // Metadata
   recorder  String

@@ -11,6 +11,11 @@ export interface CreateBookingDto {
     truckRegister?: string;
     rubberType: string;
     recorder: string;
+    lotNo?: string;
+    moisture?: number;
+    drcEst?: number;
+    drcRequested?: number;
+    drcActual?: number;
 }
 
 export interface UpdateBookingDto extends Partial<CreateBookingDto> { }

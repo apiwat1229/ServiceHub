@@ -3,6 +3,7 @@
     "save": "Save",
     "cancel": "Cancel",
     "delete": "Delete",
+    "add": "Add",
     "edit": "Edit",
     "create": "Create",
     "update": "Update",
@@ -34,6 +35,8 @@
     "clearAll": "Clear All",
     "errorLoading": "Failed to load data",
     "saveChanges": "Save Changes",
+    "saved": "Saved successfully",
+    "errorSaving": "Error saving data",
     "email": "Email",
     "username": "Username",
     "password": "Password",
@@ -759,7 +762,8 @@
     "sampleDeleted": "Sample deleted",
     "enterBeforePress": "Please enter Before Press weight",
     "failedToSave": "Failed to save sample",
-    "failedToDelete": "Failed to delete"
+    "failedToDelete": "Failed to delete",
+    "numericOnly": "Numbers only (0-9)"
   },
   "approval": {
     "title": "Approval Requests",

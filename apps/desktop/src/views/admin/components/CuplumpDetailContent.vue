@@ -2,7 +2,6 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Table,
   TableBody,
@@ -12,47 +11,17 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { bookingsApi } from '@/services/bookings';
+import { rubberTypesApi } from '@/services/rubberTypes';
 import { format } from 'date-fns';
-import { Save, Trash2 } from 'lucide-vue-next';
-import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { Pencil, Plus, Save, Trash2 } from 'lucide-vue-next';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
 
 const { t } = useI18n();
 
 // Refs for inputs
-const inputBeforePress = ref<any>(null);
-const inputBasket = ref<any>(null);
-const inputAfterPress = ref<any>(null);
-const inputPercentCp = ref<any>(null);
-const inputBeforeBaking1 = ref<any>(null);
-const inputBeforeBaking2 = ref<any>(null);
-const inputBeforeBaking3 = ref<any>(null);
-
-const focusNext = (nextField: string) => {
-  nextTick(() => {
-    switch (nextField) {
-      case 'basket':
-        inputBasket.value?.$el?.querySelector('input')?.focus();
-        break;
-      case 'afterPress':
-        inputAfterPress.value?.$el?.querySelector('input')?.focus();
-        break;
-      case 'percentCp':
-        inputPercentCp.value?.$el?.querySelector('input')?.focus();
-        break;
-      case 'beforeBaking1':
-        inputBeforeBaking1.value?.$el?.querySelector('input')?.focus();
-        break;
-      case 'beforeBaking2':
-        inputBeforeBaking2.value?.$el?.querySelector('input')?.focus();
-        break;
-      case 'beforeBaking3':
-        inputBeforeBaking3.value?.$el?.querySelector('input')?.focus();
-        break;
-    }
-  });
-};
+// Refs for inputs (Removed unused refs and focusNext)
 
 const props = defineProps<{
   bookingId: string;
@@ -60,29 +29,45 @@ const props = defineProps<{
   partLabel: string;
 }>();
 
-const emit = defineEmits(['close']);
+const emit = defineEmits(['close', 'update']);
 
 // State
 const booking = ref<any>(null);
 const samples = ref<any[]>([]);
+const rubberTypes = ref<any[]>([]);
+
+const isEditingLotNo = ref(false); // New state for edit mode
+const lotNoError = ref(''); // Validation error message
 const isLoading = ref(false);
 const isSaving = ref(false);
 
 // New Sample Form
-const newSample = ref<any>({
-  beforePress: '',
-  basket: 1.4, // Default per screenshot
-  afterPress: '',
-  percentCp: '', // Auto calc
-  beforeBaking1: '',
-  beforeBaking2: '',
-  beforeBaking3: '',
-});
+// New Sample Form (Batch)
+const newSamples = ref<any[]>([]);
+
+const addNewSampleRow = () => {
+  newSamples.value.push({
+    id: 'temp-' + Date.now(),
+    beforePress: '',
+    basket: 1.4,
+    afterPress: '',
+    percentCp: '',
+    beforeBaking1: '',
+    beforeBaking2: '',
+    beforeBaking3: '',
+  });
+};
+
+const removeNewSampleRow = (index: number) => {
+  newSamples.value.splice(index, 1);
+};
 
 // Computed Fields for Form
 const displayRubberType = computed(() => {
   if (!booking.value) return '-';
-  return props.isTrailer ? booking.value.trailerRubberType : booking.value.rubberType;
+  const code = props.isTrailer ? booking.value.trailerRubberType : booking.value.rubberType;
+  const type = rubberTypes.value.find((t) => t.code === code);
+  return type ? type.name : code;
 });
 
 const displayWeightIn = computed(() => {
@@ -112,13 +97,15 @@ const fetchData = async () => {
   if (!props.bookingId) return;
   isLoading.value = true;
   try {
-    const [bookingData, samplesData] = await Promise.all([
+    const [bookingData, samplesData, typesData] = await Promise.all([
       bookingsApi.getById(props.bookingId),
       bookingsApi.getSamples(props.bookingId),
+      rubberTypesApi.getAll(),
     ]);
 
     booking.value = bookingData;
     samples.value = samplesData.filter((s: any) => s.isTrailer === props.isTrailer);
+    rubberTypes.value = typesData;
   } catch (error) {
     console.error('Failed to load data:', error);
     toast.error(t('common.errorLoading'));
@@ -132,32 +119,38 @@ const calculateCuplump = (before: number, basket: number) => {
   return Math.max(0, before - basket).toFixed(2);
 };
 
-const handleSaveSample = async () => {
-  if (!newSample.value.beforePress) {
+const handleSaveAllSamples = async () => {
+  if (newSamples.value.length === 0) return;
+
+  // Validation
+  const valid = newSamples.value.every((s) => s.beforePress);
+  if (!valid) {
     toast.error(t('cuplump.enterBeforePress'));
     return;
   }
 
+  if (!confirm(t('cuplump.confirmSaveAll', { count: newSamples.value.length }) + '?')) return;
+
   isSaving.value = true;
   try {
-    await bookingsApi.saveSample(props.bookingId, {
-      ...newSample.value,
-      isTrailer: props.isTrailer, // Important!
-      // Calculate fields?
-      cuplumpWeight: parseFloat(newSample.value.beforePress) - parseFloat(newSample.value.basket),
+    const promises = newSamples.value.map((sample) => {
+      return bookingsApi.saveSample(props.bookingId, {
+        ...sample,
+        basketWeight: parseFloat(sample.basket), // Map frontend 'basket' to backend 'basketWeight'
+        isTrailer: props.isTrailer,
+        cuplumpWeight: parseFloat(sample.beforePress) - parseFloat(sample.basket),
+      });
     });
+
+    await Promise.all(promises);
     toast.success(t('cuplump.sampleSaved'));
+    emit('update'); // Notify parent to refresh
 
     // Reset and Reload
-    newSample.value = { ...newSample.value, beforePress: '', afterPress: '', percentCp: '' }; // Keep basket?
+    newSamples.value = [];
     fetchData();
-
-    // Focus first input for rapid entry
-    nextTick(() => {
-      inputBeforePress.value?.$el?.querySelector('input')?.focus();
-    });
   } catch (error) {
-    console.error('Failed to save sample:', error);
+    console.error('Failed to save samples:', error);
     toast.error(t('cuplump.failedToSave'));
   } finally {
     isSaving.value = false;
@@ -169,9 +162,61 @@ const handleDeleteSample = async (sampleId: string) => {
   try {
     await bookingsApi.deleteSample(props.bookingId, sampleId);
     toast.success(t('cuplump.sampleDeleted'));
+    emit('update');
     fetchData();
   } catch (e) {
     toast.error(t('cuplump.failedToDelete'));
+  }
+};
+
+const validateLotInput = (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const rawValue = input.value;
+
+  // Clean value (keep only digits)
+  const cleanedValue = rawValue.replace(/\D/g, '');
+
+  if (rawValue !== cleanedValue) {
+    // If characters were stripped, show error
+    lotNoError.value = t('cuplump.numericOnly');
+    booking.value.lotNo = cleanedValue; // Force update model
+
+    // v-model sync might need nextTick or direct value update if it lags,
+    // but usually updating the reactive ref is enough.
+    // However, to ensure visual input update immediately for the user:
+    input.value = cleanedValue;
+  } else {
+    // If input is clean, clear error
+    lotNoError.value = '';
+    // Model is already updated by v-model, but ensuring consistency:
+    booking.value.lotNo = cleanedValue;
+  }
+};
+
+const handleUpdateLotNo = async () => {
+  if (!booking.value) return;
+
+  // Validation: Numeric only for LotNo
+  if (booking.value.lotNo && !/^\d+$/.test(booking.value.lotNo)) {
+    lotNoError.value = t('cuplump.numericOnly');
+    return;
+  }
+  lotNoError.value = '';
+
+  try {
+    await bookingsApi.update(props.bookingId, {
+      lotNo: booking.value.lotNo,
+      moisture: booking.value.moisture,
+      drcEst: booking.value.drcEst,
+      drcRequested: booking.value.drcRequested,
+      drcActual: booking.value.drcActual,
+    });
+    isEditingLotNo.value = false; // Switch back to view mode
+    toast.success(t('common.saved'));
+    emit('update');
+  } catch (error) {
+    console.error('Failed to update Main Info:', error);
+    toast.error(t('common.errorSaving'));
   }
 };
 
@@ -196,7 +241,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="h-full flex flex-col space-y-6">
+  <div class="h-full flex flex-col space-y-3">
     <!-- Header (Optional simpler header for Modal) -->
     <div class="flex items-center justify-between">
       <div>
@@ -211,41 +256,104 @@ onMounted(() => {
 
     <div v-if="isLoading" class="flex justify-center p-8">Loading...</div>
 
-    <div v-else class="space-y-6 overflow-y-auto max-h-[80vh] pr-2">
+    <div v-else class="space-y-3 overflow-y-auto max-h-[80vh] pr-2">
       <!-- Main Info Cards -->
       <Card v-if="booking" class="bg-card">
-        <CardContent class="p-4 grid gap-4">
-          <!-- Top Row -->
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <Label class="text-xs text-muted-foreground">{{ t('cuplump.date') }}</Label>
-              <div class="font-medium">{{ format(new Date(booking.date), 'dd-MMM-yyyy') }}</div>
+        <CardContent class="p-3 grid gap-3">
+          <!-- Top Row (Single Line) -->
+          <div class="flex items-center justify-between gap-4">
+            <!-- Supplier (Left) -->
+            <div class="flex flex-col">
+              <span class="text-[10px] text-muted-foreground uppercase tracking-wider">{{
+                t('cuplump.supplier')
+              }}</span>
+              <span class="font-medium text-lg leading-none"
+                >{{ booking.supplierCode }} : {{ booking.supplierName }}</span
+              >
             </div>
-            <div>
-              <Label class="text-xs text-muted-foreground">{{ t('cuplump.lotNo') }}</Label>
-              <div class="font-medium">{{ booking.lotNo || '1251226-583/1' }}</div>
-            </div>
-            <div>
-              <Label class="text-xs text-muted-foreground">{{ t('cuplump.supplier') }}</Label>
-              <div class="font-medium">{{ booking.supplierCode }} : {{ booking.supplierName }}</div>
-            </div>
-            <div>
-              <Label class="text-xs text-muted-foreground">{{ t('cuplump.rubberType') }}</Label>
-              <div class="font-medium">{{ displayRubberType }}</div>
+
+            <!-- Lot No (Right, Editable with Toggle) -->
+            <div class="flex flex-col items-end relative">
+              <span class="text-[10px] text-muted-foreground uppercase tracking-wider">{{
+                t('cuplump.lotNo')
+              }}</span>
+              <div
+                class="flex items-center gap-2 h-7"
+                :class="{ 'mb-4': isEditingLotNo && lotNoError }"
+              >
+                <template v-if="isEditingLotNo">
+                  <div class="relative">
+                    <Input
+                      v-model="booking.lotNo"
+                      class="h-7 w-[140px] text-right font-medium px-2 py-1 transition-colors"
+                      :class="{ 'border-red-500 focus-visible:ring-red-500': lotNoError }"
+                      placeholder="Lot No."
+                      @keydown.enter="handleUpdateLotNo"
+                      @input="validateLotInput"
+                    />
+                    <span
+                      v-if="lotNoError"
+                      class="absolute top-8 right-0 text-[10px] text-red-500 whitespace-nowrap bg-red-50 px-1 rounded border border-red-100"
+                    >
+                      {{ lotNoError }}
+                    </span>
+                  </div>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    class="h-7 w-7 text-green-600 hover:text-green-700 hover:bg-green-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    :disabled="!!lotNoError"
+                    @click="handleUpdateLotNo"
+                  >
+                    <Save class="w-4 h-4" />
+                  </Button>
+                </template>
+                <template v-else>
+                  <span class="font-medium text-lg leading-none">{{ booking.lotNo || '-' }}</span>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    class="h-7 w-7 text-muted-foreground hover:text-primary"
+                    @click="isEditingLotNo = true"
+                  >
+                    <Pencil class="w-3.5 h-3.5" />
+                  </Button>
+                </template>
+              </div>
             </div>
           </div>
 
           <!-- Stats Row -->
           <!-- Stats & Weight Row -->
+          <!-- Stats Row -->
           <div
-            class="grid grid-cols-2 lg:grid-cols-7 gap-4 bg-muted/30 p-4 rounded-lg items-center"
+            class="grid grid-cols-2 lg:grid-cols-8 gap-2 bg-muted/30 p-2 rounded-lg items-center"
           >
+            <!-- Rubber Type (Moved here) -->
+            <div class="text-center">
+              <div class="text-[10px] text-muted-foreground uppercase tracking-wider">
+                {{ t('cuplump.rubberType') }}
+              </div>
+              <div
+                class="text-sm font-bold text-foreground truncate px-1"
+                :title="displayRubberType"
+              >
+                {{ displayRubberType }}
+              </div>
+            </div>
             <!-- Stats -->
             <div class="text-center">
               <div class="text-[10px] text-muted-foreground uppercase tracking-wider">
                 {{ t('cuplump.moisture') }}
               </div>
-              <div class="text-lg font-bold text-orange-500">34.0%</div>
+              <Input
+                v-model="booking.moisture"
+                type="number"
+                step="0.01"
+                class="h-7 w-20 text-center font-bold text-orange-500 mx-auto px-1"
+                placeholder="%"
+                @keydown.enter="handleUpdateLotNo"
+              />
             </div>
             <div class="text-center">
               <div class="text-[10px] text-muted-foreground uppercase tracking-wider">
@@ -257,19 +365,40 @@ onMounted(() => {
               <div class="text-[10px] text-muted-foreground uppercase tracking-wider">
                 {{ t('cuplump.drcEst') }}
               </div>
-              <div class="text-lg font-bold text-purple-600">61.0%</div>
+              <Input
+                v-model="booking.drcEst"
+                type="number"
+                step="0.01"
+                class="h-7 w-20 text-center font-bold text-purple-600 mx-auto px-1"
+                placeholder="%"
+                @keydown.enter="handleUpdateLotNo"
+              />
             </div>
             <div class="text-center">
               <div class="text-[10px] text-muted-foreground uppercase tracking-wider">
                 DRC Requested
               </div>
-              <div class="text-lg font-bold text-blue-600">62.0%</div>
+              <Input
+                v-model="booking.drcRequested"
+                type="number"
+                step="0.01"
+                class="h-7 w-20 text-center font-bold text-blue-600 mx-auto px-1"
+                placeholder="%"
+                @keydown.enter="handleUpdateLotNo"
+              />
             </div>
             <div class="text-center">
               <div class="text-[10px] text-muted-foreground uppercase tracking-wider">
                 DRC Actual
               </div>
-              <div class="text-lg font-bold text-teal-600">61.0%</div>
+              <Input
+                v-model="booking.drcActual"
+                type="number"
+                step="0.01"
+                class="h-7 w-20 text-center font-bold text-teal-600 mx-auto px-1"
+                placeholder="%"
+                @keydown.enter="handleUpdateLotNo"
+              />
             </div>
 
             <!-- Weights (Merged) -->
@@ -302,19 +431,19 @@ onMounted(() => {
 
       <!-- Recorded Items Table with Inline Add -->
       <Card>
-        <CardHeader class="pb-2 flex flex-row items-center justify-between">
+        <CardHeader class="p-3 pb-2 flex flex-row items-center justify-between">
           <CardTitle class="text-lg">{{ t('cuplump.recordedItems') }}</CardTitle>
           <Button
             size="sm"
             class="gap-2 bg-blue-600 hover:bg-blue-700"
             :disabled="isSaving"
-            @click="handleSaveSample"
+            @click="addNewSampleRow"
           >
             <Plus class="w-4 h-4" />
             {{ t('common.add') }}
           </Button>
         </CardHeader>
-        <CardContent>
+        <CardContent class="p-0">
           <Table>
             <TableHeader>
               <TableRow>
@@ -354,106 +483,108 @@ onMounted(() => {
                 </TableCell>
               </TableRow>
 
-              <!-- New Sample Row -->
-              <TableRow class="bg-muted/30 hover:bg-muted/50">
-                <TableCell class="font-medium text-muted-foreground">{{
-                  samples.length + 1
+              <!-- New Samples Rows (Drafts) -->
+              <TableRow
+                v-for="(sample, index) in newSamples"
+                :key="sample.id"
+                class="bg-blue-50/30 hover:bg-blue-50/50"
+              >
+                <TableCell class="font-medium text-blue-600">{{
+                  samples.length + index + 1
                 }}</TableCell>
                 <TableCell>
                   <Input
-                    ref="inputBeforePress"
-                    v-model="newSample.beforePress"
+                    v-model="sample.beforePress"
                     type="number"
                     step="0.01"
                     class="h-8 w-full min-w-[80px]"
-                    @keydown.enter.prevent="focusNext('basket')"
+                    placeholder="0.00"
                   />
                 </TableCell>
                 <TableCell>
                   <Input
-                    ref="inputBasket"
-                    v-model="newSample.basket"
+                    v-model="sample.basket"
                     type="number"
                     step="0.01"
                     class="h-8 w-full min-w-[80px]"
-                    @keydown.enter.prevent="focusNext('afterPress')"
                   />
                 </TableCell>
                 <TableCell>
                   <div class="px-2 py-1 bg-muted rounded text-sm text-center">
                     {{
                       calculateCuplump(
-                        parseFloat(newSample.beforePress || '0'),
-                        parseFloat(newSample.basket || '0')
+                        parseFloat(sample.beforePress || '0'),
+                        parseFloat(sample.basket || '0')
                       )
                     }}
                   </div>
                 </TableCell>
                 <TableCell>
                   <Input
-                    ref="inputAfterPress"
-                    v-model="newSample.afterPress"
+                    v-model="sample.afterPress"
                     type="number"
                     step="0.01"
                     class="h-8 w-full min-w-[80px]"
-                    @keydown.enter.prevent="focusNext('percentCp')"
                   />
                 </TableCell>
                 <TableCell>
                   <Input
-                    ref="inputPercentCp"
-                    v-model="newSample.percentCp"
+                    v-model="sample.percentCp"
                     type="number"
                     step="0.01"
                     placeholder="Auto"
                     class="h-8 w-full min-w-[80px]"
-                    @keydown.enter.prevent="focusNext('beforeBaking1')"
                   />
                 </TableCell>
                 <TableCell>
                   <Input
-                    ref="inputBeforeBaking1"
-                    v-model="newSample.beforeBaking1"
+                    v-model="sample.beforeBaking1"
                     type="number"
                     step="0.01"
                     class="h-8 w-full min-w-[80px]"
-                    @keydown.enter.prevent="focusNext('beforeBaking2')"
                   />
                 </TableCell>
                 <TableCell>
                   <Input
-                    ref="inputBeforeBaking2"
-                    v-model="newSample.beforeBaking2"
+                    v-model="sample.beforeBaking2"
                     type="number"
                     step="0.01"
                     class="h-8 w-full min-w-[80px]"
-                    @keydown.enter.prevent="focusNext('beforeBaking3')"
                   />
                 </TableCell>
                 <TableCell>
                   <Input
-                    ref="inputBeforeBaking3"
-                    v-model="newSample.beforeBaking3"
+                    v-model="sample.beforeBaking3"
                     type="number"
                     step="0.01"
                     class="h-8 w-full min-w-[80px]"
-                    @keydown.enter.prevent="handleSaveSample"
                   />
                 </TableCell>
                 <TableCell class="text-right">
                   <Button
                     variant="ghost"
                     size="icon"
-                    class="h-8 w-8 text-blue-600"
-                    :disabled="isSaving"
-                    @click="handleSaveSample"
+                    class="h-8 w-8 text-muted-foreground hover:text-destructive"
+                    @click="removeNewSampleRow(index)"
                   >
-                    <Save class="w-4 h-4" />
+                    <Trash2 class="w-4 h-4" />
                   </Button>
                 </TableCell>
               </TableRow>
             </TableBody>
           </Table>
+
+          <!-- Bottom Action Bar -->
+          <div v-if="newSamples.length > 0" class="p-3 border-t bg-muted/20 flex justify-end">
+            <Button
+              class="gap-2 bg-green-600 hover:bg-green-700 text-white"
+              :disabled="isSaving"
+              @click="handleSaveAllSamples"
+            >
+              <Save class="w-4 h-4" />
+              {{ t('common.save') }} ({{ newSamples.length }})
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

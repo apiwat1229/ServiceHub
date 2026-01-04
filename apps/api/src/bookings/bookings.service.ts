@@ -293,6 +293,11 @@ export class BookingsService {
             truckRegister: data.truckRegister,
             rubberType: data.rubberType,
             recorder: data.recorder,
+            lotNo: data.lotNo,
+            moisture: data.moisture !== undefined ? parseFloat(data.moisture) : undefined,
+            drcEst: data.drcEst !== undefined ? parseFloat(data.drcEst) : undefined,
+            drcRequested: data.drcRequested !== undefined ? parseFloat(data.drcRequested) : undefined,
+            drcActual: data.drcActual !== undefined ? parseFloat(data.drcActual) : undefined,
         };
 
         if (data.status === 'APPROVED') {
