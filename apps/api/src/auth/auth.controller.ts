@@ -33,7 +33,14 @@ export class AuthController {
     @Get('me')
     async getMe(@Request() req) {
         const user = await this.usersService.findOne(req.user.userId);
-        return user;
+
+        // Get permissions from role (preferred) or user (fallback) - same as login
+        const permissions = user.roleRecord?.permissions || user.permissions || [];
+
+        return {
+            ...user,
+            permissions, // Include permissions in response
+        };
     }
 
     @UseGuards(JwtAuthGuard)
