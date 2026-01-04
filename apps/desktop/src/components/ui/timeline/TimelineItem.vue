@@ -27,7 +27,7 @@ const props = withDefaults(defineProps<Props>(), {
     <div
       :class="
         cn(
-          'absolute -left-[22px] w-3 h-3 rounded-full ring-4 ring-background transition-all hover:scale-125 hover:ring-2',
+          'absolute -left-[26px] w-6 h-6 rounded-full ring-4 ring-background flex items-center justify-center text-white transition-all hover:scale-125 hover:ring-2',
           dotColor,
           dotClass
         )

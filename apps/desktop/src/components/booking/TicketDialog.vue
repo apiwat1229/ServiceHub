@@ -109,6 +109,13 @@ const handleSaveTicketImage = async () => {
       backgroundColor: null,
       scale: 3,
       useCORS: true,
+      onclone: (clonedDoc) => {
+        const queueVal = clonedDoc.getElementById('queue-number-val');
+        if (queueVal) {
+          queueVal.style.transform = 'translateY(-14px)'; // Force text up for capture
+          queueVal.style.display = 'block'; // Ensure consistent rendering
+        }
+      },
     });
     const link = document.createElement('a');
     link.download = `ticket_${props.ticket?.bookingCode || 'booking'}.png`;
@@ -128,6 +135,13 @@ const handleCopyTicketImage = async () => {
       backgroundColor: null,
       scale: 3,
       useCORS: true,
+      onclone: (clonedDoc) => {
+        const queueVal = clonedDoc.getElementById('queue-number-val');
+        if (queueVal) {
+          queueVal.style.transform = 'translateY(-14px)'; // Force text up for capture
+          queueVal.style.display = 'block'; // Ensure consistent rendering
+        }
+      },
     });
     canvas.toBlob(async (blob: Blob | null) => {
       if (!blob) return;
@@ -234,9 +248,12 @@ const handleCopyTicketImage = async () => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                lineHeight: '1',
               }"
             >
-              {{ ticket.queueNo ?? '-' }}
+              <div id="queue-number-val">
+                {{ ticket.queueNo ?? '-' }}
+              </div>
             </div>
           </div>
 

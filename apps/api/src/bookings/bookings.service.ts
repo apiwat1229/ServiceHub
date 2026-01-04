@@ -145,7 +145,7 @@ export class BookingsService {
         }
     }
 
-    async checkIn(id: string, data?: any) {
+    async checkIn(id: string, data?: any, user?: any) {
         const booking = await this.findOne(id);
 
         if (booking.checkinAt) {
@@ -156,6 +156,7 @@ export class BookingsService {
             where: { id },
             data: {
                 checkinAt: new Date(),
+                checkedInBy: user?.displayName || user?.username || 'System',
                 truckType: data?.truckType,
                 truckRegister: data?.truckRegister,
                 note: data?.note,
@@ -172,30 +173,35 @@ export class BookingsService {
         return updated;
     }
 
-    async startDrain(id: string) {
+    async startDrain(id: string, user?: any) {
         return this.prisma.booking.update({
             where: { id },
-            data: { startDrainAt: new Date() },
+            data: {
+                startDrainAt: new Date(),
+                startDrainBy: user?.displayName || user?.username || 'System',
+            },
         });
     }
 
-    async stopDrain(id: string, data?: any) {
+    async stopDrain(id: string, data?: any, user?: any) {
         return this.prisma.booking.update({
             where: { id },
             data: {
                 stopDrainAt: new Date(),
+                stopDrainBy: user?.displayName || user?.username || 'System',
                 drainNote: data?.note,
             },
         });
     }
 
-    async saveWeightIn(id: string, data: any) {
+    async saveWeightIn(id: string, data: any, user?: any) {
         return this.prisma.booking.update({
             where: { id },
             data: {
                 rubberSource: data.rubberSource,
                 rubberType: data.rubberType,
                 weightIn: parseFloat(data.weightIn),
+                weightInBy: user?.displayName || user?.username || 'System',
                 trailerRubberSource: data.trailerRubberSource,
                 trailerRubberType: data.trailerRubberType,
                 trailerWeightIn: data.trailerWeightIn ? parseFloat(data.trailerWeightIn) : null,
@@ -203,11 +209,12 @@ export class BookingsService {
         });
     }
 
-    async saveWeightOut(id: string, data: any) {
+    async saveWeightOut(id: string, data: any, user?: any) {
         return this.prisma.booking.update({
             where: { id },
             data: {
                 weightOut: parseFloat(data.weightOut),
+                weightOutBy: user?.displayName || user?.username || 'System',
             },
         });
     }

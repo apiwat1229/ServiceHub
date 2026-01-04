@@ -1,6 +1,8 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Request } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Request, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { BookingsService } from './bookings.service';
 
+@UseGuards(JwtAuthGuard)
 @Controller('bookings')
 export class BookingsController {
     constructor(private readonly bookingsService: BookingsService) { }
@@ -46,28 +48,28 @@ export class BookingsController {
     }
 
     @Patch(':id/check-in')
-    checkIn(@Param('id') id: string, @Body() body: any) {
-        return this.bookingsService.checkIn(id, body);
+    checkIn(@Param('id') id: string, @Body() body: any, @Request() req: any) {
+        return this.bookingsService.checkIn(id, body, req.user);
     }
 
     @Patch(':id/start-drain')
-    startDrain(@Param('id') id: string) {
-        return this.bookingsService.startDrain(id);
+    startDrain(@Param('id') id: string, @Request() req: any) {
+        return this.bookingsService.startDrain(id, req.user);
     }
 
     @Patch(':id/stop-drain')
-    stopDrain(@Param('id') id: string, @Body() body: any) {
-        return this.bookingsService.stopDrain(id, body);
+    stopDrain(@Param('id') id: string, @Body() body: any, @Request() req: any) {
+        return this.bookingsService.stopDrain(id, body, req.user);
     }
 
     @Patch(':id/weight-in')
-    saveWeightIn(@Param('id') id: string, @Body() body: any) {
-        return this.bookingsService.saveWeightIn(id, body);
+    saveWeightIn(@Param('id') id: string, @Body() body: any, @Request() req: any) {
+        return this.bookingsService.saveWeightIn(id, body, req.user);
     }
 
     @Patch(':id/weight-out')
-    saveWeightOut(@Param('id') id: string, @Body() body: any) {
-        return this.bookingsService.saveWeightOut(id, body);
+    saveWeightOut(@Param('id') id: string, @Body() body: any, @Request() req: any) {
+        return this.bookingsService.saveWeightOut(id, body, req.user);
     }
 
     // Samples routes moved up

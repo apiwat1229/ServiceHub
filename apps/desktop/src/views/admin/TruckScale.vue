@@ -40,12 +40,21 @@ import type { ColumnDef } from '@tanstack/vue-table';
 import { format } from 'date-fns';
 import {
   AlertCircle,
+  ArrowUpDown,
+  ArrowUpFromLine,
+  Calculator,
   Calendar as CalendarIcon,
+  Check,
   CheckCircle,
+  ClipboardList,
   Clock,
+  Play,
   Search,
   Settings,
+  Square,
+  Timer,
   Truck,
+  Weight,
 } from 'lucide-vue-next';
 import { computed, h, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -151,6 +160,9 @@ const checkInData = ref({
   note: '',
 });
 
+const checkInTruckTypeError = ref('');
+const checkInLicensePlateError = ref('');
+
 const openCheckInDialog = (booking: any) => {
   selectedBooking.value = booking;
   checkInStep.value = 1;
@@ -167,15 +179,24 @@ const openCheckInDialog = (booking: any) => {
 };
 
 const handleNextStep = () => {
-  // Basic validation
+  // Reset errors
+  checkInTruckTypeError.value = '';
+  checkInLicensePlateError.value = '';
+
+  let isValid = true;
+
   if (!checkInData.value.truckType) {
-    toast.error(t('truckScale.toast.selectTruckType'));
-    return;
+    checkInTruckTypeError.value = t('truckScale.toast.selectTruckType');
+    isValid = false;
   }
+
   if (!checkInData.value.truckRegister || !checkInData.value.truckRegister.trim()) {
-    toast.error(t('truckScale.toast.truckRegisterRequired'));
-    return;
+    checkInLicensePlateError.value = t('truckScale.toast.truckRegisterRequired');
+    isValid = false;
   }
+
+  if (!isValid) return;
+
   checkInStep.value = 2;
 };
 
@@ -387,6 +408,37 @@ const weightInData = ref({
   trailerWeightIn: 0,
 });
 
+const weightInputError = ref('');
+const trailerWeightInputError = ref('');
+
+const handleWeightInputKeydown = (e: KeyboardEvent, isTrailer: boolean = false) => {
+  if (
+    !/^[0-9]$/.test(e.key) &&
+    !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter'].includes(e.key)
+  ) {
+    e.preventDefault();
+    const message = t('truckScale.toast.invalidWeight') || 'Please enter numbers only';
+    if (isTrailer) {
+      trailerWeightInputError.value = message;
+      setTimeout(() => {
+        trailerWeightInputError.value = '';
+      }, 3000);
+    } else {
+      weightInputError.value = message;
+      setTimeout(() => {
+        weightInputError.value = '';
+      }, 3000);
+    }
+  } else {
+    // Clear error on valid input
+    if (isTrailer) {
+      trailerWeightInputError.value = '';
+    } else {
+      weightInputError.value = '';
+    }
+  }
+};
+
 const formattedWeightIn = computed({
   get: () => {
     if (!weightInData.value.weightIn) return '';
@@ -441,6 +493,10 @@ const openStopDrain = (booking: any) => {
 };
 
 const openWeightIn = (booking: any) => {
+  if (!booking.stopDrainAt) {
+    toast.error(t('truckScale.warnDrainNotComplete') || 'Please complete drain process first');
+    return;
+  }
   selectedDrainBooking.value = booking;
 
   const rawType = (booking.rubberType || '').trim();
@@ -556,19 +612,62 @@ const calculateDuration = (start: string | Date, end: string | Date) => {
 // Columns
 const columns: ColumnDef<any>[] = [
   {
+    accessorKey: 'supplierName',
+    header: ({ column }) => {
+      return h(
+        Button,
+        {
+          variant: 'ghost',
+          onClick: () => column.toggleSorting(column.getIsSorted() === 'asc'),
+          class: 'p-0 hover:bg-transparent',
+        },
+        () => [t('truckScale.supplier') || 'Supplier', h(ArrowUpDown, { class: 'ml-2 h-4 w-4' })]
+      );
+    },
+    cell: ({ row }) =>
+      h('div', { class: 'flex flex-col' }, [
+        h('span', { class: 'font-medium' }, row.original.supplierCode),
+        h('span', { class: 'text-sm text-muted-foreground' }, row.original.supplierName),
+      ]),
+  },
+  {
     accessorKey: 'queueNo',
-    header: () => t('truckScale.queue') || 'Queue',
-    cell: ({ row }) => h('div', { class: 'font-bold text-center w-12' }, row.original.queueNo),
+    header: ({ column }) => {
+      return h('div', { class: 'text-center' }, [
+        h(
+          Button,
+          {
+            variant: 'ghost',
+            onClick: () => column.toggleSorting(column.getIsSorted() === 'asc'),
+            class: 'p-0 hover:bg-transparent',
+          },
+          () => [t('truckScale.queue') || 'Queue', h(ArrowUpDown, { class: 'ml-2 h-4 w-4' })]
+        ),
+      ]);
+    },
+    cell: ({ row }) =>
+      h('div', { class: 'flex flex-col items-center' }, [
+        h('span', { class: 'font-bold' }, row.original.queueNo),
+        h(
+          'span',
+          { class: 'text-xs text-muted-foreground' },
+          `${row.original.startTime} - ${row.original.endTime}`
+        ),
+      ]),
   },
   {
-    accessorKey: 'date',
-    header: () => t('truckScale.date'),
-    cell: ({ row }) => format(new Date(row.original.date), 'dd-MMM-yyyy'),
+    accessorKey: 'truckRegister',
+    header: () => t('truckScale.truck') || 'Truck',
+    cell: ({ row }) =>
+      h('div', { class: 'flex flex-col' }, [
+        h('span', { class: 'font-medium' }, row.original.truckRegister || '-'),
+        h('span', { class: 'text-sm text-muted-foreground' }, row.original.truckType || '-'),
+      ]),
   },
   {
-    accessorKey: 'time',
-    header: () => t('truckScale.time') || 'Time',
-    cell: ({ row }) => `${row.original.startTime} - ${row.original.endTime}`,
+    accessorKey: 'rubberType',
+    header: () => t('truckScale.rubberType') || 'Rubber Type',
+    cell: ({ row }) => getRubberTypeName(row.original.rubberType),
   },
   {
     accessorKey: 'bookingCode',
@@ -576,26 +675,18 @@ const columns: ColumnDef<any>[] = [
     cell: ({ row }) => row.original.bookingCode,
   },
   {
-    accessorKey: 'supplierName',
-    header: () => t('truckScale.supplier') || 'Supplier',
-    cell: ({ row }) => `${row.original.supplierCode} - ${row.original.supplierName}`,
-  },
-  {
-    accessorKey: 'truckRegister',
-    header: () => t('truckScale.truck') || 'Truck',
-    cell: ({ row }) => {
-      const type = row.original.truckType;
-      const register = row.original.truckRegister;
-      const text = [type, register].filter(Boolean).join(' - ') || '-';
-      return h('div', { class: 'flex items-center gap-2' }, [
-        h(Truck, { class: 'w-4 h-4 text-muted-foreground' }),
-        h('span', text),
-      ]);
-    },
-  },
-  {
     id: 'status',
-    header: () => t('truckScale.status'),
+    header: ({ column }) => {
+      return h(
+        Button,
+        {
+          variant: 'ghost',
+          onClick: () => column.toggleSorting(column.getIsSorted() === 'asc'),
+          class: 'p-0 hover:bg-transparent',
+        },
+        () => [t('truckScale.status'), h(ArrowUpDown, { class: 'ml-2 h-4 w-4' })]
+      );
+    },
     cell: ({ row }) => {
       const isCheckedIn = !!row.original.checkinAt;
       if (isCheckedIn) {
@@ -631,77 +722,107 @@ const scaleInColumns: ColumnDef<any>[] = [
   },
   {
     accessorKey: 'queueNo',
-    header: () => t('truckScale.queue') || 'Queue',
+    header: ({ column }) => h('div', { class: 'text-center' }, t('truckScale.queue') || 'Queue'),
     cell: ({ row }) =>
-      h('div', {}, `${row.original.startTime} - ${row.original.endTime} (${row.original.queueNo})`),
+      h('div', { class: 'flex flex-col items-center' }, [
+        h('span', { class: 'font-bold' }, row.original.queueNo),
+        h(
+          'span',
+          { class: 'text-xs text-muted-foreground' },
+          `${row.original.startTime} - ${row.original.endTime}`
+        ),
+      ]),
   },
   {
-    accessorKey: 'truckRegister',
-    header: () => t('truckScale.licensePlate') || 'License Plate',
-    cell: ({ row }) => row.original.truckRegister || '-',
-  },
-  {
-    accessorKey: 'truckType',
-    header: () => t('truckScale.type') || 'Type',
-    cell: ({ row }) => row.original.truckType || '-',
+    accessorKey: 'truckRegister', // Use register as key but display both
+    header: () => t('truckScale.truck') || 'Truck',
+    cell: ({ row }) =>
+      h('div', { class: 'flex flex-col' }, [
+        h('span', { class: 'font-medium' }, row.original.truckRegister || '-'),
+        h('span', { class: 'text-sm text-muted-foreground' }, row.original.truckType || '-'),
+      ]),
   },
   {
     accessorKey: 'startDrainAt',
-    header: () => t('truckScale.startDrain') || 'Start Drain',
+    header: () => h('div', { class: 'text-center' }, t('truckScale.startDrain') || 'Start Drain'),
     cell: ({ row }) => {
       if (row.original.startDrainAt) {
         return h(
-          'span',
-          { class: 'text-green-600 font-medium' },
-          format(new Date(row.original.startDrainAt), 'HH:mm')
+          'div',
+          { class: 'text-center' },
+          h(
+            'span',
+            { class: 'text-green-600 font-medium' },
+            format(new Date(row.original.startDrainAt), 'HH:mm')
+          )
         );
       }
       return h(
-        Button,
-        {
-          size: 'sm',
-          class: 'bg-green-100 text-green-700 hover:bg-green-200 border-none shadow-none',
-          onClick: () => openStartDrain(row.original),
-        },
-        () => t('truckScale.startDrain')
+        'div',
+        { class: 'flex justify-center' },
+        h(
+          Button,
+          {
+            size: 'sm',
+            class: 'bg-green-100 text-green-700 hover:bg-green-200 border-none shadow-none',
+            onClick: () => openStartDrain(row.original),
+          },
+          () => t('truckScale.startDrain')
+        )
       );
     },
   },
   {
     accessorKey: 'stopDrainAt',
-    header: () => t('truckScale.stopDrain') || 'Stop Drain',
+    header: () => h('div', { class: 'text-center' }, t('truckScale.stopDrain') || 'Stop Drain'),
     cell: ({ row }) => {
       if (!row.original.startDrainAt)
-        return h(Button, { size: 'sm', disabled: true, variant: 'secondary' }, () => 'Stop'); // Disabled if not started
+        return h(
+          'div',
+          { class: 'flex justify-center' },
+          h(Button, { size: 'sm', disabled: true, variant: 'secondary' }, () => 'Stop')
+        ); // Disabled if not started
       if (row.original.stopDrainAt) {
         return h(
-          'span',
-          { class: 'text-red-600 font-medium' },
-          format(new Date(row.original.stopDrainAt), 'HH:mm')
+          'div',
+          { class: 'text-center' },
+          h(
+            'span',
+            { class: 'text-red-600 font-medium' },
+            format(new Date(row.original.stopDrainAt), 'HH:mm')
+          )
         );
       }
       return h(
-        Button,
-        {
-          size: 'sm',
-          class: 'bg-red-100 text-red-700 hover:bg-red-200 border-none shadow-none',
-          onClick: () => openStopDrain(row.original),
-        },
-        () => t('truckScale.stopDrain')
+        'div',
+        { class: 'flex justify-center' },
+        h(
+          Button,
+          {
+            size: 'sm',
+            class: 'bg-red-100 text-red-700 hover:bg-red-200 border-none shadow-none',
+            onClick: () => openStopDrain(row.original),
+          },
+          () => t('truckScale.stopDrain')
+        )
       );
     },
   },
   {
     id: 'totalDrain',
-    header: () => t('truckScale.totalDrain') || 'Total Drain',
+    header: () => h('div', { class: 'text-center' }, t('truckScale.totalDrain') || 'Total Drain'),
     cell: ({ row }) => {
       if (row.original.startDrainAt) {
-        return h(LiveDuration, {
-          start: row.original.startDrainAt,
-          end: row.original.stopDrainAt,
-        });
+        return h(
+          'div',
+          { class: 'flex justify-center' },
+          h(LiveDuration, {
+            start: row.original.startDrainAt,
+            end: row.original.stopDrainAt,
+          })
+        );
       }
-      return '00 ' + t('liveDuration.min');
+      return h('div', { class: 'text-center' }, '00 ' + t('liveDuration.min'));
     },
   },
   {
@@ -734,14 +855,16 @@ const scaleInColumns: ColumnDef<any>[] = [
   },
   {
     id: 'action',
-    header: () => t('common.actions'),
+    header: () => h('div', { class: 'text-center' }, t('common.actions')),
     cell: ({ row }) => {
       const hasWeight = !!row.original.weightIn;
       const canEdit = row.original.canEditWeightIn; // Assuming backend provides this flag
 
+      let button;
+
       if (hasWeight) {
         if (canEdit) {
-          return h(
+          button = h(
             Button,
             {
               size: 'sm',
@@ -751,27 +874,47 @@ const scaleInColumns: ColumnDef<any>[] = [
             },
             () => t('common.edit')
           );
+        } else {
+          button = h(
+            Button,
+            {
+              size: 'sm',
+              variant: 'outline',
+              class: 'text-orange-600 border-orange-200 bg-orange-50',
+              onClick: () => openRequestEdit(row.original),
+            },
+            () => t('truckScale.requestEdit')
+          );
         }
-        return h(
-          Button,
-          {
-            size: 'sm',
-            variant: 'outline',
-            class: 'text-orange-600 border-orange-200 bg-orange-50',
-            onClick: () => openRequestEdit(row.original),
-          },
-          () => t('truckScale.requestEdit')
-        );
+      } else {
+        const drainCompleted = !!row.original.stopDrainAt;
+
+        if (!drainCompleted) {
+          button = h(
+            Button,
+            {
+              size: 'sm',
+              variant: 'secondary',
+              class: 'bg-gray-100 text-gray-400 cursor-not-allowed gap-2',
+              disabled: true,
+              title: t('truckScale.warnDrainNotComplete'),
+            },
+            () => [h(Timer, { class: 'w-3 h-3' }), t('truckScale.drainFirst') || 'Drain First']
+          );
+        } else {
+          button = h(
+            Button,
+            {
+              size: 'sm',
+              class: 'bg-blue-600 hover:bg-blue-700 text-white gap-2 shadow-sm',
+              onClick: () => openWeightIn(row.original),
+            },
+            () => [h(Weight, { class: 'w-3 h-3' }), t('truckScale.weightInAction') || 'Weight In']
+          );
+        }
       }
-      return h(
-        Button,
-        {
-          size: 'sm',
-          class: 'bg-gray-200 text-gray-700 hover:bg-gray-300',
-          onClick: () => openWeightIn(row.original),
-        },
-        () => t('common.save')
-      );
+
+      return h('div', { class: 'flex justify-center' }, button);
     },
   },
 ];
@@ -1654,7 +1797,10 @@ onUnmounted(() => {
                 <Label
                   >{{ t('truckScale.truckType') }} <span class="text-destructive">*</span></Label
                 >
-                <Select v-model="checkInData.truckType">
+                <Select
+                  v-model="checkInData.truckType"
+                  @update:model-value="checkInTruckTypeError = ''"
+                >
                   <SelectTrigger>
                     <SelectValue :placeholder="t('truckScale.selectTruckType')" />
                   </SelectTrigger>
@@ -1672,6 +1818,11 @@ onUnmounted(() => {
                     }}</SelectItem>
                   </SelectContent>
                 </Select>
+                <span
+                  v-if="checkInTruckTypeError"
+                  class="text-xs text-red-500 font-medium animate-pulse"
+                  >{{ checkInTruckTypeError }}</span
+                >
               </div>
               <div class="grid grid-cols-2 gap-4">
                 <div class="grid gap-2 col-span-2">
@@ -1679,7 +1830,16 @@ onUnmounted(() => {
                     >{{ t('truckScale.licensePlate') }}
                     <span class="text-destructive">*</span></Label
                   >
-                  <Input v-model="checkInData.truckRegister" placeholder="Ex. 1กข 1234" />
+                  <Input
+                    v-model="checkInData.truckRegister"
+                    placeholder="Ex. 1กข 1234"
+                    @input="checkInLicensePlateError = ''"
+                  />
+                  <span
+                    v-if="checkInLicensePlateError"
+                    class="text-xs text-red-500 font-medium animate-pulse"
+                    >{{ checkInLicensePlateError }}</span
+                  >
                 </div>
               </div>
             </div>
@@ -2018,27 +2178,13 @@ onUnmounted(() => {
                   v-model="formattedWeightIn"
                   class="text-lg font-medium"
                   placeholder="0"
-                  @keydown="
-                    (e: KeyboardEvent) => {
-                      if (
-                        !/^[0-9]$/.test(e.key) &&
-                        ![
-                          'Backspace',
-                          'Delete',
-                          'ArrowLeft',
-                          'ArrowRight',
-                          'Tab',
-                          'Enter',
-                        ].includes(e.key)
-                      ) {
-                        e.preventDefault();
-                        toast.error(
-                          t('truckScale.toast.invalidWeight') || 'Please enter numbers only'
-                        );
-                      }
-                    }
-                  "
+                  @keydown="(e: any) => handleWeightInputKeydown(e, false)"
                 />
+                <span
+                  v-if="weightInputError"
+                  class="text-xs text-red-500 font-medium animate-pulse"
+                  >{{ weightInputError }}</span
+                >
               </div>
             </div>
           </div>
@@ -2087,27 +2233,13 @@ onUnmounted(() => {
                   class="text-lg font-medium"
                   :placeholder="isSameRubberType ? t('truckScale.sameAsMainTruck') : '0'"
                   :disabled="isSameRubberType"
-                  @keydown="
-                    (e: KeyboardEvent) => {
-                      if (
-                        !/^[0-9]$/.test(e.key) &&
-                        ![
-                          'Backspace',
-                          'Delete',
-                          'ArrowLeft',
-                          'ArrowRight',
-                          'Tab',
-                          'Enter',
-                        ].includes(e.key)
-                      ) {
-                        e.preventDefault();
-                        toast.error(
-                          t('truckScale.toast.invalidWeight') || 'Please enter numbers only'
-                        );
-                      }
-                    }
-                  "
+                  @keydown="(e: any) => handleWeightInputKeydown(e, true)"
                 />
+                <span
+                  v-if="trailerWeightInputError"
+                  class="text-xs text-red-500 font-medium animate-pulse"
+                  >{{ trailerWeightInputError }}</span
+                >
               </div>
             </div>
           </div>
@@ -2145,20 +2277,11 @@ onUnmounted(() => {
               v-model="formattedWeightIn"
               class="text-lg font-medium"
               placeholder="0"
-              @keydown="
-                (e: KeyboardEvent) => {
-                  if (
-                    !/^[0-9]$/.test(e.key) &&
-                    !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter'].includes(
-                      e.key
-                    )
-                  ) {
-                    e.preventDefault();
-                    toast.error(t('truckScale.toast.invalidWeight') || 'Please enter numbers only');
-                  }
-                }
-              "
+              @keydown="(e: any) => handleWeightInputKeydown(e, false)"
             />
+            <span v-if="weightInputError" class="text-xs text-red-500 font-medium animate-pulse">{{
+              weightInputError
+            }}</span>
           </div>
         </div>
 
@@ -2589,10 +2712,18 @@ onUnmounted(() => {
           <Timeline class="space-y-8 max-w-md mx-auto">
             <!-- Check-in -->
             <TimelineItem dot-color="bg-blue-500">
-              <div class="grid grid-cols-[140px_1fr] items-baseline">
-                <span class="text-sm font-medium text-muted-foreground">{{
-                  t('truckScale.checkIn') || 'Check-in'
-                }}</span>
+              <template #dot>
+                <ClipboardList class="w-3.5 h-3.5" />
+              </template>
+              <div class="grid grid-cols-[140px_1fr] items-start">
+                <div class="flex flex-col">
+                  <span class="text-sm font-medium text-muted-foreground">{{
+                    t('truckScale.checkIn') || 'Check-in'
+                  }}</span>
+                  <span class="text-xs text-muted-foreground mt-0.5">
+                    By {{ selectedDetailBooking?.checkedInBy || '-' }}
+                  </span>
+                </div>
                 <span class="text-base font-bold text-foreground">{{
                   selectedDetailBooking?.checkinAt
                     ? format(new Date(selectedDetailBooking.checkinAt), 'HH:mm')
@@ -2603,40 +2734,50 @@ onUnmounted(() => {
 
             <!-- Weight In -->
             <TimelineItem dot-color="bg-green-500">
-              <div class="grid grid-cols-[140px_1fr] items-baseline">
-                <span class="text-sm font-medium text-muted-foreground">{{
-                  t('truckScale.weightIn') || 'Weight In'
-                }}</span>
-                <div
-                  v-if="
-                    selectedDetailBooking?.trailerWeightIn &&
-                    selectedDetailBooking.trailerWeightIn > 0
-                  "
-                  class="flex flex-col"
-                >
-                  <span class="text-base font-bold text-green-600">{{
-                    selectedDetailBooking?.weightIn
-                      ? selectedDetailBooking.weightIn.toLocaleString() + ' Kg.'
-                      : '-'
+              <template #dot>
+                <Weight class="w-3.5 h-3.5" />
+              </template>
+              <div class="grid grid-cols-[140px_1fr] items-start">
+                <div class="flex flex-col">
+                  <span class="text-sm font-medium text-muted-foreground">{{
+                    t('truckScale.weightIn') || 'Weight In'
                   }}</span>
-                  <span class="text-xs text-muted-foreground"
-                    >(+Trailer {{ selectedDetailBooking.trailerWeightIn.toLocaleString() }})</span
-                  >
+                  <span class="text-xs text-muted-foreground mt-0.5">
+                    By {{ selectedDetailBooking?.weightInBy || '-' }}
+                  </span>
                 </div>
-                <span v-else class="text-base font-bold text-green-600">{{
-                  selectedDetailBooking?.weightIn
-                    ? selectedDetailBooking.weightIn.toLocaleString() + ' Kg.'
-                    : '-'
-                }}</span>
+                <div class="flex flex-col">
+                  <span class="text-base font-bold text-green-600">
+                    {{
+                      (
+                        (selectedDetailBooking?.weightIn || 0) +
+                        (selectedDetailBooking?.trailerWeightIn || 0)
+                      ).toLocaleString()
+                    }}
+                    Kg.
+                  </span>
+                  <span class="text-xs text-muted-foreground mt-0.5">
+                    (Main: {{ (selectedDetailBooking?.weightIn || 0).toLocaleString() }} | Trailer:
+                    {{ (selectedDetailBooking?.trailerWeightIn || 0).toLocaleString() }})
+                  </span>
+                </div>
               </div>
             </TimelineItem>
 
             <!-- Start Drain -->
             <TimelineItem dot-color="bg-yellow-500">
-              <div class="grid grid-cols-[140px_1fr] items-baseline">
-                <span class="text-sm font-medium text-muted-foreground">{{
-                  t('truckScale.startDrain') || 'Start Drain'
-                }}</span>
+              <template #dot>
+                <Play class="w-3.5 h-3.5" />
+              </template>
+              <div class="grid grid-cols-[140px_1fr] items-start">
+                <div class="flex flex-col">
+                  <span class="text-sm font-medium text-muted-foreground">{{
+                    t('truckScale.startDrain') || 'Start Drain'
+                  }}</span>
+                  <span class="text-xs text-muted-foreground mt-0.5">
+                    By {{ selectedDetailBooking?.startDrainBy || '-' }}
+                  </span>
+                </div>
                 <span class="text-base font-bold text-foreground">{{
                   selectedDetailBooking?.startDrainAt
                     ? format(new Date(selectedDetailBooking.startDrainAt), 'HH:mm')
@@ -2647,10 +2788,18 @@ onUnmounted(() => {
 
             <!-- Stop Drain -->
             <TimelineItem dot-color="bg-orange-500">
-              <div class="grid grid-cols-[140px_1fr] items-baseline">
-                <span class="text-sm font-medium text-muted-foreground">{{
-                  t('truckScale.stopDrain') || 'Stop Drain'
-                }}</span>
+              <template #dot>
+                <Square class="w-3.5 h-3.5" />
+              </template>
+              <div class="grid grid-cols-[140px_1fr] items-start">
+                <div class="flex flex-col">
+                  <span class="text-sm font-medium text-muted-foreground">{{
+                    t('truckScale.stopDrain') || 'Stop Drain'
+                  }}</span>
+                  <span class="text-xs text-muted-foreground mt-0.5">
+                    By {{ selectedDetailBooking?.stopDrainBy || '-' }}
+                  </span>
+                </div>
                 <span class="text-base font-bold text-foreground">{{
                   selectedDetailBooking?.stopDrainAt
                     ? format(new Date(selectedDetailBooking.stopDrainAt), 'HH:mm')
@@ -2664,6 +2813,9 @@ onUnmounted(() => {
               v-if="selectedDetailBooking?.startDrainAt && selectedDetailBooking?.stopDrainAt"
               dot-color="bg-orange-500"
             >
+              <template #dot>
+                <Timer class="w-3.5 h-3.5" />
+              </template>
               <div class="grid grid-cols-[140px_1fr] items-baseline">
                 <span class="text-sm font-medium text-muted-foreground">{{
                   t('truckScale.totalDrain') || 'Total Drain'
@@ -2683,15 +2835,33 @@ onUnmounted(() => {
 
             <!-- Weight Out -->
             <TimelineItem dot-color="bg-red-500">
-              <div class="grid grid-cols-[140px_1fr] items-baseline">
-                <span class="text-sm font-medium text-muted-foreground">{{
-                  t('truckScale.weightOut') || 'Weight Out'
-                }}</span>
-                <span class="text-base font-bold text-red-600">{{
-                  selectedDetailBooking?.weightOut
-                    ? selectedDetailBooking.weightOut.toLocaleString() + ' Kg.'
-                    : '-'
-                }}</span>
+              <template #dot>
+                <ArrowUpFromLine class="w-3.5 h-3.5" />
+              </template>
+              <div class="grid grid-cols-[140px_1fr] items-start">
+                <div class="flex flex-col">
+                  <span class="text-sm font-medium text-muted-foreground">{{
+                    t('truckScale.weightOut') || 'Weight Out'
+                  }}</span>
+                  <span class="text-xs text-muted-foreground mt-0.5">
+                    By {{ selectedDetailBooking?.weightOutBy || '-' }}
+                  </span>
+                </div>
+                <div class="flex flex-col">
+                  <span class="text-base font-bold text-red-600">
+                    {{
+                      (
+                        (selectedDetailBooking?.weightOut || 0) +
+                        (selectedDetailBooking?.trailerWeightOut || 0)
+                      ).toLocaleString()
+                    }}
+                    Kg.
+                  </span>
+                  <span class="text-xs text-muted-foreground mt-0.5">
+                    (Main: {{ (selectedDetailBooking?.weightOut || 0).toLocaleString() }} | Trailer:
+                    {{ (selectedDetailBooking?.trailerWeightOut || 0).toLocaleString() }})
+                  </span>
+                </div>
               </div>
             </TimelineItem>
 
@@ -2701,6 +2871,9 @@ onUnmounted(() => {
               dot-color="bg-purple-600"
               class="pt-4 border-t border-dashed"
             >
+              <template #dot>
+                <Calculator class="w-3.5 h-3.5" />
+              </template>
               <div class="grid grid-cols-[140px_1fr] items-baseline">
                 <span class="text-sm font-medium text-muted-foreground">{{
                   t('truckScale.netWeight') || 'Net Weight'
@@ -2725,19 +2898,33 @@ onUnmounted(() => {
               dot-color="bg-blue-600"
             >
               <template #dot>
-                <CheckCircle class="w-full h-full text-white p-0.5" />
+                <Check class="w-3.5 h-3.5 text-white" />
               </template>
-              <div class="grid grid-cols-[140px_1fr] items-baseline">
-                <span class="text-sm font-medium text-blue-600">{{
-                  t('common.approved') || 'Approved'
-                }}</span>
-                <span class="text-base font-bold text-blue-700">
-                  {{
-                    selectedDetailBooking?.approvedAt
-                      ? format(new Date(selectedDetailBooking.approvedAt), 'HH:mm')
-                      : '-'
-                  }}
-                </span>
+              <div class="grid grid-cols-[140px_1fr] items-start">
+                <div class="flex flex-col">
+                  <span class="text-sm font-medium text-blue-600">{{
+                    t('common.approved') || 'Approved'
+                  }}</span>
+                  <span class="text-xs text-muted-foreground mt-0.5">
+                    By {{ selectedDetailBooking?.approvedBy || 'Unknown' }}
+                  </span>
+                </div>
+                <div class="flex flex-col">
+                  <span class="text-base font-bold text-blue-700">
+                    {{
+                      selectedDetailBooking?.approvedAt
+                        ? format(new Date(selectedDetailBooking.approvedAt), 'HH:mm')
+                        : '-'
+                    }}
+                  </span>
+                  <span class="text-xs text-muted-foreground">
+                    {{
+                      selectedDetailBooking?.approvedAt
+                        ? format(new Date(selectedDetailBooking.approvedAt), 'dd-MMM-yyyy')
+                        : ''
+                    }}
+                  </span>
+                </div>
               </div>
             </TimelineItem>
           </Timeline>

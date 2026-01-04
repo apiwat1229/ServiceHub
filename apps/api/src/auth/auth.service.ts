@@ -87,6 +87,8 @@ export class AuthService {
             email: user.email,
             sub: user.id,
             role: user.role,
+            username: user.username,
+            displayName: user.displayName,
             permissions: permissions
         };
         return {
@@ -113,6 +115,8 @@ export class AuthService {
             email: user.email,
             sub: user.id,
             role: user.role,
+            username: user.username,
+            displayName: user.displayName,
             permissions: user.permissions || []
         };
 

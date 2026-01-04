@@ -256,13 +256,23 @@ model Booking {
   approvedAt DateTime? @map("approved_at")
 
   checkinAt DateTime? @map("checkin_at")
+  checkedInBy String? @map("checked_in_by")
 
   // Weight Scale Process
   startDrainAt DateTime? @map("start_drain_at")
+  startDrainBy String?   @map("start_drain_by")
+  
   stopDrainAt  DateTime? @map("stop_drain_at")
+  stopDrainBy  String?   @map("stop_drain_by")
+  
   drainNote    String?   @map("drain_note")
+  
   weightIn     Float?    @map("weight_in")
+  weightInBy   String?   @map("weight_in_by")
+  
   weightOut    Float?    @map("weight_out")
+  weightOutBy  String?   @map("weight_out_by")
+  
   rubberSource String?   @map("rubber_source")
 
   // Trailer Information (For 10-wheel trailer)
