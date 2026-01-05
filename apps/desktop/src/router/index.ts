@@ -156,6 +156,11 @@ const routes = [
                 name: 'Analytics',
                 component: () => import('../views/Placeholder.vue'),
             },
+            {
+                path: 'helpdesk',
+                name: 'HelpDesk',
+                component: () => import('../views/admin/HelpDesk.vue'),
+            },
         ]
     },
     {

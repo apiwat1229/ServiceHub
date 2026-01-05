@@ -5,6 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Check, Eye as EyeIcon, EyeOff as EyeOffIcon, X } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 const emit = defineEmits<{
   submit: [
@@ -35,17 +38,18 @@ const passwordStrength = computed(() => {
   if (/[0-9]/.test(pwd)) score++;
   if (/[^a-zA-Z0-9]/.test(pwd)) score++;
 
-  if (score <= 2) return { score, label: 'Weak', color: 'text-red-500' };
-  if (score <= 4) return { score, label: 'Medium', color: 'text-yellow-500' };
-  return { score, label: 'Strong', color: 'text-green-500' };
+  if (score <= 2) return { score, label: t('auth.passwordStrength.weak'), color: 'text-red-500' };
+  if (score <= 4)
+    return { score, label: t('auth.passwordStrength.medium'), color: 'text-yellow-500' };
+  return { score, label: t('auth.passwordStrength.strong'), color: 'text-green-500' };
 });
 
 const passwordRequirements = computed(() => [
-  { met: password.value.length >= 8, text: 'At least 8 characters' },
-  { met: /[a-z]/.test(password.value), text: 'Contains lowercase letter' },
-  { met: /[A-Z]/.test(password.value), text: 'Contains uppercase letter' },
-  { met: /[0-9]/.test(password.value), text: 'Contains number' },
-  { met: /[^a-zA-Z0-9]/.test(password.value), text: 'Contains special character' },
+  { met: password.value.length >= 8, text: t('auth.passwordRequirements.atLeast8Chars') },
+  { met: /[a-z]/.test(password.value), text: t('auth.passwordRequirements.lowercase') },
+  { met: /[A-Z]/.test(password.value), text: t('auth.passwordRequirements.uppercase') },
+  { met: /[0-9]/.test(password.value), text: t('auth.passwordRequirements.number') },
+  { met: /[^a-zA-Z0-9]/.test(password.value), text: t('auth.passwordRequirements.specialChar') },
 ]);
 
 const isValid = computed(() => {
@@ -83,36 +87,36 @@ defineExpose({
 <template>
   <Card class="mx-auto max-w-sm">
     <CardHeader>
-      <CardTitle class="text-2xl">Create an account</CardTitle>
-      <CardDescription> Enter your information below to create your account </CardDescription>
+      <CardTitle class="text-2xl">{{ t('auth.createAccount') }}</CardTitle>
+      <CardDescription> {{ t('auth.signupDescription') }} </CardDescription>
     </CardHeader>
     <CardContent>
       <form @submit.prevent="handleSubmit" class="grid gap-4">
         <div class="grid gap-2">
-          <Label for="firstName">First Name</Label>
+          <Label for="firstName">{{ t('admin.userProfile.firstName') }}</Label>
           <Input id="firstName" v-model="firstName" placeholder="John" required />
         </div>
 
         <div class="grid gap-2">
-          <Label for="lastName">Last Name</Label>
+          <Label for="lastName">{{ t('admin.userProfile.lastName') }}</Label>
           <Input id="lastName" v-model="lastName" placeholder="Doe" required />
         </div>
 
         <div class="grid gap-2">
-          <Label for="username">Username</Label>
+          <Label for="username">{{ t('admin.userProfile.username') }}</Label>
           <Input id="username" v-model="username" placeholder="johndoe" required />
         </div>
 
         <div class="grid gap-2">
-          <Label for="email">Email</Label>
+          <Label for="email">{{ t('auth.email') }}</Label>
           <Input id="email" v-model="email" type="email" placeholder="user@example.com" required />
           <p class="text-xs text-muted-foreground">
-            We'll use this to contact you. We will not share your email with anyone else.
+            {{ t('auth.emailHint') }}
           </p>
         </div>
 
         <div class="grid gap-2">
-          <Label for="password">Password</Label>
+          <Label for="password">{{ t('auth.password') }}</Label>
           <div class="relative">
             <Input
               id="password"
@@ -171,7 +175,7 @@ defineExpose({
         </div>
 
         <div class="grid gap-2">
-          <Label for="confirmPassword">Confirm Password</Label>
+          <Label for="confirmPassword">{{ t('auth.confirmPassword') }}</Label>
           <div class="relative">
             <Input
               id="confirmPassword"
@@ -196,20 +200,22 @@ defineExpose({
             v-if="confirmPassword && password !== confirmPassword"
             class="text-xs text-destructive"
           >
-            Passwords do not match
+            {{ t('auth.passwordsDoNotMatch') }}
           </p>
-          <p v-else class="text-xs text-muted-foreground">Please confirm your password</p>
+          <p v-else class="text-xs text-muted-foreground">
+            {{ t('auth.confirmPasswordPlaceholder') }}
+          </p>
         </div>
 
         <Button type="submit" class="w-full" :disabled="!isValid || loading">
-          <span v-if="loading">Creating account...</span>
-          <span v-else>Create Account</span>
+          <span v-if="loading">{{ t('auth.creatingAccount') }}</span>
+          <span v-else>{{ t('auth.createAccountAction') }}</span>
         </Button>
       </form>
 
       <div class="mt-4 text-center text-sm">
-        Already have an account?
-        <router-link to="/login" class="underline"> Sign in </router-link>
+        {{ t('auth.alreadyHaveAccount') }}
+        <router-link to="/login" class="underline"> {{ t('auth.signIn') }} </router-link>
       </div>
     </CardContent>
   </Card>

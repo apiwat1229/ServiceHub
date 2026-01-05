@@ -96,7 +96,93 @@
     },
     "itHelp": {
       "name": "IT Help Desk",
-      "description": "Technical Support ticketing and asset management."
+      "description": "Technical Support ticketing and asset management.",
+      "subtitle": "Submit tickets, browse knowledge base, or manage assets.",
+      "requestEquipment": "Request Equipment",
+      "newTicket": "New Ticket",
+      "stats": {
+        "openTickets": "Open Tickets",
+        "avgResponse": "Avg. Response Time",
+        "systemStatus": "System Status",
+        "operational": "All Systems Operational"
+      },
+      "tabs": {
+        "myTickets": "My Tickets",
+        "assetRequest": "Asset Request",
+        "kb": "Knowledge Center",
+        "stock": "IT Stock Management"
+      },
+      "stock": {
+        "title": "IT Device Stock",
+        "subtitle": "Manage and track IT equipment inventory.",
+        "addItem": "Add Item",
+        "editItem": "Edit Item",
+        "deviceName": "Device Name",
+        "deviceCode": "Device Code",
+        "autoGenerate": "Auto-generate",
+        "deviceImage": "Device Image",
+        "category": "Category",
+        "count": "Stock Count",
+        "minStock": "Min Stock Alert",
+        "location": "Storage Location",
+        "description": "Description",
+        "saveSuccess": "Stock item saved successfully",
+        "categories": {
+          "laptop": "Laptop / PC",
+          "monitor": "Monitor",
+          "peripheral": "Peripheral",
+          "network": "Network Device",
+          "mobile": "Mobile / Tablet",
+          "other": "Other"
+        },
+        "placeholder": {
+          "name": "e.g. MacBook Pro 14\"",
+          "code": "e.g. IT-LPT-001",
+          "category": "Select category",
+          "location": "e.g. Cabinet A, Room 302"
+        }
+      },
+      "searchPlaceholder": "Search tickets or articles...",
+      "tickets": {
+        "title": "Recent Tickets",
+        "subtitle": "View and manage your support requests.",
+        "subject": "Subject",
+        "subjectPlaceholder": "Brief summary of the issue",
+        "category": "Category",
+        "priority": "Priority",
+        "description": "Description",
+        "descriptionPlaceholder": "Describe the problem in detail...",
+        "submit": "Submit Ticket",
+        "software": "Software / ERP",
+        "hardware": "Hardware / Device",
+        "network": "Network / Internet",
+        "account": "Account / Access",
+        "other": "Other",
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High",
+        "urgent": "Urgent / Critical"
+      },
+      "assets": {
+        "noAssets": "No assets assigned",
+        "noAssetsDesc": "You currently don't have any hardware assets assigned to your account.",
+        "requestNew": "Request New Equipment"
+      },
+      "request": {
+        "title": "Request IT Equipment",
+        "subtitle": "Fill out the form below to request new hardware or peripherals.",
+        "back": "Back to Help Desk",
+        "category": "Equipment Category",
+        "urgency": "Urgency Level",
+        "model": "Device Model / Specification (Optional)",
+        "quantity": "Quantity",
+        "expectedDate": "Expected Date of Pickup",
+        "reason": "Purpose / Reason for Request",
+        "submit": "Submit Request",
+        "submitting": "Submitting...",
+        "infoTitle": "Processing Time",
+        "infoDesc": "Standard asset requests are typically processed within 2-3 business days. You will receive a notification once your request has been approved."
+      }
     },
     "warehouse": {
       "name": "Warehouse",
@@ -572,7 +658,28 @@
     "noAccount": "Don't have an account?",
     "signUp": "Sign up",
     "accountLocked": "Your account has been locked due to multiple failed login attempts. Please contact IT support.",
-    "passwordChanged": "Password changed successfully! You are now logged in."
+    "passwordChanged": "Password changed successfully! You are now logged in.",
+    "createAccount": "Create an account",
+    "signupDescription": "Enter your information below to create your account",
+    "emailHint": "We'll use this to contact you. We will not share your email with anyone else.",
+    "confirmPassword": "Confirm Password",
+    "confirmPasswordPlaceholder": "Please confirm your password",
+    "passwordsDoNotMatch": "Passwords do not match",
+    "createAccountAction": "Create Account",
+    "creatingAccount": "Creating account...",
+    "alreadyHaveAccount": "Already have an account?",
+    "passwordStrength": {
+      "weak": "Weak",
+      "medium": "Medium",
+      "strong": "Strong"
+    },
+    "passwordRequirements": {
+      "atLeast8Chars": "At least 8 characters",
+      "lowercase": "Contains lowercase letter",
+      "uppercase": "Contains uppercase letter",
+      "number": "Contains number",
+      "specialChar": "Contains special character"
+    }
   },
   "settings": {
     "title": "Settings",
