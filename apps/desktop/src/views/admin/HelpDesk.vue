@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import AssetRequestForm from '@/components/helpdesk/AssetRequestForm.vue';
-import ITStockForm from '@/components/helpdesk/ITStockForm.vue';
 import NewTicketForm from '@/components/helpdesk/NewTicketForm.vue';
-import PrinterSettings from '@/components/helpdesk/PrinterSettings.vue';
 import PrinterUsageAnalytics from '@/components/helpdesk/PrinterUsageAnalytics.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,6 +13,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuthStore } from '@/stores/auth';
 import {
@@ -41,22 +46,6 @@ const isAssetModalOpen = ref(false);
 const isTicketModalOpen = ref(false);
 const isStockModalOpen = ref(false);
 const editingStockItem = ref<any>(null);
-
-const handleAddStock = () => {
-  editingStockItem.value = null;
-  isStockModalOpen.value = true;
-};
-
-const handleEditStock = (item: any) => {
-  editingStockItem.value = item;
-  isStockModalOpen.value = true;
-};
-
-const isITDepartment = computed(() => {
-  const userDept = authStore.user?.department;
-  // Check against both English and Thai values to ensure it works regardless of current locale
-  return userDept === 'Information Technology' || userDept === 'เทคโนโลยีสารสนเทศ (IT)';
-});
 
 // Mock Stock Data
 const itStock = ref([
@@ -115,6 +104,48 @@ const kbArticles = [
   { title: 'VPN connection guide', views: 760, category: 'Network' },
 ];
 
+// Pagination State
+const currentPage = ref(1);
+const itemsPerPage = ref(5);
+const pageSizeOptions = [5, 10, 20, 50];
+
+// Computed
+const paginatedTickets = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage.value;
+  const end = start + itemsPerPage.value;
+  return tickets.slice(start, end);
+});
+
+const totalPages = computed(() => Math.ceil(tickets.length / itemsPerPage.value));
+
+const startItemIndex = computed(() => (currentPage.value - 1) * itemsPerPage.value + 1);
+const endItemIndex = computed(() =>
+  Math.min(currentPage.value * itemsPerPage.value, tickets.length)
+);
+
+// Methods
+const handlePageChange = (page: number) => {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page;
+  }
+};
+
+const handleAddStock = () => {
+  editingStockItem.value = null;
+  isStockModalOpen.value = true;
+};
+
+const handleEditStock = (item: any) => {
+  editingStockItem.value = item;
+  isStockModalOpen.value = true;
+};
+
+const isITDepartment = computed(() => {
+  const userDept = authStore.user?.department;
+  // Check against both English and Thai values to ensure it works regardless of current locale
+  return userDept === 'Information Technology' || userDept === 'เทคโนโลยีสารสนเทศ (IT)';
+});
+
 const getStatusColor = (status: string) => {
   switch (status.toLowerCase()) {
     case 'open':
@@ -151,48 +182,6 @@ const getStatusColor = (status: string) => {
       </div>
     </div>
 
-    <!-- Quick Stats -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <Card>
-        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle class="text-sm font-medium">{{
-            t('services.itHelp.stats.openTickets')
-          }}</CardTitle>
-          <Ticket class="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div class="text-2xl font-bold">12</div>
-          <p class="text-xs text-muted-foreground mt-1">+2 from yesterday</p>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle class="text-sm font-medium">{{
-            t('services.itHelp.stats.avgResponse')
-          }}</CardTitle>
-          <Clock class="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div class="text-2xl font-bold">1.5h</div>
-          <p class="text-xs text-muted-foreground mt-1">-15m from last week</p>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle class="text-sm font-medium">{{
-            t('services.itHelp.stats.systemStatus')
-          }}</CardTitle>
-          <CheckCircle2 class="h-4 w-4 text-green-500" />
-        </CardHeader>
-        <CardContent>
-          <div class="text-2xl font-bold text-green-600">
-            {{ t('services.itHelp.stats.operational') }}
-          </div>
-          <p class="text-xs text-muted-foreground mt-1">Last check: 5m ago</p>
-        </CardContent>
-      </Card>
-    </div>
-
     <!-- Main Content Tabs -->
     <Tabs defaultValue="kb" class="w-full">
       <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-4">
@@ -216,13 +205,6 @@ const getStatusColor = (status: string) => {
             class="gap-2 px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all"
           >
             <LayoutDashboard class="w-4 h-4" /> {{ t('services.itHelp.tabs.printer') }}
-          </TabsTrigger>
-          <TabsTrigger
-            v-if="isITDepartment"
-            value="printer-settings"
-            class="gap-2 px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all"
-          >
-            <Settings2 class="w-4 h-4" /> {{ t('admin.settings') }}
           </TabsTrigger>
           <TabsTrigger
             value="assets"
@@ -346,11 +328,6 @@ const getStatusColor = (status: string) => {
         <PrinterUsageAnalytics />
       </TabsContent>
 
-      <!-- Printer Settings Tab (Admin/IT Only) -->
-      <TabsContent v-if="isITDepartment" value="printer-settings" class="space-y-4">
-        <PrinterSettings />
-      </TabsContent>
-
       <!-- Assets Tab -->
       <TabsContent value="assets">
         <Card>
@@ -368,52 +345,156 @@ const getStatusColor = (status: string) => {
         </Card>
       </TabsContent>
 
-      <!-- Tickets Tab -->
       <TabsContent value="tickets" class="space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>{{ t('services.itHelp.tickets.title') }}</CardTitle>
-            <CardDescription>{{ t('services.itHelp.tickets.subtitle') }}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div class="space-y-4">
-              <div
-                v-for="ticket in tickets"
-                :key="ticket.id"
-                class="flex items-center justify-between p-4 border rounded-lg hover:bg-slate-50 transition-colors"
-              >
-                <div class="flex items-center gap-4">
-                  <div
-                    class="h-10 w-10 rounded-full flex items-center justify-center"
-                    :class="
-                      ticket.priority === 'High'
-                        ? 'bg-red-100 text-red-600'
-                        : 'bg-blue-50 text-blue-600'
-                    "
-                  >
-                    <AlertCircle v-if="ticket.priority === 'High'" class="h-5 w-5" />
-                    <Ticket v-else class="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h4 class="font-semibold">{{ ticket.title }}</h4>
-                    <div class="flex items-center gap-2 text-sm text-muted-foreground">
-                      <span>{{ ticket.id }}</span>
-                      <span>•</span>
-                      <span>{{ ticket.category }}</span>
-                      <span>•</span>
-                      <span>{{ ticket.created }}</span>
+        <template v-if="tickets.length > 0">
+          <!-- Stats Section -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle class="text-sm font-medium">{{
+                  t('services.itHelp.stats.openTickets')
+                }}</CardTitle>
+                <Ticket class="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div class="text-2xl font-bold">12</div>
+                <p class="text-xs text-muted-foreground mt-1">+2 from yesterday</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle class="text-sm font-medium">{{
+                  t('services.itHelp.stats.avgResponse')
+                }}</CardTitle>
+                <Clock class="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div class="text-2xl font-bold">1.5h</div>
+                <p class="text-xs text-muted-foreground mt-1">-15m from last week</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle class="text-sm font-medium">{{
+                  t('services.itHelp.stats.resolvedTickets')
+                }}</CardTitle>
+                <CheckCircle2 class="h-4 w-4 text-green-500" />
+              </CardHeader>
+              <CardContent>
+                <div class="text-2xl font-bold">45</div>
+                <p class="text-xs text-muted-foreground mt-1">+5 from last week</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>{{ t('services.itHelp.tickets.title') }}</CardTitle>
+              <CardDescription>{{ t('services.itHelp.tickets.subtitle') }}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div class="space-y-4">
+                <div
+                  v-for="ticket in paginatedTickets"
+                  :key="ticket.id"
+                  class="flex items-center justify-between p-4 border rounded-lg hover:bg-slate-50 transition-colors"
+                >
+                  <div class="flex items-center gap-4">
+                    <div
+                      class="h-10 w-10 rounded-full flex items-center justify-center"
+                      :class="
+                        ticket.priority === 'High'
+                          ? 'bg-red-100 text-red-600'
+                          : 'bg-blue-50 text-blue-600'
+                      "
+                    >
+                      <AlertCircle v-if="ticket.priority === 'High'" class="h-5 w-5" />
+                      <Ticket v-else class="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h4 class="font-semibold">{{ ticket.title }}</h4>
+                      <div class="flex items-center gap-2 text-sm text-muted-foreground">
+                        <span>{{ ticket.id }}</span>
+                        <span>•</span>
+                        <span>{{ ticket.category }}</span>
+                        <span>•</span>
+                        <span>{{ ticket.created }}</span>
+                      </div>
                     </div>
                   </div>
+                  <div class="flex items-center gap-4">
+                    <Badge variant="secondary" :class="getStatusColor(ticket.status)">
+                      {{ ticket.status }}
+                    </Badge>
+                    <Button variant="ghost" size="icon">
+                      <MoreHorizontal class="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-                <div class="flex items-center gap-4">
-                  <Badge variant="secondary" :class="getStatusColor(ticket.status)">
-                    {{ ticket.status }}
-                  </Badge>
-                  <Button variant="ghost" size="icon">
-                    <MoreHorizontal class="h-4 w-4" />
+              </div>
+
+              <!-- Pagination Controls -->
+              <div class="flex items-center justify-between pt-4 border-t mt-4">
+                <div class="flex items-center gap-2">
+                  <p class="text-sm text-muted-foreground">
+                    {{ t('common.table.rowsPerPage') }}
+                  </p>
+                  <Select
+                    :model-value="itemsPerPage.toString()"
+                    @update:model-value="(v) => (itemsPerPage = parseInt(v))"
+                  >
+                    <SelectTrigger class="w-[70px]">
+                      <SelectValue :placeholder="itemsPerPage.toString()" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem
+                        v-for="size in pageSizeOptions"
+                        :key="size"
+                        :value="size.toString()"
+                      >
+                        {{ size }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div class="flex items-center gap-2">
+                  <div class="text-sm text-muted-foreground mr-2">
+                    {{ startItemIndex }} - {{ endItemIndex }} of {{ tickets.length }}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    :disabled="currentPage === 1"
+                    @click="handlePageChange(currentPage - 1)"
+                  >
+                    {{ t('common.previous') }}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    :disabled="currentPage === totalPages"
+                    @click="handlePageChange(currentPage + 1)"
+                  >
+                    {{ t('common.next') }}
                   </Button>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        </template>
+
+        <!-- Empty State -->
+        <Card v-else>
+          <CardContent class="pt-6">
+            <div class="text-center py-10 text-muted-foreground">
+              <Ticket class="h-12 w-12 mx-auto mb-4 opacity-20" />
+              <h3 class="text-lg font-medium">{{ t('services.itHelp.tickets.noTickets') }}</h3>
+              <p class="mb-6">{{ t('services.itHelp.tickets.noTicketsDesc') }}</p>
+              <Button variant="outline" class="gap-2" @click="isTicketModalOpen = true">
+                <Plus class="w-4 h-4" />
+                {{ t('services.itHelp.request.createTicket') }}
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -452,11 +533,12 @@ const getStatusColor = (status: string) => {
           }}</DialogTitle>
           <DialogDescription>{{ t('services.itHelp.stock.subtitle') }}</DialogDescription>
         </DialogHeader>
-        <ITStockForm
+        <!-- <ITStockForm
           :initial-data="editingStockItem"
           @success="isStockModalOpen = false"
           @cancel="isStockModalOpen = false"
-        />
+        /> -->
+        <div>Temporarily Disabled</div>
       </DialogContent>
     </Dialog>
   </div>

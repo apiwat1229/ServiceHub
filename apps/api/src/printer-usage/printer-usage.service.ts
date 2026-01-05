@@ -9,7 +9,9 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class PrinterUsageService {
-    constructor(private prisma: PrismaService) { }
+    constructor(private prisma: PrismaService) {
+        // Service initialized
+    }
 
     // Departments
     async getDepartments() {

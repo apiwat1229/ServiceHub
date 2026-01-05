@@ -25,6 +25,7 @@ import {
   Printer,
   Save,
   Search,
+  Settings2,
   Trash2,
   Users,
 } from 'lucide-vue-next';
@@ -32,6 +33,7 @@ import Papa from 'papaparse';
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
+import PrinterSettings from './PrinterSettings.vue';
 
 Chart.register(...registerables, ChartDataLabels);
 
@@ -40,23 +42,31 @@ const { t, tm, rt } = useI18n();
 interface UserUsage {
   user_name: string;
   department: string;
-  printBW: number;
-  printColor: number;
-  copyBW: number;
-  copyColor: number;
-  total: number;
+  printBW: number; // Actual usage (delta)
+  printColor: number; // Actual usage (delta)
+  copyBW: number; // Actual usage (delta)
+  copyColor: number; // Actual usage (delta)
+  total: number; // Actual usage (delta)
+  meterBW?: number; // Raw meter reading
+  meterColor?: number; // Raw meter reading
+  meterPrint?: number; // Raw meter reading
+  meterCopy?: number; // Raw meter reading
+  meterTotal?: number; // Raw meter reading
 }
 
 const processedData = ref<UserUsage[]>([]);
 const hasData = ref(false);
+const uploadedFile = ref<{ name: string; size: number } | null>(null);
 const searchQuery = ref('');
 const selectedDeptFilter = ref('all');
 const sortKey = ref<keyof UserUsage>('total');
 const sortOrder = ref<'asc' | 'desc'>('desc');
+const selectedPeriod = ref<string>('');
 
 // Department Mapping
 const userDepartmentMap = ref<Record<string, string>>({});
 const dbDepartments = ref<PrinterDepartmentDto[]>([]);
+const showSettings = ref(false);
 
 // Load data from DB
 const loadDbData = async () => {
@@ -128,22 +138,20 @@ const isSaving = ref(false);
 const historyRecords = ref<any[]>([]);
 
 const saveToDb = async () => {
-  if (processedData.value.length === 0) return;
+  if (processedData.value.length === 0 || !selectedPeriod.value) return;
 
-  // Assuming current month for the uploaded log
-  const now = new Date();
-  const period = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  const period = new Date(selectedPeriod.value).toISOString();
 
   isSaving.value = true;
   try {
     const records = processedData.value.map((u) => ({
       period: new Date(period),
       userName: u.user_name,
-      printBW: u.printBW,
-      printColor: u.printColor,
-      copyBW: u.copyBW,
-      copyColor: u.copyColor,
-      total: u.total,
+      printBW: u.meterPrint || 0, // Save raw Reading to DB
+      printColor: u.meterColor || 0,
+      copyBW: u.meterCopy || 0,
+      copyColor: u.meterCopy || 0, // Placeholder, usually logs combine print/copy in meter
+      total: u.meterTotal || 0,
     }));
 
     await printerService.saveUsageRecords(records);
@@ -175,6 +183,8 @@ const handleFileUpload = (event: Event) => {
   const file = target.files?.[0];
   if (!file) return;
 
+  uploadedFile.value = { name: file.name, size: file.size };
+
   Papa.parse(file, {
     header: true,
     skipEmptyLines: true,
@@ -189,21 +199,20 @@ const handleFileUpload = (event: Event) => {
 
 const processData = (data: any[]) => {
   const userMap: Record<string, UserUsage> = {};
-  let grandTotal = 0;
-  let sumBW = 0;
-  let sumColor = 0;
-  let sumPrint = 0;
-  let sumCopy = 0;
+  let rawDateStr = '';
 
+  // 1. First Pass: Aggregate raw meter readings and find tran_date
   data.forEach((row) => {
     if (!row.user_name) return;
+    if (!rawDateStr && row.tran_date) rawDateStr = row.tran_date;
 
     const userName = row.user_name.trim();
-    const pBW = parseInt(row.PrintBW) || 0;
-    const pColor = parseInt(row.PrintColor) || 0;
-    const cBW = parseInt(row.CopyBW) || 0;
-    const cColor = parseInt(row.CopyColor) || 0;
-    const total = parseInt(row.TotalMeter) || pBW + pColor + cBW + cColor;
+    const mBW = parseInt(row.TotalBW) || parseInt(row.PrintBW) + parseInt(row.CopyBW) || 0;
+    const mColor =
+      parseInt(row.TotalColor) || parseInt(row.PrintColor) + parseInt(row.CopyColor) || 0;
+    const mPrint = parseInt(row.PrintBW) + parseInt(row.PrintColor) || 0;
+    const mCopy = parseInt(row.CopyBW) + parseInt(row.CopyColor) || 0;
+    const mTotal = parseInt(row.TotalMeter) || mBW + mColor;
 
     if (!userMap[userName]) {
       userMap[userName] = {
@@ -214,20 +223,80 @@ const processData = (data: any[]) => {
         copyBW: 0,
         copyColor: 0,
         total: 0,
+        meterBW: 0,
+        meterColor: 0,
+        meterPrint: 0,
+        meterCopy: 0,
+        meterTotal: 0,
       };
     }
 
-    userMap[userName].printBW += pBW;
-    userMap[userName].printColor += pColor;
-    userMap[userName].copyBW += cBW;
-    userMap[userName].copyColor += cColor;
-    userMap[userName].total += total;
+    // Since these are counters, we take the max value if multiple rows per user (though usually 1 row per user in logs)
+    userMap[userName].meterBW = Math.max(userMap[userName].meterBW || 0, mBW);
+    userMap[userName].meterColor = Math.max(userMap[userName].meterColor || 0, mColor);
+    userMap[userName].meterPrint = Math.max(userMap[userName].meterPrint || 0, mPrint);
+    userMap[userName].meterCopy = Math.max(userMap[userName].meterCopy || 0, mCopy);
+    userMap[userName].meterTotal = Math.max(userMap[userName].meterTotal || 0, mTotal);
+  });
 
-    grandTotal += total;
-    sumBW += pBW + cBW;
-    sumColor += pColor + cColor;
-    sumPrint += pBW + pColor;
-    sumCopy += cBW + cColor;
+  // 2. Parse Period from tran_date (format might be DD/MM/YYYY based on screenshot)
+  if (rawDateStr) {
+    const parts = rawDateStr.split('/');
+    if (parts.length === 3) {
+      // Create first day of month Date
+      const d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, 1);
+      selectedPeriod.value = d.toISOString();
+    }
+  }
+
+  // 3. Find Previous Month Records from history
+  const currentMonthDate = new Date(selectedPeriod.value);
+  const prevMonthDate = new Date(
+    currentMonthDate.getFullYear(),
+    currentMonthDate.getMonth() - 1,
+    1
+  );
+  const prevMonthISO = prevMonthDate.toISOString();
+
+  const prevPeriodRecords = historyRecords.value.filter((r) => {
+    const d = new Date(r.period);
+    return d.toISOString() === prevMonthISO;
+  });
+
+  const prevMonthMap: Record<string, any> = {};
+  prevPeriodRecords.forEach((r) => {
+    prevMonthMap[r.userName] = r;
+  });
+
+  // 4. Second Pass: Calculate Deltas
+  let grandTotalUsage = 0;
+  let sumBW = 0;
+  let sumColor = 0;
+  let sumPrint = 0;
+  let sumCopy = 0;
+
+  Object.values(userMap).forEach((u) => {
+    const prev = prevMonthMap[u.user_name];
+    if (prev) {
+      // Usage = Current Meter - Previous Meter
+      u.printBW = Math.max(0, (u.meterPrint || 0) - (prev.printBW || 0)); // Note: backend stores meters in BW/Color cols
+      u.printColor = Math.max(0, (u.meterColor || 0) - (prev.printColor || 0));
+      u.copyBW = 0; // If logs don't separate print/copy deltas well, we aggregate
+      u.copyColor = 0;
+      u.total = Math.max(0, (u.meterTotal || 0) - (prev.total || 0));
+    } else {
+      // If no previous data (First month of using the system)
+      // We show the raw values from the file so the user can see initial data
+      u.printBW = u.meterPrint || 0;
+      u.printColor = u.meterColor || 0;
+      u.total = u.meterTotal || 0;
+    }
+
+    grandTotalUsage += u.total;
+    sumBW += u.printBW; // Simple mapping for now
+    sumColor += u.printColor;
+    sumPrint += u.printBW;
+    sumCopy += 0;
   });
 
   processedData.value = Object.values(userMap);
@@ -237,7 +306,7 @@ const processData = (data: any[]) => {
   stats.value = {
     totalUsers: processedData.value.length,
     totalDepts: uniqueDepts.size,
-    grandTotal,
+    grandTotal: grandTotalUsage,
     totalBW: sumBW,
     totalColor: sumColor,
     totalPrint: sumPrint,
@@ -446,6 +515,10 @@ const filteredUsers = computed(() => {
   temp.sort((a, b) => {
     let valA = a[sortKey.value];
     let valB = b[sortKey.value];
+
+    if (valA === undefined) return 1;
+    if (valB === undefined) return -1;
+
     if (typeof valA === 'string') {
       valA = valA.toLowerCase();
       valB = (valB as string).toLowerCase();
@@ -471,6 +544,7 @@ watch([searchQuery, pageSize, selectedDeptFilter], () => {
 const resetData = () => {
   processedData.value = [];
   hasData.value = false;
+  uploadedFile.value = null;
   currentPage.value = 1;
   if (userChartInstance) userChartInstance.destroy();
   if (typeChartInstance) typeChartInstance.destroy();
@@ -558,6 +632,15 @@ onUnmounted(() => {
           <CardDescription>{{ t('services.itHelp.printer.subtitle') }}</CardDescription>
         </div>
         <div class="flex items-center gap-4">
+          <div
+            v-if="uploadedFile"
+            class="text-xs text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-md border text-right"
+          >
+            <div class="font-medium text-foreground max-w-[200px] truncate">
+              {{ uploadedFile.name }}
+            </div>
+            <div>{{ (uploadedFile.size / 1024).toFixed(2) }} KB</div>
+          </div>
           <div v-if="hasData" class="flex items-center gap-2">
             <Button
               variant="outline"
@@ -577,7 +660,19 @@ onUnmounted(() => {
               <Trash2 class="w-4 h-4" /> {{ t('common.clearAll') }}
             </Button>
           </div>
-          <div class="flex items-center gap-2">
+
+          <Button
+            variant="ghost"
+            size="sm"
+            class="gap-2 underline decoration-primary/30 hover:decoration-primary"
+            @click="showSettings = !showSettings"
+          >
+            <Settings2 v-if="!showSettings" class="w-4 h-4" />
+            <BarChart3 v-else class="w-4 h-4" />
+            {{ showSettings ? t('services.itHelp.tabs.printer') : t('admin.settings') }}
+          </Button>
+
+          <div v-if="!showSettings" class="flex items-center gap-2">
             <Label for="csv-upload" class="cursor-pointer">
               <div
                 class="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90 transition-colors"
@@ -597,17 +692,24 @@ onUnmounted(() => {
       </CardHeader>
     </Card>
 
-    <!-- Empty State -->
-    <div
-      v-if="!hasData"
-      class="py-20 flex flex-col items-center justify-center border-2 border-dashed rounded-xl bg-muted/20"
-    >
-      <div class="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
-        <Printer class="w-8 h-8 text-muted-foreground" />
-      </div>
-      <h3 class="text-xl font-semibold mb-2">{{ t('services.itHelp.printer.emptyState') }}</h3>
-      <p class="text-sm text-muted-foreground">{{ t('services.itHelp.printer.emptyStateDesc') }}</p>
+    <div v-if="showSettings" class="animate-in fade-in slide-in-from-top-4 duration-300">
+      <PrinterSettings @data-changed="loadDbData" />
     </div>
+
+    <template v-else-if="!hasData">
+      <!-- Empty State -->
+      <div
+        class="py-20 flex flex-col items-center justify-center border-2 border-dashed rounded-xl bg-muted/20"
+      >
+        <div class="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+          <Printer class="w-8 h-8 text-muted-foreground" />
+        </div>
+        <h3 class="text-xl font-semibold mb-2">{{ t('services.itHelp.printer.emptyState') }}</h3>
+        <p class="text-sm text-muted-foreground">
+          {{ t('services.itHelp.printer.emptyStateDesc') }}
+        </p>
+      </div>
+    </template>
 
     <template v-else>
       <!-- Stats Cards -->
@@ -813,15 +915,30 @@ onUnmounted(() => {
                     </Select>
                   </td>
                   <td class="p-3 text-right">
-                    <Badge variant="secondary" class="font-bold">{{
-                      formatNumber(user.total)
-                    }}</Badge>
+                    <div class="flex flex-col items-end">
+                      <Badge variant="secondary" class="font-bold">{{
+                        formatNumber(user.total)
+                      }}</Badge>
+                      <span v-if="user.meterTotal" class="text-[10px] text-muted-foreground mt-1">
+                        Rd: {{ formatNumber(user.meterTotal) }}
+                      </span>
+                    </div>
                   </td>
-                  <td class="p-3 text-right text-muted-foreground">
-                    {{ formatNumber(user.printBW) }}
+                  <td class="p-3 text-right text-muted-foreground whitespace-nowrap">
+                    <div class="flex flex-col items-end">
+                      <span class="text-foreground">{{ formatNumber(user.printBW) }}</span>
+                      <span v-if="user.meterPrint" class="text-[10px]"
+                        >Rd: {{ formatNumber(user.meterPrint) }}</span
+                      >
+                    </div>
                   </td>
-                  <td class="p-3 text-right text-muted-foreground">
-                    {{ formatNumber(user.printColor) }}
+                  <td class="p-3 text-right text-muted-foreground whitespace-nowrap">
+                    <div class="flex flex-col items-end">
+                      <span class="text-foreground">{{ formatNumber(user.printColor) }}</span>
+                      <span v-if="user.meterColor" class="text-[10px]"
+                        >Rd: {{ formatNumber(user.meterColor) }}</span
+                      >
+                    </div>
                   </td>
                   <td class="p-3 text-right text-muted-foreground">
                     {{ formatNumber(user.copyBW) }}

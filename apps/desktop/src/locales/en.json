@@ -103,8 +103,7 @@
       "stats": {
         "openTickets": "Open Tickets",
         "avgResponse": "Avg. Response Time",
-        "systemStatus": "System Status",
-        "operational": "All Systems Operational"
+        "resolvedTickets": "Resolved Tickets"
       },
       "tabs": {
         "myTickets": "My Tickets",
@@ -127,6 +126,10 @@
         "minStock": "Min Stock Alert",
         "location": "Storage Location",
         "description": "Description",
+        "price": "Price (THB)",
+        "receivedDate": "Date Received",
+        "selectDate": "Select date",
+        "receiver": "Receiver",
         "saveSuccess": "Stock item saved successfully",
         "categories": {
           "laptop": "Laptop / PC",
@@ -165,6 +168,8 @@
           "high": "High: Cannot work at all (e.g., computer won't start)",
           "critical": "Critical: Severe business impact (e.g., server down)"
         },
+        "noTickets": "No tickets found",
+        "noTicketsDesc": "You currently don't have any active support tickets.",
         "categories": {
           "hardware": {
             "label": "Hardware",
@@ -305,6 +310,7 @@
       "request": {
         "title": "Request IT Equipment",
         "subtitle": "Fill out the form below to request new hardware or peripherals.",
+        "createTicket": "Create New Ticket",
         "back": "Back to Help Desk",
         "category": "Equipment Category",
         "urgency": "Urgency Level",

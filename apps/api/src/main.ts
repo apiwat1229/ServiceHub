@@ -29,6 +29,7 @@ async function bootstrap() {
     await app.listen(port, '0.0.0.0');
 
     console.log(`🚀 API Server is running on: http://localhost:${port}/api`);
+    console.log(`📡 Registered Modules: Base logic, PrinterUsageModule, etc.`);
 }
 
 // Port changed to 2530

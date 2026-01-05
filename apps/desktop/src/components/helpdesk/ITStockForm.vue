@@ -1,8 +1,13 @@
-<script setup lang="ts">
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -11,7 +16,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { ImageIcon, Save, X } from 'lucide-vue-next';
+import { cn } from '@/lib/utils';
+import { useAuthStore } from '@/stores/auth';
+import { format } from 'date-fns';
+import { Calendar as CalendarIcon, File as ImageIcon, Save, X } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
@@ -22,6 +30,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
+const authStore = useAuthStore();
 const loading = ref(false);
 const imagePreview = ref<string | null>(props.initialData?.image || null);
 const fileInput = ref<HTMLInputElement | null>(null);
@@ -36,6 +45,9 @@ const form = ref({
   location: props.initialData?.location || '',
   description: props.initialData?.description || '',
   image: props.initialData?.image || null,
+  price: props.initialData?.price || 0,
+  receivedDate: props.initialData?.receivedDate ? new Date(props.initialData.receivedDate) : new Date(),
+  receiver: props.initialData?.receiver || authStore.user?.username || authStore.user?.email || 'Unknown',
 });
 
 // Mock Code Generation Logic
@@ -86,6 +98,7 @@ const removeImage = () => {
 const handleSubmit = async () => {
   loading.value = true;
   // Mock API call
+  console.log('Submitting form:', form.value);
   await new Promise((resolve) => setTimeout(resolve, 1500));
   loading.value = false;
   if (props.onSuccess) props.onSuccess();
@@ -214,6 +227,49 @@ const handleSubmit = async () => {
         <Label for="stock-min">{{ t('services.itHelp.stock.minStock') }}</Label>
         <Input id="stock-min" v-model="form.minStock" type="number" min="0" required />
       </div>
+    </div>
+
+    <!-- Price and Date Received -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="space-y-2">
+        <Label for="stock-price">{{ t('services.itHelp.stock.price') }}</Label>
+        <div class="relative">
+          <span class="absolute left-3 top-2.5 text-muted-foreground">฿</span>
+          <Input
+            id="stock-price"
+            v-model="form.price"
+            type="number"
+            min="0"
+            step="0.01"
+            class="pl-7"
+            required
+          />
+        </div>
+      </div>
+
+      <div class="space-y-2 flex flex-col">
+        <Label>{{ t('services.itHelp.stock.receivedDate') }}</Label>
+        <Popover>
+          <PopoverTrigger as-child>
+            <Button
+              variant="outline"
+              :class="cn('w-full justify-start text-left font-normal', !form.receivedDate && 'text-muted-foreground')"
+            >
+              <CalendarIcon class="mr-2 h-4 w-4" />
+              {{ form.receivedDate ? format(form.receivedDate, 'PPP') : t('services.itHelp.stock.selectDate') }}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent class="w-auto p-0">
+            <Calendar v-model="form.receivedDate" mode="single" initial-focus />
+          </PopoverContent>
+        </Popover>
+      </div>
+    </div>
+
+    <!-- Receiver -->
+    <div class="space-y-2">
+      <Label for="stock-receiver">{{ t('services.itHelp.stock.receiver') }}</Label>
+      <Input id="stock-receiver" v-model="form.receiver" disabled class="bg-muted" />
     </div>
 
     <div class="space-y-2">

@@ -11,7 +11,9 @@ import { PrinterUsageService } from './printer-usage.service';
 @Controller('printer-usage')
 @UseGuards(JwtAuthGuard)
 export class PrinterUsageController {
-    constructor(private readonly printerUsageService: PrinterUsageService) { }
+    constructor(private readonly printerUsageService: PrinterUsageService) {
+        console.log('✅ PrinterUsageController initialized');
+    }
 
     @Get('departments')
     getDepartments() {
