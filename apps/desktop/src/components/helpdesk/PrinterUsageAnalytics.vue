@@ -3,7 +3,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -765,16 +764,18 @@ const handleFileUpload = async (event: Event) => {
   hasData.value = false;
   let successCount = 0;
   let skippedCount = 0;
+  let totalRecordsCount = 0;
 
   try {
     // 1. Parse All Files
-    processingStatus.value = `Parsing ${files.length} files...`;
+    processingStatus.value = `Parsing ${files.length} file(s)...`;
     const parsedFiles = [];
 
     for (const file of files) {
       try {
         const res = await parseFilePromise(file);
         parsedFiles.push(res);
+        totalRecordsCount += res.data.length;
       } catch (err: any) {
         console.error(err);
         toast.error(err.message || 'Parse error');
@@ -786,6 +787,9 @@ const handleFileUpload = async (event: Event) => {
       target.value = '';
       return;
     }
+
+    // Show total records found
+    toast.info(`Found ${totalRecordsCount} records in ${parsedFiles.length} file(s)`);
 
     // 2. Sort by Date (Ascending)
     parsedFiles.sort((a, b) => new Date(a.period).getTime() - new Date(b.period).getTime());
@@ -800,12 +804,12 @@ const handleFileUpload = async (event: Event) => {
       const periodTime = new Date(period).getTime();
       const progressPercent = Math.round(((i + 1) / total) * 100);
 
-      processingStatus.value = `Processing ${i + 1}/${total}: ${file.name}`;
+      processingStatus.value = `Processing ${i + 1}/${total}: ${file.name} (${data.length} records)`;
       uploadProgress.value = progressPercent;
 
       if (tempKnownPeriods.has(periodTime)) {
         skippedCount++;
-        toast.info(`Skipping ${file.name}: Data for this period already exists.`);
+        toast.warning(`Skipped: ${file.name} - Period already exists (${data.length} records)`);
         continue;
       }
 
@@ -833,7 +837,17 @@ const handleFileUpload = async (event: Event) => {
       loadLatestFromHistory(); // Render the view
     }
 
-    toast.success(`Upload Complete: Saved ${successCount}, Skipped ${skippedCount}`);
+    // Comprehensive summary
+    const savedRecords = parsedFiles
+      .filter((_, idx) => idx < successCount)
+      .reduce((sum, pf) => sum + pf.data.length, 0);
+    const skippedRecords = parsedFiles
+      .filter((_, idx) => idx >= successCount)
+      .reduce((sum, pf) => sum + pf.data.length, 0);
+
+    toast.success(
+      `Upload Complete!\n✓ Saved: ${successCount} file(s) (${savedRecords} records)\n⊘ Skipped: ${skippedCount} file(s) (${skippedRecords} records)\n📊 Total: ${totalRecordsCount} records`
+    );
   } catch (err) {
     console.error('Batch Upload Error:', err);
     toast.error('Batch Upload Failed');
@@ -1080,30 +1094,34 @@ onUnmounted(() => {
             <BarChart3 v-else class="w-4 h-4" />
             {{ showSettings ? t('services.itHelp.tabs.printer') : t('admin.settings') }}
           </Button>
-
-          <div v-if="!showSettings" class="flex items-center gap-2">
-            <Label for="csv-upload" class="cursor-pointer">
-              <div
-                class="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90 transition-colors"
-              >
-                <FileUp class="w-4 h-4" /> {{ t('services.itHelp.printer.uploadTitle') }}
-              </div>
-            </Label>
-            <input
-              id="csv-upload"
-              type="file"
-              accept=".csv"
-              multiple
-              class="hidden"
-              @change="handleFileUpload"
-            />
-          </div>
         </div>
       </CardHeader>
     </Card>
 
     <div v-if="showSettings" class="animate-in fade-in slide-in-from-top-4 duration-300">
-      <PrinterSettings :imported-users="allImportedUsers" @data-changed="loadDbData" />
+      <PrinterSettings
+        :imported-users="allImportedUsers"
+        :history-records="historyRecords"
+        @data-changed="loadHistory"
+      >
+        <template #upload-button>
+          <Label for="csv-upload" class="cursor-pointer m-0">
+            <div
+              class="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90 transition-colors"
+            >
+              <FileUp class="w-4 h-4" /> {{ t('services.itHelp.printer.uploadTitle') }}
+            </div>
+          </Label>
+          <input
+            id="csv-upload"
+            type="file"
+            accept=".csv"
+            multiple
+            class="hidden"
+            @change="handleFileUpload"
+          />
+        </template>
+      </PrinterSettings>
     </div>
 
     <div

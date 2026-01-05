@@ -55,4 +55,9 @@ export class PrinterUsageController {
     getHistory() {
         return this.printerUsageService.getHistory();
     }
+
+    @Delete('history/:period')
+    deletePeriod(@Param('period') period: string) {
+        return this.printerUsageService.deletePeriod(period);
+    }
 }

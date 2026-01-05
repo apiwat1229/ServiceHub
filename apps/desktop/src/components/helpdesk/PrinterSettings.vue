@@ -31,10 +31,12 @@ import { cn } from '@/lib/utils';
 import { printerService } from '@/services/printer';
 import { PrinterDepartmentDto, PrinterUserMappingDto } from '@my-app/types';
 import {
+  Calendar,
   Check,
   ChevronLeft,
   ChevronRight,
   ChevronsUpDown,
+  Database,
   Edit2,
   Plus,
   Search,
@@ -50,6 +52,7 @@ const { t } = useI18n();
 
 const props = defineProps<{
   importedUsers?: string[];
+  historyRecords?: any[];
 }>();
 
 const emit = defineEmits(['dataChanged']);
@@ -74,6 +77,8 @@ const mappingForm = ref({
   departmentId: '',
 });
 const isUserSelectOpen = ref(false); // Popover state
+const isDeleteDialogOpen = ref(false);
+const periodToDelete = ref<{ iso: string; label: string } | null>(null);
 
 // Search
 const mappingSearchQuery = ref('');
@@ -90,7 +95,13 @@ const filteredDepartments = computed(() => {
 const availableUsers = computed(() => {
   if (!props.importedUsers) return [];
   const mappedUserNames = new Set(mappings.value.map((m) => m.userName));
-  return props.importedUsers.filter((u) => !mappedUserNames.has(u));
+
+  // Return all users with mapped status
+  return props.importedUsers.map((userName) => ({
+    userName,
+    isMapped: mappedUserNames.has(userName),
+    department: mappings.value.find((m) => m.userName === userName)?.department?.name,
+  }));
 });
 
 // Load Data
@@ -171,10 +182,32 @@ const saveManualMapping = async () => {
       printerService.upsertMapping({ userName, departmentId: mappingForm.value.departmentId })
     );
 
-    await Promise.all(promises);
+    const results = await Promise.all(promises);
+
+    // Update local state immediately without reload
+    const department = departments.value.find((d) => d.id === mappingForm.value.departmentId);
+    results.forEach((result) => {
+      if (result.success && result.data) {
+        // Check if mapping already exists
+        const existingIndex = mappings.value.findIndex((m) => m.userName === result.data.userName);
+        if (existingIndex >= 0) {
+          // Update existing mapping
+          mappings.value[existingIndex] = {
+            ...result.data,
+            department: department,
+          };
+        } else {
+          // Add new mapping
+          mappings.value.push({
+            ...result.data,
+            department: department,
+          });
+        }
+      }
+    });
 
     isMappingModalOpen.value = false;
-    loadData();
+    mappingForm.value = { userNames: [], departmentId: '' };
     emit('dataChanged');
     toast.success(t('services.itHelp.printer.settings.mappingSuccess'));
   } catch (error) {
@@ -186,8 +219,14 @@ const deleteMapping = async (id: string) => {
   if (!confirm('Are you sure you want to delete this mapping?')) return;
   try {
     await printerService.deleteMapping(id);
+
+    // Remove from local state immediately
+    const index = mappings.value.findIndex((m) => m.id === id);
+    if (index >= 0) {
+      mappings.value.splice(index, 1);
+    }
+
     toast.success('Mapping deleted');
-    loadData();
     emit('dataChanged');
   } catch (error) {
     toast.error('Failed to delete mapping');
@@ -221,9 +260,119 @@ const paginatedMappings = computed(() => {
 watch(mappingSearchQuery, () => {
   currentPage.value = 1;
 });
+
+// Import Summary
+const importSummary = computed(() => {
+  if (!props.historyRecords || props.historyRecords.length === 0) {
+    return { totalMonths: 0, periods: [] };
+  }
+
+  const uniquePeriods = [...new Set(props.historyRecords.map((r) => r.period))];
+  const sortedPeriods = uniquePeriods.sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+
+  return {
+    totalMonths: sortedPeriods.length,
+    periods: sortedPeriods.map((p) => ({
+      iso: p,
+      label: formatPeriodLabel(p),
+    })),
+  };
+});
+
+const formatPeriodLabel = (iso: string) => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+};
+
+const openDeleteDialog = (period: { iso: string; label: string }) => {
+  periodToDelete.value = period;
+  isDeleteDialogOpen.value = true;
+};
+
+const confirmDelete = async () => {
+  if (!periodToDelete.value) return;
+
+  try {
+    await printerService.deletePeriod(periodToDelete.value.iso);
+    toast.success('Period data deleted successfully');
+    isDeleteDialogOpen.value = false;
+    periodToDelete.value = null;
+    emit('dataChanged');
+  } catch (error) {
+    console.error('Failed to delete period:', error);
+    toast.error('Failed to delete period data');
+  }
+};
 </script>
 
 <template>
+  <!-- Import Summary -->
+  <Card class="mb-6 shadow-sm border-slate-200">
+    <CardHeader class="pb-3">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <Database class="w-5 h-5 text-primary" />
+          <div>
+            <CardTitle class="text-lg">Import Summary</CardTitle>
+            <CardDescription class="text-xs">Manage imported printer usage data</CardDescription>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <Badge variant="secondary" class="text-sm font-semibold">
+            {{ importSummary.totalMonths }}
+            {{ importSummary.totalMonths === 1 ? 'Month' : 'Months' }}
+          </Badge>
+          <slot name="upload-button"></slot>
+        </div>
+      </div>
+    </CardHeader>
+    <CardContent>
+      <div v-if="importSummary.totalMonths === 0" class="text-center py-8 text-slate-400 italic">
+        No data imported yet
+      </div>
+      <div v-else class="relative">
+        <!-- Horizontal Scrollable Container -->
+        <div class="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scroll-smooth">
+          <div
+            v-for="period in importSummary.periods"
+            :key="period.iso"
+            class="group flex-shrink-0 w-[280px] snap-start"
+          >
+            <div
+              class="flex items-center justify-between p-4 rounded-lg border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all h-full"
+            >
+              <div class="flex items-center gap-3">
+                <div class="p-2 rounded-md bg-primary/10">
+                  <Calendar class="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <div class="text-sm font-semibold text-slate-700">{{ period.label }}</div>
+                  <div class="text-xs text-slate-500">Imported data</div>
+                </div>
+              </div>
+              <Button
+                size="icon"
+                variant="ghost"
+                class="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-600 hover:bg-red-50"
+                @click="openDeleteDialog(period)"
+              >
+                <Trash2 class="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+        <!-- Scroll Hint -->
+        <div
+          v-if="importSummary.totalMonths > 3"
+          class="text-xs text-center text-slate-400 mt-2 flex items-center justify-center gap-1"
+        >
+          <span>← Scroll to see more →</span>
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <!-- Departments Management -->
     <Card class="lg:col-span-1 shadow-sm border-slate-200">
@@ -489,15 +638,15 @@ watch(mappingSearchQuery, () => {
                   <CommandGroup class="max-h-[300px] overflow-auto">
                     <CommandItem
                       v-for="user in availableUsers"
-                      :key="user"
-                      :value="user"
+                      :key="user.userName"
+                      :value="user.userName"
                       @select="
                         () => {
-                          const index = mappingForm.userNames.indexOf(user);
+                          const index = mappingForm.userNames.indexOf(user.userName);
                           if (index >= 0) {
                             mappingForm.userNames.splice(index, 1);
                           } else {
-                            mappingForm.userNames.push(user);
+                            mappingForm.userNames.push(user.userName);
                           }
                         }
                       "
@@ -506,7 +655,7 @@ watch(mappingSearchQuery, () => {
                         :class="
                           cn(
                             'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
-                            mappingForm.userNames.includes(user)
+                            mappingForm.userNames.includes(user.userName)
                               ? 'bg-primary text-primary-foreground'
                               : 'opacity-50 [&_svg]:invisible'
                           )
@@ -514,7 +663,10 @@ watch(mappingSearchQuery, () => {
                       >
                         <Check class="h-4 w-4" />
                       </div>
-                      <span>{{ user }}</span>
+                      <span class="flex-1">{{ user.userName }}</span>
+                      <Badge v-if="user.isMapped" variant="secondary" class="text-[10px] ml-2">
+                        {{ user.department || 'Mapped' }}
+                      </Badge>
                     </CommandItem>
                   </CommandGroup>
                 </CommandList>
@@ -559,6 +711,40 @@ watch(mappingSearchQuery, () => {
           :disabled="mappingForm.userNames.length === 0 || !mappingForm.departmentId"
           >{{ t('services.itHelp.printer.settings.saveMapping') }}</Button
         >
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
+
+  <!-- Delete Confirmation Dialog -->
+  <Dialog v-model:open="isDeleteDialogOpen">
+    <DialogContent class="sm:max-w-[425px]">
+      <DialogHeader>
+        <DialogTitle class="flex items-center gap-2 text-red-600">
+          <Trash2 class="w-5 h-5" />
+          Delete Period Data
+        </DialogTitle>
+        <DialogDescription>
+          This action cannot be undone. All printer usage data for this period will be permanently
+          deleted.
+        </DialogDescription>
+      </DialogHeader>
+      <div v-if="periodToDelete" class="py-4">
+        <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div class="flex items-center gap-3">
+            <Calendar class="w-5 h-5 text-red-600" />
+            <div>
+              <div class="font-semibold text-red-900">{{ periodToDelete.label }}</div>
+              <div class="text-sm text-red-700">All usage records will be deleted</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <DialogFooter>
+        <Button variant="outline" @click="isDeleteDialogOpen = false">Cancel</Button>
+        <Button variant="destructive" @click="confirmDelete">
+          <Trash2 class="w-4 h-4 mr-2" />
+          Delete
+        </Button>
       </DialogFooter>
     </DialogContent>
   </Dialog>

@@ -99,4 +99,11 @@ export class PrinterUsageService {
             ],
         });
     }
+
+    async deletePeriod(period: string) {
+        const periodDate = new Date(decodeURIComponent(period));
+        return this.prisma.printerUsageRecord.deleteMany({
+            where: { period: periodDate },
+        });
+    }
 }

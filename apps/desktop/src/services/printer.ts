@@ -56,5 +56,10 @@ export const printerService = {
     async getHistory(): Promise<ApiResponse<any[]>> {
         const response = await api.get('/printer-usage/history');
         return { success: true, data: response.data };
+    },
+
+    async deletePeriod(period: string): Promise<ApiResponse<void>> {
+        await api.delete(`/printer-usage/history/${encodeURIComponent(period)}`);
+        return { success: true };
     }
 };

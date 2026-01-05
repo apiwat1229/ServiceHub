@@ -3,7 +3,9 @@ import router from '../router';
 import { storage } from '../services/storage';
 
 const api = axios.create({
-    baseURL: `${import.meta.env.VITE_API_URL}/api` || 'http://localhost:2530/api', // Point to NestJS backend
+    baseURL: import.meta.env.VITE_API_URL
+        ? `${import.meta.env.VITE_API_URL}/api`
+        : 'http://localhost:2530/api',
     headers: {
         'Content-Type': 'application/json',
     },
@@ -12,6 +14,7 @@ const api = axios.create({
 api.interceptors.request.use(
     (config) => {
         const token = storage.get('accessToken');
+        console.log(`[API Interceptor] Requesting ${config.url} - Auth: ${token ? 'YES' : 'NO'}`);
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }

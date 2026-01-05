@@ -1,5 +1,6 @@
 import { AuthResponse, LoginDto, RegisterDto } from '@my-app/types';
-import { ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -7,11 +8,15 @@ import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class AuthService {
+    private readonly logger = new Logger(AuthService.name);
     constructor(
         private usersService: UsersService,
         private jwtService: JwtService,
-        private notificationsService: NotificationsService
-    ) { }
+        private notificationsService: NotificationsService,
+        private configService: ConfigService
+    ) {
+        this.logger.log(`JWT_SECRET present: ${!!this.configService.get('JWT_SECRET')}`);
+    }
 
     async validateUser(identifier: string, password: string): Promise<any> {
         const user = await this.usersService.findByEmailOrUsername(identifier);
@@ -91,6 +96,9 @@ export class AuthService {
             displayName: user.displayName,
             permissions: permissions
         };
+
+        this.logger.debug(`Signing token for user: ${user.id} with payload keys: ${Object.keys(payload)}`);
+
         return {
             accessToken: this.jwtService.sign(payload),
             user: {

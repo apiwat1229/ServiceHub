@@ -3,6 +3,7 @@
     "save": "บันทึก",
     "cancel": "ยกเลิก",
     "delete": "ลบ",
+    "areYouSure": "คุณแน่ใจหรือไม่?",
     "edit": "แก้ไข",
     "create": "สร้าง",
     "update": "อัปเดต",
@@ -108,6 +109,22 @@
         "kb": "ศูนย์การเรียนรู้",
         "stock": "จัดการคลังอุปกรณ์ IT",
         "printer": "สรุปยอดพิมพ์"
+      },
+      "kb": {
+        "title": "ศูนย์การเรียนรู้",
+        "subtitle": "ศึกษาคู่มือและสื่อการสอนต่างๆ",
+        "uploadBtn": "อัปโหลด eBook",
+        "searchPlaceholder": "ค้นหา eBooks...",
+        "allCategories": "หมวดหมู่ทั้งหมด",
+        "loading": "กำลังโหลด eBooks...",
+        "noBooks": "ไม่พบ eBook",
+        "adjustFilters": "ลองปรับตัวกรองของคุณ",
+        "uploadFirst": "อัปโหลด eBook เล่มแรกของคุณเพื่อเริ่มต้น",
+        "noDescription": "ไม่มีรายละเอียด",
+        "unknownUploader": "ไม่ระบุ",
+        "pptxNotSupported": "ไม่รองรับการแสดงผล PowerPoint",
+        "pptxNotSupportedDesc": "บราวเซอร์ไม่สามารถแสดงผลไฟล์ PowerPoint ได้โดยตรง กรุณาดาวน์โหลดไฟล์เพื่อเปิดดูด้วยโปรแกรมในเครื่องของคุณ",
+        "pptxDirectDownload": "ไม่สามารถแสดงตัวอย่าง PowerPoint ได้ ระบบกำลังเริ่มดาวน์โหลดไฟล์ให้คุณ"
       },
       "stock": {
         "title": "คลังอุปกรณ์คอมพิวเตอร์",
@@ -736,7 +753,8 @@
       "leaveBlankToKeep": "เว้นว่างไว้เพื่อเก็บรหัสผ่านปัจจุบัน",
       "passwordHint": "เว้นว่างไว้หากคุณไม่ต้องการเปลี่ยนรหัสผ่าน",
       "systemRole": "บทบาทระบบ",
-      "notifyRoles": "กลุ่มแจ้งเตือน"
+      "notifyRoles": "กลุ่มแจ้งเตือน",
+      "displayNamePlaceholder": "สร้างอัตโนมัติจากชื่อ-นามสกุล หากเว้นว่าง"
     },
     "status": {
       "active": "ใช้งาน",
@@ -757,7 +775,8 @@
       "shipping": "การจัดส่ง",
       "maintenance": "ซ่อมบำรุง",
       "safety": "ความปลอดภัย",
-      "management": "ฝ่ายบริหาร"
+      "management": "ฝ่ายบริหาร",
+      "projectImprovement": "Project Improvement"
     },
     "positions": {
       "md": "กรรมการผู้จัดการ (MD)",

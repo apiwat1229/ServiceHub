@@ -72,6 +72,10 @@ model User {
   // App Permissions
   appPermissions UserAppPermission[]
 
+  // Knowledge Center eBooks
+  uploadedBooks KnowledgeBook[] @relation("KnowledgeBookUploader")
+  bookViews     BookView[]      @relation("BookViewer")
+
   @@map("users")
 }
 
@@ -568,4 +572,50 @@ model PrinterUsageRecord {
 
   @@unique([period, userName])
   @@map("printer_usage_records")
+}
+
+// ==========================================
+// Knowledge Center eBook System
+// ==========================================
+
+model KnowledgeBook {
+  id            String   @id @default(uuid())
+  title         String
+  description   String?
+  category      String   // 'Getting Started', 'Tutorials', 'Troubleshooting', 'System Guides'
+  fileType      String   @map("file_type") // 'pdf' or 'pptx'
+  filePath      String   @map("file_path") // Storage path
+  fileName      String   @map("file_name") // Original filename
+  fileSize      Int      @map("file_size") // Size in bytes
+  coverImage    String?  @map("cover_image") // Optional cover image path
+  author        String?
+  uploadedBy    String   @map("uploaded_by")
+  uploader      User     @relation("KnowledgeBookUploader", fields: [uploadedBy], references: [id])
+  views         Int      @default(0)
+  downloads     Int      @default(0)
+  tags          String[] @default([]) // Array of tags for search
+  isPublished   Boolean  @default(true) @map("is_published")
+  
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  
+  viewHistory   BookView[]
+  
+  @@index([category])
+  @@index([uploadedBy])
+  @@index([isPublished])
+  @@map("knowledge_books")
+}
+
+model BookView {
+  id        String        @id @default(uuid())
+  bookId    String        @map("book_id")
+  book      KnowledgeBook @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  userId    String        @map("user_id")
+  user      User          @relation("BookViewer", fields: [userId], references: [id])
+  viewedAt  DateTime      @default(now()) @map("viewed_at")
+  
+  @@index([bookId])
+  @@index([userId])
+  @@map("book_views")
 }

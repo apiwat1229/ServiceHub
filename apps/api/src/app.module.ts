@@ -9,6 +9,7 @@ import { AppService } from './app.service';
 import { ApprovalsModule } from './approvals/approvals.module';
 import { AuthModule } from './auth/auth.module';
 import { BookingsModule } from './bookings/bookings.module';
+import { KnowledgeBooksModule } from './knowledge-books/knowledge-books.module';
 import { MasterModule } from './master/master.module';
 import { NotificationGroupsModule } from './notification-groups/notification-groups.module';
 import { NotificationsModule } from './notifications/notifications.module';
@@ -41,6 +42,7 @@ import { UsersModule } from './users/users.module';
         AccessControlModule,
         NotificationGroupsModule,
         PrinterUsageModule,
+        KnowledgeBooksModule,
         ServeStaticModule.forRoot({
             rootPath: join(process.cwd(), 'uploads'),
             serveRoot: '/uploads',

@@ -2,6 +2,19 @@
 import AssetRequestForm from '@/components/helpdesk/AssetRequestForm.vue';
 import NewTicketForm from '@/components/helpdesk/NewTicketForm.vue';
 import PrinterUsageAnalytics from '@/components/helpdesk/PrinterUsageAnalytics.vue';
+import KnowledgeBookCard from '@/components/knowledge-center/KnowledgeBookCard.vue';
+import KnowledgeBookUpload from '@/components/knowledge-center/KnowledgeBookUpload.vue';
+import KnowledgeBookViewer from '@/components/knowledge-center/KnowledgeBookViewer.vue';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,6 +34,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { knowledgeBooksApi, type KnowledgeBook } from '@/services/knowledge-books';
 import { useAuthStore } from '@/stores/auth';
 import {
   AlertCircle,
@@ -35,9 +49,11 @@ import {
   Plus,
   Search,
   Ticket,
+  Upload,
 } from 'lucide-vue-next';
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { toast } from 'vue-sonner';
 
 const { t } = useI18n();
 const authStore = useAuthStore();
@@ -46,6 +62,21 @@ const isAssetModalOpen = ref(false);
 const isTicketModalOpen = ref(false);
 const isStockModalOpen = ref(false);
 const editingStockItem = ref<any>(null);
+
+// eBook State
+const isUploadModalOpen = ref(false);
+const isViewerModalOpen = ref(false);
+const selectedBook = ref<KnowledgeBook | null>(null);
+const books = ref<KnowledgeBook[]>([]);
+const loadingBooks = ref(false);
+const selectedCategory = ref<string>('');
+const ebookSearchQuery = ref('');
+const ebookCategories = ref<string[]>([]);
+const loadingCategories = ref(false);
+
+// Delete Confirmation State
+const isDeleteConfirmOpen = ref(false);
+const bookToDelete = ref<KnowledgeBook | null>(null);
 
 // Mock Stock Data
 const itStock = ref([
@@ -98,11 +129,7 @@ const tickets = [
   },
 ];
 
-const kbArticles = [
-  { title: 'How to reset your password', views: 1250, category: 'Account' },
-  { title: 'Connecting to Office Wi-Fi', views: 890, category: 'Network' },
-  { title: 'VPN connection guide', views: 760, category: 'Network' },
-];
+// Removed kbArticles mock data
 
 // Pagination State
 const currentPage = ref(1);
@@ -158,6 +185,88 @@ const getStatusColor = (status: string) => {
       return 'bg-gray-100 text-gray-800';
   }
 };
+
+// eBook Functions
+async function loadCategories() {
+  loadingCategories.value = true;
+  try {
+    ebookCategories.value = await knowledgeBooksApi.getCategories();
+  } catch (error) {
+    console.error('Failed to load categories:', error);
+  } finally {
+    loadingCategories.value = false;
+  }
+}
+
+async function loadBooks() {
+  loadingBooks.value = true;
+  try {
+    books.value = await knowledgeBooksApi.getAll({
+      category: selectedCategory.value === 'ALL' ? undefined : selectedCategory.value || undefined,
+      search: ebookSearchQuery.value || undefined,
+    });
+  } catch (error) {
+    console.error('Failed to load books:', error);
+  } finally {
+    loadingBooks.value = false;
+  }
+}
+
+function handleViewBook(book: KnowledgeBook) {
+  if (book.fileType !== 'pdf' && book.fileType !== 'pptx') {
+    toast.info(t('services.itHelp.kb.pptxDirectDownload'));
+    handleDownloadBook(book);
+    return;
+  }
+  selectedBook.value = book;
+  isViewerModalOpen.value = true;
+}
+
+async function handleDownloadBook(book: KnowledgeBook) {
+  const link = document.createElement('a');
+  link.href = knowledgeBooksApi.getDownloadUrl(book.id);
+  link.download = book.fileName;
+  link.click();
+}
+
+async function handleDeleteBook(book: KnowledgeBook) {
+  bookToDelete.value = book;
+  isDeleteConfirmOpen.value = true;
+}
+
+async function confirmDelete() {
+  if (!bookToDelete.value) return;
+
+  try {
+    await knowledgeBooksApi.delete(bookToDelete.value.id);
+    await loadBooks();
+    // Use a toast or alert for success
+    toast.success('eBook deleted successfully');
+  } catch (error) {
+    console.error('Failed to delete book:', error);
+    toast.error('Failed to delete eBook');
+  } finally {
+    isDeleteConfirmOpen.value = false;
+    bookToDelete.value = null;
+  }
+}
+
+function handleUploadSuccess() {
+  loadBooks();
+}
+
+const filteredBooks = computed(() => {
+  return books.value;
+});
+
+const categories = computed(() => {
+  return ebookCategories.value;
+});
+
+onMounted(() => {
+  loadBooks();
+  loadCategories();
+});
 </script>
 
 <template>
@@ -232,23 +341,80 @@ const getStatusColor = (status: string) => {
       </div>
 
       <!-- Knowledge Base Tab -->
-      <TabsContent value="kb">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <Card
-            v-for="(article, index) in kbArticles"
-            :key="index"
-            class="cursor-pointer hover:shadow-md transition-all"
+      <TabsContent value="kb" class="space-y-4">
+        <!-- Header with Upload Button -->
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-lg font-semibold">{{ t('services.itHelp.kb.title') }}</h3>
+            <p class="text-sm text-muted-foreground">{{ t('services.itHelp.kb.subtitle') }}</p>
+          </div>
+          <Button v-if="isITDepartment" @click="isUploadModalOpen = true" class="gap-2">
+            <Upload class="w-4 h-4" />
+            {{ t('services.itHelp.kb.uploadBtn') }}
+          </Button>
+        </div>
+
+        <!-- Filters -->
+        <div class="flex gap-4">
+          <div class="relative flex-1">
+            <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              :placeholder="t('services.itHelp.kb.searchPlaceholder')"
+              class="pl-9"
+              v-model="ebookSearchQuery"
+              @input="loadBooks"
+            />
+          </div>
+          <Select v-model="selectedCategory" @update:model-value="loadBooks">
+            <SelectTrigger class="w-[200px]">
+              <SelectValue :placeholder="t('services.itHelp.kb.allCategories')" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">{{ t('services.itHelp.kb.allCategories') }}</SelectItem>
+              <SelectItem v-for="cat in categories" :key="cat" :value="cat">
+                {{ cat }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <!-- eBook Grid -->
+        <div v-if="loadingBooks" class="text-center py-12">
+          <p class="text-muted-foreground">{{ t('services.itHelp.kb.loading') }}</p>
+        </div>
+
+        <div v-else-if="filteredBooks.length === 0" class="text-center py-12">
+          <BookOpen class="w-12 h-12 mx-auto mb-4 opacity-20" />
+          <h3 class="text-lg font-medium mb-2">{{ t('services.itHelp.kb.noBooks') }}</h3>
+          <p class="text-muted-foreground mb-4">
+            {{
+              ebookSearchQuery || selectedCategory
+                ? t('services.itHelp.kb.adjustFilters')
+                : t('services.itHelp.kb.uploadFirst')
+            }}
+          </p>
+          <Button
+            v-if="isITDepartment"
+            variant="outline"
+            @click="isUploadModalOpen = true"
+            class="gap-2"
           >
-            <CardHeader>
-              <CardTitle class="text-lg">{{ article.title }}</CardTitle>
-              <CardDescription>{{ article.category }}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div class="flex items-center text-sm text-muted-foreground">
-                <BookOpen class="h-4 w-4 mr-1" /> {{ article.views }} views
-              </div>
-            </CardContent>
-          </Card>
+            <Upload class="w-4 h-4" />
+            {{ t('services.itHelp.kb.uploadBtn') }}
+          </Button>
+        </div>
+
+        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <KnowledgeBookCard
+            v-for="book in filteredBooks"
+            :key="book.id"
+            :book="book"
+            :can-delete="isITDepartment"
+            @view="handleViewBook(book)"
+            @download="handleDownloadBook(book)"
+            @delete="handleDeleteBook(book)"
+          />
         </div>
       </TabsContent>
 
@@ -541,5 +707,33 @@ const getStatusColor = (status: string) => {
         <div>Temporarily Disabled</div>
       </DialogContent>
     </Dialog>
+
+    <!-- eBook Upload Modal -->
+    <KnowledgeBookUpload v-model:open="isUploadModalOpen" @uploaded="handleUploadSuccess" />
+
+    <!-- eBook Viewer Modal -->
+    <KnowledgeBookViewer v-model:open="isViewerModalOpen" :book="selectedBook" />
+
+    <!-- Delete Confirmation Dialog -->
+    <AlertDialog v-model:open="isDeleteConfirmOpen">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{{
+            t('common.areYouSure') || 'Are you absolutely sure?'
+          }}</AlertDialogTitle>
+          <AlertDialogDescription>
+            This action cannot be undone. This will permanently delete
+            <b>{{ bookToDelete?.title }}</b>
+            and remove its data from our servers.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{{ t('common.cancel') || 'Cancel' }}</AlertDialogCancel>
+          <AlertDialogAction @click="confirmDelete" class="bg-red-600 hover:bg-red-700">
+            {{ t('common.delete') || 'Delete' }}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   </div>
 </template>

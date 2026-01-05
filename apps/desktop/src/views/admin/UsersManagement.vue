@@ -140,6 +140,7 @@ const DEPARTMENT_OPTIONS = computed(() => [
   t('admin.departments.maintenance'),
   t('admin.departments.safety'),
   t('admin.departments.management'),
+  t('admin.departments.projectImprovement'),
 ]);
 
 const POSITION_OPTIONS = computed(() => [
@@ -458,31 +459,10 @@ const columns: ColumnDef<User>[] = [
       ]);
     },
   },
-  // Notification Groups Column
   {
-    accessorKey: 'notificationGroups',
-    header: t('admin.users.notifyRoles'),
-    cell: ({ row }) => {
-      const groups = (row.original as any).notificationGroups || [];
-      if (groups.length === 0) {
-        return h('span', { class: 'text-muted-foreground text-sm' }, '-');
-      }
-      return h(
-        'div',
-        { class: 'flex flex-wrap gap-1' },
-        groups.map((group: any) =>
-          h(
-            Badge,
-            {
-              key: group.id,
-              variant: 'outline',
-              class: 'text-xs',
-            },
-            () => group.name
-          )
-        )
-      );
-    },
+    accessorKey: 'employeeId',
+    header: t('admin.users.employeeId'),
+    cell: ({ row }) => h('div', row.getValue('employeeId') || '-'),
   },
   {
     accessorKey: 'department',
@@ -758,7 +738,10 @@ onMounted(() => {
               </div>
               <div class="col-span-2 space-y-2">
                 <Label>{{ t('admin.userProfile.displayName') }}</Label>
-                <Input v-model="formData.displayName" />
+                <Input
+                  v-model="formData.displayName"
+                  :placeholder="t('admin.users.displayNamePlaceholder')"
+                />
               </div>
             </div>
           </TabsContent>
@@ -792,16 +775,9 @@ onMounted(() => {
                   {{ errors.role }}
                 </p>
               </div>
-              <div class="space-y-2 col-span-2">
-                <Label
-                  >{{ t('admin.users.notifyRoles') }}
-                  <span class="text-xs text-muted-foreground"
-                    >({{ t('common.optional') }})</span
-                  ></Label
-                >
-                <p class="text-xs text-muted-foreground">
-                  Notification groups can be managed in the Notifications > Groups page
-                </p>
+              <div class="space-y-2">
+                <Label>{{ t('admin.users.employeeId') }}</Label>
+                <Input v-model="formData.employeeId" placeholder="EMP-001" />
               </div>
               <div class="space-y-2">
                 <Label>{{ t('admin.userProfile.department') }}</Label>

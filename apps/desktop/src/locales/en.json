@@ -3,6 +3,7 @@
     "save": "Save",
     "cancel": "Cancel",
     "delete": "Delete",
+    "areYouSure": "Are you absolutely sure?",
     "add": "Add",
     "edit": "Edit",
     "create": "Create",
@@ -113,6 +114,22 @@
         "kb": "Knowledge Center",
         "stock": "IT Stock Management",
         "printer": "Printer Analytics"
+      },
+      "kb": {
+        "title": "Knowledge Center",
+        "subtitle": "Browse training materials and documentation",
+        "uploadBtn": "Upload eBook",
+        "searchPlaceholder": "Search eBooks...",
+        "allCategories": "All Categories",
+        "loading": "Loading eBooks...",
+        "noBooks": "No eBooks found",
+        "adjustFilters": "Try adjusting your filters",
+        "uploadFirst": "Upload your first eBook to get started",
+        "noDescription": "No description",
+        "unknownUploader": "Unknown",
+        "pptxNotSupported": "PowerPoint Preview Not Supported",
+        "pptxNotSupportedDesc": "Browser-based previewing is not available for PowerPoint files. Please download the file to view it in your local application.",
+        "pptxDirectDownload": "PowerPoint preview not available. Direct download triggered."
       },
       "stock": {
         "title": "IT Device Stock",
@@ -722,7 +739,8 @@
       "leaveBlankToKeep": "Leave blank to keep current password",
       "passwordHint": "Leave blank if you don't want to change the password",
       "systemRole": "System Role",
-      "notifyRoles": "Notify Groups"
+      "notifyRoles": "Notify Groups",
+      "displayNamePlaceholder": "Auto-generated from first and last name if left empty"
     },
     "status": {
       "active": "Active",
@@ -743,7 +761,8 @@
       "shipping": "Shipping",
       "maintenance": "Maintenance",
       "safety": "Safety",
-      "management": "Management"
+      "management": "Management",
+      "projectImprovement": "Project Improvement"
     },
     "positions": {
       "md": "Managing Director",
