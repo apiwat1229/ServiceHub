@@ -420,23 +420,23 @@ watch(selectedSlot, (newSlot) => {
     <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <Card class="p-3 flex flex-col items-center justify-center text-center">
         <p class="text-sm text-muted-foreground mb-1">{{ t('bookingQueue.totalToday') }}</p>
-        <p class="text-3xl font-bold">{{ totalDailyQueues }}</p>
+        <p class="text-2xl font-bold">{{ totalDailyQueues }}</p>
       </Card>
       <Card class="p-3 flex flex-col items-center justify-center text-center">
         <p class="text-sm text-muted-foreground mb-1">{{ t('bookingQueue.currentQueue') }}</p>
-        <p class="text-3xl font-bold text-primary">
+        <p class="text-2xl font-bold text-primary">
           {{ queues.length > 0 ? Math.max(...queues.map((q) => Number(q.queueNo) || 0)) : '-' }}
         </p>
       </Card>
       <Card class="p-3 flex flex-col items-center justify-center text-center">
         <p class="text-sm text-muted-foreground mb-1">{{ t('bookingQueue.nextQueue') }}</p>
-        <p class="text-3xl font-bold text-green-600">
+        <p class="text-2xl font-bold text-green-600">
           {{ nextQueueNo !== null ? nextQueueNo : '-' }}
         </p>
       </Card>
       <Card class="p-3 flex flex-col items-center justify-center text-center">
         <p class="text-sm text-muted-foreground mb-1">{{ t('bookingQueue.available') }}</p>
-        <p class="text-3xl font-bold text-blue-600">
+        <p class="text-2xl font-bold text-blue-600">
           {{
             currentSlotConfig.limit
               ? Math.max(0, currentSlotConfig.limit - queues.length)
