@@ -161,7 +161,7 @@ const getStatusColor = (status: string) => {
 </script>
 
 <template>
-  <div class="p-6 space-y-6 w-full">
+  <div class="space-y-6">
     <!-- Header -->
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
       <div>

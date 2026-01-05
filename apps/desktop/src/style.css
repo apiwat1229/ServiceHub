@@ -12,6 +12,8 @@
 body {
   @apply bg-background text-foreground;
   margin: 0;
+  height: 100vh;
+  overflow: hidden; /* Prevent body scroll, let MainLayout handle it */
 }
 
 @layer base {

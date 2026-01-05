@@ -90,23 +90,6 @@ const loadDbData = async () => {
 
 onMounted(loadDbData);
 
-const saveDeptMap = async (userName: string, dept: string) => {
-  try {
-    await printerService.upsertMapping({ userName, departmentId: dept });
-    userDepartmentMap.value[userName] = dept;
-    toast.success(t('services.itHelp.printer.settings.mappingSuccess'));
-
-    // Update processed data in real-time
-    const user = processedData.value.find((u) => u.user_name === userName);
-    if (user) {
-      user.department = dept;
-      nextTick(() => renderCharts());
-    }
-  } catch (error) {
-    toast.error(t('services.itHelp.printer.settings.mappingError'));
-  }
-};
-
 const departments = computed(() => {
   return dbDepartments.value.map((d) => ({
     id: d.id,
@@ -155,6 +138,7 @@ const saveToDb = async () => {
     }));
 
     await printerService.saveUsageRecords(records);
+    await loadHistory(); // Reload history to update UI
     toast.success(t('services.itHelp.printer.history.saveSuccess'));
   } catch (err) {
     toast.error(t('services.itHelp.printer.history.saveError'));
@@ -163,16 +147,99 @@ const saveToDb = async () => {
   }
 };
 
+const loadLatestFromHistory = () => {
+  if (historyRecords.value.length === 0) return;
+
+  // Group by period
+  const groups: Record<string, any[]> = {};
+  historyRecords.value.forEach((r) => {
+    const p = new Date(r.period).toISOString();
+    if (!groups[p]) groups[p] = [];
+    groups[p].push(r);
+  });
+
+  const periods = Object.keys(groups).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+  const currentPeriod = periods[0];
+  const prevPeriod = periods[1];
+
+  selectedPeriod.value = currentPeriod;
+  const currentRecords = groups[currentPeriod];
+  const prevRecords = prevPeriod ? groups[prevPeriod] : [];
+  const prevMap = new Map(prevRecords.map((r) => [r.userName, r]));
+
+  processedData.value = currentRecords.map((r) => {
+    const prev = prevMap.get(r.userName);
+    // DB stores METER readings
+    const meterPrint = r.printBW;
+    const meterColor = r.printColor;
+    const meterCopy = r.copyBW; // stored as same value in saveToDb
+    const meterTotal = r.total;
+
+    let printBW = meterPrint;
+    let printColor = meterColor;
+    let copyBW = 0;
+    let copyColor = 0;
+    let total = meterTotal;
+
+    if (prev) {
+      printBW = Math.max(0, meterPrint - prev.printBW);
+      printColor = Math.max(0, meterColor - prev.printColor);
+      total = Math.max(0, meterTotal - prev.total);
+    }
+
+    return {
+      user_name: r.userName,
+      department: r.departmentId || 'other',
+      printBW,
+      printColor,
+      copyBW,
+      copyColor,
+      total,
+      meterBW: 0,
+      meterColor: 0,
+      meterPrint,
+      meterCopy,
+      meterTotal,
+    } as UserUsage;
+  });
+
+  // Re-calculate stats
+  const uniqueDepts = new Set(processedData.value.map((u) => u.department));
+  stats.value = {
+    totalUsers: processedData.value.length,
+    totalDepts: uniqueDepts.size,
+    grandTotal: processedData.value.reduce((acc, curr) => acc + curr.total, 0),
+    totalBW: processedData.value.reduce((acc, curr) => acc + curr.printBW, 0),
+    totalColor: processedData.value.reduce((acc, curr) => acc + curr.printColor, 0),
+    totalPrint: processedData.value.reduce((acc, curr) => acc + curr.printBW, 0), // Approx
+    totalCopy: 0,
+  };
+
+  hasData.value = true;
+  nextTick(() => {
+    renderCharts();
+  });
+};
+
 const loadHistory = async () => {
   try {
     const res = await printerService.getHistory();
-    if (res.success) historyRecords.value = res.data || [];
+    if (res.success) {
+      historyRecords.value = res.data || [];
+      // If we don't have current data (e.g. on reload), try to load from history
+      if (!hasData.value && historyRecords.value.length > 0) {
+        loadLatestFromHistory();
+      }
+    }
   } catch (err) {
     console.error('Failed to load history:', err);
   }
 };
 
-onMounted(loadHistory);
+onMounted(() => {
+  loadDbData();
+  loadHistory();
+});
 
 const formatNumber = (num: number) => {
   return new Intl.NumberFormat().format(num);
@@ -900,19 +967,11 @@ onUnmounted(() => {
                 >
                   <td class="p-3 font-medium">{{ user.user_name }}</td>
                   <td class="p-3">
-                    <Select
-                      :model-value="user.department"
-                      @update:model-value="(v) => saveDeptMap(user.user_name, v)"
-                    >
-                      <SelectTrigger class="h-8 w-[140px] text-xs">
-                        <SelectValue :placeholder="t('services.itHelp.printer.table.selectDept')" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem v-for="dept in departments" :key="dept.id" :value="dept.id">
-                          {{ dept.label }}
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <span class="text-sm text-foreground">
+                      {{
+                        departments.find((d) => d.id === user.department)?.label || user.department
+                      }}
+                    </span>
                   </td>
                   <td class="p-3 text-right">
                     <div class="flex flex-col items-end">

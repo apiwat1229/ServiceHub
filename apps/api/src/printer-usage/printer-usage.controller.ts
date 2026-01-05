@@ -47,6 +47,7 @@ export class PrinterUsageController {
 
     @Post('records')
     saveUsageRecords(@Body() records: SavePrinterUsageRecordDto[]) {
+        console.log('Received records to save:', JSON.stringify(records, null, 2));
         return this.printerUsageService.saveUsageRecords(records);
     }
 
