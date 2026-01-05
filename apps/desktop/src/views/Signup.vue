@@ -12,7 +12,7 @@ const signupSuccess = ref(false);
 const signupFormRef = ref<InstanceType<typeof SignupForm> | null>(null);
 const router = useRouter();
 
-async function handleSignup({ email, password, firstName, lastName }: any) {
+async function handleSignup({ email, username, password, firstName, lastName }: any) {
   if (signupFormRef.value) {
     signupFormRef.value.setLoading(true);
   }
@@ -22,6 +22,7 @@ async function handleSignup({ email, password, firstName, lastName }: any) {
   try {
     await axios.post(`${import.meta.env.VITE_API_URL}/auth/signup`, {
       email,
+      username,
       password,
       firstName,
       lastName,

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:web": "cross-env ELECTRON_DISABLE=1 vite --mode development",
+    "dev:web": "cross-env ELECTRON_DISABLE=1 vite --mode development --host",
     "build": "vue-tsc && vite build && electron-builder",
     "preview": "vite preview"
   },

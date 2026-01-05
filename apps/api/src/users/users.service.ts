@@ -18,7 +18,7 @@ export class UsersService {
 
         if (createUserDto.username) {
             const existingUsername = await this.prisma.user.findUnique({
-                // @ts-ignore
+
                 where: { username: createUserDto.username },
             });
             if (existingUsername) {
@@ -29,7 +29,7 @@ export class UsersService {
         const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
 
         return this.prisma.user.create({
-            // @ts-ignore
+
             data: {
                 ...createUserDto,
                 password: hashedPassword,
@@ -42,6 +42,7 @@ export class UsersService {
 
     async createPendingUser(data: {
         email: string;
+        username: string;
         firstName: string;
         lastName: string;
         password: string;
@@ -49,6 +50,7 @@ export class UsersService {
         return this.prisma.user.create({
             data: {
                 email: data.email,
+                username: data.username,
                 firstName: data.firstName,
                 lastName: data.lastName,
                 password: data.password,
@@ -302,7 +304,7 @@ export class UsersService {
 
         return this.prisma.user.update({
             where: { id },
-            // @ts-ignore
+
             data: dataToUpdate,
             select: {
                 id: true,

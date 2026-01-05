@@ -132,10 +132,15 @@ export class AuthService {
 
     async signup(signupDto: any) {
         // Check if email already exists
-        const existingUser = await this.usersService.findByEmailOrUsername(signupDto.email);
-
-        if (existingUser) {
+        const existingEmail = await this.usersService.findByEmailOrUsername(signupDto.email);
+        if (existingEmail) {
             throw new ForbiddenException('Email already registered');
+        }
+
+        // Check if username already exists
+        const existingUsername = await this.usersService.findByEmailOrUsername(signupDto.username);
+        if (existingUsername) {
+            throw new ForbiddenException('Username already taken');
         }
 
         // Hash password
@@ -144,6 +149,7 @@ export class AuthService {
         // Create user with PENDING status and no role
         const user = await this.usersService.createPendingUser({
             email: signupDto.email,
+            username: signupDto.username,
             firstName: signupDto.firstName,
             lastName: signupDto.lastName,
             password: hashedPassword,

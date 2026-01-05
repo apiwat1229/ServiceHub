@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import ChangePasswordDialog from '@/components/auth/ChangePasswordDialog.vue';
+import LanguageSwitcher from '@/components/LanguageSwitcher.vue';
 import LoginForm from '@/components/LoginForm.vue';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-vue-next';
@@ -46,7 +47,7 @@ async function handleLogin({
   loginError.value = '';
 
   try {
-    await authStore.login({ email, password }, true);
+    await authStore.login({ email, password }, rememberMe);
 
     // Handle Remember Me
     if (rememberMe) {
@@ -57,7 +58,12 @@ async function handleLogin({
       storage.delete('remember_me');
     }
 
-    router.push('/');
+    // Check user status
+    if (authStore.user?.status === 'PENDING') {
+      router.push('/pending-approval');
+    } else {
+      router.push('/');
+    }
   } catch (err: any) {
     console.error('Login failed:', err);
 
@@ -93,6 +99,9 @@ function handlePasswordChangeSuccess() {
 
 <template>
   <div class="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
+    <div class="absolute right-4 top-4">
+      <LanguageSwitcher />
+    </div>
     <div class="w-full max-w-sm">
       <!-- Error Alert -->
       <Alert v-if="loginError" variant="destructive" class="mb-4">
