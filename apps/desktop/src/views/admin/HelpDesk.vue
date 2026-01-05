@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import AssetRequestForm from '@/components/helpdesk/AssetRequestForm.vue';
+import ITStockForm from '@/components/helpdesk/ITStockForm.vue';
 import NewTicketForm from '@/components/helpdesk/NewTicketForm.vue';
+import PrinterSettings from '@/components/helpdesk/PrinterSettings.vue';
+import PrinterUsageAnalytics from '@/components/helpdesk/PrinterUsageAnalytics.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,6 +23,7 @@ import {
   CheckCircle2,
   Clock,
   Edit2,
+  LayoutDashboard,
   Monitor,
   MoreHorizontal,
   Package,
@@ -126,7 +130,7 @@ const getStatusColor = (status: string) => {
 </script>
 
 <template>
-  <div class="p-6 space-y-6 max-w-7xl mx-auto w-full">
+  <div class="p-6 space-y-6 w-full">
     <!-- Header -->
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
       <div>
@@ -205,6 +209,20 @@ const getStatusColor = (status: string) => {
             class="gap-2 px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all"
           >
             <Package class="w-4 h-4" /> {{ t('services.itHelp.tabs.stock') }}
+          </TabsTrigger>
+          <TabsTrigger
+            v-if="isITDepartment"
+            value="printer"
+            class="gap-2 px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all"
+          >
+            <LayoutDashboard class="w-4 h-4" /> {{ t('services.itHelp.tabs.printer') }}
+          </TabsTrigger>
+          <TabsTrigger
+            v-if="isITDepartment"
+            value="printer-settings"
+            class="gap-2 px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all"
+          >
+            <Settings2 class="w-4 h-4" /> {{ t('admin.settings') }}
           </TabsTrigger>
           <TabsTrigger
             value="assets"
@@ -322,6 +340,15 @@ const getStatusColor = (status: string) => {
             </div>
           </CardContent>
         </Card>
+      </TabsContent>
+
+      <TabsContent v-if="isITDepartment" value="printer" class="space-y-4">
+        <PrinterUsageAnalytics />
+      </TabsContent>
+
+      <!-- Printer Settings Tab (Admin/IT Only) -->
+      <TabsContent v-if="isITDepartment" value="printer-settings" class="space-y-4">
+        <PrinterSettings />
       </TabsContent>
 
       <!-- Assets Tab -->

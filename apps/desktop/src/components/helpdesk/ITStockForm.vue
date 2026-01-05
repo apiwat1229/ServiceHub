@@ -135,7 +135,9 @@ const handleSubmit = async () => {
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div class="space-y-2">
-        <Label for="stock-name">{{ t('services.itHelp.stock.deviceName') }}</Label>
+        <div class="flex items-center h-6">
+          <Label for="stock-name">{{ t('services.itHelp.stock.deviceName') }}</Label>
+        </div>
         <Input
           id="stock-name"
           v-model="form.name"
@@ -145,11 +147,11 @@ const handleSubmit = async () => {
       </div>
 
       <div class="space-y-2">
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between h-6">
           <Label for="stock-code">{{ t('services.itHelp.stock.deviceCode') }}</Label>
           <div class="flex items-center gap-2">
             <Checkbox id="auto-code" v-model:checked="form.isAutoCode" />
-            <Label for="auto-code" class="text-xs font-normal cursor-pointer">
+            <Label for="auto-code" class="text-xs font-normal cursor-pointer leading-none">
               {{ t('services.itHelp.stock.autoGenerate') }}
             </Label>
           </div>

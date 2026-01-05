@@ -521,3 +521,51 @@ model NotificationGroup {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+// ==========================================
+// Printer Usage Analytics System
+// ==========================================
+
+model PrinterDepartment {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  userMappings PrinterUserMapping[]
+  usageRecords PrinterUsageRecord[]
+
+  @@map("printer_departments")
+}
+
+model PrinterUserMapping {
+  id           String            @id @default(uuid())
+  userName     String            @unique @map("user_name")
+  departmentId String            @map("department_id")
+  department   PrinterDepartment @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  createdAt    DateTime          @default(now()) @map("created_at")
+  updatedAt    DateTime          @updatedAt @map("updated_at")
+
+  @@map("printer_user_mappings")
+}
+
+model PrinterUsageRecord {
+  id           String             @id @default(uuid())
+  period       DateTime           // First day of the month for the record
+  userName     String             @map("user_name")
+  departmentId String?            @map("department_id")
+  department   PrinterDepartment? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  
+  printBW      Int                @default(0) @map("print_bw")
+  printColor   Int                @default(0) @map("print_color")
+  copyBW       Int                @default(0) @map("copy_bw")
+  copyColor    Int                @default(0) @map("copy_color")
+  total        Int                @default(0)
+
+  createdAt    DateTime           @default(now()) @map("created_at")
+  updatedAt    DateTime           @updatedAt @map("updated_at")
+
+  @@unique([period, userName])
+  @@map("printer_usage_records")
+}

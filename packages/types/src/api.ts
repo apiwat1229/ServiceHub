@@ -576,3 +576,77 @@ export interface NotificationSettingDto {
     recipientUsers?: string[];
     channels: string[];
 }
+
+// ==================== Printer Usage DTOs ====================
+
+export interface PrinterDepartmentDto {
+    id: string;
+    name: string;
+    description: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+export class CreatePrinterDepartmentDto {
+    @IsString()
+    @IsNotEmpty()
+    name!: string;
+
+    @IsOptional()
+    @IsString()
+    description?: string;
+}
+
+export class UpdatePrinterDepartmentDto {
+    @IsOptional()
+    @IsString()
+    name?: string;
+
+    @IsOptional()
+    @IsString()
+    description?: string;
+}
+
+export interface PrinterUserMappingDto {
+    id: string;
+    userName: string;
+    departmentId: string;
+    department?: PrinterDepartmentDto;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+export class UpsertPrinterUserMappingDto {
+    @IsString()
+    @IsNotEmpty()
+    userName!: string;
+
+    @IsString()
+    @IsNotEmpty()
+    departmentId!: string;
+}
+
+export class SavePrinterUsageRecordDto {
+    @IsDate()
+    @Type(() => Date)
+    period!: Date;
+
+    @IsString()
+    @IsNotEmpty()
+    userName!: string;
+
+    @IsNumber()
+    printBW!: number;
+
+    @IsNumber()
+    printColor!: number;
+
+    @IsNumber()
+    copyBW!: number;
+
+    @IsNumber()
+    copyColor!: number;
+
+    @IsNumber()
+    total!: number;
+}

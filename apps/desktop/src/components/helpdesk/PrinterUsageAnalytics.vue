@@ -1,0 +1,914 @@
+<script setup lang="ts">
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { printerService } from '@/services/printer';
+import { PrinterDepartmentDto } from '@my-app/types';
+import { Chart, registerables } from 'chart.js';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
+import {
+  BarChart3,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  FileUp,
+  Printer,
+  Save,
+  Search,
+  Trash2,
+  Users,
+} from 'lucide-vue-next';
+import Papa from 'papaparse';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { toast } from 'vue-sonner';
+
+Chart.register(...registerables, ChartDataLabels);
+
+const { t, tm, rt } = useI18n();
+
+interface UserUsage {
+  user_name: string;
+  department: string;
+  printBW: number;
+  printColor: number;
+  copyBW: number;
+  copyColor: number;
+  total: number;
+}
+
+const processedData = ref<UserUsage[]>([]);
+const hasData = ref(false);
+const searchQuery = ref('');
+const selectedDeptFilter = ref('all');
+const sortKey = ref<keyof UserUsage>('total');
+const sortOrder = ref<'asc' | 'desc'>('desc');
+
+// Department Mapping
+const userDepartmentMap = ref<Record<string, string>>({});
+const dbDepartments = ref<PrinterDepartmentDto[]>([]);
+
+// Load data from DB
+const loadDbData = async () => {
+  try {
+    const [deptsRes, mappingsRes] = await Promise.all([
+      printerService.getDepartments(),
+      printerService.getMappings(),
+    ]);
+    if (deptsRes.success) dbDepartments.value = deptsRes.data || [];
+    if (mappingsRes.success) {
+      const map: Record<string, string> = {};
+      mappingsRes.data?.forEach((m) => {
+        map[m.userName] = m.departmentId;
+      });
+      userDepartmentMap.value = map;
+    }
+  } catch (error) {
+    console.error('Failed to load printer DB data:', error);
+  }
+};
+
+onMounted(loadDbData);
+
+const saveDeptMap = async (userName: string, dept: string) => {
+  try {
+    await printerService.upsertMapping({ userName, departmentId: dept });
+    userDepartmentMap.value[userName] = dept;
+    toast.success(t('services.itHelp.printer.settings.mappingSuccess'));
+
+    // Update processed data in real-time
+    const user = processedData.value.find((u) => u.user_name === userName);
+    if (user) {
+      user.department = dept;
+      nextTick(() => renderCharts());
+    }
+  } catch (error) {
+    toast.error(t('services.itHelp.printer.settings.mappingError'));
+  }
+};
+
+const departments = computed(() => {
+  return dbDepartments.value.map((d) => ({
+    id: d.id,
+    label: d.name,
+  }));
+});
+
+// Pagination
+const currentPage = ref(1);
+const pageSize = ref(10);
+
+// Chart Instances
+let userChartInstance: Chart | null = null;
+let typeChartInstance: Chart | null = null;
+let deptChartInstance: Chart | null = null;
+let trendChartInstance: Chart | null = null;
+
+const stats = ref({
+  totalUsers: 0,
+  totalDepts: 0,
+  grandTotal: 0,
+  totalBW: 0,
+  totalColor: 0,
+  totalPrint: 0,
+  totalCopy: 0,
+});
+
+const isSaving = ref(false);
+const historyRecords = ref<any[]>([]);
+
+const saveToDb = async () => {
+  if (processedData.value.length === 0) return;
+
+  // Assuming current month for the uploaded log
+  const now = new Date();
+  const period = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+  isSaving.value = true;
+  try {
+    const records = processedData.value.map((u) => ({
+      period: new Date(period),
+      userName: u.user_name,
+      printBW: u.printBW,
+      printColor: u.printColor,
+      copyBW: u.copyBW,
+      copyColor: u.copyColor,
+      total: u.total,
+    }));
+
+    await printerService.saveUsageRecords(records);
+    toast.success(t('services.itHelp.printer.history.saveSuccess'));
+  } catch (err) {
+    toast.error(t('services.itHelp.printer.history.saveError'));
+  } finally {
+    isSaving.value = false;
+  }
+};
+
+const loadHistory = async () => {
+  try {
+    const res = await printerService.getHistory();
+    if (res.success) historyRecords.value = res.data || [];
+  } catch (err) {
+    console.error('Failed to load history:', err);
+  }
+};
+
+onMounted(loadHistory);
+
+const formatNumber = (num: number) => {
+  return new Intl.NumberFormat().format(num);
+};
+
+const handleFileUpload = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  if (!file) return;
+
+  Papa.parse(file, {
+    header: true,
+    skipEmptyLines: true,
+    complete: (results) => {
+      processData(results.data as any[]);
+    },
+    error: (err: any) => {
+      console.error('CSV Parse Error:', err);
+    },
+  });
+};
+
+const processData = (data: any[]) => {
+  const userMap: Record<string, UserUsage> = {};
+  let grandTotal = 0;
+  let sumBW = 0;
+  let sumColor = 0;
+  let sumPrint = 0;
+  let sumCopy = 0;
+
+  data.forEach((row) => {
+    if (!row.user_name) return;
+
+    const userName = row.user_name.trim();
+    const pBW = parseInt(row.PrintBW) || 0;
+    const pColor = parseInt(row.PrintColor) || 0;
+    const cBW = parseInt(row.CopyBW) || 0;
+    const cColor = parseInt(row.CopyColor) || 0;
+    const total = parseInt(row.TotalMeter) || pBW + pColor + cBW + cColor;
+
+    if (!userMap[userName]) {
+      userMap[userName] = {
+        user_name: userName,
+        department: userDepartmentMap.value[userName] || 'other',
+        printBW: 0,
+        printColor: 0,
+        copyBW: 0,
+        copyColor: 0,
+        total: 0,
+      };
+    }
+
+    userMap[userName].printBW += pBW;
+    userMap[userName].printColor += pColor;
+    userMap[userName].copyBW += cBW;
+    userMap[userName].copyColor += cColor;
+    userMap[userName].total += total;
+
+    grandTotal += total;
+    sumBW += pBW + cBW;
+    sumColor += pColor + cColor;
+    sumPrint += pBW + pColor;
+    sumCopy += cBW + cColor;
+  });
+
+  processedData.value = Object.values(userMap);
+
+  const uniqueDepts = new Set(processedData.value.map((u) => u.department));
+
+  stats.value = {
+    totalUsers: processedData.value.length,
+    totalDepts: uniqueDepts.size,
+    grandTotal,
+    totalBW: sumBW,
+    totalColor: sumColor,
+    totalPrint: sumPrint,
+    totalCopy: sumCopy,
+  };
+
+  hasData.value = true;
+  currentPage.value = 1;
+  nextTick(() => {
+    renderCharts();
+  });
+};
+
+const renderCharts = () => {
+  if (!hasData.value) return;
+
+  const sortedUsers = [...processedData.value].sort((a, b) => b.total - a.total).slice(0, 10);
+  const labels = sortedUsers.map((u) => u.user_name);
+  const dataTotal = sortedUsers.map((u) => u.total);
+
+  // Top Users Chart
+  const canvasUser = document.getElementById('userChart') as HTMLCanvasElement;
+  if (canvasUser) {
+    if (userChartInstance) userChartInstance.destroy();
+    userChartInstance = new Chart(canvasUser, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: t('services.itHelp.printer.charts.labels.totalUsage'),
+            data: dataTotal,
+            backgroundColor: 'rgba(59, 130, 246, 0.7)',
+            borderColor: 'rgb(59, 130, 246)',
+            borderWidth: 1,
+            borderRadius: 4,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          datalabels: {
+            anchor: 'end',
+            align: 'top',
+            offset: 4,
+            color: 'rgb(59, 130, 246)',
+            font: {
+              weight: 'bold',
+            },
+            formatter: (value) => {
+              return formatNumber(value);
+            },
+            display: (context) => {
+              return (context.dataset.data[context.dataIndex] as number) > 0;
+            },
+          },
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            grace: '10%', // Add some space at the top for labels
+          },
+        },
+      },
+    });
+  }
+
+  // Type Breakdown Chart
+  const canvasType = document.getElementById('typeChart') as HTMLCanvasElement;
+  if (canvasType) {
+    if (typeChartInstance) typeChartInstance.destroy();
+    typeChartInstance = new Chart(canvasType, {
+      type: 'doughnut',
+      data: {
+        labels: [
+          t('services.itHelp.printer.charts.labels.printBW'),
+          t('services.itHelp.printer.charts.labels.printColor'),
+          t('services.itHelp.printer.charts.labels.copyBW'),
+          t('services.itHelp.printer.charts.labels.copyColor'),
+        ],
+        datasets: [
+          {
+            data: [
+              processedData.value.reduce((acc, curr) => acc + curr.printBW, 0),
+              processedData.value.reduce((acc, curr) => acc + curr.printColor, 0),
+              processedData.value.reduce((acc, curr) => acc + curr.copyBW, 0),
+              processedData.value.reduce((acc, curr) => acc + curr.copyColor, 0),
+            ],
+            backgroundColor: [
+              '#3b82f6', // Blue
+              '#ec4899', // Pink
+              '#9ca3af', // Gray
+              '#f97316', // Orange
+            ],
+            hoverOffset: 4,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+          },
+          datalabels: {
+            color: '#fff',
+            font: {
+              weight: 'bold',
+              size: 14,
+            },
+            formatter: (value) => {
+              return formatNumber(value);
+            },
+            display: (context) => {
+              const value = context.dataset.data[context.dataIndex] as number;
+              return value > 0; // Only show if value > 0
+            },
+          },
+        },
+      },
+    });
+  }
+
+  // Department Usage Chart
+  const canvasDept = document.getElementById('deptChart') as HTMLCanvasElement;
+  if (canvasDept) {
+    const deptDataMap: Record<string, number> = {};
+    processedData.value.forEach((u) => {
+      const deptLabel = rt(tm(`services.itHelp.printer.departments.${u.department}`));
+      deptDataMap[deptLabel] = (deptDataMap[deptLabel] || 0) + u.total;
+    });
+
+    const deptLabels = Object.keys(deptDataMap).sort((a, b) => deptDataMap[b] - deptDataMap[a]);
+    const deptValues = deptLabels.map((l) => deptDataMap[l]);
+
+    if (deptChartInstance) deptChartInstance.destroy();
+    deptChartInstance = new Chart(canvasDept, {
+      type: 'bar',
+      data: {
+        labels: deptLabels,
+        datasets: [
+          {
+            label: t('services.itHelp.printer.charts.labels.totalUsage'),
+            data: deptValues,
+            backgroundColor: 'rgba(16, 185, 129, 0.7)',
+            borderColor: 'rgb(16, 185, 129)',
+            borderWidth: 1,
+            borderRadius: 4,
+          },
+        ],
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          datalabels: {
+            anchor: 'end',
+            align: 'right',
+            offset: 4,
+            color: 'rgb(16, 185, 129)',
+            font: { weight: 'bold' },
+            formatter: (value) => formatNumber(value),
+            display: (context) => (context.dataset.data[context.dataIndex] as number) > 0,
+          },
+        },
+        scales: {
+          x: {
+            beginAtZero: true,
+            grace: '10%',
+          },
+        },
+      },
+    });
+  }
+};
+
+const sortBy = (key: keyof UserUsage) => {
+  if (sortKey.value === key) {
+    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortKey.value = key;
+    sortOrder.value = 'desc';
+  }
+};
+
+const filteredUsers = computed(() => {
+  let temp = [...processedData.value];
+
+  // Search filter
+  if (searchQuery.value) {
+    const q = searchQuery.value.toLowerCase();
+    temp = temp.filter((u) => u.user_name.toLowerCase().includes(q));
+  }
+
+  // Department filter
+  if (selectedDeptFilter.value !== 'all') {
+    temp = temp.filter((u) => u.department === selectedDeptFilter.value);
+  }
+
+  temp.sort((a, b) => {
+    let valA = a[sortKey.value];
+    let valB = b[sortKey.value];
+    if (typeof valA === 'string') {
+      valA = valA.toLowerCase();
+      valB = (valB as string).toLowerCase();
+    }
+    if (valA < valB) return sortOrder.value === 'asc' ? -1 : 1;
+    if (valA > valB) return sortOrder.value === 'asc' ? 1 : -1;
+    return 0;
+  });
+  return temp;
+});
+
+const totalPages = computed(() => Math.ceil(filteredUsers.value.length / pageSize.value));
+
+const paginatedUsers = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value;
+  return filteredUsers.value.slice(start, start + pageSize.value);
+});
+
+watch([searchQuery, pageSize, selectedDeptFilter], () => {
+  currentPage.value = 1;
+});
+
+const resetData = () => {
+  processedData.value = [];
+  hasData.value = false;
+  currentPage.value = 1;
+  if (userChartInstance) userChartInstance.destroy();
+  if (typeChartInstance) typeChartInstance.destroy();
+  if (deptChartInstance) deptChartInstance.destroy();
+};
+
+const renderTrendChart = () => {
+  if (historyRecords.value.length === 0) return;
+
+  const canvasTrend = document.getElementById('trendChart') as HTMLCanvasElement;
+  if (!canvasTrend) return;
+
+  // Group history by period
+  const periodMap: Record<string, number> = {};
+  historyRecords.value.forEach((r) => {
+    const d = new Date(r.period);
+    const label = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
+    periodMap[label] = (periodMap[label] || 0) + r.total;
+  });
+
+  const labels = Object.keys(periodMap).sort();
+  const values = labels.map((l) => periodMap[l]);
+
+  if (trendChartInstance) trendChartInstance.destroy();
+  trendChartInstance = new Chart(canvasTrend, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: t('services.itHelp.printer.history.title'),
+          data: values,
+          borderColor: 'rgb(59, 130, 246)',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        datalabels: {
+          anchor: 'end',
+          align: 'top',
+          offset: 4,
+          color: 'rgb(59, 130, 246)',
+          font: { weight: 'bold' },
+          formatter: (value) => formatNumber(value),
+        },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grace: '15%',
+        },
+      },
+    },
+  });
+};
+
+watch(historyRecords, () => {
+  nextTick(() => renderTrendChart());
+});
+
+onUnmounted(() => {
+  if (userChartInstance) userChartInstance.destroy();
+  if (typeChartInstance) typeChartInstance.destroy();
+  if (deptChartInstance) deptChartInstance.destroy();
+  if (trendChartInstance) trendChartInstance.destroy();
+});
+</script>
+
+<template>
+  <div class="space-y-6">
+    <!-- Header/Upload -->
+    <Card>
+      <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-7">
+        <div class="space-y-1">
+          <CardTitle>{{ t('services.itHelp.printer.title') }}</CardTitle>
+          <CardDescription>{{ t('services.itHelp.printer.subtitle') }}</CardDescription>
+        </div>
+        <div class="flex items-center gap-4">
+          <div v-if="hasData" class="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              class="gap-2"
+              @click="saveToDb"
+              :disabled="isSaving"
+            >
+              <Save class="w-4 h-4" /> {{ t('services.itHelp.printer.history.saveBtn') }}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              class="gap-2 text-destructive hover:text-destructive"
+              @click="resetData"
+            >
+              <Trash2 class="w-4 h-4" /> {{ t('common.clearAll') }}
+            </Button>
+          </div>
+          <div class="flex items-center gap-2">
+            <Label for="csv-upload" class="cursor-pointer">
+              <div
+                class="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90 transition-colors"
+              >
+                <FileUp class="w-4 h-4" /> {{ t('services.itHelp.printer.uploadTitle') }}
+              </div>
+            </Label>
+            <input
+              id="csv-upload"
+              type="file"
+              accept=".csv"
+              class="hidden"
+              @change="handleFileUpload"
+            />
+          </div>
+        </div>
+      </CardHeader>
+    </Card>
+
+    <!-- Empty State -->
+    <div
+      v-if="!hasData"
+      class="py-20 flex flex-col items-center justify-center border-2 border-dashed rounded-xl bg-muted/20"
+    >
+      <div class="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+        <Printer class="w-8 h-8 text-muted-foreground" />
+      </div>
+      <h3 class="text-xl font-semibold mb-2">{{ t('services.itHelp.printer.emptyState') }}</h3>
+      <p class="text-sm text-muted-foreground">{{ t('services.itHelp.printer.emptyStateDesc') }}</p>
+    </div>
+
+    <template v-else>
+      <!-- Stats Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <Card>
+          <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle class="text-sm font-medium">{{
+              t('services.itHelp.printer.stats.totalUsers')
+            }}</CardTitle>
+            <Users class="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div class="text-2xl font-bold">{{ formatNumber(stats.totalUsers) }}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle class="text-sm font-medium">{{
+              t('services.itHelp.printer.stats.totalDepts')
+            }}</CardTitle>
+            <BarChart3 class="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div class="text-2xl font-bold">{{ formatNumber(stats.totalDepts) }}</div>
+          </CardContent>
+        </Card>
+        <Card class="bg-primary/5 border-primary/20">
+          <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle class="text-sm font-medium text-primary">{{
+              t('services.itHelp.printer.stats.grandTotal')
+            }}</CardTitle>
+            <Printer class="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div class="text-2xl font-bold text-primary">{{ formatNumber(stats.grandTotal) }}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle class="text-sm font-medium">{{
+              t('services.itHelp.printer.stats.printBW')
+            }}</CardTitle>
+            <div class="h-4 w-4 rounded-full bg-blue-500" />
+          </CardHeader>
+          <CardContent>
+            <div class="text-2xl font-bold">{{ formatNumber(stats.totalBW) }}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle class="text-sm font-medium">{{
+              t('services.itHelp.printer.stats.printColor')
+            }}</CardTitle>
+            <div class="h-4 w-4 rounded-full bg-pink-500" />
+          </CardHeader>
+          <CardContent>
+            <div class="text-2xl font-bold">{{ formatNumber(stats.totalColor) }}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <!-- Charts -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card class="lg:col-span-1">
+          <CardHeader>
+            <CardTitle class="text-base">{{
+              t('services.itHelp.printer.charts.topUsers')
+            }}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div class="h-80 w-full">
+              <canvas id="userChart"></canvas>
+            </div>
+          </CardContent>
+        </Card>
+        <Card class="lg:col-span-1">
+          <CardHeader>
+            <CardTitle class="text-base">{{
+              t('services.itHelp.printer.charts.usageByDept')
+            }}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div class="h-80 w-full">
+              <canvas id="deptChart"></canvas>
+            </div>
+          </CardContent>
+        </Card>
+        <Card class="lg:col-span-1">
+          <CardHeader>
+            <CardTitle class="text-base">{{
+              t('services.itHelp.printer.charts.usageType')
+            }}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div class="h-80 w-full flex justify-center">
+              <canvas id="typeChart"></canvas>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <!-- Historical Trends -->
+      <Card v-if="historyRecords.length > 0">
+        <CardHeader>
+          <CardTitle class="text-base">{{ t('services.itHelp.printer.history.title') }}</CardTitle>
+          <CardDescription>{{ t('services.itHelp.printer.history.comparison') }}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div class="h-80 w-full">
+            <canvas id="trendChart"></canvas>
+          </div>
+        </CardContent>
+      </Card>
+
+      <!-- Detail Table -->
+      <Card>
+        <CardHeader>
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <CardTitle class="text-lg">{{ t('services.itHelp.printer.table.title') }}</CardTitle>
+            <div class="flex items-center gap-2">
+              <Select v-model="selectedDeptFilter">
+                <SelectTrigger class="w-[180px]">
+                  <SelectValue :placeholder="t('services.itHelp.printer.table.filterDept')" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{{
+                    t('services.itHelp.printer.table.allDepts')
+                  }}</SelectItem>
+                  <SelectItem v-for="dept in departments" :key="dept.id" :value="dept.id">
+                    {{ dept.label }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <div class="relative w-full md:w-64">
+                <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  v-model="searchQuery"
+                  :placeholder="t('services.itHelp.printer.table.search')"
+                  class="pl-8"
+                />
+              </div>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div class="rounded-md border overflow-hidden">
+            <table class="w-full text-sm">
+              <thead class="bg-muted/50 border-b">
+                <tr>
+                  <th
+                    class="p-3 text-left font-medium cursor-pointer hover:text-primary transition-colors"
+                    @click="sortBy('user_name')"
+                  >
+                    {{ t('services.itHelp.printer.table.userName') }}
+                    <span v-if="sortKey === 'user_name'">{{
+                      sortOrder === 'asc' ? '↑' : '↓'
+                    }}</span>
+                  </th>
+                  <th class="p-3 text-left font-medium">
+                    {{ t('services.itHelp.printer.table.department') }}
+                  </th>
+                  <th
+                    class="p-3 text-right font-medium cursor-pointer hover:text-primary transition-colors"
+                    @click="sortBy('total')"
+                  >
+                    {{ t('services.itHelp.printer.table.total') }}
+                    <span v-if="sortKey === 'total'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
+                  </th>
+                  <th class="p-3 text-right font-medium text-blue-600">
+                    {{ t('services.itHelp.printer.charts.labels.printBW') }}
+                  </th>
+                  <th class="p-3 text-right font-medium text-pink-600">
+                    {{ t('services.itHelp.printer.charts.labels.printColor') }}
+                  </th>
+                  <th class="p-3 text-right font-medium text-slate-500">
+                    {{ t('services.itHelp.printer.charts.labels.copyBW') }}
+                  </th>
+                  <th class="p-3 text-right font-medium text-orange-600">
+                    {{ t('services.itHelp.printer.charts.labels.copyColor') }}
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="divide-y">
+                <tr
+                  v-for="user in paginatedUsers"
+                  :key="user.user_name"
+                  class="hover:bg-muted/50 transition-colors"
+                >
+                  <td class="p-3 font-medium">{{ user.user_name }}</td>
+                  <td class="p-3">
+                    <Select
+                      :model-value="user.department"
+                      @update:model-value="(v) => saveDeptMap(user.user_name, v)"
+                    >
+                      <SelectTrigger class="h-8 w-[140px] text-xs">
+                        <SelectValue :placeholder="t('services.itHelp.printer.table.selectDept')" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem v-for="dept in departments" :key="dept.id" :value="dept.id">
+                          {{ dept.label }}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </td>
+                  <td class="p-3 text-right">
+                    <Badge variant="secondary" class="font-bold">{{
+                      formatNumber(user.total)
+                    }}</Badge>
+                  </td>
+                  <td class="p-3 text-right text-muted-foreground">
+                    {{ formatNumber(user.printBW) }}
+                  </td>
+                  <td class="p-3 text-right text-muted-foreground">
+                    {{ formatNumber(user.printColor) }}
+                  </td>
+                  <td class="p-3 text-right text-muted-foreground">
+                    {{ formatNumber(user.copyBW) }}
+                  </td>
+                  <td class="p-3 text-right text-muted-foreground">
+                    {{ formatNumber(user.copyColor) }}
+                  </td>
+                </tr>
+                <tr v-if="paginatedUsers.length === 0">
+                  <td colspan="7" class="p-8 text-center text-muted-foreground">
+                    {{ t('services.itHelp.printer.table.noData') }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination Controls -->
+          <div class="flex items-center justify-between px-2 py-4">
+            <div class="flex items-center gap-6">
+              <div class="flex items-center gap-2">
+                <p class="text-sm font-medium">
+                  {{ t('services.itHelp.printer.table.rowsPerPage') }}
+                </p>
+                <Select
+                  :model-value="pageSize.toString()"
+                  @update:model-value="(v) => (pageSize = parseInt(v))"
+                >
+                  <SelectTrigger class="h-8 w-[70px]">
+                    <SelectValue :placeholder="pageSize.toString()" />
+                  </SelectTrigger>
+                  <SelectContent side="top">
+                    <SelectItem
+                      v-for="size in [10, 20, 30, 40, 50]"
+                      :key="size"
+                      :value="size.toString()"
+                    >
+                      {{ size }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div class="flex w-[100px] items-center justify-center text-sm font-medium">
+                {{ t('services.itHelp.printer.table.page') }} {{ currentPage }} of {{ totalPages }}
+              </div>
+            </div>
+            <div class="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                class="hidden h-8 w-8 p-0 lg:flex"
+                :disabled="currentPage === 1"
+                @click="currentPage = 1"
+              >
+                <span class="sr-only">Go to first page</span>
+                <ChevronsLeft class="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                class="h-8 w-8 p-0"
+                :disabled="currentPage === 1"
+                @click="currentPage--"
+              >
+                <span class="sr-only">Go to previous page</span>
+                <ChevronLeft class="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                class="h-8 w-8 p-0"
+                :disabled="currentPage === totalPages"
+                @click="currentPage++"
+              >
+                <span class="sr-only">Go to next page</span>
+                <ChevronRight class="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                class="hidden h-8 w-8 p-0 lg:flex"
+                :disabled="currentPage === totalPages"
+                @click="currentPage = totalPages"
+              >
+                <span class="sr-only">Go to last page</span>
+                <ChevronsRight class="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </template>
+  </div>
+</template>

@@ -110,7 +110,8 @@
         "myTickets": "My Tickets",
         "assetRequest": "Asset Request",
         "kb": "Knowledge Center",
-        "stock": "IT Stock Management"
+        "stock": "IT Stock Management",
+        "printer": "Printer Analytics"
       },
       "stock": {
         "title": "IT Device Stock",
@@ -144,24 +145,157 @@
       },
       "searchPlaceholder": "Search tickets or articles...",
       "tickets": {
-        "title": "Recent Tickets",
-        "subtitle": "View and manage your support requests.",
+        "title": "Support Tickets",
+        "subtitle": "Report an issue or request assistance.",
         "subject": "Subject",
         "subjectPlaceholder": "Brief summary of the issue",
-        "category": "Category",
+        "category": "Main Category",
+        "subcategory": "Sub-Category",
+        "issueType": "Issue Type",
         "priority": "Priority",
+        "location": "Location",
+        "locationPlaceholder": "e.g. Office, Factory Line 1, Guardhouse",
         "description": "Description",
         "descriptionPlaceholder": "Describe the problem in detail...",
+        "attachment": "Screenshot / Attachment",
         "submit": "Submit Ticket",
-        "software": "Software / ERP",
-        "hardware": "Hardware / Device",
-        "network": "Network / Internet",
-        "account": "Account / Access",
-        "other": "Other",
-        "low": "Low",
-        "medium": "Medium",
-        "high": "High",
-        "urgent": "Urgent / Critical"
+        "priorities": {
+          "low": "Low: Can wait (e.g., new feature request)",
+          "medium": "Medium: Difficult to work but manageable",
+          "high": "High: Cannot work at all (e.g., computer won't start)",
+          "critical": "Critical: Severe business impact (e.g., server down)"
+        },
+        "categories": {
+          "hardware": {
+            "label": "Hardware",
+            "subs": {
+              "computer": "Computer / Laptop",
+              "printer": "Printer / Scanner",
+              "peripherals": "Peripherals (Mouse, Keyboard, Monitor)",
+              "infrastructure": "Server / Infrastructure"
+            }
+          },
+          "network": {
+            "label": "Network & Internet",
+            "subs": {
+              "wifi": "Wi-Fi",
+              "lan": "LAN / Cabling",
+              "vpn": "VPN / Remote Access",
+              "internet": "Internet"
+            }
+          },
+          "software": {
+            "label": "Software & Program",
+            "subs": {
+              "os": "OS Issues (Windows, Booting)",
+              "office": "Microsoft Office / 365",
+              "license": "Software License / Installation"
+            }
+          },
+          "account": {
+            "label": "Account & Access",
+            "subs": {
+              "password": "Password Reset / Locked Account",
+              "user": "New User / Resignation",
+              "permission": "File Server / Permissions"
+            }
+          },
+          "factory": {
+            "label": "Factory & Industrial IT",
+            "subs": {
+              "plc": "PLC / Machine Interface",
+              "scale": "Scale / Weighbridge",
+              "barcode": "Barcode / QR Scanner"
+            }
+          },
+          "internal": {
+            "label": "Internal System / ERP",
+            "subs": {
+              "syncflow": {
+                "label": "YTRC Portal Center / SyncFlow",
+                "issues": {
+                  "login": "Login Issues",
+                  "bug": "Bug Report",
+                  "feature": "Feature Request"
+                }
+              },
+              "erp": "ERP / Accounting System"
+            }
+          }
+        }
+      },
+      "printer": {
+        "title": "Printer Usage Analytics",
+        "subtitle": "Analyze data from printer log CSV files",
+        "uploadTitle": "Upload CSV File",
+        "uploadDesc": "Supports .csv files (Encoding: UTF-8)",
+        "emptyState": "Please upload a CSV file to start analysis",
+        "emptyStateDesc": "The system will process CopyBW, CopyColor, PrintBW, PrintColor, and TotalMeter",
+        "stats": {
+          "totalUsers": "Total Users",
+          "totalDepts": "Total Departments",
+          "grandTotal": "Grand Total Usage",
+          "printBW": "Total Print B&W",
+          "printColor": "Total Print Color",
+          "copyBW": "Total Copy B&W",
+          "copyColor": "Total Copy Color"
+        },
+        "charts": {
+          "topUsers": "Top 10 High Usage Users",
+          "usageType": "Usage Type Breakdown",
+          "usageByDept": "Usage by Department",
+          "labels": {
+            "printBW": "Print B&W",
+            "printColor": "Print Color",
+            "copyBW": "Copy B&W",
+            "copyColor": "Copy Color",
+            "totalUsage": "Total Usage (Pages)"
+          }
+        },
+        "history": {
+          "title": "Monthly Usage History",
+          "comparison": "Comparison with Previous Month",
+          "saveSuccess": "Monthly records saved successfully!",
+          "saveError": "Failed to save monthly records.",
+          "saveBtn": "Save to Database"
+        },
+        "settings": {
+          "title": "Printer Analytics Settings",
+          "deptManagement": "Department Management",
+          "userMapping": "User to Department Mapping",
+          "addDept": "Add Department",
+          "editDept": "Edit Department",
+          "deleteDept": "Delete Department",
+          "deptName": "Department Name",
+          "description": "Description",
+          "mappingDesc": "Map usernames found in printer logs to specific departments for accurate aggregation.",
+          "saveMapping": "Save Mapping",
+          "mappingSuccess": "Mapping saved successfully!",
+          "mappingError": "Failed to save mapping."
+        },
+        "table": {
+          "title": "Individual Usage Details",
+          "search": "Search username...",
+          "userName": "Username",
+          "department": "Department",
+          "total": "Total",
+          "noData": "No data found",
+          "rowsPerPage": "Rows per page",
+          "page": "Page",
+          "selectDept": "Select Dept",
+          "filterDept": "Filter by Dept",
+          "allDepts": "All Departments"
+        },
+        "departments": {
+          "it": "Information Technology",
+          "hr": "Human Resources",
+          "acc": "Accounting",
+          "production": "Production",
+          "sales": "Sales",
+          "mkt": "Marketing",
+          "mng": "Management",
+          "other": "Other"
+        }
       },
       "assets": {
         "noAssets": "No assets assigned",
@@ -177,9 +311,13 @@
         "model": "Device Model / Specification (Optional)",
         "quantity": "Quantity",
         "expectedDate": "Expected Date of Pickup",
+        "approver": "Approver (Supervisor/Manager)",
         "reason": "Purpose / Reason for Request",
         "submit": "Submit Request",
         "submitting": "Submitting...",
+        "placeholder": {
+          "selectApprover": "Select who should approve this request"
+        },
         "infoTitle": "Processing Time",
         "infoDesc": "Standard asset requests are typically processed within 2-3 business days. You will receive a notification once your request has been approved."
       }

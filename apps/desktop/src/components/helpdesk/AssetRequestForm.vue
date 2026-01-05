@@ -34,6 +34,7 @@ const form = ref({
   urgency: 'medium',
   reason: '',
   expectedDate: '',
+  approverId: '',
 });
 
 const selectedDate = ref<DateValue>();
@@ -146,6 +147,21 @@ const handleSubmit = async () => {
           </PopoverContent>
         </Popover>
       </div>
+    </div>
+
+    <div class="space-y-2">
+      <Label for="approver">{{ t('services.itHelp.request.approver') }}</Label>
+      <Select v-model="form.approverId" required>
+        <SelectTrigger id="approver">
+          <SelectValue :placeholder="t('services.itHelp.request.placeholder.selectApprover')" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="mgr-001">John Doe (IT Manager)</SelectItem>
+          <SelectItem value="mgr-002">Jane Smith (HR Manager)</SelectItem>
+          <SelectItem value="mgr-003">Bob Wilson (Accounting Head)</SelectItem>
+          <SelectItem value="mgr-004">Alice Brown (Production Manager)</SelectItem>
+        </SelectContent>
+      </Select>
     </div>
 
     <div class="space-y-2">

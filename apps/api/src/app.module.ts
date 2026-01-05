@@ -13,6 +13,7 @@ import { MasterModule } from './master/master.module';
 import { NotificationGroupsModule } from './notification-groups/notification-groups.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PostsModule } from './posts/posts.module';
+import { PrinterUsageModule } from './printer-usage/printer-usage.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RolesModule } from './roles/roles.module';
 import { RubberTypesModule } from './rubber-types/rubber-types.module';
@@ -39,6 +40,7 @@ import { UsersModule } from './users/users.module';
         ApprovalsModule,
         AccessControlModule,
         NotificationGroupsModule,
+        PrinterUsageModule,
         ServeStaticModule.forRoot({
             rootPath: join(process.cwd(), 'uploads'),
             serveRoot: '/uploads',

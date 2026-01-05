@@ -107,7 +107,8 @@
         "myTickets": "รายการแจ้งปัญหา",
         "assetRequest": "เบิก/คืน อุปกรณ์",
         "kb": "ศูนย์การเรียนรู้",
-        "stock": "จัดการคลังอุปกรณ์ IT"
+        "stock": "จัดการคลังอุปกรณ์ IT",
+        "printer": "สรุปยอดพิมพ์"
       },
       "stock": {
         "title": "คลังอุปกรณ์คอมพิวเตอร์",
@@ -141,24 +142,157 @@
       },
       "searchPlaceholder": "ค้นหาตั๋วหรือบทความ...",
       "tickets": {
-        "title": "รายการแจ้งปัญหาล่าสุด",
-        "subtitle": "ดูและจัดการรายการแจ้งซ่อมหรือปัญหาเทคนิคของคุณ",
-        "subject": "หัวข้อ",
-        "subjectPlaceholder": "สรุปปัญหาที่พบสั้นๆ",
-        "category": "ประเภท",
-        "priority": "ความสำคัญ",
+        "title": "แจ้งขอรับบริการ IT / แจ้งปัญหา",
+        "subtitle": "ส่งตั๋วแจ้งซ่อม แจ้งปัญหาการใช้งาน หรือขอความช่วยเหลือ",
+        "subject": "หัวข้อปัญหา",
+        "subjectPlaceholder": "สรุปปัญหาเบื้องต้นสั้นๆ",
+        "category": "หมวดหมู่หลัก",
+        "subcategory": "หมวดหมู่ย่อย",
+        "issueType": "ประเภทปัญหา",
+        "priority": "ระดับความเร่งด่วน",
+        "location": "สถานที่ / จุดที่เกิดปัญหา",
+        "locationPlaceholder": "เช่น ออฟฟิศกลาง, โรงงานไลน์ 1, ป้อมรปภ.",
         "description": "รายละเอียด",
-        "descriptionPlaceholder": "อธิบายรายละเอียดปัญหาที่พบ...",
+        "descriptionPlaceholder": "อธิบายรายละเอียดปัญหาที่พบอย่างละเอียด...",
+        "attachment": "แนบรูปภาพ / หลักฐานประกอบ",
         "submit": "ส่งตั๋วแจ้งซ่อม",
-        "software": "ซอฟต์แวร์ / ระบบ ERP",
-        "hardware": "ฮาร์ดแวร์ / อุปกรณ์",
-        "network": "เครือข่าย / อินเทอร์เน็ต",
-        "account": "บัญชีผู้ใช้ / สิทธิ์การใช้งาน",
-        "other": "อื่นๆ",
-        "low": "ต่ำ",
-        "medium": "ปานกลาง",
-        "high": "สูง",
-        "urgent": "เร่งด่วน / วิกฤต"
+        "priorities": {
+          "low": "ต่ำ: รอได้ (เช่น ขอฟีเจอร์ใหม่, อุปกรณ์มีสำรอง)",
+          "medium": "ปานกลาง: ทำงานลำบากแต่ยังพอทำงานได้",
+          "high": "สูง: ทำงานไม่ได้เลย (เช่น คอมเปิดไม่ติด, อุปกรณ์หลักเสีย)",
+          "critical": "วิกฤต: กระทบธุรกิจร้ายแรง (เช่น ระบบล่มทั้งแผนก, Server ดับ)"
+        },
+        "categories": {
+          "hardware": {
+            "label": "Hardware (อุปกรณ์ฮาร์ดแวร์)",
+            "subs": {
+              "computer": "Computer / Laptop (เปิดไม่ติด, เครื่องช้า)",
+              "printer": "Printer / Scanner (หมึกหมด, กระดาษติด)",
+              "peripherals": "Peripherals (เมาส์, คีย์บอร์ด, จอภาพ)",
+              "infrastructure": "Server / Infrastructure (Admin เท่านั้น)"
+            }
+          },
+          "network": {
+            "label": "Network & Internet (เครือข่าย)",
+            "subs": {
+              "wifi": "Wi-Fi (เชื่อมต่อไม่ได้, สัญญาณอ่อน)",
+              "lan": "LAN / Cabling (สายขาด, พอร์ตเสีย)",
+              "vpn": "VPN / Remote Access (เข้า Server ไม่ได้)",
+              "internet": "Internet (ช้า, เข้าเว็บไม่ได้)"
+            }
+          },
+          "software": {
+            "label": "Software & Program (ซอฟต์แวร์)",
+            "subs": {
+              "os": "OS Issues (Windows Update, จอดำ)",
+              "office": "Microsoft Office / 365",
+              "license": "License / ขอลงโปรแกรมเพิ่ม"
+            }
+          },
+          "account": {
+            "label": "Account & Access (บัญชีผู้ใช้)",
+            "subs": {
+              "password": "Password Reset / บัญชีโดนล็อค",
+              "user": "New User / Resignation (แจ้งพนักงานใหม่-ลาออก)",
+              "permission": "File Server / ขอสิทธิ์เข้าถึงโฟลเดอร์"
+            }
+          },
+          "factory": {
+            "label": "Factory & Industrial IT (ระบบโรงงาน)",
+            "subs": {
+              "plc": "PLC / Machine Interface (เครื่องจักรไม่ส่งข้อมูล)",
+              "scale": "Scale / Weighbridge (เครื่องชั่งมีปัญหา)",
+              "barcode": "Barcode / QR Scanner (สแกนเนอร์เสีย)"
+            }
+          },
+          "internal": {
+            "label": "Internal System / ERP (ระบบภายใน)",
+            "subs": {
+              "syncflow": {
+                "label": "YTRC Portal Center / SyncFlow",
+                "issues": {
+                  "login": "ปัญหาการเข้าสู่ระบบ (Login)",
+                  "bug": "รายงาน Bug / โปรแกรมทำงานผิดพลาด",
+                  "feature": "ขอเพิ่มฟีเจอร์ใหม่ (Feature Request)"
+                }
+              },
+              "erp": "ERP / Accounting System (บิลผิด, สต็อกไม่ตรง)"
+            }
+          }
+        }
+      },
+      "printer": {
+        "title": "แดชบอร์ดสรุปการใช้งานเครื่องพิมพ์",
+        "subtitle": "วิเคราะห์ข้อมูลจากไฟล์ CSV Log",
+        "uploadTitle": "อัปโหลดไฟล์ CSV",
+        "uploadDesc": "รองรับไฟล์ .csv (Encoding: UTF-8)",
+        "emptyState": "กรุณาอัปโหลดไฟล์ CSV เพื่อเริ่มการวิเคราะห์",
+        "emptyStateDesc": "ระบบจะประมวลผล CopyBW, CopyColor, PrintBW, PrintColor, และ TotalMeter",
+        "stats": {
+          "totalUsers": "ผู้ใช้งานทั้งหมด",
+          "totalDepts": "แผนกทั้งหมด",
+          "grandTotal": "ยอดการใช้งานรวม",
+          "printBW": "พิมพ์ขาว-ดำ (Print)",
+          "printColor": "พิมพ์สี (Print)",
+          "copyBW": "ถ่ายเอกสารขาว-ดำ (Copy)",
+          "copyColor": "ถ่ายเอกสารสี (Copy)"
+        },
+        "charts": {
+          "topUsers": "10 อันดับผู้ใช้งานสูงสุด",
+          "usageType": "สัดส่วนประเภทการใช้งาน",
+          "usageByDept": "ยอดการใช้งานแยกตามแผนก",
+          "labels": {
+            "printBW": "Print ขาว-ดำ",
+            "printColor": "Print สี",
+            "copyBW": "Copy ขาว-ดำ",
+            "copyColor": "Copy สี",
+            "totalUsage": "ยอดการใช้งานรวม (แผ่น)"
+          }
+        },
+        "history": {
+          "title": "ประวัติการใช้งานรายเดือน",
+          "comparison": "เปรียบเทียบกับเดือนที่ผ่านมา",
+          "saveSuccess": "บันทึกข้อมูลรายเดือนสำเร็จ!",
+          "saveError": "บันทึกข้อมูลไม่สำเร็จ",
+          "saveBtn": "บันทึกลงฐานข้อมูล"
+        },
+        "settings": {
+          "title": "ตั้งค่าการวิเคราะห์เครื่องพิมพ์",
+          "deptManagement": "จัดการแผนก",
+          "userMapping": "กำหนดแผนกให้ผู้ใช้งาน",
+          "addDept": "เพิ่มแผนก",
+          "editDept": "แก้ไขแผนก",
+          "deleteDept": "ลบแผนก",
+          "deptName": "ชื่อแผนก",
+          "description": "คำอธิบาย",
+          "mappingDesc": "กำหนดแผนกให้ชื่อผู้ใช้ที่พบในไฟล์ Log เพื่อการจัดกลุ่มข้อมูลที่ถูกต้อง",
+          "saveMapping": "บันทึกการกำหนดแผนก",
+          "mappingSuccess": "บันทึกข้อมูลสำเร็จ!",
+          "mappingError": "บันทึกข้อมูลไม่สำเร็จ"
+        },
+        "table": {
+          "title": "รายละเอียดรายบุคคล (รวมยอด)",
+          "search": "ค้นหาชื่อผู้ใช้...",
+          "userName": "ชื่อผู้ใช้",
+          "department": "แผนก",
+          "total": "รวมทั้งหมด",
+          "noData": "ไม่พบข้อมูล",
+          "rowsPerPage": "จำนวนแถวต่อหน้า",
+          "page": "หน้า",
+          "selectDept": "เลือกแผนก",
+          "filterDept": "กรองตามแผนก",
+          "allDepts": "ทุกแผนก"
+        },
+        "departments": {
+          "it": "เทคโนโลยีสารสนเทศ (IT)",
+          "hr": "ทรัพยากรบุคคล (HR)",
+          "acc": "บัญชี (Accounting)",
+          "production": "ฝ่ายผลิต (Production)",
+          "sales": "ฝ่ายขาย (Sales)",
+          "mkt": "การตลาด (Marketing)",
+          "mng": "บริหาร (Management)",
+          "other": "อื่นๆ"
+        }
       },
       "assets": {
         "noAssets": "ไม่พบรายการเบิกอุปกรณ์",
@@ -174,9 +308,13 @@
         "model": "รุ่น / รายละเอียดอุปกรณ์ (ถ้ามี)",
         "quantity": "จำนวน",
         "expectedDate": "วันที่คาดว่าจะมารับ",
+        "approver": "ผู้อนุมัติ (หัวหน้างาน/ผู้จัดการ)",
         "reason": "วัตถุประสงค์ / เหตุผลในการขอ",
         "submit": "ส่งรายการแจ้งเบิก",
         "submitting": "กำลังส่งข้อมูล...",
+        "placeholder": {
+          "selectApprover": "เลือกผู้รับผิดชอบในการอนุมัติคำขอนี้"
+        },
         "infoTitle": "ระยะเวลาดำเนินการ",
         "infoDesc": "การแจ้งเบิกอุปกรณ์มาตรฐานมักใช้เวลา 2-3 วันทำการ คุณจะได้รับการแจ้งเตือนเมื่อคำขอได้รับอนุมัติ"
       }
