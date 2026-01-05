@@ -42,6 +42,11 @@ export const printerService = {
         return { success: true, data: response.data };
     },
 
+    async deleteMapping(id: string): Promise<ApiResponse<void>> {
+        await api.delete(`/printer-usage/mappings/${id}`);
+        return { success: true };
+    },
+
     // Records
     async saveUsageRecords(records: SavePrinterUsageRecordDto[]): Promise<ApiResponse<any[]>> {
         const response = await api.post('/printer-usage/records', records);

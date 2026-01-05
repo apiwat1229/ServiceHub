@@ -16,9 +16,8 @@
     "@types/papaparse": "^5.5.2",
     "@vee-validate/zod": "^4.15.1",
     "@vueuse/core": "^14.1.0",
+    "apexcharts": "^5.3.6",
     "axios": "^1.13.2",
-    "chart.js": "^4.5.1",
-    "chartjs-plugin-datalabels": "^2.2.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^2.30.0",
@@ -42,6 +41,7 @@
     "vue-i18n": "^9.14.5",
     "vue-router": "^4.6.4",
     "vue-sonner": "^2.0.9",
+    "vue3-apexcharts": "^1.10.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {
