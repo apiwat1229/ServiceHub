@@ -8,6 +8,7 @@ class SocketService {
     connect() {
         if (this.socket && this.isConnected) return;
 
+        // eslint-disable-next-line react-hooks/rules-of-hooks
         const authStore = useAuthStore();
         // Allow connection if token exists, but we might need to wait for user ID for room joining
         const token = localStorage.getItem('token') || authStore.accessToken;
@@ -22,7 +23,7 @@ class SocketService {
         console.log('SocketService: Connecting to', socketUrl);
 
         this.socket = io(socketUrl, {
-            transports: ['websocket'],
+            transports: ['websocket', 'polling'],
             autoConnect: true,
             auth: {
                 token: token
@@ -72,11 +73,13 @@ class SocketService {
         }
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     on(event: string, callback: (...args: any[]) => void) {
         if (!this.socket) this.connect(); // Lazy connect
         this.socket?.on(event, callback);
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     off(event: string, callback?: (...args: any[]) => void) {
         if (this.socket) {
             this.socket.off(event, callback);
