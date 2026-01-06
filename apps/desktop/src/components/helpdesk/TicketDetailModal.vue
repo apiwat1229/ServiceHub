@@ -13,9 +13,8 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useUsers } from '@/composables/useUsers';
 import { cn } from '@/lib/utils';
+import type { ITTicket, UpdateITTicketDto } from '@/services/it-tickets';
 import { itTicketsApi } from '@/services/it-tickets';
-import type { ITTicket, UpdateITTicketDto } from '@my-app/types';
-import { format } from 'date-fns';
 import { Clock, FileText, History, MapPin, Save } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
@@ -76,8 +75,13 @@ const getStatusColor = (status: string) => {
   }
 };
 
+import { format, formatDistanceToNowStrict } from 'date-fns';
+
 const formatDate = (date: string | Date) => {
-  return format(new Date(date), 'PPp');
+  const d = new Date(date);
+  const formatted = format(d, 'dd-MMM-yyyy, h:mm a');
+  const timeAgo = formatDistanceToNowStrict(d, { addSuffix: true });
+  return `${formatted} (${timeAgo})`;
 };
 
 const userInitials = (user?: any) => {

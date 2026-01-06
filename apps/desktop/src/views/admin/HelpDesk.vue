@@ -16,6 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -41,6 +42,14 @@ import { itAssetsApi, type ITAsset } from '@/services/it-assets';
 import { itTicketsApi, type ITTicket } from '@/services/it-tickets';
 import { knowledgeBooksApi, type KnowledgeBook } from '@/services/knowledge-books';
 import type { ColumnDef } from '@tanstack/vue-table';
+import {
+  endOfMonth,
+  format,
+  formatDistanceToNowStrict,
+  isWithinInterval,
+  startOfMonth,
+  subMonths,
+} from 'date-fns';
 import {
   AlertCircle,
   BookOpen,
@@ -306,6 +315,71 @@ const itAssetColumns: ColumnDef<ITAsset>[] = [
   },
 ];
 
+const selectedMonth = ref(format(new Date(), 'yyyy-MM'));
+
+const availableMonths = computed(() => {
+  const months = [];
+  for (let i = 0; i < 12; i++) {
+    const d = subMonths(new Date(), i);
+    months.push({
+      label: format(d, 'MMMM yyyy'),
+      value: format(d, 'yyyy-MM'),
+    });
+  }
+  return months;
+});
+
+const ticketStats = computed(() => {
+  if (!tickets.value.length) {
+    return {
+      total: 0,
+      open: 0,
+      openTrend: 0,
+      avgResponse: 0,
+      resolved: 0,
+      resolvedTrend: 0,
+    };
+  }
+
+  const [year, month] = selectedMonth.value.split('-').map(Number);
+  const start = startOfMonth(new Date(year, month - 1));
+  const end = endOfMonth(new Date(year, month - 1));
+
+  // Filter tickets for the selected month
+  const filteredTickets = tickets.value.filter((t) =>
+    isWithinInterval(new Date(t.createdAt), { start, end })
+  );
+
+  const openTickets = filteredTickets.filter(
+    (t) => t.status === 'Open' || t.status === 'In Progress'
+  );
+  const resolvedTickets = filteredTickets.filter(
+    (t) => t.status === 'Resolved' || t.status === 'Closed'
+  );
+
+  // For trends, we show total count in this period as per user request
+  const createdInPeriod = filteredTickets.length;
+  const resolvedInPeriod = resolvedTickets.length;
+
+  let totalResolutionTime = 0;
+  resolvedTickets.forEach((t) => {
+    const created = new Date(t.createdAt);
+    const updated = new Date(t.updatedAt);
+    totalResolutionTime += updated.getTime() - created.getTime();
+  });
+  const avgTimeMs = resolvedTickets.length ? totalResolutionTime / resolvedTickets.length : 0;
+  const avgTimeHours = (avgTimeMs / (1000 * 60 * 60)).toFixed(1);
+
+  return {
+    total: filteredTickets.length,
+    open: openTickets.length,
+    openTrend: createdInPeriod,
+    resolved: resolvedTickets.length,
+    resolvedTrend: resolvedInPeriod,
+    avgResponse: avgTimeHours,
+  };
+});
+
 const ticketColumns: ColumnDef<ITTicket>[] = [
   {
     accessorKey: 'ticketNo',
@@ -320,9 +394,21 @@ const ticketColumns: ColumnDef<ITTicket>[] = [
     header: () => h('div', t('services.itHelp.tickets.title')),
     cell: ({ row }) => {
       const ticket = row.original;
+      const date = new Date(ticket.createdAt);
+      const formatted = format(date, 'd/M/yyyy');
+      const timeAgo = formatDistanceToNowStrict(date, { addSuffix: true });
       return h('div', [
         h('div', { class: 'font-medium' }, ticket.title),
-        h('div', { class: 'text-xs text-muted-foreground' }, ticket.category),
+        h('div', { class: 'text-xs text-muted-foreground flex items-center gap-3 mt-1' }, [
+          h('span', { class: 'flex items-center gap-1' }, [
+            h(AlertCircle, { class: 'w-3 h-3' }),
+            ticket.category,
+          ]),
+          h('span', { class: 'flex items-center gap-1' }, [
+            h(Clock, { class: 'w-3 h-3' }),
+            `${formatted} (${timeAgo})`,
+          ]),
+        ]),
       ]);
     },
   },
@@ -390,12 +476,16 @@ const ticketColumns: ColumnDef<ITTicket>[] = [
   {
     accessorKey: 'createdAt',
     header: () => h('div', { class: 'text-center' }, 'Created'),
-    cell: ({ row }) =>
-      h(
+    cell: ({ row }) => {
+      const date = new Date(row.getValue('createdAt'));
+      const formatted = format(date, 'dd-MMM-yyyy, h:mm a');
+      const timeAgo = formatDistanceToNowStrict(date, { addSuffix: true });
+      return h(
         'div',
         { class: 'text-center text-xs text-muted-foreground' },
-        new Date(row.getValue('createdAt')).toLocaleDateString()
-      ),
+        `${formatted} (${timeAgo})`
+      );
+    },
   },
   {
     id: 'actions',
@@ -409,7 +499,10 @@ const ticketColumns: ColumnDef<ITTicket>[] = [
           {
             variant: 'ghost',
             size: 'sm',
-            onClick: () => handleTicketClick(row.original),
+            onClick: (e: Event) => {
+              e.stopPropagation();
+              handleTicketClick(row.original);
+            },
           },
           () => 'View'
         )
@@ -817,8 +910,41 @@ const categories = computed(() => {
 
       <TabsContent value="tickets" class="space-y-4">
         <template v-if="tickets.length > 0">
+          <!-- Stats Header & Filter -->
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-medium text-muted-foreground">
+              {{ t('services.itHelp.stats.overview') }}
+            </h3>
+            <div class="flex items-center gap-2">
+              <Select v-model="selectedMonth">
+                <SelectTrigger class="w-[180px]">
+                  <SelectValue placeholder="Select Month" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem
+                    v-for="month in availableMonths"
+                    :key="month.value"
+                    :value="month.value"
+                  >
+                    {{ month.label }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
           <!-- Stats Section -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card>
+              <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle class="text-sm font-medium">Total Tickets</CardTitle>
+                <Package class="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div class="text-2xl font-bold">{{ ticketStats.total }}</div>
+                <p class="text-xs text-muted-foreground mt-1">In selected period</p>
+              </CardContent>
+            </Card>
             <Card>
               <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle class="text-sm font-medium">{{
@@ -827,8 +953,8 @@ const categories = computed(() => {
                 <Ticket class="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div class="text-2xl font-bold">12</div>
-                <p class="text-xs text-muted-foreground mt-1">+2 from yesterday</p>
+                <div class="text-2xl font-bold">{{ ticketStats.open }}</div>
+                <p class="text-xs text-muted-foreground mt-1">+{{ ticketStats.openTrend }} new</p>
               </CardContent>
             </Card>
             <Card>
@@ -839,8 +965,8 @@ const categories = computed(() => {
                 <Clock class="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div class="text-2xl font-bold">1.5h</div>
-                <p class="text-xs text-muted-foreground mt-1">-15m from last week</p>
+                <div class="text-2xl font-bold">{{ ticketStats.avgResponse }}h</div>
+                <p class="text-xs text-muted-foreground mt-1">Avg. resolution time</p>
               </CardContent>
             </Card>
             <Card>
@@ -851,8 +977,10 @@ const categories = computed(() => {
                 <CheckCircle2 class="h-4 w-4 text-green-500" />
               </CardHeader>
               <CardContent>
-                <div class="text-2xl font-bold">45</div>
-                <p class="text-xs text-muted-foreground mt-1">+5 from last week</p>
+                <div class="text-2xl font-bold">{{ ticketStats.resolved }}</div>
+                <p class="text-xs text-muted-foreground mt-1">
+                  +{{ ticketStats.resolvedTrend }} resolved
+                </p>
               </CardContent>
             </Card>
           </div>

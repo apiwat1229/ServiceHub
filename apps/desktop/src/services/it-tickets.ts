@@ -13,13 +13,20 @@ export interface ITTicket {
         id: string;
         displayName: string;
         email?: string;
+        avatar?: string;
+        firstName?: string;
+        username?: string;
     };
     assigneeId?: string;
     assignee?: {
         id: string;
         displayName: string;
         email?: string;
+        avatar?: string;
+        firstName?: string;
+        username?: string;
     };
+    location?: string;
     createdAt: string;
     updatedAt: string;
 }
@@ -29,6 +36,7 @@ export interface CreateITTicketDto {
     description?: string;
     category: string;
     priority?: string;
+    location?: string;
 }
 
 export interface UpdateITTicketDto {
@@ -37,6 +45,7 @@ export interface UpdateITTicketDto {
     category?: string;
     priority?: string;
     status?: string;
+    location?: string;
     assigneeId?: string;
 }
 

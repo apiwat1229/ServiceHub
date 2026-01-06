@@ -107,7 +107,8 @@
       "stats": {
         "openTickets": "Open Tickets",
         "avgResponse": "Avg. Response Time",
-        "resolvedTickets": "Resolved Tickets"
+        "resolvedTickets": "Resolved Tickets",
+        "overview": "Statistics Overview"
       },
       "tabs": {
         "myTickets": "My Tickets",

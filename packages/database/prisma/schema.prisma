@@ -660,6 +660,7 @@ model ITTicket {
   description String?
   category    String // Software, Hardware, Network, etc.
   priority    String   @default("Medium") // Low, Medium, High
+  location    String?  // Building, Room, etc.
   status      String   @default("Open") // Open, In Progress, Resolved, Closed
 
   requesterId String @map("requester_id")

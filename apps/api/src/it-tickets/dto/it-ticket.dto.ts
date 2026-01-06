@@ -16,6 +16,10 @@ export class CreateITTicketDto {
     @IsOptional()
     @IsString()
     priority?: string;
+
+    @IsOptional()
+    @IsString()
+    location?: string;
 }
 
 export class UpdateITTicketDto {
@@ -38,6 +42,10 @@ export class UpdateITTicketDto {
     @IsOptional()
     @IsString()
     status?: string;
+
+    @IsOptional()
+    @IsString()
+    location?: string;
 
     @IsOptional()
     @IsString()
