@@ -251,6 +251,7 @@ const confirmDelete = async () => {
     toast.success('Ticket deleted successfully');
     emit('ticketUpdated', localTicket.value); // Trigger refresh
     emit('close');
+    isOpen.value = false;
   } catch (error) {
     console.error('Failed to delete ticket:', error);
     toast.error('Failed to delete ticket');

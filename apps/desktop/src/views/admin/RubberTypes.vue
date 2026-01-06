@@ -41,6 +41,7 @@ const editingItem = ref<RubberType | null>(null);
 const formData = ref({
   code: '',
   name: '',
+  category: 'Cuplump',
   description: '',
   is_active: true,
 });
@@ -90,7 +91,7 @@ const fetchData = async () => {
 
 const handleOpenCreate = () => {
   editingItem.value = null;
-  formData.value = { code: '', name: '', description: '', is_active: true };
+  formData.value = { code: '', name: '', category: 'Cuplump', description: '', is_active: true };
   isModalOpen.value = true;
 };
 
@@ -99,6 +100,7 @@ const handleOpenEdit = (item: RubberType) => {
   formData.value = {
     code: item.code,
     name: item.name,
+    category: item.category || 'Cuplump',
     description: item.description || '',
     is_active: item.is_active,
   };
@@ -165,6 +167,11 @@ const columns: ColumnDef<RubberType>[] = [
       );
     },
     cell: ({ row }) => h('div', row.getValue('name')),
+  },
+  {
+    accessorKey: 'category',
+    header: t('admin.rubberTypes.type'),
+    cell: ({ row }) => h('div', row.getValue('category') || '-'),
   },
   {
     accessorKey: 'description',
@@ -342,6 +349,18 @@ onMounted(() => {
               >{{ t('admin.rubberTypes.name') }} <span class="text-destructive">*</span></Label
             >
             <Input id="name" v-model="formData.name" placeholder="e.g. Latex 100%" />
+          </div>
+          <div class="grid gap-2">
+            <Label for="category">{{ t('admin.rubberTypes.type') }}</Label>
+            <Select v-model="formData.category">
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Cuplump">{{ t('admin.rubberTypes.types.cuplump') }}</SelectItem>
+                <SelectItem value="USS">{{ t('admin.rubberTypes.types.uss') }}</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div class="grid gap-2">
             <Label for="description">{{ t('admin.rubberTypes.description') }}</Label>

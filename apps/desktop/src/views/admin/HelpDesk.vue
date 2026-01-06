@@ -64,12 +64,13 @@ import {
 import type { DateRange } from 'reka-ui';
 import { computed, h, onMounted, ref, watch, type Ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { toast } from 'vue-sonner';
 
 import { useAuthStore } from '@/stores/auth';
 
 const route = useRoute();
+const router = useRouter();
 const isDetailModalOpen = ref(false);
 const selectedTicket = ref<ITTicket | null>(null);
 const loadingTickets = ref(false);
@@ -109,6 +110,14 @@ watch(
   },
   { immediate: true }
 );
+
+watch(isDetailModalOpen, (isOpen) => {
+  if (!isOpen && route.query.ticketId) {
+    const query = { ...route.query };
+    delete query.ticketId;
+    router.replace({ query });
+  }
+});
 
 const { t } = useI18n();
 const authStore = useAuthStore();

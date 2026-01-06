@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
+import { Progress } from '@/components/ui/progress';
 import api from '@/services/api';
 import { knowledgeBooksApi, type KnowledgeBook } from '@/services/knowledge-books';
 import { useElementSize } from '@vueuse/core';
@@ -34,6 +35,7 @@ const emit = defineEmits<{
 const isFullscreen = ref(false);
 const fileBlobUrl = ref('');
 const loading = ref(false);
+const progress = ref(0);
 const currentPage = ref(1);
 const pageCount = ref(0);
 
@@ -89,12 +91,19 @@ async function loadContent() {
   if (props.book.fileType !== 'pdf' && props.book.fileType !== 'pptx') return;
 
   loading.value = true;
+  progress.value = 0;
   currentPage.value = 1;
   pageCount.value = 0;
 
   try {
     const response = await api.get(knowledgeBooksApi.getFileUrl(props.book.id), {
       responseType: 'blob',
+      onDownloadProgress: (progressEvent) => {
+        if (progressEvent.total) {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          progress.value = percentCompleted;
+        }
+      },
     });
 
     // Revoke old URL if it exists
@@ -228,9 +237,19 @@ watch(
             v-if="loading"
             class="absolute inset-0 flex items-center justify-center bg-background/50 z-20"
           >
-            <div class="flex flex-col items-center gap-2">
-              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              <p class="text-sm text-muted-foreground font-medium">{{ t('common.loading') }}</p>
+            <div
+              class="flex flex-col items-center gap-4 w-64 p-6 bg-background rounded-xl shadow-lg border"
+            >
+              <div class="space-y-2 w-full text-center">
+                <div class="flex items-center justify-between text-sm">
+                  <span class="font-medium">{{ t('common.loading') }}</span>
+                  <span class="text-muted-foreground">{{ progress }}%</span>
+                </div>
+                <Progress :model-value="progress" class="h-2" />
+              </div>
+              <p class="text-xs text-muted-foreground animate-pulse">
+                {{ t('services.itHelp.kb.downloadingPreview') || 'Downloading preview...' }}
+              </p>
             </div>
           </div>
 

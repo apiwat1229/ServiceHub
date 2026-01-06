@@ -138,6 +138,21 @@ const routes = [
                 component: () => import('../views/Placeholder.vue'),
             },
             {
+                path: 'project-timeline',
+                name: 'ProjectTimeline',
+                component: () => import('../views/admin/ProjectTimeline.vue'),
+            },
+            {
+                path: 'contracts',
+                name: 'Contracts',
+                component: () => import('../views/admin/Contracts.vue'),
+            },
+            {
+                path: 'contact-management',
+                name: 'ContactManagement',
+                component: () => import('../views/admin/ContactManagement.vue'),
+            },
+            {
                 path: 'bookings',
                 redirect: '/bookings',
             },

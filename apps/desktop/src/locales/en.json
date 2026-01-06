@@ -10,6 +10,8 @@
     "add": "Add",
     "edit": "Edit",
     "create": "Create",
+    "createDescription": "Create a new item in the system.",
+    "editDescription": "Edit the details of the item.",
     "update": "Update",
     "confirm": "Confirm",
     "approve": "Approve",
@@ -86,7 +88,7 @@
     },
     "cuplump": {
       "name": "Cuplump",
-      "description": "Rubber Cup Lump Management and tracking system."
+      "description": "Cuplump Management and tracking system."
     },
     "booking": {
       "name": "Booking Queue",
@@ -394,9 +396,17 @@
         "infoDesc": "Standard asset requests are typically processed within 2-3 business days. You will receive a notification once your request has been approved."
       }
     },
-    "warehouse": {
-      "name": "Warehouse",
-      "description": "Inventory Management for finished goods and spares."
+    "projectTimeline": {
+      "name": "Project TimeLine",
+      "description": "Inventory Management and project tracking."
+    },
+    "contracts": {
+      "name": "Contract Management",
+      "description": "Manage contracts, renewals, and legal documents."
+    },
+    "contactManagement": {
+      "name": "Contact Management",
+      "description": "Manage contract expirations and renewal tracking."
     },
     "uss": {
       "name": "Rubber Sheet",
@@ -723,6 +733,11 @@
         "total": "Total",
         "active": "Active",
         "inactive": "Inactive"
+      },
+      "type": "Type",
+      "types": {
+        "cuplump": "Cuplump",
+        "uss": "USS"
       }
     },
     "users": {
