@@ -53,6 +53,7 @@ import {
   Plus,
   Search,
   Ticket,
+  Trash2,
   Upload,
 } from 'lucide-vue-next';
 import { computed, h, onMounted, ref } from 'vue';
@@ -90,6 +91,8 @@ const bookToDelete = ref<KnowledgeBook | null>(null);
 // IT Stock State
 const itStock = ref<ITAsset[]>([]);
 const loadingStock = ref(false);
+const isStockDeleteConfirmOpen = ref(false);
+const stockItemToDelete = ref<ITAsset | null>(null);
 
 const getImageUrl = (path: string | null) => {
   if (!path) return null;
@@ -101,8 +104,8 @@ const getImageUrl = (path: string | null) => {
 const itAssetColumns: ColumnDef<ITAsset>[] = [
   {
     id: 'index',
-    header: () => h('div', 'No.'),
-    cell: ({ row }) => h('div', row.index + 1),
+    header: () => h('div', { class: 'text-center' }, 'No.'),
+    cell: ({ row }) => h('div', { class: 'text-center' }, row.index + 1),
   },
   {
     accessorKey: 'name',
@@ -205,7 +208,7 @@ const itAssetColumns: ColumnDef<ITAsset>[] = [
   },
   {
     id: 'status',
-    header: () => h('div', t('common.status')),
+    header: () => h('div', { class: 'text-center' }, t('common.status')),
     cell: ({ row }) => {
       const item = row.original;
       const status = getStockStatus(item);
@@ -214,24 +217,26 @@ const itAssetColumns: ColumnDef<ITAsset>[] = [
       if (status === 'Out of Stock') badgeClass = 'bg-red-100 text-red-700';
 
       return h(
-        Badge,
-        {
-          variant: 'secondary',
-          class: badgeClass,
-        },
-        () => status
+        'div',
+        { class: 'text-center' },
+        h(
+          Badge,
+          {
+            variant: 'secondary',
+            class: badgeClass,
+          },
+          () => status
+        )
       );
     },
   },
   {
     id: 'actions',
     enableHiding: false,
-    header: () => h('div', { class: 'text-right' }, t('common.actions')),
+    header: () => h('div', { class: 'text-center' }, t('common.actions')),
     cell: ({ row }) => {
       const item = row.original;
-      return h(
-        'div',
-        { class: 'text-right' },
+      return h('div', { class: 'text-center flex items-center justify-center gap-1' }, [
         h(
           Button,
           {
@@ -244,8 +249,21 @@ const itAssetColumns: ColumnDef<ITAsset>[] = [
             },
           },
           () => h(Edit2, { class: 'w-4 h-4' })
-        )
-      );
+        ),
+        h(
+          Button,
+          {
+            variant: 'ghost',
+            size: 'icon',
+            class: 'h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50',
+            onClick: (e: Event) => {
+              e.stopPropagation();
+              handleDeleteStock(item);
+            },
+          },
+          () => h(Trash2, { class: 'w-4 h-4' })
+        ),
+      ]);
     },
   },
 ];
@@ -337,11 +355,38 @@ const handleAddStock = () => {
 };
 
 const handleEditStock = (item: ITAsset) => {
-  editingStockItem.value = item;
+  editingStockItem.value = { ...item };
   isStockModalOpen.value = true;
 };
 
-// ... existing methods ...
+const handleDeleteStock = (item: ITAsset) => {
+  stockItemToDelete.value = item;
+  isStockDeleteConfirmOpen.value = true;
+};
+
+const confirmDeleteStock = async () => {
+  if (!stockItemToDelete.value) return;
+
+  try {
+    await itAssetsApi.delete(stockItemToDelete.value.id);
+    toast.success(t('common.success'), {
+      description: t('services.itHelp.stock.deleteSuccess') || 'Item deleted successfully',
+    });
+    loadITAssets();
+  } catch (error) {
+    console.error('Failed to delete stock item:', error);
+    toast.error(t('common.error'), {
+      description: 'Failed to delete item',
+    });
+  } finally {
+    isStockDeleteConfirmOpen.value = false;
+    stockItemToDelete.value = null;
+  }
+};
+
+const handleUploadSuccess = () => {
+  loadBooks();
+};
 
 onMounted(() => {
   loadBooks();
@@ -435,21 +480,12 @@ async function confirmDelete() {
   }
 }
 
-function handleUploadSuccess() {
-  loadBooks();
-}
-
 const filteredBooks = computed(() => {
   return books.value;
 });
 
 const categories = computed(() => {
   return ebookCategories.value;
-});
-
-onMounted(() => {
-  loadBooks();
-  loadCategories();
 });
 </script>
 
@@ -860,6 +896,25 @@ onMounted(() => {
           <AlertDialogCancel>{{ t('common.cancel') || 'Cancel' }}</AlertDialogCancel>
           <AlertDialogAction @click="confirmDelete" class="bg-red-600 hover:bg-red-700">
             {{ t('common.delete') || 'Delete' }}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
+    <!-- Stock Delete Confirmation Dialog -->
+    <AlertDialog v-model:open="isStockDeleteConfirmOpen">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{{ t('common.areYouSure') }}</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to delete <b>{{ stockItemToDelete?.name }}</b
+            >? This action cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{{ t('common.cancel') }}</AlertDialogCancel>
+          <AlertDialogAction @click="confirmDeleteStock" class="bg-red-600 hover:bg-red-700">
+            {{ t('common.delete') }}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
