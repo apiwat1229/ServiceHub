@@ -70,17 +70,32 @@ const getStatusColor = (status: string) => {
       return 'bg-green-100 text-green-800 hover:bg-green-100';
     case 'Closed':
       return 'bg-gray-100 text-gray-800 hover:bg-gray-100';
+    case 'Cancelled':
+      return 'bg-red-100 text-red-800 hover:bg-red-100';
     default:
       return 'outline';
   }
 };
 
-import { format, formatDistanceToNowStrict } from 'date-fns';
+import { format, formatDistanceToNowStrict, intervalToDuration } from 'date-fns';
 
 const formatDate = (date: string | Date) => {
   const d = new Date(date);
-  const formatted = format(d, 'dd-MMM-yyyy, h:mm a');
-  const timeAgo = formatDistanceToNowStrict(d, { addSuffix: true });
+  const formatted = format(d, 'dd MMM yyyy, HH:mm');
+  const now = new Date();
+  const duration = intervalToDuration({ start: d, end: now });
+
+  let timeAgo = '';
+  if (duration.years) timeAgo = formatDistanceToNowStrict(d, { addSuffix: true });
+  else if (duration.months) timeAgo = formatDistanceToNowStrict(d, { addSuffix: true });
+  else if (duration.days) {
+    timeAgo = `${duration.days}d ${duration.hours ?? 0}h ago`;
+  } else if (duration.hours) {
+    timeAgo = `${duration.hours}h ${duration.minutes ?? 0}m ago`;
+  } else {
+    timeAgo = `${duration.minutes ?? 0}m ago`;
+  }
+
   return `${formatted} (${timeAgo})`;
 };
 
@@ -329,6 +344,12 @@ const availableAssignees = computed(() => {
                         ><div class="flex items-center gap-2">
                           <div class="w-1.5 h-1.5 rounded-full bg-gray-500"></div>
                           Closed
+                        </div></SelectItem
+                      >
+                      <SelectItem value="Cancelled" class="text-red-600"
+                        ><div class="flex items-center gap-2">
+                          <div class="w-1.5 h-1.5 rounded-full bg-red-500"></div>
+                          Cancelled
                         </div></SelectItem
                       >
                     </SelectContent>

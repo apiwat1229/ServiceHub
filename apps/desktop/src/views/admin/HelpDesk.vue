@@ -21,6 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import DataTable from '@/components/ui/data-table/DataTable.vue';
+import DateRangePicker from '@/components/ui/date-range-picker.vue';
 import {
   Dialog,
   DialogContent,
@@ -41,15 +42,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { itAssetsApi, type ITAsset } from '@/services/it-assets';
 import { itTicketsApi, type ITTicket } from '@/services/it-tickets';
 import { knowledgeBooksApi, type KnowledgeBook } from '@/services/knowledge-books';
-import type { ColumnDef } from '@tanstack/vue-table';
-import {
-  endOfMonth,
-  format,
-  formatDistanceToNowStrict,
-  isWithinInterval,
-  startOfMonth,
-  subMonths,
-} from 'date-fns';
+import { getLocalTimeZone, today } from '@internationalized/date';
+import { format, formatDistanceToNowStrict, intervalToDuration } from 'date-fns';
 import {
   AlertCircle,
   BookOpen,
@@ -65,7 +59,9 @@ import {
   Ticket,
   Trash2,
   Upload,
+  Zap,
 } from 'lucide-vue-next';
+import type { DateRange } from 'reka-ui';
 import { computed, h, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
@@ -146,6 +142,27 @@ const getImageUrl = (path: string | null) => {
   if (path.startsWith('http') || path.startsWith('data:')) return path;
   const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:2530';
   return `${baseUrl}${path.startsWith('/') ? '' : '/'}${path}`;
+};
+
+const formatTicketDate = (dateString: string | Date) => {
+  const date = new Date(dateString);
+  const formatted = format(date, 'dd MMM yyyy, HH:mm');
+
+  const now = new Date();
+  const duration = intervalToDuration({ start: date, end: now });
+
+  let timeAgo = '';
+  if (duration.years) timeAgo = formatDistanceToNowStrict(date, { addSuffix: true });
+  else if (duration.months) timeAgo = formatDistanceToNowStrict(date, { addSuffix: true });
+  else if (duration.days) {
+    timeAgo = `${duration.days}d ${duration.hours ?? 0}h ago`;
+  } else if (duration.hours) {
+    timeAgo = `${duration.hours}h ${duration.minutes ?? 0}m ago`;
+  } else {
+    timeAgo = `${duration.minutes ?? 0}m ago`;
+  }
+
+  return `${formatted} (${timeAgo})`;
 };
 
 const itAssetColumns: ColumnDef<ITAsset>[] = [
@@ -315,25 +332,18 @@ const itAssetColumns: ColumnDef<ITAsset>[] = [
   },
 ];
 
-const selectedMonth = ref(format(new Date(), 'yyyy-MM'));
-
-const availableMonths = computed(() => {
-  const months = [];
-  for (let i = 0; i < 12; i++) {
-    const d = subMonths(new Date(), i);
-    months.push({
-      label: format(d, 'MMMM yyyy'),
-      value: format(d, 'yyyy-MM'),
-    });
-  }
-  return months;
-});
+const dateRange = ref({
+  start: today(getLocalTimeZone()).subtract({ months: 1 }),
+  end: today(getLocalTimeZone()),
+}) as Ref<DateRange>;
 
 const ticketStats = computed(() => {
   if (!tickets.value.length) {
     return {
       total: 0,
       open: 0,
+      openCount: 0,
+      inProgressCount: 0,
       openTrend: 0,
       avgResponse: 0,
       resolved: 0,
@@ -341,18 +351,28 @@ const ticketStats = computed(() => {
     };
   }
 
-  const [year, month] = selectedMonth.value.split('-').map(Number);
-  const start = startOfMonth(new Date(year, month - 1));
-  const end = endOfMonth(new Date(year, month - 1));
+  // Filter tickets for the selected date range
+  const filteredTickets = tickets.value.filter((t) => {
+    // Exclude Cancelled tickets first
+    if (t.status === 'Cancelled') return false;
 
-  // Filter tickets for the selected month
-  const filteredTickets = tickets.value.filter((t) =>
-    isWithinInterval(new Date(t.createdAt), { start, end })
-  );
+    if (!dateRange.value?.start || !dateRange.value?.end) return true;
+
+    const ticketDate = new Date(t.createdAt);
+    const start = dateRange.value.start.toDate(getLocalTimeZone());
+    const end = dateRange.value.end.toDate(getLocalTimeZone());
+    // Add 1 day to end date to include the full end day
+    end.setDate(end.getDate() + 1);
+
+    return ticketDate >= start && ticketDate < end;
+  });
 
   const openTickets = filteredTickets.filter(
     (t) => t.status === 'Open' || t.status === 'In Progress'
   );
+  const openCount = filteredTickets.filter((t) => t.status === 'Open').length;
+  const inProgressCount = filteredTickets.filter((t) => t.status === 'In Progress').length;
+
   const resolvedTickets = filteredTickets.filter(
     (t) => t.status === 'Resolved' || t.status === 'Closed'
   );
@@ -362,21 +382,31 @@ const ticketStats = computed(() => {
   const resolvedInPeriod = resolvedTickets.length;
 
   let totalResolutionTime = 0;
+  let minTimeMs = Infinity;
+
   resolvedTickets.forEach((t) => {
     const created = new Date(t.createdAt);
     const updated = new Date(t.updatedAt);
-    totalResolutionTime += updated.getTime() - created.getTime();
+    const diff = updated.getTime() - created.getTime();
+    totalResolutionTime += diff;
+    if (diff < minTimeMs) {
+      minTimeMs = diff;
+    }
   });
   const avgTimeMs = resolvedTickets.length ? totalResolutionTime / resolvedTickets.length : 0;
   const avgTimeHours = (avgTimeMs / (1000 * 60 * 60)).toFixed(1);
+  const bestTimeHours = minTimeMs !== Infinity ? (minTimeMs / (1000 * 60 * 60)).toFixed(1) : '0.0';
 
   return {
     total: filteredTickets.length,
     open: openTickets.length,
+    openCount,
+    inProgressCount,
     openTrend: createdInPeriod,
     resolved: resolvedTickets.length,
     resolvedTrend: resolvedInPeriod,
     avgResponse: avgTimeHours,
+    bestResponse: bestTimeHours,
   };
 });
 
@@ -394,8 +424,9 @@ const ticketColumns: ColumnDef<ITTicket>[] = [
     header: () => h('div', t('services.itHelp.tickets.title')),
     cell: ({ row }) => {
       const ticket = row.original;
+      console.log('Rendering ticket:', ticket.ticketNo, ticket.createdAt);
       const date = new Date(ticket.createdAt);
-      const formatted = format(date, 'd/M/yyyy');
+      const formatted = format(date, 'dd MMM yyyy, HH:mm');
       const timeAgo = formatDistanceToNowStrict(date, { addSuffix: true });
       return h('div', [
         h('div', { class: 'font-medium' }, ticket.title),
@@ -916,71 +947,65 @@ const categories = computed(() => {
               {{ t('services.itHelp.stats.overview') }}
             </h3>
             <div class="flex items-center gap-2">
-              <Select v-model="selectedMonth">
-                <SelectTrigger class="w-[180px]">
-                  <SelectValue placeholder="Select Month" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem
-                    v-for="month in availableMonths"
-                    :key="month.value"
-                    :value="month.value"
-                  >
-                    {{ month.label }}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              <DateRangePicker v-model="dateRange" />
             </div>
           </div>
 
           <!-- Stats Section -->
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <!-- Stats Section -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card>
-              <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle class="text-sm font-medium">Total Tickets</CardTitle>
-                <Package class="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div class="text-2xl font-bold">{{ ticketStats.total }}</div>
-                <p class="text-xs text-muted-foreground mt-1">In selected period</p>
+              <CardContent class="flex items-center justify-between p-6">
+                <div
+                  class="flex-1 flex flex-col items-center justify-center border-r border-border pr-4"
+                >
+                  <div class="text-sm font-medium text-muted-foreground mb-2">Total Tickets</div>
+                  <div class="text-3xl font-bold">{{ ticketStats.total }}</div>
+                </div>
+                <div class="flex-1 flex flex-col items-center justify-center pl-4">
+                  <div class="text-sm font-medium text-green-600 flex items-center gap-1 mb-2">
+                    <CheckCircle2 class="w-4 h-4" /> Total Resolved
+                  </div>
+                  <div class="text-3xl font-bold text-green-600">{{ ticketStats.resolved }}</div>
+                </div>
               </CardContent>
             </Card>
+
             <Card>
-              <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle class="text-sm font-medium">{{
-                  t('services.itHelp.stats.openTickets')
-                }}</CardTitle>
-                <Ticket class="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div class="text-2xl font-bold">{{ ticketStats.open }}</div>
-                <p class="text-xs text-muted-foreground mt-1">+{{ ticketStats.openTrend }} new</p>
+              <CardContent class="flex items-center justify-between p-6">
+                <div
+                  class="flex-1 flex flex-col items-center justify-center border-r border-border pr-4"
+                >
+                  <div class="text-sm font-medium text-blue-600 mb-2">Open</div>
+                  <div class="text-3xl font-bold text-blue-600">{{ ticketStats.openCount }}</div>
+                </div>
+                <div class="flex-1 flex flex-col items-center justify-center pl-4">
+                  <div class="text-sm font-medium text-yellow-600 mb-2">In Progress</div>
+                  <div class="text-3xl font-bold text-yellow-600">
+                    {{ ticketStats.inProgressCount }}
+                  </div>
+                </div>
               </CardContent>
             </Card>
+
             <Card>
-              <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle class="text-sm font-medium">{{
-                  t('services.itHelp.stats.avgResponse')
-                }}</CardTitle>
-                <Clock class="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div class="text-2xl font-bold">{{ ticketStats.avgResponse }}h</div>
-                <p class="text-xs text-muted-foreground mt-1">Avg. resolution time</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle class="text-sm font-medium">{{
-                  t('services.itHelp.stats.resolvedTickets')
-                }}</CardTitle>
-                <CheckCircle2 class="h-4 w-4 text-green-500" />
-              </CardHeader>
-              <CardContent>
-                <div class="text-2xl font-bold">{{ ticketStats.resolved }}</div>
-                <p class="text-xs text-muted-foreground mt-1">
-                  +{{ ticketStats.resolvedTrend }} resolved
-                </p>
+              <CardContent class="flex items-center justify-between p-6">
+                <div
+                  class="flex-1 flex flex-col items-center justify-center border-r border-border pr-4"
+                >
+                  <div class="text-sm font-medium text-muted-foreground mb-2">
+                    {{ t('services.itHelp.stats.avgResponse') }}
+                  </div>
+                  <div class="text-3xl font-bold">{{ ticketStats.avgResponse }}h</div>
+                </div>
+                <div class="flex-1 flex flex-col items-center justify-center pl-4">
+                  <div class="text-sm font-medium text-green-600 flex items-center gap-1 mb-2">
+                    <Zap class="w-4 h-4" /> Best Time
+                  </div>
+                  <div class="text-3xl font-bold text-green-600">
+                    {{ ticketStats.bestResponse }}h
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -1032,7 +1057,7 @@ const categories = computed(() => {
                           >
                           <span class="flex items-center gap-1"
                             ><Clock class="w-3 h-3" />
-                            {{ new Date(ticket.createdAt).toLocaleDateString() }}</span
+                            {{ formatTicketDate(ticket.createdAt) }}</span
                           >
                           <span
                             v-if="ticket.assignee"

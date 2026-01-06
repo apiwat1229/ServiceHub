@@ -661,7 +661,7 @@ model ITTicket {
   category    String // Software, Hardware, Network, etc.
   priority    String   @default("Medium") // Low, Medium, High
   location    String?  // Building, Room, etc.
-  status      String   @default("Open") // Open, In Progress, Resolved, Closed
+  status      String   @default("Open") // Open, In Progress, Resolved, Closed, Cancelled
 
   requesterId String @map("requester_id")
   requester   User   @relation("TicketRequester", fields: [requesterId], references: [id])
