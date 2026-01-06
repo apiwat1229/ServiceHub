@@ -58,6 +58,15 @@ export class ITTicketsService {
             actionUrl: `/admin/helpdesk?ticketId=${ticket.id}`
         });
 
+        // Notify Approver if it's an Asset Request
+        if (createDto.isAssetRequest && createDto.approverId) {
+            await this.triggerNotification('IT_HELP_DESK', 'APPROVER_REQUEST', {
+                title: `Approval Required: ${ticket.ticketNo}`,
+                message: `${ticket.requester?.displayName} requested: ${ticket.title}`,
+                actionUrl: `/admin/helpdesk?ticketId=${ticket.id}`
+            }, [createDto.approverId]);
+        }
+
         return ticket;
     }
 
@@ -202,10 +211,10 @@ export class ITTicketsService {
         });
 
         // 2. Stock Deduction Logic
-        // If status changed to 'Resolved' and it IS an asset request with a valid asset and quantity
+        // If status changed to 'Approved' and it IS an asset request with a valid asset and quantity
         if (
-            updateDto.status === 'Resolved' &&
-            currentTicket?.status !== 'Resolved' &&
+            updateDto.status === 'Approved' &&
+            currentTicket?.status !== 'Approved' &&
             ticket.isAssetRequest &&
             ticket.assetId &&
             ticket.quantity > 0
@@ -234,6 +243,15 @@ export class ITTicketsService {
                 message: `Status changed to ${ticket.status}`,
                 actionUrl: `/admin/helpdesk?ticketId=${ticket.id}`
             }, [ticket.requesterId]);
+
+            // Notify IT Support when Approved
+            if (updateDto.status === 'Approved') {
+                await this.triggerNotification('IT_HELP_DESK', 'ASSET_APPROVED', {
+                    title: `Asset Request Approved: ${ticket.ticketNo}`,
+                    message: `Approved by Approver. Ready for processing.`,
+                    actionUrl: `/admin/helpdesk?ticketId=${ticket.id}`
+                });
+            }
         }
 
         // Notify Assignee if assigned

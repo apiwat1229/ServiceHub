@@ -1121,7 +1121,7 @@ const categories = computed(() => {
 
     <!-- Dialogs -->
     <Dialog v-model:open="isAssetModalOpen">
-      <DialogContent class="sm:max-w-[600px]">
+      <DialogContent class="sm:max-w-[1000px]">
         <DialogHeader>
           <DialogTitle>{{ t('services.itHelp.request.title') }}</DialogTitle>
           <DialogDescription>{{ t('services.itHelp.request.subtitle') }}</DialogDescription>

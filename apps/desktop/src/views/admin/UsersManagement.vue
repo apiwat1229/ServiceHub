@@ -776,10 +776,6 @@ onMounted(() => {
                 </p>
               </div>
               <div class="space-y-2">
-                <Label>{{ t('admin.users.employeeId') }}</Label>
-                <Input v-model="formData.employeeId" placeholder="EMP-001" />
-              </div>
-              <div class="space-y-2">
                 <Label>{{ t('admin.userProfile.department') }}</Label>
                 <Select v-model="formData.department">
                   <SelectTrigger

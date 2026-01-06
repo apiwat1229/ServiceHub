@@ -70,6 +70,8 @@ const getStatusColor = (status: string) => {
       return 'bg-blue-100 text-blue-800';
     case 'In Progress':
       return 'bg-yellow-100 text-yellow-800';
+    case 'Approved':
+      return 'bg-purple-100 text-purple-800';
     case 'Resolved':
       return 'bg-green-100 text-green-800';
     case 'Closed':
@@ -449,6 +451,12 @@ const handlePostComment = async () => {
                         ><div class="flex items-center gap-2">
                           <div class="w-1.5 h-1.5 rounded-full bg-yellow-500"></div>
                           In Progress
+                        </div></SelectItem
+                      >
+                      <SelectItem value="Approved" class="text-purple-600"
+                        ><div class="flex items-center gap-2">
+                          <div class="w-1.5 h-1.5 rounded-full bg-purple-500"></div>
+                          Approved
                         </div></SelectItem
                       >
                       <SelectItem value="Pending" class="text-orange-600"
