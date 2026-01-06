@@ -17,7 +17,17 @@ import { cn } from '@/lib/utils';
 import type { ITTicket, UpdateITTicketDto } from '@/services/it-tickets';
 import { itTicketsApi } from '@/services/it-tickets';
 import { useAuthStore } from '@/stores/auth';
-import { Clock, FileText, History, MapPin, Save, Trash2 } from 'lucide-vue-next';
+import {
+  AlertCircle,
+  Check,
+  Clock,
+  FileText,
+  History,
+  MapPin,
+  Pencil,
+  Save,
+  Trash2,
+} from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 
@@ -44,6 +54,8 @@ const selectedStatus = ref('');
 const selectedPriority = ref('');
 const selectedAssignee = ref('');
 const isDeleteDialogOpen = ref(false);
+const isRejectDialogOpen = ref(false);
+const isEditingTitle = ref(false);
 
 // Initialize local state when ticket changes
 watch(
@@ -167,6 +179,65 @@ const isOwner = computed(() => {
   return localTicket.value.requesterId === authStore.user.id;
 });
 
+const isApprover = computed(() => {
+  if (
+    !localTicket.value ||
+    !authStore.user ||
+    !localTicket.value.isAssetRequest ||
+    localTicket.value.status === 'Approved'
+  )
+    return false;
+  return localTicket.value.approverId === authStore.user.id;
+});
+
+const isEditable = computed(() => {
+  if (!localTicket.value) return false;
+  return !['Approved', 'Closed', 'Resolved', 'Cancelled'].includes(localTicket.value.status);
+});
+
+const startEditingTitle = () => {
+  if (isOwner.value && isEditable.value) {
+    isEditingTitle.value = true;
+  }
+};
+
+const approveRequest = async () => {
+  if (!localTicket.value) return;
+  try {
+    loading.value = true;
+    const updated = await itTicketsApi.update(localTicket.value.id, {
+      status: 'Approved',
+    });
+    emit('ticketUpdated', updated);
+    toast.success('Request Approved Successfully');
+    isOpen.value = false;
+  } catch (error) {
+    console.error('Failed to approve request:', error);
+    toast.error('Failed to approve request');
+  } finally {
+    loading.value = false;
+  }
+};
+
+const rejectRequest = async () => {
+  if (!localTicket.value) return;
+  try {
+    loading.value = true;
+    const updated = await itTicketsApi.update(localTicket.value.id, {
+      status: 'Cancelled',
+    });
+    emit('ticketUpdated', updated);
+    toast.success('Request Rejected (Cancelled)');
+    isOpen.value = false;
+  } catch (error) {
+    console.error('Failed to reject request:', error);
+    toast.error('Failed to reject request');
+  } finally {
+    loading.value = false;
+    isRejectDialogOpen.value = false;
+  }
+};
+
 const handleDelete = () => {
   isDeleteDialogOpen.value = true;
 };
@@ -222,7 +293,7 @@ const handlePostComment = async () => {
       <!-- Header Area -->
       <div class="p-6 pr-14 border-b bg-muted/10">
         <div class="flex items-start justify-between gap-4">
-          <div class="space-y-1.5 basis-3/4">
+          <div class="space-y-1.5 flex-1">
             <div class="flex items-center gap-2 text-sm text-muted-foreground">
               <span class="font-mono font-medium text-primary bg-primary/10 px-2 py-0.5 rounded">{{
                 localTicket?.ticketNo
@@ -231,15 +302,30 @@ const handlePostComment = async () => {
               <span>{{ localTicket?.category }}</span>
               <span v-if="localTicket?.location">&bull; {{ localTicket.location }}</span>
             </div>
-            <div v-if="isOwner" class="w-full">
+            <div v-if="isEditingTitle" class="w-full relative group">
               <DialogTitle class="sr-only">{{ localTicket?.title }}</DialogTitle>
               <Input
                 v-model="localTicket!.title"
-                class="text-xl font-semibold h-auto px-2 py-1 -ml-2 border-transparent hover:border-border focus-visible:border-primary"
+                @blur="isEditingTitle = false"
+                @keyup.enter="isEditingTitle = false"
+                autoFocus
+                class="text-xl font-semibold h-auto px-2 py-1 -ml-2 border-transparent hover:border-border focus-visible:border-primary w-full"
               />
             </div>
-            <DialogTitle v-else class="text-xl font-semibold leading-tight tracking-tight">
+            <DialogTitle
+              v-else
+              class="text-xl font-semibold leading-tight tracking-tight flex items-center gap-2 group cursor-pointer"
+              @click="startEditingTitle"
+            >
               {{ localTicket?.title }}
+              <Button
+                v-if="isOwner && isEditable"
+                variant="ghost"
+                size="icon"
+                class="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <Pencil class="w-3.5 h-3.5 text-muted-foreground" />
+              </Button>
             </DialogTitle>
             <div class="flex items-center gap-2 text-xs text-muted-foreground pt-1">
               <Clock class="w-3.5 h-3.5" />
@@ -247,7 +333,7 @@ const handlePostComment = async () => {
             </div>
           </div>
 
-          <div class="flex flex-col items-end gap-2">
+          <div class="flex flex-col items-end gap-2 shrink-0">
             <Badge
               :class="
                 cn(
@@ -262,6 +348,42 @@ const handlePostComment = async () => {
         </div>
       </div>
 
+      <!-- Approver Action Banner -->
+      <div v-if="isApprover" class="px-6 mt-6 mb-2">
+        <div
+          class="bg-purple-50 border border-purple-100 rounded-xl p-4 shadow-sm flex items-center justify-between gap-4"
+        >
+          <div class="flex items-start gap-3">
+            <div class="p-2 bg-white rounded-lg text-purple-600 shadow-sm mt-0.5">
+              <Check class="w-5 h-5" />
+            </div>
+            <div>
+              <h4 class="text-sm font-semibold text-purple-900">Approval Required</h4>
+              <p class="text-xs text-purple-700 mt-1">This asset request requires your approval.</p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <Button
+              size="sm"
+              class="bg-red-600 text-white hover:bg-red-700 border-0 shadow-sm"
+              @click="isRejectDialogOpen = true"
+              :disabled="loading"
+            >
+              Reject
+            </Button>
+            <Button
+              size="sm"
+              class="bg-purple-600 hover:bg-purple-700 text-white border-0 shadow-sm"
+              @click="approveRequest"
+              :disabled="loading"
+            >
+              {{ loading ? 'Processing...' : 'Approve' }}
+            </Button>
+          </div>
+        </div>
+      </div>
+
       <div class="flex flex-col md:flex-row h-[600px]">
         <!-- Main Content (Scrollable) -->
         <div class="flex-1 p-6 overflow-y-auto border-r border-border/50">
@@ -271,7 +393,10 @@ const handlePostComment = async () => {
               <h4 class="text-sm font-semibold flex items-center gap-2 text-foreground/80">
                 <FileText class="w-4 h-4 text-primary" /> Description
               </h4>
-              <div v-if="isOwner" class="rounded-lg border border-border/50 shadow-sm">
+              <div
+                v-if="isOwner && isEditable"
+                class="rounded-lg border border-border/50 shadow-sm"
+              >
                 <Textarea
                   v-model="localTicket!.description"
                   class="min-h-[120px] bg-muted/30 border-0 focus-visible:ring-0 resize-none text-sm leading-relaxed p-4"
@@ -293,7 +418,7 @@ const handlePostComment = async () => {
               </h4>
               <div class="relative pl-4 border-l-2 border-muted ml-2 space-y-6">
                 <!-- New Comment Input -->
-                <div class="relative">
+                <div v-if="isEditable" class="relative">
                   <div
                     class="absolute -left-[21px] top-1 w-3 h-3 bg-primary rounded-full ring-4 ring-background"
                   ></div>
@@ -382,7 +507,15 @@ const handlePostComment = async () => {
           <div class="flex-1 overflow-y-auto">
             <div class="p-5 space-y-6">
               <!-- Actions -->
-              <div class="grid gap-2">
+              <!-- Actions -->
+              <div
+                v-if="
+                  !['Approved', 'Closed', 'Resolved', 'Cancelled'].includes(
+                    localTicket?.status || ''
+                  )
+                "
+                class="grid gap-2"
+              >
                 <Button @click="saveChanges" :disabled="loading" class="w-full shadow-sm">
                   <Save class="w-4 h-4 mr-2" /> Save Changes
                 </Button>
@@ -395,37 +528,38 @@ const handlePostComment = async () => {
                 >
                   <Trash2 class="w-4 h-4 mr-2" /> Delete Ticket
                 </Button>
+                <div class="my-4 border-b bg-border/60"></div>
               </div>
 
-              <div class="my-4 border-b bg-border/60"></div>
-
               <!-- Requester Card -->
-              <div class="bg-white rounded-lg border p-3 shadow-sm space-y-3">
+              <div
+                class="bg-white rounded-lg border p-4 shadow-sm flex items-center justify-between gap-4"
+              >
                 <div class="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Requester
                 </div>
-                <div class="flex items-center gap-3">
-                  <Avatar class="w-9 h-9 border border-border/50">
-                    <AvatarImage :src="localTicket?.requester?.avatar || ''" />
-                    <AvatarFallback class="bg-primary/5 text-primary">{{
-                      userInitials(localTicket?.requester)
-                    }}</AvatarFallback>
-                  </Avatar>
-                  <div class="flex flex-col overflow-hidden">
+                <div class="flex items-center gap-2">
+                  <div class="flex flex-col items-end overflow-hidden text-right">
                     <span class="text-sm font-semibold truncate">{{
                       localTicket?.requester?.displayName || localTicket?.requester?.username
                     }}</span>
-                    <span class="text-xs text-muted-foreground truncate">{{
+                    <span class="text-[10px] text-muted-foreground truncate">{{
                       localTicket?.requester?.email
                     }}</span>
                   </div>
+                  <Avatar class="w-8 h-8 border border-border/50">
+                    <AvatarImage :src="localTicket?.requester?.avatar || ''" />
+                    <AvatarFallback class="bg-primary/5 text-primary text-xs">{{
+                      userInitials(localTicket?.requester)
+                    }}</AvatarFallback>
+                  </Avatar>
                 </div>
-                <div
-                  v-if="localTicket?.location"
-                  class="flex items-center gap-2 text-xs text-muted-foreground bg-muted/30 p-1.5 rounded"
-                >
-                  <MapPin class="w-3 h-3" /> {{ localTicket.location }}
-                </div>
+              </div>
+              <div
+                v-if="localTicket?.location"
+                class="flex items-center gap-2 text-xs text-muted-foreground bg-muted/30 p-2 rounded justify-center"
+              >
+                <MapPin class="w-3 h-3" /> {{ localTicket.location }}
               </div>
 
               <!-- Properties Form -->
@@ -436,7 +570,7 @@ const handlePostComment = async () => {
 
                 <div class="space-y-1.5">
                   <label class="text-xs font-medium">Status</label>
-                  <Select v-model="selectedStatus">
+                  <Select v-model="selectedStatus" :disabled="!isEditable">
                     <SelectTrigger class="h-9 bg-background">
                       <SelectValue />
                     </SelectTrigger>
@@ -489,7 +623,7 @@ const handlePostComment = async () => {
 
                 <div class="space-y-1.5">
                   <label class="text-xs font-medium">Priority</label>
-                  <Select v-model="selectedPriority">
+                  <Select v-model="selectedPriority" :disabled="!isEditable">
                     <SelectTrigger class="h-9 bg-background">
                       <SelectValue />
                     </SelectTrigger>
@@ -524,7 +658,7 @@ const handlePostComment = async () => {
 
                 <div class="space-y-1.5">
                   <label class="text-xs font-medium">Assignee</label>
-                  <Select v-model="selectedAssignee">
+                  <Select v-model="selectedAssignee" :disabled="!isEditable">
                     <SelectTrigger class="h-9 bg-background">
                       <SelectValue placeholder="Unassigned" />
                     </SelectTrigger>
@@ -574,6 +708,30 @@ const handlePostComment = async () => {
           class="bg-red-600 hover:bg-red-700 focus:ring-red-600"
         >
           Delete Ticket
+        </AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
+
+  <AlertDialog v-model:open="isRejectDialogOpen">
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle class="flex items-center gap-2 text-red-600">
+          <AlertCircle class="w-5 h-5" />
+          Reject Asset Request
+        </AlertDialogTitle>
+        <AlertDialogDescription>
+          Are you sure you want to reject this asset request? The status will be changed to
+          <strong>Cancelled</strong>.
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogCancel>Cancel</AlertDialogCancel>
+        <AlertDialogAction
+          @click="rejectRequest"
+          class="bg-red-600 hover:bg-red-700 focus:ring-red-600 text-white"
+        >
+          Confirm Reject
         </AlertDialogAction>
       </AlertDialogFooter>
     </AlertDialogContent>

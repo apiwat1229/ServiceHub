@@ -133,7 +133,7 @@ watch(selectedDate, (val) => {
 
 const dateLabel = computed(() => {
   if (selectedDate.value) {
-    return format(selectedDate.value.toDate(getLocalTimeZone()), 'PPP');
+    return format(selectedDate.value.toDate(getLocalTimeZone()), 'dd-MMM-yyyy');
   }
   return t('services.itHelp.request.expectedDate');
 });

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { NotificationType } from '@prisma/client';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateITTicketDto, CreateTicketCommentDto, UpdateITTicketDto } from './dto/it-ticket.dto';
@@ -64,13 +65,13 @@ export class ITTicketsService {
                 title: `Approval Required: ${ticket.ticketNo}`,
                 message: `${ticket.requester?.displayName} requested: ${ticket.title}`,
                 actionUrl: `/admin/helpdesk?ticketId=${ticket.id}`
-            }, [createDto.approverId]);
+            }, [createDto.approverId], NotificationType.REQUEST);
         }
 
         return ticket;
     }
 
-    private async triggerNotification(sourceApp: string, actionType: string, payload: { title: string; message: string; actionUrl?: string }, explicitUserIds: string[] = []) {
+    private async triggerNotification(sourceApp: string, actionType: string, payload: { title: string; message: string; actionUrl?: string }, explicitUserIds: string[] = [], type: NotificationType = NotificationType.INFO) {
         try {
             // 1. Get Settings for this event
             const settings = await this.prisma.notificationSetting.findUnique({
@@ -124,7 +125,7 @@ export class ITTicketsService {
                     userId: userId,
                     title: payload.title,
                     message: payload.message,
-                    type: 'INFO',
+                    type: type,
                     sourceApp,
                     actionType,
                     actionUrl: payload.actionUrl

@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateITTicketDto {
     @IsNotEmpty()
@@ -26,7 +26,7 @@ export class CreateITTicketDto {
     assetId?: string;
 
     @IsOptional()
-    @IsString()
+    @IsNumber()
     quantity?: number;
 
     @IsOptional()
@@ -75,6 +75,7 @@ export class UpdateITTicketDto {
     assetId?: string;
 
     @IsOptional()
+    @IsNumber()
     quantity?: number;
 
     @IsOptional()

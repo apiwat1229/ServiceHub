@@ -181,6 +181,10 @@ const filteredITStock = computed(() => {
 // Ticket State
 const tickets = ref<ITTicket[]>([]);
 
+const assetRequests = computed(() => {
+  return tickets.value.filter((t) => t.isAssetRequest);
+});
+
 const getImageUrl = (path: string | null) => {
   if (!path) return null;
   if (path.startsWith('http') || path.startsWith('data:')) return path;
@@ -894,8 +898,78 @@ const categories = computed(() => {
       </TabsContent>
 
       <!-- Assets Tab -->
-      <TabsContent value="assets">
-        <Card>
+      <TabsContent value="assets" class="space-y-4">
+        <template v-if="assetRequests.length > 0">
+          <Card>
+            <CardHeader class="pb-3 border-b border-muted">
+              <div class="space-y-1">
+                <CardTitle class="text-xl font-bold">My Asset Requests</CardTitle>
+                <CardDescription> Track your equipment and hardware requests. </CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent class="p-0">
+              <div class="divide-y divide-border/50">
+                <div
+                  v-for="ticket in assetRequests"
+                  :key="ticket.id"
+                  class="p-4 hover:bg-muted/30 transition-colors group flex items-center gap-4"
+                >
+                  <!-- Icon -->
+                  <div
+                    class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center border bg-slate-50 text-slate-600 border-slate-100"
+                  >
+                    <Monitor class="w-5 h-5" />
+                  </div>
+
+                  <!-- Content -->
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-1.5 w-full">
+                      <span
+                        class="font-semibold text-base text-foreground truncate block hover:underline cursor-pointer"
+                        @click="handleTicketClick(ticket)"
+                      >
+                        {{ ticket.title }}
+                      </span>
+                    </div>
+                    <div class="flex items-center gap-3 text-xs text-muted-foreground">
+                      <div class="flex items-center gap-1.5">
+                        <span class="text-muted-foreground/70">{{
+                          ticket.category || 'Asset'
+                        }}</span>
+                        <span v-if="ticket.assetId" class="text-muted-foreground/40">&gt;</span>
+                        <span v-if="ticket.assetId"> {{ ticket.quantity }} items</span>
+                      </div>
+                      <span class="text-muted-foreground/40">&bull;</span>
+                      <span class="flex items-center gap-1.5">
+                        <Clock class="w-3 h-3 text-muted-foreground/70" />
+                        {{ formatTicketDate(ticket.createdAt) }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- Right Side: Ticket No & Status -->
+                  <div class="flex items-center gap-3 flex-shrink-0 pl-4">
+                    <Badge
+                      variant="secondary"
+                      class="text-[10px] h-5 px-1.5 font-mono font-medium text-muted-foreground bg-muted border border-border rounded pointer-events-none"
+                    >
+                      {{ ticket.ticketNo }}
+                    </Badge>
+                    <Badge
+                      :class="[
+                        getStatusColor(ticket.status),
+                        'px-2.5 py-0.5 text-[10px] font-bold border-0 rounded uppercase tracking-wide pointer-events-none',
+                      ]"
+                    >
+                      {{ ticket.status }}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </template>
+        <Card v-else>
           <CardContent class="pt-6">
             <div class="text-center py-10 text-muted-foreground">
               <Monitor class="h-12 w-12 mx-auto mb-4 opacity-20" />
@@ -913,73 +987,74 @@ const categories = computed(() => {
       <TabsContent value="tickets" class="space-y-4">
         <template v-if="tickets.length > 0">
           <!-- Stats Header & Filter -->
-          <div class="flex items-center justify-between">
-            <h3 class="text-lg font-medium text-muted-foreground">
-              {{ t('services.itHelp.stats.overview') }}
-            </h3>
-            <div class="flex items-center gap-2">
-              <DateRangePicker v-model="dateRange" />
+          <template v-if="isITDepartment">
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-medium text-muted-foreground">
+                {{ t('services.itHelp.stats.overview') }}
+              </h3>
+              <div class="flex items-center gap-2">
+                <DateRangePicker v-model="dateRange" />
+              </div>
             </div>
-          </div>
 
-          <!-- Stats Section -->
-          <!-- Stats Section -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card>
-              <CardContent class="flex items-center justify-between p-6">
-                <div
-                  class="flex-1 flex flex-col items-center justify-center border-r border-border pr-4"
-                >
-                  <div class="text-sm font-medium text-muted-foreground mb-2">Total Tickets</div>
-                  <div class="text-3xl font-bold">{{ ticketStats.total }}</div>
-                </div>
-                <div class="flex-1 flex flex-col items-center justify-center pl-4">
-                  <div class="text-sm font-medium text-green-600 flex items-center gap-1 mb-2">
-                    <CheckCircle2 class="w-4 h-4" /> Total Resolved
+            <!-- Stats Section -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card>
+                <CardContent class="flex items-center justify-between p-6">
+                  <div
+                    class="flex-1 flex flex-col items-center justify-center border-r border-border pr-4"
+                  >
+                    <div class="text-sm font-medium text-muted-foreground mb-2">Total Tickets</div>
+                    <div class="text-3xl font-bold">{{ ticketStats.total }}</div>
                   </div>
-                  <div class="text-3xl font-bold text-green-600">{{ ticketStats.resolved }}</div>
-                </div>
-              </CardContent>
-            </Card>
+                  <div class="flex-1 flex flex-col items-center justify-center pl-4">
+                    <div class="text-sm font-medium text-green-600 flex items-center gap-1 mb-2">
+                      <CheckCircle2 class="w-4 h-4" /> Total Resolved
+                    </div>
+                    <div class="text-3xl font-bold text-green-600">{{ ticketStats.resolved }}</div>
+                  </div>
+                </CardContent>
+              </Card>
 
-            <Card>
-              <CardContent class="flex items-center justify-between p-6">
-                <div
-                  class="flex-1 flex flex-col items-center justify-center border-r border-border pr-4"
-                >
-                  <div class="text-sm font-medium text-blue-600 mb-2">Open</div>
-                  <div class="text-3xl font-bold text-blue-600">{{ ticketStats.openCount }}</div>
-                </div>
-                <div class="flex-1 flex flex-col items-center justify-center pl-4">
-                  <div class="text-sm font-medium text-yellow-600 mb-2">In Progress</div>
-                  <div class="text-3xl font-bold text-yellow-600">
-                    {{ ticketStats.inProgressCount }}
+              <Card>
+                <CardContent class="flex items-center justify-between p-6">
+                  <div
+                    class="flex-1 flex flex-col items-center justify-center border-r border-border pr-4"
+                  >
+                    <div class="text-sm font-medium text-blue-600 mb-2">Open</div>
+                    <div class="text-3xl font-bold text-blue-600">{{ ticketStats.openCount }}</div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                  <div class="flex-1 flex flex-col items-center justify-center pl-4">
+                    <div class="text-sm font-medium text-yellow-600 mb-2">In Progress</div>
+                    <div class="text-3xl font-bold text-yellow-600">
+                      {{ ticketStats.inProgressCount }}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-            <Card>
-              <CardContent class="flex items-center justify-between p-6">
-                <div
-                  class="flex-1 flex flex-col items-center justify-center border-r border-border pr-4"
-                >
-                  <div class="text-sm font-medium text-muted-foreground mb-2">
-                    {{ t('services.itHelp.stats.avgResponse') }}
+              <Card>
+                <CardContent class="flex items-center justify-between p-6">
+                  <div
+                    class="flex-1 flex flex-col items-center justify-center border-r border-border pr-4"
+                  >
+                    <div class="text-sm font-medium text-muted-foreground mb-2">
+                      {{ t('services.itHelp.stats.avgResponse') }}
+                    </div>
+                    <div class="text-3xl font-bold">{{ ticketStats.avgResponse }}h</div>
                   </div>
-                  <div class="text-3xl font-bold">{{ ticketStats.avgResponse }}h</div>
-                </div>
-                <div class="flex-1 flex flex-col items-center justify-center pl-4">
-                  <div class="text-sm font-medium text-green-600 flex items-center gap-1 mb-2">
-                    <Zap class="w-4 h-4" /> Best Time
+                  <div class="flex-1 flex flex-col items-center justify-center pl-4">
+                    <div class="text-sm font-medium text-green-600 flex items-center gap-1 mb-2">
+                      <Zap class="w-4 h-4" /> Best Time
+                    </div>
+                    <div class="text-3xl font-bold text-green-600">
+                      {{ ticketStats.bestResponse }}h
+                    </div>
                   </div>
-                  <div class="text-3xl font-bold text-green-600">
-                    {{ ticketStats.bestResponse }}h
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                </CardContent>
+              </Card>
+            </div>
+          </template>
 
           <Card>
             <CardHeader class="pb-3 border-b border-muted">
