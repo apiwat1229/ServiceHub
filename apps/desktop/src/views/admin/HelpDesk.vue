@@ -38,6 +38,7 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { itAssetsApi, type ITAsset } from '@/services/it-assets';
+import { itTicketsApi, type ITTicket } from '@/services/it-tickets';
 import { knowledgeBooksApi, type KnowledgeBook } from '@/services/knowledge-books';
 import type { ColumnDef } from '@tanstack/vue-table';
 import {
@@ -56,11 +57,44 @@ import {
   Trash2,
   Upload,
 } from 'lucide-vue-next';
-import { computed, h, onMounted, ref } from 'vue';
+import { computed, h, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useRoute } from 'vue-router';
 import { toast } from 'vue-sonner';
 
 import { useAuthStore } from '@/stores/auth';
+
+const route = useRoute();
+const isDetailModalOpen = ref(false);
+const selectedTicket = ref<ITTicket | null>(null);
+
+const handleTicketClick = (ticket: ITTicket) => {
+  selectedTicket.value = ticket;
+  isDetailModalOpen.value = true;
+};
+
+const onTicketUpdated = (updatedTicket: ITTicket) => {
+  const index = tickets.value.findIndex((t) => t.id === updatedTicket.id);
+  if (index !== -1) {
+    tickets.value[index] = updatedTicket;
+  }
+  selectedTicket.value = updatedTicket;
+};
+
+watch(
+  () => route.query.ticketId,
+  async (newId) => {
+    if (newId && typeof newId === 'string') {
+      try {
+        const ticket = await itTicketsApi.getById(newId);
+        if (ticket) handleTicketClick(ticket);
+      } catch (e) {
+        console.error('Failed to load deep linked ticket', e);
+      }
+    }
+  },
+  { immediate: true }
+);
 
 const { t } = useI18n();
 const authStore = useAuthStore();
@@ -93,6 +127,10 @@ const itStock = ref<ITAsset[]>([]);
 const loadingStock = ref(false);
 const isStockDeleteConfirmOpen = ref(false);
 const stockItemToDelete = ref<ITAsset | null>(null);
+
+// Ticket State
+const tickets = ref<ITTicket[]>([]);
+const loadingTickets = ref(false);
 
 const getImageUrl = (path: string | null) => {
   if (!path) return null;
@@ -268,6 +306,118 @@ const itAssetColumns: ColumnDef<ITAsset>[] = [
   },
 ];
 
+const ticketColumns: ColumnDef<ITTicket>[] = [
+  {
+    accessorKey: 'ticketNo',
+    header: () => h('div', { class: 'text-center' }, t('services.itHelp.tickets.ticketNo')),
+    cell: ({ row }) =>
+      h('div', { class: 'text-center' }, [
+        h(Badge, { variant: 'outline', class: 'font-mono' }, () => row.getValue('ticketNo')),
+      ]),
+  },
+  {
+    accessorKey: 'title',
+    header: () => h('div', t('services.itHelp.tickets.title')),
+    cell: ({ row }) => {
+      const ticket = row.original;
+      return h('div', [
+        h('div', { class: 'font-medium' }, ticket.title),
+        h('div', { class: 'text-xs text-muted-foreground' }, ticket.category),
+      ]);
+    },
+  },
+  {
+    accessorKey: 'status',
+    header: () => h('div', { class: 'text-center' }, t('common.status')),
+    cell: ({ row }) => {
+      const status = row.getValue('status') as string;
+      return h(
+        'div',
+        { class: 'text-center' },
+        h(
+          Badge,
+          {
+            variant: 'secondary',
+            class: getStatusColor(status),
+          },
+          () => status
+        )
+      );
+    },
+  },
+  {
+    accessorKey: 'priority',
+    header: () => h('div', { class: 'text-center' }, t('services.itHelp.tickets.priority')),
+    cell: ({ row }) => {
+      const priority = row.getValue('priority') as string;
+      let variant = 'outline';
+      let className = 'font-normal';
+
+      if (priority === 'Critical') {
+        className += ' border-red-200 text-red-700 bg-red-50';
+      } else if (priority === 'High') {
+        className += ' border-orange-200 text-orange-700 bg-orange-50';
+      } else if (priority === 'Medium') {
+        className += ' border-blue-200 text-blue-700 bg-blue-50';
+      } else {
+        className += ' text-slate-500';
+      }
+
+      return h(
+        'div',
+        { class: 'text-center' },
+        h(Badge, { variant: 'outline', class: className }, () => priority)
+      );
+    },
+  },
+  {
+    accessorKey: 'assignee',
+    header: () => h('div', { class: 'text-center' }, 'Assignee'),
+    cell: ({ row }) => {
+      const assignee = row.original.assignee;
+      if (!assignee)
+        return h('div', { class: 'text-center text-muted-foreground text-xs' }, 'Unassigned');
+
+      return h('div', { class: 'flex items-center justify-center gap-2' }, [
+        h(Avatar, { class: 'w-6 h-6' }, [
+          h(AvatarImage, { src: assignee.avatar || '' }),
+          h(AvatarFallback, { class: 'text-[10px]' }, assignee.firstName?.[0] || 'U'),
+        ]),
+        h('span', { class: 'text-sm' }, assignee.displayName || assignee.username),
+      ]);
+    },
+  },
+  {
+    accessorKey: 'createdAt',
+    header: () => h('div', { class: 'text-center' }, 'Created'),
+    cell: ({ row }) =>
+      h(
+        'div',
+        { class: 'text-center text-xs text-muted-foreground' },
+        new Date(row.getValue('createdAt')).toLocaleDateString()
+      ),
+  },
+  {
+    id: 'actions',
+    header: () => h('div', { class: 'text-center' }, ''),
+    cell: ({ row }) => {
+      return h(
+        'div',
+        { class: 'text-center' },
+        h(
+          Button,
+          {
+            variant: 'ghost',
+            size: 'sm',
+            onClick: () => handleTicketClick(row.original),
+          },
+          () => 'View'
+        )
+      );
+    },
+  },
+];
+
 const loadITAssets = async () => {
   loadingStock.value = true;
   try {
@@ -280,10 +430,28 @@ const loadITAssets = async () => {
   }
 };
 
+const loadTickets = async () => {
+  loadingTickets.value = true;
+  try {
+    tickets.value = await itTicketsApi.getAll();
+  } catch (error) {
+    console.error('Failed to load tickets:', error);
+    toast.error(t('common.errorLoading'));
+  } finally {
+    loadingTickets.value = false;
+  }
+};
+
 const handleStockSuccess = () => {
   isStockModalOpen.value = false;
   loadITAssets();
   toast.success(t('services.itHelp.stock.saveSuccess'));
+};
+
+const handleTicketSuccess = () => {
+  isTicketModalOpen.value = false;
+  loadTickets();
+  toast.success(t('services.itHelp.request.saveSuccess') || 'Ticket submitted successfully');
 };
 
 const getStockStatus = (item: ITAsset) => {
@@ -292,38 +460,7 @@ const getStockStatus = (item: ITAsset) => {
   return 'In Stock';
 };
 
-// Mock Data
-const tickets = [
-  {
-    id: 'T-1024',
-    title: 'Cannot access ERP system',
-    status: 'In Progress',
-    priority: 'High',
-    category: 'Software',
-    created: '2 hours ago',
-    assignee: 'Jack S.',
-  },
-  {
-    id: 'T-1023',
-    title: 'Printer jamming repeatedly',
-    status: 'Open',
-    priority: 'Medium',
-    category: 'Hardware',
-    created: '5 hours ago',
-    assignee: 'Unassigned',
-  },
-  {
-    id: 'T-1020',
-    title: 'Request for new monitor',
-    status: 'Resolved',
-    priority: 'Low',
-    category: 'Asset',
-    created: '1 day ago',
-    assignee: 'Sarah M.',
-  },
-];
-
-// Pagination State
+// Pagination State (for tickets)
 const currentPage = ref(1);
 const itemsPerPage = ref(5);
 const pageSizeOptions = [5, 10, 20, 50];
@@ -332,14 +469,14 @@ const pageSizeOptions = [5, 10, 20, 50];
 const paginatedTickets = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage.value;
   const end = start + itemsPerPage.value;
-  return tickets.slice(start, end);
+  return tickets.value.slice(start, end);
 });
 
-const totalPages = computed(() => Math.ceil(tickets.length / itemsPerPage.value));
+const totalPages = computed(() => Math.ceil(tickets.value.length / itemsPerPage.value));
 
 const startItemIndex = computed(() => (currentPage.value - 1) * itemsPerPage.value + 1);
 const endItemIndex = computed(() =>
-  Math.min(currentPage.value * itemsPerPage.value, tickets.length)
+  Math.min(currentPage.value * itemsPerPage.value, tickets.value.length)
 );
 
 // Methods
@@ -391,6 +528,7 @@ const handleUploadSuccess = () => {
 onMounted(() => {
   loadBooks();
   loadCategories();
+  loadTickets();
   if (isITDepartment.value) {
     loadITAssets();
   }
@@ -720,47 +858,77 @@ const categories = computed(() => {
           </div>
 
           <Card>
-            <CardHeader>
-              <CardTitle>{{ t('services.itHelp.tickets.title') }}</CardTitle>
-              <CardDescription>{{ t('services.itHelp.tickets.subtitle') }}</CardDescription>
+            <CardHeader class="pb-3 border-b border-muted">
+              <div class="flex items-center justify-between">
+                <div>
+                  <CardTitle class="text-lg">{{ t('services.itHelp.tickets.title') }}</CardTitle>
+                  <CardDescription>{{ t('services.itHelp.tickets.subtitle') }}</CardDescription>
+                </div>
+                <div
+                  v-if="loadingTickets"
+                  class="animate-spin h-5 w-5 border-2 border-primary border-t-transparent rounded-full"
+                />
+              </div>
             </CardHeader>
-            <CardContent>
-              <div class="space-y-4">
+            <CardContent class="p-0">
+              <div class="divide-y divide-muted">
                 <div
                   v-for="ticket in paginatedTickets"
                   :key="ticket.id"
-                  class="flex items-center justify-between p-4 border rounded-lg hover:bg-slate-50 transition-colors"
+                  class="p-4 hover:bg-muted/30 transition-colors group cursor-pointer"
+                  @click="handleTicketClick(ticket)"
                 >
-                  <div class="flex items-center gap-4">
-                    <div
-                      class="h-10 w-10 rounded-full flex items-center justify-center"
-                      :class="
-                        ticket.priority === 'High'
-                          ? 'bg-red-100 text-red-600'
-                          : 'bg-blue-50 text-blue-600'
-                      "
-                    >
-                      <AlertCircle v-if="ticket.priority === 'High'" class="h-5 w-5" />
-                      <Ticket v-else class="h-5 w-5" />
-                    </div>
-                    <div>
-                      <h4 class="font-semibold">{{ ticket.title }}</h4>
-                      <div class="flex items-center gap-2 text-sm text-muted-foreground">
-                        <span>{{ ticket.id }}</span>
-                        <span>•</span>
-                        <span>{{ ticket.category }}</span>
-                        <span>•</span>
-                        <span>{{ ticket.created }}</span>
+                  <div class="flex items-start justify-between">
+                    <div class="flex items-start gap-4">
+                      <div
+                        class="mt-1 p-2 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300"
+                      >
+                        <Ticket class="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div class="flex items-center gap-2 mb-1">
+                          <h4
+                            class="font-semibold text-foreground group-hover:text-primary transition-colors"
+                          >
+                            {{ ticket.title }}
+                          </h4>
+                          <Badge variant="outline" class="text-[10px] h-4 font-mono">{{
+                            ticket.ticketNo
+                          }}</Badge>
+                        </div>
+                        <div
+                          class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground mt-1"
+                        >
+                          <span class="flex items-center gap-1"
+                            ><AlertCircle class="w-3 h-3" /> {{ ticket.category }}</span
+                          >
+                          <span class="flex items-center gap-1"
+                            ><Clock class="w-3 h-3" />
+                            {{ new Date(ticket.createdAt).toLocaleDateString() }}</span
+                          >
+                          <span
+                            v-if="ticket.assignee"
+                            class="flex items-center gap-1 font-medium text-primary"
+                            >Assigned to: {{ ticket.assignee.displayName }}</span
+                          >
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div class="flex items-center gap-4">
-                    <Badge variant="secondary" :class="getStatusColor(ticket.status)">
-                      {{ ticket.status }}
-                    </Badge>
-                    <Button variant="ghost" size="icon">
-                      <MoreHorizontal class="h-4 w-4" />
-                    </Button>
+
+                    <div class="flex items-center gap-3">
+                      <Badge
+                        :class="[getStatusColor(ticket.status), 'px-3 py-0.5 font-medium border-0']"
+                      >
+                        {{ ticket.status }}
+                      </Badge>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        class="opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <MoreHorizontal class="w-4 h-4 text-muted-foreground" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -850,7 +1018,7 @@ const categories = computed(() => {
           <DialogTitle>{{ t('services.itHelp.newTicket') }}</DialogTitle>
           <DialogDescription>{{ t('services.itHelp.tickets.subtitle') }}</DialogDescription>
         </DialogHeader>
-        <NewTicketForm @success="isTicketModalOpen = false" @cancel="isTicketModalOpen = false" />
+        <NewTicketForm @success="handleTicketSuccess" @cancel="isTicketModalOpen = false" />
       </DialogContent>
     </Dialog>
 
@@ -919,5 +1087,10 @@ const categories = computed(() => {
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+    <TicketDetailModal
+      v-model:open="isDetailModalOpen"
+      :ticket="selectedTicket"
+      @ticket-updated="onTicketUpdated"
+    />
   </div>
 </template>

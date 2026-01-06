@@ -10,9 +10,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { itTicketsApi } from '@/services/it-tickets';
 import { Paperclip, Send, Trash2 } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { toast } from 'vue-sonner';
 
 const props = defineProps<{
   onSuccess?: () => void;
@@ -20,6 +22,8 @@ const props = defineProps<{
 }>();
 
 const { t, tm, rt } = useI18n();
+const emit = defineEmits(['success', 'cancel']);
+
 const loading = ref(false);
 const attachmentInput = ref<HTMLInputElement | null>(null);
 const attachmentPreview = ref<string | null>(null);
@@ -115,11 +119,27 @@ const removeAttachment = () => {
 };
 
 const handleSubmit = async () => {
+  if (!form.value.subject || !form.value.category) return;
+
   loading.value = true;
-  // Mock API call
-  await new Promise((resolve) => setTimeout(resolve, 1500));
-  loading.value = false;
-  if (props.onSuccess) props.onSuccess();
+  try {
+    // Map form fields to the backend ITTicket model
+    const payload = {
+      title: form.value.subject,
+      category: `${form.value.category} > ${form.value.subcategory}${form.value.issueType ? ' > ' + form.value.issueType : ''}`,
+      description: form.value.description,
+      priority: form.value.priority.charAt(0).toUpperCase() + form.value.priority.slice(1), // capitalize
+    };
+
+    await itTicketsApi.create(payload);
+    emit('success');
+    if (props.onSuccess) props.onSuccess();
+  } catch (error) {
+    console.error('Failed to submit ticket:', error);
+    toast.error('Failed to submit ticket');
+  } finally {
+    loading.value = false;
+  }
 };
 </script>
 
@@ -280,3 +300,4 @@ const handleSubmit = async () => {
     </div>
   </form>
 </template>
+```

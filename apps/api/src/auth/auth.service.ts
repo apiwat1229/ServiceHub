@@ -94,7 +94,8 @@ export class AuthService {
             role: user.role,
             username: user.username,
             displayName: user.displayName,
-            permissions: permissions
+            permissions: permissions,
+            department: user.department
         };
 
         this.logger.debug(`Signing token for user: ${user.id} with payload keys: ${Object.keys(payload)}`);

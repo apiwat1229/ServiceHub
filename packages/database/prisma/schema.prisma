@@ -76,6 +76,10 @@ model User {
   uploadedBooks KnowledgeBook[] @relation("KnowledgeBookUploader")
   bookViews     BookView[]      @relation("BookViewer")
 
+  // IT Help Desk Tickets
+  requesterTickets ITTicket[] @relation("TicketRequester")
+  assigneeTickets  ITTicket[] @relation("TicketAssignee")
+
   @@map("users")
 }
 
@@ -647,4 +651,28 @@ model ITAsset {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("it_assets")
+}
+
+model ITTicket {
+  id          String   @id @default(uuid())
+  ticketNo    String   @unique @map("ticket_no") // e.g. T-1024
+  title       String
+  description String?
+  category    String // Software, Hardware, Network, etc.
+  priority    String   @default("Medium") // Low, Medium, High
+  status      String   @default("Open") // Open, In Progress, Resolved, Closed
+
+  requesterId String @map("requester_id")
+  requester   User   @relation("TicketRequester", fields: [requesterId], references: [id])
+
+  assigneeId String? @map("assignee_id")
+  assignee   User?   @relation("TicketAssignee", fields: [assigneeId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([requesterId])
+  @@index([assigneeId])
+  @@index([status])
+  @@map("it_tickets")
 }

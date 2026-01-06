@@ -10,6 +10,7 @@ import { ApprovalsModule } from './approvals/approvals.module';
 import { AuthModule } from './auth/auth.module';
 import { BookingsModule } from './bookings/bookings.module';
 import { ITAssetsModule } from './it-assets/it-assets.module';
+import { ITTicketsModule } from './it-tickets/it-tickets.module';
 import { KnowledgeBooksModule } from './knowledge-books/knowledge-books.module';
 import { MasterModule } from './master/master.module';
 import { NotificationGroupsModule } from './notification-groups/notification-groups.module';
@@ -43,6 +44,7 @@ import { UsersModule } from './users/users.module';
         AccessControlModule,
         NotificationGroupsModule,
         PrinterUsageModule,
+        ITTicketsModule,
         KnowledgeBooksModule,
         ITAssetsModule,
         ServeStaticModule.forRoot({

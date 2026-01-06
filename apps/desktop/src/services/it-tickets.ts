@@ -1,0 +1,67 @@
+import api from './api';
+
+export interface ITTicket {
+    id: string;
+    ticketNo: string;
+    title: string;
+    description?: string;
+    category: string;
+    priority: string;
+    status: string;
+    requesterId: string;
+    requester?: {
+        id: string;
+        displayName: string;
+        email?: string;
+    };
+    assigneeId?: string;
+    assignee?: {
+        id: string;
+        displayName: string;
+        email?: string;
+    };
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface CreateITTicketDto {
+    title: string;
+    description?: string;
+    category: string;
+    priority?: string;
+}
+
+export interface UpdateITTicketDto {
+    title?: string;
+    description?: string;
+    category?: string;
+    priority?: string;
+    status?: string;
+    assigneeId?: string;
+}
+
+export const itTicketsApi = {
+    getAll: async (): Promise<ITTicket[]> => {
+        const response = await api.get('/it-tickets');
+        return response.data;
+    },
+
+    getById: async (id: string): Promise<ITTicket> => {
+        const response = await api.get(`/it-tickets/${id}`);
+        return response.data;
+    },
+
+    create: async (data: CreateITTicketDto): Promise<ITTicket> => {
+        const response = await api.post('/it-tickets', data);
+        return response.data;
+    },
+
+    update: async (id: string, data: UpdateITTicketDto): Promise<ITTicket> => {
+        const response = await api.patch(`/it-tickets/${id}`, data);
+        return response.data;
+    },
+
+    delete: async (id: string): Promise<void> => {
+        await api.delete(`/it-tickets/${id}`);
+    },
+};
