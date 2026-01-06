@@ -79,6 +79,7 @@ model User {
   // IT Help Desk Tickets
   requesterTickets ITTicket[] @relation("TicketRequester")
   assigneeTickets  ITTicket[] @relation("TicketAssignee")
+  ticketComments   TicketComment[]
 
   @@map("users")
 }
@@ -676,4 +677,20 @@ model ITTicket {
   @@index([assigneeId])
   @@index([status])
   @@map("it_tickets")
+
+  comments TicketComment[]
+}
+
+model TicketComment {
+  id        String   @id @default(uuid())
+  content   String
+  ticketId  String   @map("ticket_id")
+  ticket    ITTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([ticketId])
+  @@index([userId])
+  @@map("ticket_comments")
 }

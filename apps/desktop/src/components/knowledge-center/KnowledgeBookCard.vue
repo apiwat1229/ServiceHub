@@ -10,7 +10,16 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import type { KnowledgeBook } from '@/services/knowledge-books';
-import { Calendar, Download, Eye, FileText, Presentation, Trash2, User } from 'lucide-vue-next';
+import {
+  Calendar,
+  Download,
+  Eye,
+  FileText,
+  Pencil,
+  Presentation,
+  Trash2,
+  User,
+} from 'lucide-vue-next';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
@@ -25,6 +34,7 @@ const emit = defineEmits<{
   view: [];
   download: [];
   delete: [];
+  edit: [];
 }>();
 
 const fileIcon = computed(() => {
@@ -133,6 +143,9 @@ const uploaderName = computed(() => {
         <Button variant="outline" size="sm" class="flex-1" @click="emit('download')">
           <Download class="w-3 h-3 mr-1" />
           {{ t('navbar.home') === 'Home' ? 'Download' : 'ดาวน์โหลด' }}
+        </Button>
+        <Button v-if="canDelete" variant="outline" size="sm" class="px-2" @click="emit('edit')">
+          <Pencil class="w-3 h-3 text-blue-500" />
         </Button>
         <Button
           v-if="canDelete"

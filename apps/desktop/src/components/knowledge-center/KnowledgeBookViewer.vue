@@ -10,6 +10,7 @@ import {
   Maximize2,
   Minimize2,
   Presentation,
+  X,
 } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -143,7 +144,7 @@ watch(
 <template>
   <Dialog :open="open" @update:open="handleClose">
     <DialogContent
-      :class="`p-0 gap-0 ${isFullscreen ? 'max-w-full h-screen' : 'max-w-5xl h-[80vh]'}`"
+      :class="`p-0 gap-0 ${isFullscreen ? 'max-w-full h-screen' : 'max-w-6xl h-[95vh]'}`"
       hide-close
     >
       <DialogTitle class="sr-only">{{ book?.title }}</DialogTitle>
@@ -182,6 +183,15 @@ watch(
               <Maximize2 v-if="!isFullscreen" class="w-4 h-4" />
               <Minimize2 v-else class="w-4 h-4" />
             </Button>
+            <div class="w-px h-6 bg-border mx-1" />
+            <Button
+              variant="ghost"
+              size="icon"
+              @click="handleClose"
+              class="hover:bg-destructive hover:text-destructive-foreground transition-colors"
+            >
+              <X class="w-5 h-5" />
+            </Button>
           </div>
         </div>
 
@@ -200,17 +210,19 @@ watch(
           </div>
 
           <div class="h-full w-full overflow-hidden relative">
-            <!-- PDF Viewer (Unified for PDF and PPTX via conversion) -->
             <div
               v-if="(book?.fileType === 'pdf' || book?.fileType === 'pptx') && fileUrl"
-              class="h-full w-full overflow-auto flex justify-center p-4"
+              class="h-full w-full overflow-auto flex justify-center p-2"
             >
               <VuePdfEmbed
                 :source="fileUrl"
                 :page="currentPage"
                 :text-layer="true"
                 :annotation-layer="true"
-                :class="['shadow-lg w-full', isFullscreen ? 'max-w-none' : 'max-w-4xl']"
+                :class="[
+                  'shadow-lg min-h-0',
+                  isFullscreen ? 'w-auto max-h-full' : 'w-auto max-h-full',
+                ]"
                 @loaded="handlePdfLoaded"
               />
             </div>

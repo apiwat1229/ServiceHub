@@ -29,6 +29,22 @@ export interface ITTicket {
     location?: string;
     createdAt: string;
     updatedAt: string;
+    comments?: TicketComment[];
+}
+
+export interface TicketComment {
+    id: string;
+    content: string;
+    ticketId: string;
+    userId: string;
+    user: {
+        id: string;
+        displayName: string;
+        firstName?: string;
+        lastName?: string;
+        avatar?: string;
+    };
+    createdAt: string;
 }
 
 export interface CreateITTicketDto {
@@ -62,6 +78,11 @@ export const itTicketsApi = {
 
     create: async (data: CreateITTicketDto): Promise<ITTicket> => {
         const response = await api.post('/it-tickets', data);
+        return response.data;
+    },
+
+    addComment: async (id: string, content: string): Promise<TicketComment> => {
+        const response = await api.post(`/it-tickets/${id}/comments`, { content });
         return response.data;
     },
 

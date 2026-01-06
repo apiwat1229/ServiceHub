@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateITTicketDto, UpdateITTicketDto } from './dto/it-ticket.dto';
+import { CreateITTicketDto, CreateTicketCommentDto, UpdateITTicketDto } from './dto/it-ticket.dto';
+
 
 @Injectable()
 export class ITTicketsService {
@@ -50,32 +51,83 @@ export class ITTicketsService {
             },
         });
 
-        // Notify IT Team
-        this.notifyITTeam(ticket);
+        // Notify IT Team (using settings)
+        await this.triggerNotification('IT_HELP_DESK', 'TICKET_CREATED', {
+            title: `New IT Ticket: ${ticket.ticketNo}`,
+            message: `${ticket.title} - ${ticket.requester?.displayName}`,
+            actionUrl: `/admin/helpdesk?ticketId=${ticket.id}`
+        });
 
         return ticket;
     }
 
-    private async notifyITTeam(ticket: any) {
+    private async triggerNotification(sourceApp: string, actionType: string, payload: { title: string; message: string; actionUrl?: string }, explicitUserIds: string[] = []) {
         try {
-            const itMembers = await this.notificationsService.getGroupMembers('IT');
-            if (!itMembers.length) return;
+            // 1. Get Settings for this event
+            const settings = await this.prisma.notificationSetting.findUnique({
+                where: {
+                    sourceApp_actionType: { sourceApp, actionType }
+                }
+            });
 
-            for (const member of itMembers) {
-                // Don't notify the creator if they are IT (optional preference, but good for confirmation)
+            // Even if settings don't exist, we might still want to send to explicit users if they were hardcoded? 
+            // In this architecture, it's better if everything is configurable. 
+            // But for Requester/Assignee, they expect it.
+
+            let targetUserIds: string[] = [...explicitUserIds];
+
+            if (settings && settings.isActive) {
+                const recipientRoles = (settings.recipientRoles as unknown as string[]) || [];
+                const recipientGroups = (settings.recipientGroups as unknown as string[]) || [];
+
+                // 2. Find Users with these Roles
+                if (recipientRoles.length > 0) {
+                    const users = await this.prisma.user.findMany({
+                        where: {
+                            OR: [
+                                { role: { in: recipientRoles } },
+                                { roleRecord: { name: { in: recipientRoles } } },
+                                { roleRecord: { id: { in: recipientRoles } } }
+                            ]
+                        },
+                        select: { id: true }
+                    });
+                    targetUserIds.push(...users.map(u => u.id));
+                }
+
+                // 3. Find Users in these Groups
+                if (recipientGroups.length > 0) {
+                    const groups = await this.prisma.notificationGroup.findMany({
+                        where: { id: { in: recipientGroups } },
+                        include: { members: { select: { id: true } } }
+                    });
+                    const groupUserIds = groups.flatMap(g => g.members.map(m => m.id));
+                    targetUserIds.push(...groupUserIds);
+                }
+            }
+
+            // Deduplicate
+            targetUserIds = [...new Set(targetUserIds)];
+
+            // 4. Send Notification to each user
+            for (const userId of targetUserIds) {
                 await this.notificationsService.create({
-                    userId: member.id,
-                    title: `New IT Ticket: ${ticket.ticketNo}`,
-                    message: `${ticket.title} - ${ticket.requester?.displayName}`,
+                    userId: userId,
+                    title: payload.title,
+                    message: payload.message,
                     type: 'INFO',
-                    sourceApp: 'IT_HELP_DESK',
-                    actionType: 'VIEW_TICKET',
-                    entityId: ticket.id,
-                    actionUrl: `/admin/helpdesk?ticketId=${ticket.id}`
+                    sourceApp,
+                    actionType,
+                    actionUrl: payload.actionUrl
                 });
             }
+
+            if (targetUserIds.length > 0) {
+                console.log(`Notification sent for ${sourceApp}:${actionType} to ${targetUserIds.length} users.`);
+            }
+
         } catch (error) {
-            console.error('Failed to notify IT team', error);
+            console.error('Error triggering notification:', error);
         }
     }
 
@@ -118,6 +170,20 @@ export class ITTicketsService {
                         displayName: true,
                     },
                 },
+                comments: {
+                    include: {
+                        user: {
+                            select: {
+                                id: true,
+                                displayName: true,
+                                firstName: true,
+                                lastName: true,
+                                avatar: true,
+                            },
+                        },
+                    },
+                    orderBy: { createdAt: 'desc' },
+                },
             },
         });
     }
@@ -131,30 +197,20 @@ export class ITTicketsService {
 
         // Notify Requester on status change
         if (updateDto.status) {
-            this.notificationsService.create({
-                userId: ticket.requesterId,
+            await this.triggerNotification('IT_HELP_DESK', 'TICKET_UPDATED', {
                 title: `Ticket Updated: ${ticket.ticketNo}`,
                 message: `Status changed to ${ticket.status}`,
-                type: 'INFO',
-                sourceApp: 'IT_HELP_DESK',
-                actionType: 'VIEW_TICKET',
-                entityId: ticket.id,
                 actionUrl: `/admin/helpdesk?ticketId=${ticket.id}`
-            });
+            }, [ticket.requesterId]);
         }
 
         // Notify Assignee if assigned
         if (updateDto.assigneeId) {
-            this.notificationsService.create({
-                userId: updateDto.assigneeId,
+            await this.triggerNotification('IT_HELP_DESK', 'TICKET_ASSIGNED', {
                 title: `Ticket Assigned: ${ticket.ticketNo}`,
                 message: `You have been assigned to ticket ${ticket.ticketNo}`,
-                type: 'INFO',
-                sourceApp: 'IT_HELP_DESK',
-                actionType: 'VIEW_TICKET',
-                entityId: ticket.id,
                 actionUrl: `/admin/helpdesk?ticketId=${ticket.id}`
-            });
+            }, [updateDto.assigneeId]);
         }
 
         return ticket;
@@ -164,5 +220,53 @@ export class ITTicketsService {
         return this.prisma.iTTicket.delete({
             where: { id },
         });
+    }
+
+    async addComment(ticketId: string, userId: string, createDto: CreateTicketCommentDto) {
+        const comment = await this.prisma.ticketComment.create({
+            data: {
+                content: createDto.content,
+                ticketId,
+                userId,
+            },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        displayName: true,
+                        firstName: true,
+                        lastName: true,
+                        avatar: true,
+                    },
+                },
+            },
+        });
+
+        // Notify relevant parties (Requester or Assignee)
+        const ticket = await this.prisma.iTTicket.findUnique({
+            where: { id: ticketId },
+        });
+
+        if (ticket) {
+            const targets: string[] = [];
+            // If commenter is not requester, notify requester
+            if (userId !== ticket.requesterId) {
+                targets.push(ticket.requesterId);
+            }
+            // If commenter is not assignee, and there is an assignee, notify assignee
+            if (ticket.assigneeId && userId !== ticket.assigneeId) {
+                targets.push(ticket.assigneeId);
+            }
+
+            if (targets.length > 0) {
+                await this.triggerNotification('IT_HELP_DESK', 'NEW_COMMENT', {
+                    title: `New Comment on T-${ticket.ticketNo}`,
+                    message: `${comment.user.displayName} commented on the ticket`,
+                    actionUrl: `/admin/helpdesk?ticketId=${ticket.id}`
+                }, targets);
+            }
+        }
+
+        return comment;
     }
 }

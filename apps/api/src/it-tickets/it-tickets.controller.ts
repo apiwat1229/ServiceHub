@@ -10,7 +10,8 @@ import {
     UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { CreateITTicketDto, UpdateITTicketDto } from './dto/it-ticket.dto';
+import { CreateITTicketDto, CreateTicketCommentDto, UpdateITTicketDto } from './dto/it-ticket.dto';
+
 import { ITTicketsService } from './it-tickets.service';
 
 @Controller('it-tickets')
@@ -43,5 +44,14 @@ export class ITTicketsController {
     @Delete(':id')
     remove(@Param('id') id: string) {
         return this.itTicketsService.remove(id);
+    }
+
+    @Post(':id/comments')
+    createComment(
+        @Param('id') id: string,
+        @Request() req,
+        @Body() createDto: CreateTicketCommentDto
+    ) {
+        return this.itTicketsService.addComment(id, req.user.userId, createDto);
     }
 }

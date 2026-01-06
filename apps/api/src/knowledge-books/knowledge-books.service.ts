@@ -26,6 +26,8 @@ export interface UpdateBookDto {
     author?: string;
     tags?: string[];
     isPublished?: boolean;
+    trainingDate?: Date;
+    attendees?: number;
 }
 
 export interface BookFilters {

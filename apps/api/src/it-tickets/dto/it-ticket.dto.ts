@@ -49,5 +49,13 @@ export class UpdateITTicketDto {
 
     @IsOptional()
     @IsString()
+    @IsOptional()
+    @IsString()
     assigneeId?: string;
+}
+
+export class CreateTicketCommentDto {
+    @IsNotEmpty()
+    @IsString()
+    content: string;
 }

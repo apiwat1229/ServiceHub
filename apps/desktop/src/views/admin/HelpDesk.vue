@@ -4,6 +4,7 @@ import BarcodePreview from '@/components/helpdesk/BarcodePreview.vue';
 import NewTicketForm from '@/components/helpdesk/NewTicketForm.vue';
 import PrinterUsageAnalytics from '@/components/helpdesk/PrinterUsageAnalytics.vue';
 import KnowledgeBookCard from '@/components/knowledge-center/KnowledgeBookCard.vue';
+import KnowledgeBookEdit from '@/components/knowledge-center/KnowledgeBookEdit.vue';
 import KnowledgeBookUpload from '@/components/knowledge-center/KnowledgeBookUpload.vue';
 import KnowledgeBookViewer from '@/components/knowledge-center/KnowledgeBookViewer.vue';
 import {
@@ -70,6 +71,7 @@ import { useAuthStore } from '@/stores/auth';
 const route = useRoute();
 const isDetailModalOpen = ref(false);
 const selectedTicket = ref<ITTicket | null>(null);
+const loadingTickets = ref(false);
 
 const handleTicketClick = (ticket: ITTicket) => {
   selectedTicket.value = ticket;
@@ -89,10 +91,18 @@ watch(
   async (newId) => {
     if (newId && typeof newId === 'string') {
       try {
+        // If tickets aren't loaded yet, we might need to fetch this specific ticket or wait.
+        // For now, let's fetch individual ticket to ensure we have it.
+        loadingTickets.value = true;
         const ticket = await itTicketsApi.getById(newId);
-        if (ticket) handleTicketClick(ticket);
+        if (ticket) {
+          handleTicketClick(ticket);
+        }
       } catch (e) {
         console.error('Failed to load deep linked ticket', e);
+        toast.error('Failed to load ticket details');
+      } finally {
+        loadingTickets.value = false;
       }
     }
   },
@@ -112,6 +122,7 @@ const editingStockItem = ref<ITAsset | null>(null);
 
 // eBook State
 const isUploadModalOpen = ref(false);
+const isEditModalOpen = ref(false);
 const isViewerModalOpen = ref(false);
 const selectedBook = ref<KnowledgeBook | null>(null);
 const books = ref<KnowledgeBook[]>([]);
@@ -120,6 +131,15 @@ const selectedCategory = ref<string>('');
 const ebookSearchQuery = ref('');
 const ebookCategories = ref<string[]>([]);
 const loadingCategories = ref(false);
+
+const handleEditBook = (book: KnowledgeBook) => {
+  selectedBook.value = book;
+  isEditModalOpen.value = true;
+};
+
+const onBookUpdated = () => {
+  loadBooks();
+};
 
 // Delete Confirmation State
 const isDeleteConfirmOpen = ref(false);
@@ -133,7 +153,6 @@ const stockItemToDelete = ref<ITAsset | null>(null);
 
 // Ticket State
 const tickets = ref<ITTicket[]>([]);
-const loadingTickets = ref(false);
 
 const getImageUrl = (path: string | null) => {
   if (!path) return null;
@@ -531,15 +550,34 @@ const isITDepartment = computed(() => {
 });
 
 const getStatusColor = (status: string) => {
-  switch (status.toLowerCase()) {
-    case 'open':
-      return 'bg-yellow-100 text-yellow-800';
-    case 'in progress':
+  switch (status) {
+    case 'Open':
       return 'bg-blue-100 text-blue-800';
-    case 'resolved':
+    case 'In Progress':
+      return 'bg-yellow-100 text-yellow-800';
+    case 'Pending':
+      return 'bg-orange-100 text-orange-800';
+    case 'Resolved':
       return 'bg-green-100 text-green-800';
-    default:
+    case 'Closed':
       return 'bg-gray-100 text-gray-800';
+    case 'Cancelled':
+      return 'bg-red-100 text-red-800';
+    default:
+      return 'bg-slate-100 text-slate-800';
+  }
+};
+
+const getPriorityIconStyles = (priority: string) => {
+  switch (priority) {
+    case 'Critical':
+      return 'bg-red-50 text-red-600 border-red-100/50 group-hover:bg-red-100 group-hover:border-red-200';
+    case 'High':
+      return 'bg-orange-50 text-orange-600 border-orange-100/50 group-hover:bg-orange-100 group-hover:border-orange-200';
+    case 'Medium':
+      return 'bg-blue-50 text-blue-600 border-blue-100/50 group-hover:bg-blue-100 group-hover:border-blue-200';
+    default:
+      return 'bg-slate-50 text-slate-600 border-slate-100/50 group-hover:bg-slate-100 group-hover:border-slate-200';
   }
 };
 
@@ -762,6 +800,7 @@ const categories = computed(() => {
             @view="handleViewBook(book)"
             @download="handleDownloadBook(book)"
             @delete="handleDeleteBook(book)"
+            @edit="handleEditBook(book)"
           />
         </div>
       </TabsContent>
@@ -878,82 +917,83 @@ const categories = computed(() => {
 
           <Card>
             <CardHeader class="pb-3 border-b border-muted">
-              <div class="flex items-center justify-between">
-                <div>
-                  <CardTitle class="text-lg">{{ t('services.itHelp.tickets.title') }}</CardTitle>
-                  <CardDescription>{{ t('services.itHelp.tickets.subtitle') }}</CardDescription>
-                </div>
-                <div
-                  v-if="loadingTickets"
-                  class="animate-spin h-5 w-5 border-2 border-primary border-t-transparent rounded-full"
-                />
+              <div class="space-y-1">
+                <CardTitle class="text-xl font-bold">Support Tickets</CardTitle>
+                <CardDescription>Report an issue or request assistance.</CardDescription>
               </div>
             </CardHeader>
             <CardContent class="p-0">
-              <div class="divide-y divide-muted">
+              <div class="divide-y divide-border/50">
                 <div
                   v-for="ticket in paginatedTickets"
                   :key="ticket.id"
-                  class="p-4 hover:bg-muted/30 transition-colors group cursor-pointer flex items-center gap-4"
-                  @click="handleTicketClick(ticket)"
+                  class="p-4 hover:bg-muted/30 transition-colors group flex items-center gap-4"
                 >
                   <!-- Icon -->
                   <div
-                    class="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600"
+                    :class="[
+                      'flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center border transition-colors duration-300',
+                      getPriorityIconStyles(ticket.priority),
+                    ]"
                   >
                     <Ticket class="w-5 h-5" />
                   </div>
 
                   <!-- Content -->
                   <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-2 mb-1">
-                      <span class="font-semibold text-foreground truncate">
+                    <div class="flex items-center gap-2 mb-1.5 w-full">
+                      <span
+                        class="font-semibold text-base text-foreground truncate block hover:underline cursor-pointer"
+                        @click="handleTicketClick(ticket)"
+                      >
                         {{ ticket.title }}
                       </span>
-                      <Badge
-                        variant="outline"
-                        class="text-[10px] h-5 px-1.5 font-mono text-muted-foreground bg-muted/50 border-muted"
-                      >
-                        {{ ticket.ticketNo }}
-                      </Badge>
                     </div>
                     <div class="flex items-center gap-3 text-xs text-muted-foreground">
-                      <span class="flex items-center gap-1.5">
-                        {{ ticket.category }}
-                      </span>
+                      <div class="flex items-center gap-1.5">
+                        <span class="text-muted-foreground/70">{{
+                          ticket.location || 'Unknown'
+                        }}</span>
+                        <span class="text-muted-foreground/40">&gt;</span>
+                        <span>{{ ticket.category }}</span>
+                      </div>
                       <span class="text-muted-foreground/40">&bull;</span>
                       <span class="flex items-center gap-1.5">
-                        <Clock class="w-3 h-3" />
+                        <Clock class="w-3 h-3 text-muted-foreground/70" />
                         {{ formatTicketDate(ticket.createdAt) }}
                       </span>
                     </div>
                   </div>
 
-                  <!-- Status -->
-                  <div class="flex-shrink-0">
+                  <!-- Right Side: Ticket No & Status -->
+                  <div class="flex items-center gap-3 flex-shrink-0 pl-4">
+                    <Badge
+                      variant="secondary"
+                      class="text-[10px] h-5 px-1.5 font-mono font-medium text-muted-foreground bg-muted border border-border rounded pointer-events-none"
+                    >
+                      {{ ticket.ticketNo }}
+                    </Badge>
                     <Badge
                       :class="[
                         getStatusColor(ticket.status),
-                        'px-2.5 py-1 font-medium border-0 rounded-md',
+                        'px-2.5 py-0.5 text-[10px] font-bold border-0 rounded uppercase tracking-wide pointer-events-none',
                       ]"
                     >
-                      {{ ticket.status.toUpperCase() }}
+                      {{ ticket.status }}
                     </Badge>
                   </div>
                 </div>
               </div>
 
               <!-- Pagination Controls -->
-              <div class="flex items-center justify-between pt-4 border-t mt-4">
-                <div class="flex items-center gap-2">
-                  <p class="text-sm text-muted-foreground">
-                    {{ t('common.table.rowsPerPage') }}
-                  </p>
+              <div class="flex items-center justify-between p-4 border-t bg-muted/5">
+                <div class="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>Rows per page:</span>
                   <Select
                     :model-value="itemsPerPage.toString()"
                     @update:model-value="(v) => (itemsPerPage = parseInt(v))"
                   >
-                    <SelectTrigger class="w-[70px]">
+                    <SelectTrigger class="h-8 w-[60px] bg-background">
                       <SelectValue :placeholder="itemsPerPage.toString()" />
                     </SelectTrigger>
                     <SelectContent>
@@ -968,26 +1008,28 @@ const categories = computed(() => {
                   </Select>
                 </div>
 
-                <div class="flex items-center gap-2">
-                  <div class="text-sm text-muted-foreground mr-2">
-                    {{ startItemIndex }} - {{ endItemIndex }} of {{ tickets.length }}
+                <div class="flex items-center gap-4 text-sm text-muted-foreground">
+                  <div>{{ startItemIndex }} - {{ endItemIndex }} of {{ tickets.length }}</div>
+                  <div class="flex items-center gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      class="h-8 px-3 bg-background"
+                      :disabled="currentPage === 1"
+                      @click="handlePageChange(currentPage - 1)"
+                    >
+                      Previous
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      class="h-8 px-3 bg-background"
+                      :disabled="currentPage === totalPages"
+                      @click="handlePageChange(currentPage + 1)"
+                    >
+                      Next
+                    </Button>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    :disabled="currentPage === 1"
-                    @click="handlePageChange(currentPage - 1)"
-                  >
-                    {{ t('common.previous') }}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    :disabled="currentPage === totalPages"
-                    @click="handlePageChange(currentPage + 1)"
-                  >
-                    {{ t('common.next') }}
-                  </Button>
                 </div>
               </div>
             </CardContent>
@@ -1101,6 +1143,11 @@ const categories = computed(() => {
       v-model:open="isDetailModalOpen"
       :ticket="selectedTicket"
       @ticket-updated="onTicketUpdated"
+    />
+    <KnowledgeBookEdit
+      v-model:open="isEditModalOpen"
+      :book="selectedBook"
+      @updated="onBookUpdated"
     />
   </div>
 </template>
