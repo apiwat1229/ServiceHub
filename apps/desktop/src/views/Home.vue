@@ -13,7 +13,6 @@ import {
   Calendar,
   Clock,
   Droplets,
-  FileClock,
   FileText,
   Headset,
   Truck,
@@ -122,16 +121,6 @@ const modules = computed<ServiceModule[]>(() => [
     bgColor: 'bg-rose-50/50 group-hover:bg-rose-100/50',
     hoverBorder: 'group-hover:border-rose-500',
     route: '/admin/contracts',
-  },
-  {
-    id: 'contact-management',
-    title: t('services.contactManagement.name'),
-    description: t('services.contactManagement.description'),
-    icon: FileClock,
-    color: 'text-amber-600',
-    bgColor: 'bg-amber-50/50 group-hover:bg-amber-100/50',
-    hoverBorder: 'group-hover:border-amber-500',
-    route: '/admin/contact-management',
   },
 ]);
 

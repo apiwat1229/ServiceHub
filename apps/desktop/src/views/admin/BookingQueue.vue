@@ -6,8 +6,10 @@ import {
   Calendar as CalendarIcon,
   Edit2,
   FileText,
+  LayoutGrid,
   Plus,
   RefreshCw,
+  Ticket,
   Trash2,
 } from 'lucide-vue-next';
 import { computed, onMounted, ref, watch, type Ref } from 'vue';
@@ -15,6 +17,7 @@ import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
 
 import BookingSheet from '@/components/booking/BookingSheet.vue';
+import BookingTicket from '@/components/booking/BookingTicket.vue';
 import TicketDialog from '@/components/booking/TicketDialog.vue';
 import {
   AlertDialog,
@@ -81,6 +84,8 @@ const selectedSlot = ref<string>('08:00-09:00'); // Default slot
 const queues = ref<any[]>([]);
 const totalDailyQueues = ref(0);
 const loading = ref(false);
+const viewMode = ref<'card' | 'ticket'>('card');
+const calendarPopoverOpen = ref(false); // Add popover state
 
 const sheetOpen = ref(false);
 const ticketDialogOpen = ref(false);
@@ -228,6 +233,7 @@ function handleShowTicket(booking: any) {
 // Watch for date/slot changes
 watch([selectedDate, selectedSlot], () => {
   fetchQueues();
+  calendarPopoverOpen.value = false; // Close calendar on selection
 });
 
 function handleBookingSuccess(_booking?: any) {
@@ -323,10 +329,34 @@ watch(selectedSlot, (newSlot) => {
           {{ format(selectedDateJS, 'dd-MMM-yyyy') }}
         </p>
       </div>
+
       <div class="flex items-center space-x-2">
+        <!-- View Toggle -->
+        <div class="bg-muted p-1 rounded-lg flex gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            class="h-8 px-2"
+            :class="viewMode === 'card' ? 'bg-background shadow-sm' : 'text-muted-foreground'"
+            @click="viewMode = 'card'"
+          >
+            <LayoutGrid class="w-4 h-4 mr-1" />
+            Card
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            class="h-8 px-2"
+            :class="viewMode === 'ticket' ? 'bg-background shadow-sm' : 'text-muted-foreground'"
+            @click="viewMode = 'ticket'"
+          >
+            <Ticket class="w-4 h-4 mr-1" />
+            Ticket
+          </Button>
+        </div>
+
         <Button variant="outline" size="sm" @click="fetchQueues">
           <RefreshCw class="mr-2 h-4 w-4" />
-
           {{ t('bookingQueue.refresh') }}
         </Button>
         <Button
@@ -349,7 +379,7 @@ watch(selectedSlot, (newSlot) => {
           <!-- Date Picker -->
           <div class="flex flex-col gap-2 min-w-[200px]">
             <span class="text-sm text-muted-foreground">{{ t('bookingQueue.selectDate') }}</span>
-            <Popover>
+            <Popover v-model:open="calendarPopoverOpen">
               <PopoverTrigger as-child>
                 <Button
                   variant="outline"
@@ -464,86 +494,100 @@ watch(selectedSlot, (newSlot) => {
       <p class="text-muted-foreground mt-1">{{ t('bookingQueue.noBookings') }}</p>
     </div>
 
-    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      <Card
-        v-for="queue in queues"
-        :key="queue.id"
-        class="p-3 transition-all hover:shadow-md border-l-4"
-        :style="{ borderLeftColor: DAY_COLORS[selectedDateJS.getDay()].queueBg }"
-      >
-        <div class="flex justify-between items-center mb-2">
-          <span class="font-semibold text-sm"
-            >{{ t('bookingQueue.queueNumber') }} : {{ queue.queueNo }}</span
-          >
-          <div v-if="queue.status !== 'APPROVED'" class="flex items-center gap-1">
-            <TooltipProvider v-if="authStore.hasPermission('bookings:update')">
-              <Tooltip>
-                <TooltipTrigger as-child>
-                  <Button variant="ghost" size="icon" class="h-8 w-8" @click="handleEdit(queue)">
-                    <Edit2 class="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>{{ t('common.edit') }}</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-            <TooltipProvider v-if="authStore.hasPermission('bookings:delete')">
-              <Tooltip>
-                <TooltipTrigger as-child>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    class="h-8 w-8 text-destructive hover:bg-destructive/10"
-                    @click="handleDeleteClick(queue)"
-                  >
-                    <Trash2 class="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>{{ t('common.delete') }}</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-          <div v-else>
-            <span
-              class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10"
+    <div
+      v-else
+      class="grid gap-4"
+      :class="{
+        'grid-cols-1 md:grid-cols-2 lg:grid-cols-4': true,
+      }"
+    >
+      <template v-if="viewMode === 'card'">
+        <Card
+          v-for="queue in queues"
+          :key="queue.id"
+          class="p-3 transition-all hover:shadow-md border-l-4"
+          :style="{ borderLeftColor: DAY_COLORS[selectedDateJS.getDay()].queueBg }"
+        >
+          <div class="flex justify-between items-center mb-2">
+            <span class="font-semibold text-sm"
+              >{{ t('bookingQueue.queueNumber') }} : {{ queue.queueNo }}</span
             >
-              {{ t('booking.deliveryCompleted') || 'Delivery Completed' }}
-            </span>
-          </div>
-        </div>
+            <div v-if="queue.status !== 'APPROVED'" class="flex items-center gap-1">
+              <TooltipProvider v-if="authStore.hasPermission('bookings:update')">
+                <Tooltip>
+                  <TooltipTrigger as-child>
+                    <Button variant="ghost" size="icon" class="h-8 w-8" @click="handleEdit(queue)">
+                      <Edit2 class="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>{{ t('common.edit') }}</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
 
-        <div class="space-y-1 text-sm">
-          <div>
-            <p class="text-xs text-muted-foreground">{{ t('bookingQueue.supplierCode') }}</p>
-            <p class="font-medium">{{ queue.supplierCode }}</p>
+              <TooltipProvider v-if="authStore.hasPermission('bookings:delete')">
+                <Tooltip>
+                  <TooltipTrigger as-child>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      class="h-8 w-8 text-destructive hover:bg-destructive/10"
+                      @click="handleDeleteClick(queue)"
+                    >
+                      <Trash2 class="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>{{ t('common.delete') }}</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            <div v-else>
+              <span
+                class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10"
+              >
+                {{ t('booking.deliveryCompleted') || 'Delivery Completed' }}
+              </span>
+            </div>
           </div>
-          <div>
-            <p class="text-xs text-muted-foreground">{{ t('bookingQueue.supplierName') }}</p>
-            <p class="font-medium break-words">{{ queue.supplierName }}</p>
-          </div>
-          <div v-if="queue.truckType || queue.truckRegister">
-            <p class="text-xs text-muted-foreground">{{ t('bookingQueue.truck') }}</p>
-            <p>{{ [queue.truckType, queue.truckRegister].filter(Boolean).join(' - ') }}</p>
-          </div>
-          <div>
-            <p class="text-xs text-muted-foreground">{{ t('bookingQueue.type') }}</p>
-            <p>
-              {{ RUBBER_TYPE_MAP[queue.rubberType] || queue.rubberTypeName || queue.rubberType }}
-            </p>
-          </div>
-          <div>
-            <p class="text-xs text-muted-foreground">{{ t('bookingQueue.bookingCode') }}</p>
-            <p>{{ queue.bookingCode }}</p>
-          </div>
-        </div>
 
-        <div class="mt-4 pt-4 border-t flex justify-end">
-          <Button variant="link" size="sm" class="h-auto p-0" @click="handleShowTicket(queue)">
-            <FileText class="h-3 w-3 mr-1" />
-            {{ t('bookingQueue.ticket') }}
-          </Button>
+          <div class="space-y-1 text-sm">
+            <div>
+              <p class="text-xs text-muted-foreground">{{ t('bookingQueue.supplierCode') }}</p>
+              <p class="font-medium">{{ queue.supplierCode }}</p>
+            </div>
+            <div>
+              <p class="text-xs text-muted-foreground">{{ t('bookingQueue.supplierName') }}</p>
+              <p class="font-medium break-words">{{ queue.supplierName }}</p>
+            </div>
+            <div v-if="queue.truckType || queue.truckRegister">
+              <p class="text-xs text-muted-foreground">{{ t('bookingQueue.truck') }}</p>
+              <p>{{ [queue.truckType, queue.truckRegister].filter(Boolean).join(' - ') }}</p>
+            </div>
+            <div>
+              <p class="text-xs text-muted-foreground">{{ t('bookingQueue.type') }}</p>
+              <p>
+                {{ RUBBER_TYPE_MAP[queue.rubberType] || queue.rubberTypeName || queue.rubberType }}
+              </p>
+            </div>
+            <div>
+              <p class="text-xs text-muted-foreground">{{ t('bookingQueue.bookingCode') }}</p>
+              <p>{{ queue.bookingCode }}</p>
+            </div>
+          </div>
+
+          <div class="mt-4 pt-4 border-t flex justify-end">
+            <Button variant="link" size="sm" class="h-auto p-0" @click="handleShowTicket(queue)">
+              <FileText class="h-3 w-3 mr-1" />
+              {{ t('bookingQueue.ticket') }}
+            </Button>
+          </div>
+        </Card>
+      </template>
+
+      <template v-else>
+        <div v-for="queue in queues" :key="queue.id">
+          <BookingTicket :ticket="queue" :show-actions="false" />
         </div>
-      </Card>
+      </template>
     </div>
 
     <!-- Modals -->

@@ -1,4 +1,17 @@
 <script setup lang="ts">
+import { Calendar } from '@/components/ui/calendar';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+import { usersApi, type User } from '@/services/users';
+import { parseDate, type DateValue } from '@internationalized/date';
 import {
   addDays,
   differenceInCalendarDays,
@@ -16,13 +29,15 @@ import {
 import { enGB, th } from 'date-fns/locale';
 import {
   ArrowLeft,
-  Calendar,
+  Calendar as CalendarIcon,
+  Check,
+  ChevronsUpDown,
   FolderPlus,
   LayoutGrid,
   Plus,
   Save,
   Trash2,
-  User,
+  User as UserIcon,
   X,
 } from 'lucide-vue-next';
 import { computed, onMounted, ref } from 'vue';
@@ -49,7 +64,7 @@ interface Task {
   progress: number;
 }
 
-interface TaskFormData extends Omit<Task, 'id' | 'projectId'> {
+interface TaskFormData extends Omit<Task, 'id'> {
   id?: number;
 }
 
@@ -68,7 +83,7 @@ const COLORS = [
   { name: 'Teal', value: 'bg-teal-500' },
 ];
 
-const STATUS_OPTIONS = ['Planning', 'In Progress', 'Review', 'Completed'];
+const STATUS_OPTIONS = ['Planning', 'In Progress', 'Completed', 'Review'];
 
 const PROJECT_COLORS = [
   'bg-blue-100 text-blue-700',
@@ -82,8 +97,8 @@ const PROJECT_COLORS = [
 const { locale } = useI18n();
 const viewMode = ref<'list' | 'detail'>('list');
 
-const projects = ref<Project[]>([]);
 const allTasks = ref<Task[]>([]);
+const projects = ref<Project[]>([]);
 const selectedProject = ref<Project | null>(null);
 
 // Modal States
@@ -92,16 +107,73 @@ const isProjectModalOpen = ref(false);
 
 const editingTask = ref<Task | null>(null);
 
-// Form Data
+// --- Modal Upgrades State ---
+const users = ref<User[]>([]);
+const openAssignee = ref(false);
+const openStartDate = ref(false);
+const openEndDate = ref(false);
+
 const taskFormData = ref<TaskFormData>({
+  projectId: 0,
   title: '',
-  assignee: '',
+  assignee: '', // Stored as "User A, User B"
   start: '',
   end: '',
   color: 'bg-blue-500',
   status: 'Planning',
   progress: 0,
 });
+
+// Fetch users
+onMounted(async () => {
+  try {
+    const res = await usersApi.getAll();
+    users.value = res;
+  } catch (error) {
+    console.error('Failed to fetch users:', error);
+  }
+});
+
+// Helper for multi-select assignee
+const selectedAssignees = computed({
+  get: () => {
+    if (!taskFormData.value.assignee) return [];
+    return taskFormData.value.assignee
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+  },
+  set: (val: string[]) => {
+    taskFormData.value.assignee = val.join(', ');
+  },
+});
+
+const toggleAssignee = (username: string) => {
+  const current = new Set(selectedAssignees.value);
+  if (current.has(username)) {
+    current.delete(username);
+  } else {
+    current.add(username);
+  }
+  selectedAssignees.value = Array.from(current);
+};
+
+// Date Formatters
+const formatDateDisplay = (dateStr: string) => {
+  if (!dateStr) return 'Pick a date';
+  try {
+    return format(parseISO(dateStr), 'dd-MMM-yyyy');
+  } catch (e) {
+    return dateStr;
+  }
+};
+
+const handleDateSelect = (date: DateValue | undefined, field: 'start' | 'end') => {
+  if (!date) return;
+  taskFormData.value[field] = date.toString();
+  if (field === 'start') openStartDate.value = false;
+  if (field === 'end') openEndDate.value = false;
+};
 
 const projectFormData = ref({
   title: '',
@@ -257,12 +329,13 @@ const getTaskStyle = (task: Task) => {
 const handleOpenTaskModal = (task: Task | null = null) => {
   if (task) {
     editingTask.value = task;
-    const { id, projectId, ...rest } = task;
+    const { id, ...rest } = task; // Keep projectId in rest
     taskFormData.value = { ...rest };
   } else {
     editingTask.value = null;
     const today = format(new Date(), 'yyyy-MM-dd');
     taskFormData.value = {
+      projectId: selectedProject.value?.id || 0,
       title: '',
       assignee: '',
       start: today,
@@ -359,7 +432,7 @@ onMounted(() => {
           <ArrowLeft class="w-5 h-5" />
         </button>
         <div class="p-2 bg-indigo-100 rounded-lg text-indigo-600">
-          <Calendar class="w-6 h-6" />
+          <CalendarIcon class="w-6 h-6" />
         </div>
         <div>
           <h1 class="text-xl font-bold text-foreground">
@@ -484,7 +557,7 @@ onMounted(() => {
               </div>
               <div class="flex items-center justify-between">
                 <div class="text-xs text-muted-foreground flex items-center gap-1">
-                  <User class="w-3 h-3" /> {{ task.assignee }}
+                  <UserIcon class="w-3 h-3" /> {{ task.assignee }}
                 </div>
                 <div class="text-[10px] font-mono text-muted-foreground/70">
                   {{ task.progress }}%
@@ -693,59 +766,152 @@ onMounted(() => {
 
         <div class="p-6 overflow-y-auto">
           <form @submit.prevent="handleSaveTask" class="space-y-5">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Task Name</label>
-              <input
-                type="text"
-                required
-                v-model="taskFormData.title"
-                class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
-                placeholder="e.g. Design Homepage"
-              />
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
+            <!-- Advanced Form Fields -->
+            <div class="space-y-4">
+              <!-- Task Name -->
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Assignee</label>
-                <div class="relative">
-                  <User class="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
-                  <input
-                    type="text"
-                    v-model="taskFormData.assignee"
-                    class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
-                    placeholder="e.g. Somchai"
-                  />
+                <label class="block text-sm font-medium text-gray-700 mb-1">Task Name</label>
+                <input
+                  type="text"
+                  required
+                  v-model="taskFormData.title"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                  placeholder="e.g. Design Homepage"
+                />
+              </div>
+
+              <div class="grid grid-cols-2 gap-4">
+                <!-- Assignee (Multi-Select) -->
+                <div class="flex flex-col gap-1">
+                  <label class="text-sm font-medium text-gray-700">Assignee</label>
+                  <Popover v-model:open="openAssignee">
+                    <PopoverTrigger as-child>
+                      <button
+                        type="button"
+                        role="combobox"
+                        :aria-expanded="openAssignee"
+                        class="flex w-full items-center justify-between rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      >
+                        <div class="flex flex-wrap gap-1 items-center overflow-hidden">
+                          <UserIcon class="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                          <template v-if="selectedAssignees.length > 0">
+                            <span class="truncate">
+                              {{ selectedAssignees.join(', ') }}
+                            </span>
+                          </template>
+                          <span v-else class="text-gray-400">Select assignees...</span>
+                        </div>
+                        <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent class="w-[300px] p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Search user..." />
+                        <CommandEmpty>No user found.</CommandEmpty>
+                        <CommandList>
+                          <CommandGroup>
+                            <CommandItem
+                              v-for="user in users"
+                              :key="user.id"
+                              :value="user.displayName || user.username || ''"
+                              @select="toggleAssignee(user.displayName || user.username || '')"
+                            >
+                              <Check
+                                :class="
+                                  cn(
+                                    'mr-2 h-4 w-4',
+                                    selectedAssignees.includes(
+                                      user.displayName || user.username || ''
+                                    )
+                                      ? 'opacity-100'
+                                      : 'opacity-0'
+                                  )
+                                "
+                              />
+                              {{ user.displayName || user.username }}
+                            </CommandItem>
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <!-- Status -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <select
+                    v-model="taskFormData.status"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all bg-white"
+                  >
+                    <option v-for="opt in STATUS_OPTIONS" :key="opt" :value="opt">
+                      {{ opt }}
+                    </option>
+                  </select>
                 </div>
               </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <select
-                  v-model="taskFormData.status"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all bg-white"
-                >
-                  <option v-for="opt in STATUS_OPTIONS" :key="opt" :value="opt">{{ opt }}</option>
-                </select>
-              </div>
-            </div>
 
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-                <input
-                  type="date"
-                  required
-                  v-model="taskFormData.start"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-                <input
-                  type="date"
-                  required
-                  v-model="taskFormData.end"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                />
+              <!-- Date Pickers (Shadcn Style) -->
+              <div class="grid grid-cols-2 gap-4">
+                <!-- Start Date -->
+                <div class="flex flex-col gap-1">
+                  <label class="text-sm font-medium text-gray-700">Start Date</label>
+                  <Popover v-model:open="openStartDate">
+                    <PopoverTrigger as-child>
+                      <button
+                        type="button"
+                        :class="
+                          cn(
+                            'flex w-full items-center justify-start rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-left font-normal hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500',
+                            !taskFormData.start && 'text-muted-foreground'
+                          )
+                        "
+                      >
+                        <CalendarIcon class="mr-2 h-4 w-4 opacity-50" />
+                        {{ formatDateDisplay(taskFormData.start) }}
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent class="w-auto p-0" align="start">
+                      <Calendar
+                        initial-focus
+                        mode="single"
+                        :model-value="
+                          taskFormData.start ? parseDate(taskFormData.start) : undefined
+                        "
+                        @update:model-value="(date) => handleDateSelect(date, 'start')"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <!-- End Date -->
+                <div class="flex flex-col gap-1">
+                  <label class="text-sm font-medium text-gray-700">End Date</label>
+                  <Popover v-model:open="openEndDate">
+                    <PopoverTrigger as-child>
+                      <button
+                        type="button"
+                        :class="
+                          cn(
+                            'flex w-full items-center justify-start rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-left font-normal hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500',
+                            !taskFormData.end && 'text-muted-foreground'
+                          )
+                        "
+                      >
+                        <CalendarIcon class="mr-2 h-4 w-4 opacity-50" />
+                        {{ formatDateDisplay(taskFormData.end) }}
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent class="w-auto p-0" align="start">
+                      <Calendar
+                        initial-focus
+                        mode="single"
+                        :model-value="taskFormData.end ? parseDate(taskFormData.end) : undefined"
+                        @update:model-value="(date) => handleDateSelect(date, 'end')"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
               </div>
             </div>
 
