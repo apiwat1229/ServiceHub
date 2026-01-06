@@ -363,32 +363,30 @@ const availableAssignees = computed(() => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Low"
-                        ><Badge variant="outline" class="font-normal text-slate-500"
-                          >Low</Badge
-                        ></SelectItem
-                      >
-                      <SelectItem value="Medium"
-                        ><Badge
-                          variant="outline"
-                          class="font-normal border-blue-200 text-blue-700 bg-blue-50"
-                          >Medium</Badge
-                        ></SelectItem
-                      >
-                      <SelectItem value="High"
-                        ><Badge
-                          variant="outline"
-                          class="font-normal border-orange-200 text-orange-700 bg-orange-50"
-                          >High</Badge
-                        ></SelectItem
-                      >
-                      <SelectItem value="Critical"
-                        ><Badge
-                          variant="outline"
-                          class="font-normal border-red-200 text-red-700 bg-red-50"
-                          >Critical</Badge
-                        ></SelectItem
-                      >
+                      <SelectItem value="Low" class="text-slate-600">
+                        <div class="flex items-center gap-2">
+                          <div class="w-1.5 h-1.5 rounded-full bg-slate-500"></div>
+                          Low
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="Medium" class="text-blue-600">
+                        <div class="flex items-center gap-2">
+                          <div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                          Medium
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="High" class="text-orange-600">
+                        <div class="flex items-center gap-2">
+                          <div class="w-1.5 h-1.5 rounded-full bg-orange-500"></div>
+                          High
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="Critical" class="text-red-600">
+                        <div class="flex items-center gap-2">
+                          <div class="w-1.5 h-1.5 rounded-full bg-red-500"></div>
+                          Critical
+                        </div>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

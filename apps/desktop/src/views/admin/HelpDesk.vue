@@ -16,7 +16,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -43,16 +42,15 @@ import { itAssetsApi, type ITAsset } from '@/services/it-assets';
 import { itTicketsApi, type ITTicket } from '@/services/it-tickets';
 import { knowledgeBooksApi, type KnowledgeBook } from '@/services/knowledge-books';
 import { getLocalTimeZone, today } from '@internationalized/date';
+import type { ColumnDef } from '@tanstack/vue-table';
 import { format, formatDistanceToNowStrict, intervalToDuration } from 'date-fns';
 import {
-  AlertCircle,
   BookOpen,
   CheckCircle2,
   Clock,
   Edit2,
   LayoutDashboard,
   Monitor,
-  MoreHorizontal,
   Package,
   Plus,
   Search,
@@ -62,7 +60,7 @@ import {
   Zap,
 } from 'lucide-vue-next';
 import type { DateRange } from 'reka-ui';
-import { computed, h, onMounted, ref, watch } from 'vue';
+import { computed, h, onMounted, ref, watch, type Ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import { toast } from 'vue-sonner';
@@ -394,8 +392,8 @@ const ticketStats = computed(() => {
     }
   });
   const avgTimeMs = resolvedTickets.length ? totalResolutionTime / resolvedTickets.length : 0;
-  const avgTimeHours = (avgTimeMs / (1000 * 60 * 60)).toFixed(1);
-  const bestTimeHours = minTimeMs !== Infinity ? (minTimeMs / (1000 * 60 * 60)).toFixed(1) : '0.0';
+  const avgTimeHours = (avgTimeMs / (1000 * 60 * 60)).toFixed(2);
+  const bestTimeHours = minTimeMs !== Infinity ? (minTimeMs / (1000 * 60 * 60)).toFixed(2) : '0.00';
 
   return {
     total: filteredTickets.length,
@@ -409,138 +407,6 @@ const ticketStats = computed(() => {
     bestResponse: bestTimeHours,
   };
 });
-
-const ticketColumns: ColumnDef<ITTicket>[] = [
-  {
-    accessorKey: 'ticketNo',
-    header: () => h('div', { class: 'text-center' }, t('services.itHelp.tickets.ticketNo')),
-    cell: ({ row }) =>
-      h('div', { class: 'text-center' }, [
-        h(Badge, { variant: 'outline', class: 'font-mono' }, () => row.getValue('ticketNo')),
-      ]),
-  },
-  {
-    accessorKey: 'title',
-    header: () => h('div', t('services.itHelp.tickets.title')),
-    cell: ({ row }) => {
-      const ticket = row.original;
-      console.log('Rendering ticket:', ticket.ticketNo, ticket.createdAt);
-      const date = new Date(ticket.createdAt);
-      const formatted = format(date, 'dd MMM yyyy, HH:mm');
-      const timeAgo = formatDistanceToNowStrict(date, { addSuffix: true });
-      return h('div', [
-        h('div', { class: 'font-medium' }, ticket.title),
-        h('div', { class: 'text-xs text-muted-foreground flex items-center gap-3 mt-1' }, [
-          h('span', { class: 'flex items-center gap-1' }, [
-            h(AlertCircle, { class: 'w-3 h-3' }),
-            ticket.category,
-          ]),
-          h('span', { class: 'flex items-center gap-1' }, [
-            h(Clock, { class: 'w-3 h-3' }),
-            `${formatted} (${timeAgo})`,
-          ]),
-        ]),
-      ]);
-    },
-  },
-  {
-    accessorKey: 'status',
-    header: () => h('div', { class: 'text-center' }, t('common.status')),
-    cell: ({ row }) => {
-      const status = row.getValue('status') as string;
-      return h(
-        'div',
-        { class: 'text-center' },
-        h(
-          Badge,
-          {
-            variant: 'secondary',
-            class: getStatusColor(status),
-          },
-          () => status
-        )
-      );
-    },
-  },
-  {
-    accessorKey: 'priority',
-    header: () => h('div', { class: 'text-center' }, t('services.itHelp.tickets.priority')),
-    cell: ({ row }) => {
-      const priority = row.getValue('priority') as string;
-      let variant = 'outline';
-      let className = 'font-normal';
-
-      if (priority === 'Critical') {
-        className += ' border-red-200 text-red-700 bg-red-50';
-      } else if (priority === 'High') {
-        className += ' border-orange-200 text-orange-700 bg-orange-50';
-      } else if (priority === 'Medium') {
-        className += ' border-blue-200 text-blue-700 bg-blue-50';
-      } else {
-        className += ' text-slate-500';
-      }
-
-      return h(
-        'div',
-        { class: 'text-center' },
-        h(Badge, { variant: 'outline', class: className }, () => priority)
-      );
-    },
-  },
-  {
-    accessorKey: 'assignee',
-    header: () => h('div', { class: 'text-center' }, 'Assignee'),
-    cell: ({ row }) => {
-      const assignee = row.original.assignee;
-      if (!assignee)
-        return h('div', { class: 'text-center text-muted-foreground text-xs' }, 'Unassigned');
-
-      return h('div', { class: 'flex items-center justify-center gap-2' }, [
-        h(Avatar, { class: 'w-6 h-6' }, [
-          h(AvatarImage, { src: assignee.avatar || '' }),
-          h(AvatarFallback, { class: 'text-[10px]' }, assignee.firstName?.[0] || 'U'),
-        ]),
-        h('span', { class: 'text-sm' }, assignee.displayName || assignee.username),
-      ]);
-    },
-  },
-  {
-    accessorKey: 'createdAt',
-    header: () => h('div', { class: 'text-center' }, 'Created'),
-    cell: ({ row }) => {
-      const date = new Date(row.getValue('createdAt'));
-      const formatted = format(date, 'dd-MMM-yyyy, h:mm a');
-      const timeAgo = formatDistanceToNowStrict(date, { addSuffix: true });
-      return h(
-        'div',
-        { class: 'text-center text-xs text-muted-foreground' },
-        `${formatted} (${timeAgo})`
-      );
-    },
-  },
-  {
-    id: 'actions',
-    header: () => h('div', { class: 'text-center' }, ''),
-    cell: ({ row }) => {
-      return h(
-        'div',
-        { class: 'text-center' },
-        h(
-          Button,
-          {
-            variant: 'ghost',
-            size: 'sm',
-            onClick: (e: Event) => {
-              e.stopPropagation();
-              handleTicketClick(row.original);
-            },
-          },
-          () => 'View'
-        )
-      );
-    },
-  },
-];
 
 const loadITAssets = async () => {
   loadingStock.value = true;
@@ -1028,60 +894,51 @@ const categories = computed(() => {
                 <div
                   v-for="ticket in paginatedTickets"
                   :key="ticket.id"
-                  class="p-4 hover:bg-muted/30 transition-colors group cursor-pointer"
+                  class="p-4 hover:bg-muted/30 transition-colors group cursor-pointer flex items-center gap-4"
                   @click="handleTicketClick(ticket)"
                 >
-                  <div class="flex items-start justify-between">
-                    <div class="flex items-start gap-4">
-                      <div
-                        class="mt-1 p-2 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300"
-                      >
-                        <Ticket class="w-5 h-5" />
-                      </div>
-                      <div>
-                        <div class="flex items-center gap-2 mb-1">
-                          <h4
-                            class="font-semibold text-foreground group-hover:text-primary transition-colors"
-                          >
-                            {{ ticket.title }}
-                          </h4>
-                          <Badge variant="outline" class="text-[10px] h-4 font-mono">{{
-                            ticket.ticketNo
-                          }}</Badge>
-                        </div>
-                        <div
-                          class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground mt-1"
-                        >
-                          <span class="flex items-center gap-1"
-                            ><AlertCircle class="w-3 h-3" /> {{ ticket.category }}</span
-                          >
-                          <span class="flex items-center gap-1"
-                            ><Clock class="w-3 h-3" />
-                            {{ formatTicketDate(ticket.createdAt) }}</span
-                          >
-                          <span
-                            v-if="ticket.assignee"
-                            class="flex items-center gap-1 font-medium text-primary"
-                            >Assigned to: {{ ticket.assignee.displayName }}</span
-                          >
-                        </div>
-                      </div>
-                    </div>
+                  <!-- Icon -->
+                  <div
+                    class="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600"
+                  >
+                    <Ticket class="w-5 h-5" />
+                  </div>
 
-                    <div class="flex items-center gap-3">
+                  <!-- Content -->
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-1">
+                      <span class="font-semibold text-foreground truncate">
+                        {{ ticket.title }}
+                      </span>
                       <Badge
-                        :class="[getStatusColor(ticket.status), 'px-3 py-0.5 font-medium border-0']"
+                        variant="outline"
+                        class="text-[10px] h-5 px-1.5 font-mono text-muted-foreground bg-muted/50 border-muted"
                       >
-                        {{ ticket.status }}
+                        {{ ticket.ticketNo }}
                       </Badge>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        class="opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <MoreHorizontal class="w-4 h-4 text-muted-foreground" />
-                      </Button>
                     </div>
+                    <div class="flex items-center gap-3 text-xs text-muted-foreground">
+                      <span class="flex items-center gap-1.5">
+                        {{ ticket.category }}
+                      </span>
+                      <span class="text-muted-foreground/40">&bull;</span>
+                      <span class="flex items-center gap-1.5">
+                        <Clock class="w-3 h-3" />
+                        {{ formatTicketDate(ticket.createdAt) }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- Status -->
+                  <div class="flex-shrink-0">
+                    <Badge
+                      :class="[
+                        getStatusColor(ticket.status),
+                        'px-2.5 py-1 font-medium border-0 rounded-md',
+                      ]"
+                    >
+                      {{ ticket.status.toUpperCase() }}
+                    </Badge>
                   </div>
                 </div>
               </div>
