@@ -13,11 +13,15 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { itAssetsApi, type ITAsset } from '@/services/it-assets';
+import { itTicketsApi } from '@/services/it-tickets';
+import { usersApi, type User } from '@/services/users';
 import { getLocalTimeZone, type DateValue } from '@internationalized/date';
 import { format } from 'date-fns';
 import { Calendar as CalendarIcon, Send } from 'lucide-vue-next';
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { toast } from 'vue-sonner';
 
 const props = defineProps<{
   onSuccess?: () => void;
@@ -26,10 +30,13 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const loading = ref(false);
+const assets = ref<ITAsset[]>([]);
+const users = ref<User[]>([]);
+const loadingAssets = ref(false);
 
 const form = ref({
   category: '',
-  model: '',
+  assetId: '',
   quantity: '1',
   urgency: 'medium',
   reason: '',
@@ -39,12 +46,48 @@ const form = ref({
 
 const selectedDate = ref<DateValue>();
 
-// Initialize with today if needed, or keep empty
-// For this form, maybe empty is better to force user to pick
+onMounted(() => {
+  fetchData();
+});
+
+const fetchData = async () => {
+  loadingAssets.value = true;
+  try {
+    const [assetsData, usersData] = await Promise.all([itAssetsApi.getAll(), usersApi.getAll()]);
+    assets.value = assetsData;
+    users.value = usersData;
+  } catch (error) {
+    console.error('Failed to fetch data:', error);
+  } finally {
+    loadingAssets.value = false;
+  }
+};
+
+const approvers = computed(() => {
+  const approverRoles: string[] = ['admin', 'md', 'gm', 'manager', 'asst_mgr'];
+  return users.value.filter((u) => approverRoles.includes(u.role.toLowerCase()));
+});
+
+const categories = computed(() => {
+  const cats = assets.value.map((a) => a.category);
+  return [...new Set(cats)].sort();
+});
+
+const filteredAssets = computed(() => {
+  if (!form.value.category) return [];
+  return assets.value.filter((a) => a.category === form.value.category && a.stock > 0);
+});
+
+// Reset assetId when category changes
+watch(
+  () => form.value.category,
+  () => {
+    form.value.assetId = '';
+  }
+);
 
 watch(selectedDate, (val) => {
   if (val) {
-    // Convert DateValue to JS Date then to string YYYY-MM-DD for consistency
     const date = val.toDate(getLocalTimeZone());
     form.value.expectedDate = format(date, 'yyyy-MM-dd');
   } else {
@@ -61,14 +104,41 @@ const dateLabel = computed(() => {
 
 const handleSubmit = async () => {
   if (!form.value.expectedDate) {
-    // Show error or just don't submit
+    toast.error('Please select an expected date');
     return;
   }
+  if (!form.value.assetId) {
+    toast.error('Please select a device model');
+    return;
+  }
+
   loading.value = true;
-  // Mock API call
-  await new Promise((resolve) => setTimeout(resolve, 1500));
-  loading.value = false;
-  if (props.onSuccess) props.onSuccess();
+  try {
+    const selectedAsset = assets.value.find((a) => a.id === form.value.assetId);
+
+    await itTicketsApi.create({
+      title: `Equipment Request: ${selectedAsset?.name || 'Device'}`,
+      description: form.value.reason,
+      category: 'Hardware',
+      priority:
+        form.value.urgency === 'high' ? 'High' : form.value.urgency === 'medium' ? 'Medium' : 'Low',
+      isAssetRequest: true,
+      assetId: form.value.assetId,
+      quantity: Number(form.value.quantity),
+      expectedDate: new Date(form.value.expectedDate).toISOString(),
+      approverId: form.value.approverId,
+    });
+
+    toast.success('Equipment request submitted successfully');
+    if (props.onSuccess) props.onSuccess();
+  } catch (error: any) {
+    console.error('Failed to submit request:', error);
+    toast.error('Failed to submit request', {
+      description: error.response?.data?.message || 'Unknown error occurred',
+    });
+  } finally {
+    loading.value = false;
+  }
 };
 </script>
 
@@ -78,15 +148,13 @@ const handleSubmit = async () => {
       <div class="space-y-2">
         <Label for="category">{{ t('services.itHelp.request.category') }}</Label>
         <Select v-model="form.category" required>
-          <SelectTrigger id="category">
+          <SelectTrigger id="category" class="capitalize">
             <SelectValue :placeholder="t('services.itHelp.request.category')" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="laptop">Laptop / PC</SelectItem>
-            <SelectItem value="monitor">Monitor</SelectItem>
-            <SelectItem value="keyboard">Keyboard / Mouse</SelectItem>
-            <SelectItem value="network">Network (Adapter, Cable)</SelectItem>
-            <SelectItem value="other">Other</SelectItem>
+            <SelectItem v-for="cat in categories" :key="cat" :value="cat" class="capitalize">
+              {{ cat }}
+            </SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -98,15 +166,24 @@ const handleSubmit = async () => {
             <SelectValue :placeholder="t('services.itHelp.request.urgency')" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="low"
-              >{{ t('auth.passwordStrength.weak') }} - Routine Request</SelectItem
-            >
-            <SelectItem value="medium"
-              >{{ t('auth.passwordStrength.medium') }} - Required for Work</SelectItem
-            >
-            <SelectItem value="high"
-              >{{ t('auth.passwordStrength.strong') }} - Critical / Blocker</SelectItem
-            >
+            <SelectItem value="low">
+              <div class="flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-emerald-500" />
+                <span>{{ t('services.itHelp.request.urgencyLevels.low') }}</span>
+              </div>
+            </SelectItem>
+            <SelectItem value="medium">
+              <div class="flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-amber-500" />
+                <span>{{ t('services.itHelp.request.urgencyLevels.medium') }}</span>
+              </div>
+            </SelectItem>
+            <SelectItem value="high">
+              <div class="flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-destructive" />
+                <span>{{ t('services.itHelp.request.urgencyLevels.high') }}</span>
+              </div>
+            </SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -114,7 +191,16 @@ const handleSubmit = async () => {
 
     <div class="space-y-2">
       <Label for="model">{{ t('services.itHelp.request.model') }}</Label>
-      <Input id="model" v-model="form.model" placeholder="e.g. Dell Latitude, Logitech MX Master" />
+      <Select v-model="form.assetId" required :disabled="!form.category">
+        <SelectTrigger id="model">
+          <SelectValue :placeholder="t('services.itHelp.request.model')" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem v-for="asset in filteredAssets" :key="asset.id" :value="asset.id">
+            {{ asset.name }} (Stock: {{ asset.stock }})
+          </SelectItem>
+        </SelectContent>
+      </Select>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -156,10 +242,9 @@ const handleSubmit = async () => {
           <SelectValue :placeholder="t('services.itHelp.request.placeholder.selectApprover')" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="mgr-001">John Doe (IT Manager)</SelectItem>
-          <SelectItem value="mgr-002">Jane Smith (HR Manager)</SelectItem>
-          <SelectItem value="mgr-003">Bob Wilson (Accounting Head)</SelectItem>
-          <SelectItem value="mgr-004">Alice Brown (Production Manager)</SelectItem>
+          <SelectItem v-for="user in approvers" :key="user.id" :value="user.id">
+            {{ user.firstName }} {{ user.lastName }} ({{ user.position || user.role }})
+          </SelectItem>
         </SelectContent>
       </Select>
     </div>

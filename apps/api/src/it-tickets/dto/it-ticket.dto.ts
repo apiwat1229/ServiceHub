@@ -20,6 +20,25 @@ export class CreateITTicketDto {
     @IsOptional()
     @IsString()
     location?: string;
+
+    @IsOptional()
+    @IsString()
+    assetId?: string;
+
+    @IsOptional()
+    @IsString()
+    quantity?: number;
+
+    @IsOptional()
+    @IsString()
+    expectedDate?: string;
+
+    @IsOptional()
+    @IsString()
+    approverId?: string;
+
+    @IsOptional()
+    isAssetRequest?: boolean;
 }
 
 export class UpdateITTicketDto {
@@ -49,9 +68,33 @@ export class UpdateITTicketDto {
 
     @IsOptional()
     @IsString()
+    assigneeId?: string;
+
     @IsOptional()
     @IsString()
-    assigneeId?: string;
+    assetId?: string;
+
+    @IsOptional()
+    quantity?: number;
+
+    @IsOptional()
+    @IsString()
+    expectedDate?: string;
+
+    @IsOptional()
+    @IsString()
+    approverId?: string;
+
+    @IsOptional()
+    isAssetRequest?: boolean;
+
+    @IsOptional()
+    @IsString()
+    issuedAt?: string;
+
+    @IsOptional()
+    @IsString()
+    issuedBy?: string;
 }
 
 export class CreateTicketCommentDto {

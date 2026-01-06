@@ -1,4 +1,5 @@
 import api from './api';
+import type { ITAsset } from './it-assets';
 
 export interface ITTicket {
     id: string;
@@ -27,6 +28,15 @@ export interface ITTicket {
         username?: string;
     };
     location?: string;
+    // Asset Request Fields
+    isAssetRequest?: boolean;
+    assetId?: string;
+    asset?: ITAsset;
+    quantity?: number;
+    expectedDate?: string;
+    approverId?: string;
+    issuedAt?: string;
+    issuedBy?: string;
     createdAt: string;
     updatedAt: string;
     comments?: TicketComment[];
@@ -53,6 +63,12 @@ export interface CreateITTicketDto {
     category: string;
     priority?: string;
     location?: string;
+    // Asset Request Fields
+    isAssetRequest?: boolean;
+    assetId?: string;
+    quantity?: number;
+    expectedDate?: string;
+    approverId?: string;
 }
 
 export interface UpdateITTicketDto {
@@ -63,6 +79,14 @@ export interface UpdateITTicketDto {
     status?: string;
     location?: string;
     assigneeId?: string;
+    // Asset Request Fields
+    isAssetRequest?: boolean;
+    assetId?: string;
+    quantity?: number;
+    expectedDate?: string;
+    approverId?: string;
+    issuedAt?: string;
+    issuedBy?: string;
 }
 
 export const itTicketsApi = {

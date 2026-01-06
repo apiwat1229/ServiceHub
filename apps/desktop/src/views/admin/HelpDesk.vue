@@ -46,6 +46,7 @@ import { getLocalTimeZone, today } from '@internationalized/date';
 import type { ColumnDef } from '@tanstack/vue-table';
 import { format, formatDistanceToNowStrict, intervalToDuration } from 'date-fns';
 import {
+  ArrowUpDown,
   BookOpen,
   CheckCircle2,
   Clock,
@@ -150,6 +151,32 @@ const itStock = ref<ITAsset[]>([]);
 const loadingStock = ref(false);
 const isStockDeleteConfirmOpen = ref(false);
 const stockItemToDelete = ref<ITAsset | null>(null);
+const stockCategoryFilter = ref<string>('ALL');
+
+const stockCategories = computed(() => {
+  const cats = new Set(itStock.value.map((item) => item.category).filter(Boolean));
+  return Array.from(cats).sort();
+});
+
+const filteredITStock = computed(() => {
+  let filtered = itStock.value;
+
+  if (stockCategoryFilter.value && stockCategoryFilter.value !== 'ALL') {
+    filtered = filtered.filter((item) => item.category === stockCategoryFilter.value);
+  }
+
+  if (searchQuery.value) {
+    const q = searchQuery.value.toLowerCase();
+    filtered = filtered.filter(
+      (item) =>
+        item.name.toLowerCase().includes(q) ||
+        item.code.toLowerCase().includes(q) ||
+        (item.category && item.category.toLowerCase().includes(q))
+    );
+  }
+
+  return filtered;
+});
 
 // Ticket State
 const tickets = ref<ITTicket[]>([]);
@@ -284,7 +311,17 @@ const itAssetColumns: ColumnDef<ITAsset>[] = [
   },
   {
     accessorKey: 'stock',
-    header: () => h('div', { class: 'text-center' }, t('services.itHelp.stock.count')),
+    header: ({ column }) => {
+      return h(
+        Button,
+        {
+          variant: 'ghost',
+          onClick: () => column.toggleSorting(column.getIsSorted() === 'asc'),
+          class: 'text-center w-full hover:bg-muted font-bold px-0 gap-2',
+        },
+        () => [t('services.itHelp.stock.count'), h(ArrowUpDown, { class: 'h-4 w-4' })]
+      );
+    },
     cell: ({ row }) => h('div', { class: 'text-center font-bold' }, row.getValue('stock')),
   },
   {
@@ -622,6 +659,19 @@ async function handleDownloadBook(book: KnowledgeBook) {
   link.href = knowledgeBooksApi.getDownloadUrl(book.id);
   link.download = book.fileName;
   link.click();
+
+  // Increment download count locally
+  const bookIndex = books.value.findIndex((b) => b.id === book.id);
+  if (bookIndex !== -1) {
+    books.value[bookIndex].downloads++;
+  }
+}
+
+function onViewTracked(bookId: string) {
+  const bookIndex = books.value.findIndex((b) => b.id === bookId);
+  if (bookIndex !== -1) {
+    books.value[bookIndex].views++;
+  }
 }
 
 async function handleDeleteBook(book: KnowledgeBook) {
@@ -728,41 +778,44 @@ const categories = computed(() => {
 
       <!-- Knowledge Base Tab -->
       <TabsContent value="kb" class="space-y-4">
-        <!-- Header with Upload Button -->
-        <div class="flex items-center justify-between">
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h3 class="text-lg font-semibold">{{ t('services.itHelp.kb.title') }}</h3>
             <p class="text-sm text-muted-foreground">{{ t('services.itHelp.kb.subtitle') }}</p>
           </div>
-          <Button v-if="isITDepartment" @click="isUploadModalOpen = true" class="gap-2">
-            <Upload class="w-4 h-4" />
-            {{ t('services.itHelp.kb.uploadBtn') }}
-          </Button>
-        </div>
-
-        <!-- Filters -->
-        <div class="flex gap-4">
-          <div class="relative flex-1">
-            <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              :placeholder="t('services.itHelp.kb.searchPlaceholder')"
-              class="pl-9"
-              v-model="ebookSearchQuery"
-              @input="loadBooks"
-            />
+          <div class="flex flex-1 items-center gap-3 max-w-2xl">
+            <div class="relative flex-1">
+              <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                :placeholder="t('services.itHelp.kb.searchPlaceholder')"
+                class="pl-9 h-9"
+                v-model="ebookSearchQuery"
+                @input="loadBooks"
+              />
+            </div>
+            <Select v-model="selectedCategory" @update:model-value="loadBooks">
+              <SelectTrigger class="w-[180px] h-9">
+                <SelectValue :placeholder="t('services.itHelp.kb.allCategories')" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">{{ t('services.itHelp.kb.allCategories') }}</SelectItem>
+                <SelectItem v-for="cat in categories" :key="cat" :value="cat">
+                  {{ cat }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              v-if="isITDepartment"
+              size="sm"
+              @click="isUploadModalOpen = true"
+              class="gap-2 h-9 whitespace-nowrap"
+            >
+              <Upload class="w-4 h-4" />
+              {{ t('services.itHelp.kb.uploadBtn') }}
+            </Button>
           </div>
-          <Select v-model="selectedCategory" @update:model-value="loadBooks">
-            <SelectTrigger class="w-[200px]">
-              <SelectValue :placeholder="t('services.itHelp.kb.allCategories')" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">{{ t('services.itHelp.kb.allCategories') }}</SelectItem>
-              <SelectItem v-for="cat in categories" :key="cat" :value="cat">
-                {{ cat }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
         </div>
 
         <!-- eBook Grid -->
@@ -809,16 +862,29 @@ const categories = computed(() => {
       <TabsContent v-if="isITDepartment" value="stock" class="space-y-4">
         <Card>
           <CardHeader class="flex flex-row items-center justify-between">
-            <div>
+            <div class="space-y-1">
               <CardTitle>{{ t('services.itHelp.stock.title') }}</CardTitle>
               <CardDescription>{{ t('services.itHelp.stock.subtitle') }}</CardDescription>
             </div>
-            <Button size="sm" class="gap-2" @click="handleAddStock">
-              <Plus class="w-4 h-4" /> {{ t('services.itHelp.stock.addItem') }}
-            </Button>
+            <div class="flex items-center gap-3">
+              <Select v-model="stockCategoryFilter">
+                <SelectTrigger class="w-[180px] h-9">
+                  <SelectValue :placeholder="t('services.itHelp.stock.category') || 'Category'" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">{{ t('services.itHelp.kb.allCategories') }}</SelectItem>
+                  <SelectItem v-for="cat in stockCategories" :key="cat" :value="cat">
+                    {{ cat.charAt(0).toUpperCase() + cat.slice(1) }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <Button size="sm" class="gap-2 h-9" @click="handleAddStock">
+                <Plus class="w-4 h-4" /> {{ t('services.itHelp.stock.addItem') }}
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
-            <DataTable :columns="itAssetColumns" :data="itStock" />
+            <DataTable :columns="itAssetColumns" :data="filteredITStock" />
           </CardContent>
         </Card>
       </TabsContent>
@@ -1097,7 +1163,11 @@ const categories = computed(() => {
     <KnowledgeBookUpload v-model:open="isUploadModalOpen" @uploaded="handleUploadSuccess" />
 
     <!-- eBook Viewer Modal -->
-    <KnowledgeBookViewer v-model:open="isViewerModalOpen" :book="selectedBook" />
+    <KnowledgeBookViewer
+      v-model:open="isViewerModalOpen"
+      :book="selectedBook"
+      @view-tracked="onViewTracked"
+    />
 
     <!-- Delete Confirmation Dialog -->
     <AlertDialog v-model:open="isDeleteConfirmOpen">

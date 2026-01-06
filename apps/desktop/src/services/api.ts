@@ -14,7 +14,6 @@ const api = axios.create({
 api.interceptors.request.use(
     (config) => {
         const token = storage.get('accessToken');
-        console.log(`[API Interceptor] Requesting ${config.url} - Auth: ${token ? 'YES' : 'NO'}`);
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }

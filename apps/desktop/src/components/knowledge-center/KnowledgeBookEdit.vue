@@ -58,7 +58,7 @@ const saving = ref(false);
 const saveStatus = ref<'idle' | 'success' | 'error'>('idle');
 const errorMessage = ref('');
 
-const { locale } = useI18n();
+const { t, locale } = useI18n();
 
 const dateLocale = computed(() => {
   return locale.value === 'th' ? th : enUS;
@@ -138,7 +138,9 @@ async function handleSave() {
   } catch (error: any) {
     console.error('Update failed:', error);
     saveStatus.value = 'error';
-    errorMessage.value = error.response?.data?.message || 'Failed to update eBook';
+    const defaultError =
+      locale.value === 'th' ? 'อัปเดต eBook ไม่สำเร็จ' : 'Failed to update eBook';
+    errorMessage.value = error.response?.data?.message || defaultError;
   } finally {
     saving.value = false;
   }
@@ -155,24 +157,30 @@ function handleClose() {
   <Dialog :open="open" @update:open="handleClose">
     <DialogContent class="max-w-2xl">
       <DialogHeader>
-        <DialogTitle>Edit eBook Details</DialogTitle>
-        <DialogDescription> Update metadata for "{{ book?.title }}" </DialogDescription>
+        <DialogTitle>{{ t('services.itHelp.kb.editModal.title') }}</DialogTitle>
+        <DialogDescription>
+          {{ t('services.itHelp.kb.editModal.subtitle', { title: book?.title }) }}
+        </DialogDescription>
       </DialogHeader>
 
       <div class="space-y-4" v-if="saveStatus !== 'error'">
         <!-- Title -->
         <div class="space-y-2">
-          <Label for="edit-title">Title *</Label>
-          <Input id="edit-title" v-model="title" placeholder="Enter eBook title" />
+          <Label for="edit-title">{{ t('services.itHelp.kb.fields.title') }} *</Label>
+          <Input
+            id="edit-title"
+            v-model="title"
+            :placeholder="t('services.itHelp.kb.placeholders.title')"
+          />
         </div>
 
         <!-- Description -->
         <div class="space-y-2">
-          <Label for="edit-description">Description</Label>
+          <Label for="edit-description">{{ t('services.itHelp.kb.fields.description') }}</Label>
           <Textarea
             id="edit-description"
             v-model="description"
-            placeholder="Enter description (optional)"
+            :placeholder="t('services.itHelp.kb.placeholders.description')"
             rows="3"
           />
         </div>
@@ -180,10 +188,10 @@ function handleClose() {
         <!-- Category & Author -->
         <div class="grid grid-cols-2 gap-4">
           <div class="space-y-2">
-            <Label for="edit-category">Category *</Label>
+            <Label for="edit-category">{{ t('services.itHelp.kb.fields.category') }} *</Label>
             <Select v-model="category">
               <SelectTrigger>
-                <SelectValue placeholder="Select category" />
+                <SelectValue :placeholder="t('services.itHelp.kb.placeholders.category')" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem v-for="cat in categories" :key="cat" :value="cat">
@@ -194,15 +202,19 @@ function handleClose() {
           </div>
 
           <div class="space-y-2">
-            <Label for="edit-author">Author</Label>
-            <Input id="edit-author" v-model="author" placeholder="Author name (optional)" />
+            <Label for="edit-author">{{ t('services.itHelp.kb.fields.author') }}</Label>
+            <Input
+              id="edit-author"
+              v-model="author"
+              :placeholder="t('services.itHelp.kb.placeholders.author')"
+            />
           </div>
         </div>
 
-        <!-- Training Data -->
+        <!-- Training Date -->
         <div class="grid grid-cols-2 gap-4">
           <div class="space-y-2">
-            <Label for="edit-trainingDate">Training Date</Label>
+            <Label for="edit-trainingDate">{{ t('services.itHelp.kb.fields.trainingDate') }}</Label>
             <div class="relative">
               <Popover>
                 <PopoverTrigger as-child>
@@ -222,7 +234,7 @@ function handleClose() {
                         ? format(trainingDate.toDate(getLocalTimeZone()), 'dd MMM yyyy', {
                             locale: dateLocale,
                           })
-                        : 'Pick a date'
+                        : t('services.itHelp.kb.placeholders.pickDate')
                     }}
                   </Button>
                 </PopoverTrigger>
@@ -234,22 +246,24 @@ function handleClose() {
           </div>
 
           <div class="space-y-2">
-            <Label for="edit-attendees">Attendees</Label>
+            <Label for="edit-attendees">{{ t('services.itHelp.kb.fields.attendees') }}</Label>
             <Input id="edit-attendees" type="number" v-model="attendees" placeholder="0" min="0" />
           </div>
         </div>
 
         <!-- Tags -->
         <div class="space-y-2">
-          <Label for="edit-tags">Tags</Label>
+          <Label for="edit-tags">{{ t('services.itHelp.kb.fields.tags') }}</Label>
           <div class="flex gap-2">
             <Input
               id="edit-tags"
               v-model="tagInput"
-              placeholder="Add tags..."
+              :placeholder="t('services.itHelp.kb.placeholders.tags')"
               @keydown.enter.prevent="addTag"
             />
-            <Button variant="outline" @click="addTag"> Add </Button>
+            <Button variant="outline" @click="addTag">
+              {{ t('services.itHelp.kb.placeholders.add') }}
+            </Button>
           </div>
           <div v-if="tags.length > 0" class="flex flex-wrap gap-2 mt-2">
             <Badge
@@ -271,33 +285,53 @@ function handleClose() {
         v-if="saveStatus === 'success'"
         class="py-6 flex flex-col items-center justify-center space-y-4 text-center"
       >
-        <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-          <CheckCircleIcon class="w-6 h-6 text-green-600" />
+        <div
+          class="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center"
+        >
+          <CheckCircleIcon class="w-6 h-6 text-green-600 dark:text-green-400" />
         </div>
-        <h3 class="font-semibold text-lg">Changes Saved</h3>
+        <h3 class="font-semibold text-lg">
+          {{ locale === 'th' ? 'บันทึกการเปลี่ยนแปลงแล้ว' : 'Changes Saved' }}
+        </h3>
       </div>
 
       <div
         v-else-if="saveStatus === 'error'"
         class="py-6 flex flex-col items-center justify-center space-y-4 text-center"
       >
-        <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-          <AlertCircleIcon class="w-6 h-6 text-red-600" />
+        <div
+          class="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center"
+        >
+          <AlertCircleIcon class="w-6 h-6 text-red-600 dark:text-red-400" />
         </div>
-        <h3 class="font-semibold text-lg text-red-600">Update Failed</h3>
+        <h3 class="font-semibold text-lg text-red-600">
+          {{ locale === 'th' ? 'อัปเดตล้มเหลว' : 'Update Failed' }}
+        </h3>
         <p class="text-sm text-muted-foreground">{{ errorMessage }}</p>
-        <Button variant="outline" @click="saveStatus = 'idle'">Try Again</Button>
+        <Button variant="outline" @click="saveStatus = 'idle'">{{
+          locale === 'th' ? 'ลองอีกครั้ง' : 'Try Again'
+        }}</Button>
       </div>
 
       <DialogFooter v-if="saveStatus === 'idle'">
-        <Button variant="outline" @click="handleClose" :disabled="saving"> Cancel </Button>
+        <Button variant="outline" @click="handleClose" :disabled="saving">
+          {{ t('common.cancel') }}
+        </Button>
         <Button @click="handleSave" :disabled="!isValid || saving">
           <Save v-if="!saving" class="w-4 h-4 mr-2" />
           <div
             v-else
             class="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent"
           />
-          {{ saving ? 'Saving...' : 'Save Changes' }}
+          {{
+            saving
+              ? locale === 'th'
+                ? 'กำลังบันทึก...'
+                : 'Saving...'
+              : locale === 'th'
+                ? 'บันทึกการเปลี่ยนแปลง'
+                : 'Save Changes'
+          }}
         </Button>
       </DialogFooter>
     </DialogContent>

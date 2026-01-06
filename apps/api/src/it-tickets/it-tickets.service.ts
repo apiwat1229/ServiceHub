@@ -189,11 +189,43 @@ export class ITTicketsService {
     }
 
     async update(id: string, updateDto: UpdateITTicketDto) {
+        // 1. Get current ticket to check status change and asset info
+        const currentTicket = await this.prisma.iTTicket.findUnique({
+            where: { id },
+            select: { status: true, isAssetRequest: true, assetId: true, quantity: true }
+        });
+
         const ticket = await this.prisma.iTTicket.update({
             where: { id },
             data: updateDto,
             include: { requester: true }
         });
+
+        // 2. Stock Deduction Logic
+        // If status changed to 'Resolved' and it IS an asset request with a valid asset and quantity
+        if (
+            updateDto.status === 'Resolved' &&
+            currentTicket?.status !== 'Resolved' &&
+            ticket.isAssetRequest &&
+            ticket.assetId &&
+            ticket.quantity > 0
+        ) {
+            try {
+                await this.prisma.iTAsset.update({
+                    where: { id: ticket.assetId },
+                    data: {
+                        stock: {
+                            decrement: ticket.quantity
+                        }
+                    }
+                });
+                console.log(`Auto-deducted ${ticket.quantity} from stock for asset ${ticket.assetId} (Ticket: ${ticket.ticketNo})`);
+            } catch (error) {
+                console.error(`Failed to deduct stock for asset ${ticket.assetId}:`, error);
+                // We might want to throw or just log? Usually logging is safer to not block ticket resolution 
+                // unless it's a critical requirement.
+            }
+        }
 
         // Notify Requester on status change
         if (updateDto.status) {

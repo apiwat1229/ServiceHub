@@ -3,6 +3,8 @@
     "save": "Save",
     "cancel": "Cancel",
     "delete": "Delete",
+    "view": "View",
+    "download": "Download",
     "confirmDelete": "Confirm Delete",
     "areYouSure": "Are you absolutely sure?",
     "add": "Add",
@@ -131,7 +133,36 @@
         "unknownUploader": "Unknown",
         "pptxNotSupported": "PowerPoint Preview Not Supported",
         "pptxNotSupportedDesc": "Browser-based previewing is not available for PowerPoint files. Please download the file to view it in your local application.",
-        "pptxDirectDownload": "PowerPoint preview not available. Direct download triggered."
+        "pptxDirectDownload": "PowerPoint preview not available. Direct download triggered.",
+        "uploadModal": {
+          "title": "Upload eBook",
+          "subtitle": "Upload a PDF file to the Knowledge Center",
+          "dragDrop": "Drag and drop your file here",
+          "orClick": "or click to browse",
+          "supported": "Supported: PDF (Max 50MB)"
+        },
+        "editModal": {
+          "title": "Edit eBook Details",
+          "subtitle": "Update metadata for \"{title}\""
+        },
+        "fields": {
+          "title": "Title",
+          "description": "Description",
+          "category": "Category",
+          "author": "Author",
+          "trainingDate": "Training Date",
+          "attendees": "Attendees",
+          "tags": "Tags"
+        },
+        "placeholders": {
+          "title": "Enter eBook title",
+          "description": "Enter description (optional)",
+          "category": "Select category",
+          "author": "Author name (optional)",
+          "pickDate": "Pick a date",
+          "tags": "Add tags...",
+          "add": "Add"
+        }
       },
       "stock": {
         "title": "IT Device Stock",
@@ -344,7 +375,12 @@
         "back": "Back to Help Desk",
         "category": "Equipment Category",
         "urgency": "Urgency Level",
-        "model": "Device Model / Specification (Optional)",
+        "urgencyLevels": {
+          "low": "Routine Request",
+          "medium": "Required for Work",
+          "high": "Critical / Blocker"
+        },
+        "model": "Device Model / Specification",
         "quantity": "Quantity",
         "expectedDate": "Expected Date of Pickup",
         "approver": "Approver (Supervisor/Manager)",

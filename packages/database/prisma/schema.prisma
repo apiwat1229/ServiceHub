@@ -651,6 +651,8 @@ model ITAsset {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  tickets ITTicket[]
+
   @@map("it_assets")
 }
 
@@ -670,12 +672,24 @@ model ITTicket {
   assigneeId String? @map("assignee_id")
   assignee   User?   @relation("TicketAssignee", fields: [assigneeId], references: [id])
 
+  // Asset Request Fields
+  isAssetRequest Boolean   @default(false) @map("is_asset_request")
+  assetId        String?   @map("asset_id")
+  asset          ITAsset?  @relation(fields: [assetId], references: [id])
+  quantity       Int?      @default(0)
+  expectedDate   DateTime? @map("expected_date")
+  approverId     String?   @map("approver_id")
+  
+  issuedAt       DateTime? @map("issued_at")
+  issuedBy       String?   @map("issued_by")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([requesterId])
   @@index([assigneeId])
   @@index([status])
+  @@index([assetId])
   @@map("it_tickets")
 
   comments TicketComment[]
