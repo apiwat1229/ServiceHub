@@ -36,6 +36,8 @@ export interface UploadBookData {
     category: string;
     author?: string;
     tags?: string[];
+    trainingDate?: string;
+    attendees?: number;
 }
 
 export interface BookFilters {
@@ -54,6 +56,8 @@ class KnowledgeBooksApi {
         formData.append('category', data.category);
         if (data.author) formData.append('author', data.author);
         if (data.tags) formData.append('tags', JSON.stringify(data.tags));
+        if (data.trainingDate) formData.append('trainingDate', data.trainingDate);
+        if (data.attendees !== undefined) formData.append('attendees', data.attendees.toString());
 
         const response = await api.post('/knowledge-books/upload', formData, {
             headers: {

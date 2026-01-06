@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import {
   Dialog,
   DialogContent,
@@ -11,6 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -19,10 +21,21 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
 import { knowledgeBooksApi } from '@/services/knowledge-books';
-import { FileText, Presentation, Upload, X } from 'lucide-vue-next';
+import { type DateValue, getLocalTimeZone } from '@internationalized/date';
+import { format } from 'date-fns';
+import { enUS, th } from 'date-fns/locale';
+import {
+  AlertCircle as AlertCircleIcon,
+  Calendar as CalendarIcon,
+  CheckCircle as CheckCircleIcon,
+  FileText,
+  Upload,
+  X,
+} from 'lucide-vue-next';
 import { computed, ref } from 'vue';
-import { toast } from 'vue-sonner';
+import { useI18n } from 'vue-i18n';
 
 const props = defineProps<{
   open: boolean;
@@ -44,6 +57,16 @@ const tagInput = ref('');
 const uploading = ref(false);
 const uploadProgress = ref(0);
 const isDragging = ref(false);
+const trainingDate = ref<DateValue>();
+const attendees = ref<number | ''>('');
+const uploadStatus = ref<'idle' | 'success' | 'error'>('idle');
+const errorMessage = ref('');
+
+const { locale } = useI18n();
+
+const dateLocale = computed(() => {
+  return locale.value === 'th' ? th : enUS;
+});
 
 const categories = [
   'Getting Started',
@@ -55,7 +78,7 @@ const categories = [
 
 const fileIcon = computed(() => {
   if (!file.value) return FileText;
-  return file.value.type.includes('pdf') ? FileText : Presentation;
+  return FileText;
 });
 
 const fileSize = computed(() => {
@@ -96,15 +119,11 @@ function handleFileSelect(e: Event) {
 }
 
 function validateAndSetFile(selectedFile: File) {
-  const allowedTypes = [
-    'application/pdf',
-    'application/vnd.ms-powerpoint',
-    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-  ];
+  const allowedTypes = ['application/pdf'];
 
   if (!allowedTypes.includes(selectedFile.type)) {
-    console.error('Invalid file type: Only PDF and PowerPoint files are allowed');
-    alert('Invalid file type: Only PDF and PowerPoint files are allowed');
+    console.error('Invalid file type: Only PDF files are allowed');
+    alert('Invalid file type: Only PDF files are allowed');
     return;
   }
 
@@ -142,9 +161,18 @@ async function handleUpload() {
   if (!isValid.value || !file.value) return;
 
   uploading.value = true;
+  uploadStatus.value = 'idle'; // Reset status
   uploadProgress.value = 0;
+  errorMessage.value = '';
 
   try {
+    // Simulate progress for better UX (since axios interceptor might hide real progress or it's too fast)
+    const progressInterval = setInterval(() => {
+      if (uploadProgress.value < 90) {
+        uploadProgress.value += 10;
+      }
+    }, 200);
+
     await knowledgeBooksApi.upload({
       file: file.value,
       title: title.value,
@@ -152,16 +180,22 @@ async function handleUpload() {
       category: category.value,
       author: author.value,
       tags: tags.value,
+      trainingDate: trainingDate.value
+        ? trainingDate.value.toDate(getLocalTimeZone()).toISOString()
+        : undefined,
+      attendees: attendees.value === '' ? undefined : Number(attendees.value),
     });
 
+    clearInterval(progressInterval);
+    uploadProgress.value = 100;
+    uploadStatus.value = 'success';
     console.log('eBook uploaded successfully');
-    toast.success('eBook uploaded successfully!');
-
     emit('uploaded');
-    handleClose();
+    // Don't close automatically so user sees success message
   } catch (error: any) {
     console.error('Upload failed:', error);
-    toast.error(error.response?.data?.message || 'Failed to upload eBook');
+    uploadStatus.value = 'error';
+    errorMessage.value = error.response?.data?.message || 'Failed to upload eBook';
   } finally {
     uploading.value = false;
   }
@@ -176,6 +210,10 @@ function handleClose() {
   tags.value = [];
   tagInput.value = '';
   uploadProgress.value = 0;
+  trainingDate.value = undefined;
+  attendees.value = '';
+  uploadStatus.value = 'idle';
+  errorMessage.value = '';
   emit('update:open', false);
 }
 </script>
@@ -185,33 +223,31 @@ function handleClose() {
     <DialogContent class="max-w-2xl">
       <DialogHeader>
         <DialogTitle>Upload eBook</DialogTitle>
-        <DialogDescription>
-          Upload a PDF or PowerPoint file to the Knowledge Center
-        </DialogDescription>
+        <DialogDescription> Upload a PDF file to the Knowledge Center </DialogDescription>
       </DialogHeader>
 
-      <div class="space-y-4">
+      <div class="space-y-4" v-if="uploadStatus === 'idle' && !uploading">
         <!-- File Upload Zone -->
         <div
           v-if="!file"
-          class="border-2 border-dashed rounded-lg p-8 text-center transition-colors"
+          class="border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer hover:bg-muted/50"
           :class="isDragging ? 'border-primary bg-primary/5' : 'border-border'"
           @dragover="handleDragOver"
           @dragleave="handleDragLeave"
           @drop="handleDrop"
+          @click="() => fileInput?.click()"
         >
           <Upload class="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
           <p class="text-sm font-medium mb-2">Drag and drop your file here</p>
-          <p class="text-xs text-muted-foreground mb-4">or</p>
-          <Button variant="outline" @click="() => fileInput?.click()">Browse Files</Button>
+          <p class="text-xs text-muted-foreground mb-4">or click to browse</p>
           <input
             ref="fileInput"
             type="file"
             class="hidden"
-            accept=".pdf,.ppt,.pptx"
+            accept=".pdf"
             @change="handleFileSelect"
           />
-          <p class="text-xs text-muted-foreground mt-4">Supported: PDF, PowerPoint (Max 50MB)</p>
+          <p class="text-xs text-muted-foreground mt-4">Supported: PDF (Max 50MB)</p>
         </div>
 
         <!-- Selected File -->
@@ -229,7 +265,7 @@ function handleClose() {
         <!-- Title -->
         <div class="space-y-2">
           <Label for="title">Title *</Label>
-          <Input id="title" v-model="title" placeholder="Enter eBook title" :disabled="uploading" />
+          <Input id="title" v-model="title" placeholder="Enter eBook title" />
         </div>
 
         <!-- Description -->
@@ -239,7 +275,6 @@ function handleClose() {
             id="description"
             v-model="description"
             placeholder="Enter description (optional)"
-            :disabled="uploading"
             rows="3"
           />
         </div>
@@ -248,7 +283,7 @@ function handleClose() {
         <div class="grid grid-cols-2 gap-4">
           <div class="space-y-2">
             <Label for="category">Category *</Label>
-            <Select v-model="category" :disabled="uploading">
+            <Select v-model="category">
               <SelectTrigger>
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
@@ -262,12 +297,47 @@ function handleClose() {
 
           <div class="space-y-2">
             <Label for="author">Author</Label>
-            <Input
-              id="author"
-              v-model="author"
-              placeholder="Author name (optional)"
-              :disabled="uploading"
-            />
+            <Input id="author" v-model="author" placeholder="Author name (optional)" />
+          </div>
+        </div>
+
+        <!-- Training Data -->
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-2">
+            <Label for="trainingDate">Training Date</Label>
+            <div class="relative">
+              <Popover>
+                <PopoverTrigger as-child>
+                  <Button
+                    id="trainingDate"
+                    variant="outline"
+                    :class="
+                      cn(
+                        'w-full justify-start text-left font-normal',
+                        !trainingDate && 'text-muted-foreground'
+                      )
+                    "
+                  >
+                    <CalendarIcon class="mr-2 h-4 w-4" />
+                    {{
+                      trainingDate
+                        ? format(trainingDate.toDate(getLocalTimeZone()), 'dd MMM yyyy', {
+                            locale: dateLocale,
+                          })
+                        : 'Pick a date'
+                    }}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent class="w-auto p-0">
+                  <Calendar v-model="trainingDate" mode="single" initial-focus />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <Label for="attendees">Attendees</Label>
+            <Input id="attendees" type="number" v-model="attendees" placeholder="0" min="0" />
           </div>
         </div>
 
@@ -279,10 +349,9 @@ function handleClose() {
               id="tags"
               v-model="tagInput"
               placeholder="Add tags..."
-              :disabled="uploading"
               @keydown.enter.prevent="addTag"
             />
-            <Button variant="outline" @click="addTag" :disabled="uploading"> Add </Button>
+            <Button variant="outline" @click="addTag"> Add </Button>
           </div>
           <div v-if="tags.length > 0" class="flex flex-wrap gap-2 mt-2">
             <Badge
@@ -299,12 +368,70 @@ function handleClose() {
         </div>
       </div>
 
-      <DialogFooter>
-        <Button variant="outline" @click="handleClose" :disabled="uploading"> Cancel </Button>
-        <Button @click="handleUpload" :disabled="!isValid || uploading">
+      <!-- Upload Progress / Status View -->
+      <div v-else class="py-12 flex flex-col items-center justify-center space-y-6 text-center">
+        <!-- Uploading -->
+        <div v-if="uploading && uploadStatus === 'idle'" class="w-full max-w-xs space-y-4">
+          <div class="relative w-16 h-16 mx-auto">
+            <div class="absolute inset-0 rounded-full border-4 border-muted"></div>
+            <div
+              class="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin"
+            ></div>
+            <Upload class="absolute inset-0 w-8 h-8 m-auto text-primary animate-pulse" />
+          </div>
+          <div class="space-y-1">
+            <h3 class="font-semibold text-lg">Uploading...</h3>
+            <p class="text-sm text-muted-foreground">Please wait while we process your file.</p>
+          </div>
+          <Progress :model-value="uploadProgress" class="w-full h-2" />
+          <p class="text-xs text-muted-foreground text-right">{{ uploadProgress }}%</p>
+        </div>
+
+        <!-- Success -->
+        <div
+          v-else-if="uploadStatus === 'success'"
+          class="space-y-4 animate-in fade-in zoom-in duration-300"
+        >
+          <div
+            class="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto"
+          >
+            <CheckCircleIcon class="w-8 h-8 text-green-600 dark:text-green-400" />
+          </div>
+          <div class="space-y-1">
+            <h3 class="font-semibold text-lg">Upload Complete!</h3>
+            <p class="text-sm text-muted-foreground">
+              Your eBook has been successfully added to the library.
+            </p>
+          </div>
+        </div>
+
+        <!-- Error -->
+        <div
+          v-else-if="uploadStatus === 'error'"
+          class="space-y-4 animate-in fade-in zoom-in duration-300"
+        >
+          <div
+            class="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto"
+          >
+            <AlertCircleIcon class="w-8 h-8 text-red-600 dark:text-red-400" />
+          </div>
+          <div class="space-y-1">
+            <h3 class="font-semibold text-lg text-red-600">Upload Failed</h3>
+            <p class="text-sm text-muted-foreground">{{ errorMessage }}</p>
+          </div>
+          <Button variant="outline" @click="uploadStatus = 'idle'">Try Again</Button>
+        </div>
+      </div>
+
+      <DialogFooter v-if="uploadStatus === 'idle' && !uploading">
+        <Button variant="outline" @click="handleClose"> Cancel </Button>
+        <Button @click="handleUpload" :disabled="!isValid">
           <Upload class="w-4 h-4 mr-2" />
-          {{ uploading ? 'Uploading...' : 'Upload' }}
+          Upload
         </Button>
+      </DialogFooter>
+      <DialogFooter v-else-if="uploadStatus === 'success'">
+        <Button @click="handleClose" class="w-full sm:w-auto">Close</Button>
       </DialogFooter>
     </DialogContent>
   </Dialog>

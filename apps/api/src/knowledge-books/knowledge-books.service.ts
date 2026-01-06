@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { KnowledgeBook } from '@prisma/client';
 import * as fs from 'fs/promises';
 import { PrismaService } from '../prisma/prisma.service';
@@ -15,6 +15,8 @@ export interface CreateBookDto {
     author?: string;
     tags?: string[];
     uploadedBy: string;
+    trainingDate?: Date;
+    attendees?: number;
 }
 
 export interface UpdateBookDto {
@@ -36,9 +38,12 @@ export interface BookFilters {
 
 @Injectable()
 export class KnowledgeBooksService {
+    private readonly logger = new Logger(KnowledgeBooksService.name);
+
     constructor(private prisma: PrismaService) { }
 
     async create(data: CreateBookDto): Promise<KnowledgeBook> {
+
         return this.prisma.knowledgeBook.create({
             data: {
                 title: data.title,
@@ -52,6 +57,8 @@ export class KnowledgeBooksService {
                 author: data.author,
                 tags: data.tags || [],
                 uploadedBy: data.uploadedBy,
+                trainingDate: data.trainingDate,
+                attendees: data.attendees,
             },
             include: {
                 uploader: {
@@ -167,9 +174,15 @@ export class KnowledgeBooksService {
 
         // Delete file from storage
         try {
-            await fs.unlink(book.filePath);
+            if (book.filePath) {
+                try {
+                    await fs.unlink(book.filePath);
+                } catch (e) { /* ignore */ }
+            }
             if (book.coverImage) {
-                await fs.unlink(book.coverImage);
+                try {
+                    await fs.unlink(book.coverImage);
+                } catch (e) { /* ignore */ }
             }
         } catch (error) {
             console.error('Error deleting files:', error);

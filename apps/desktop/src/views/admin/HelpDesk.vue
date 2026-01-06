@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AssetRequestForm from '@/components/helpdesk/AssetRequestForm.vue';
+import BarcodePreview from '@/components/helpdesk/BarcodePreview.vue';
 import NewTicketForm from '@/components/helpdesk/NewTicketForm.vue';
 import PrinterUsageAnalytics from '@/components/helpdesk/PrinterUsageAnalytics.vue';
 import KnowledgeBookCard from '@/components/knowledge-center/KnowledgeBookCard.vue';
@@ -18,6 +19,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import DataTable from '@/components/ui/data-table/DataTable.vue';
 import {
   Dialog,
   DialogContent,
@@ -25,6 +27,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -34,8 +37,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { itAssetsApi, type ITAsset } from '@/services/it-assets';
 import { knowledgeBooksApi, type KnowledgeBook } from '@/services/knowledge-books';
-import { useAuthStore } from '@/stores/auth';
+import type { ColumnDef } from '@tanstack/vue-table';
 import {
   AlertCircle,
   BookOpen,
@@ -51,17 +55,22 @@ import {
   Ticket,
   Upload,
 } from 'lucide-vue-next';
-import { computed, onMounted, ref } from 'vue';
+import { computed, h, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
 
+import { useAuthStore } from '@/stores/auth';
+
 const { t } = useI18n();
 const authStore = useAuthStore();
+
+// ... existing imports ...
+
 const searchQuery = ref('');
 const isAssetModalOpen = ref(false);
 const isTicketModalOpen = ref(false);
 const isStockModalOpen = ref(false);
-const editingStockItem = ref<any>(null);
+const editingStockItem = ref<ITAsset | null>(null);
 
 // eBook State
 const isUploadModalOpen = ref(false);
@@ -78,25 +87,192 @@ const loadingCategories = ref(false);
 const isDeleteConfirmOpen = ref(false);
 const bookToDelete = ref<KnowledgeBook | null>(null);
 
-// Mock Stock Data
-const itStock = ref([
-  { id: 'S-001', name: 'Dell Latitude 3440', category: 'Laptop', stock: 5, status: 'In Stock' },
+// IT Stock State
+const itStock = ref<ITAsset[]>([]);
+const loadingStock = ref(false);
+
+const getImageUrl = (path: string | null) => {
+  if (!path) return null;
+  if (path.startsWith('http') || path.startsWith('data:')) return path;
+  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:2530';
+  return `${baseUrl}${path.startsWith('/') ? '' : '/'}${path}`;
+};
+
+const itAssetColumns: ColumnDef<ITAsset>[] = [
   {
-    id: 'S-002',
-    name: 'Logitech MX Master 3S',
-    category: 'Peripheral',
-    stock: 12,
-    status: 'In Stock',
+    id: 'index',
+    header: () => h('div', 'No.'),
+    cell: ({ row }) => h('div', row.index + 1),
   },
-  { id: 'S-003', name: 'Dell UltraSharp 27"', category: 'Monitor', stock: 3, status: 'Low Stock' },
   {
-    id: 'S-004',
-    name: 'Cisco Webex Desk Hub',
-    category: 'Hardware',
-    stock: 0,
-    status: 'Out of Stock',
+    accessorKey: 'name',
+    header: () => h('div', t('services.itHelp.stock.deviceName')),
+    cell: ({ row }) => {
+      const item = row.original;
+      return h(
+        HoverCard,
+        { openDelay: 200 },
+        {
+          default: () => [
+            h(
+              HoverCardTrigger,
+              { asChild: true },
+              {
+                default: () =>
+                  h('div', { class: 'flex flex-col cursor-help group' }, [
+                    h(
+                      'div',
+                      { class: 'font-medium group-hover:text-primary transition-colors' },
+                      item.name
+                    ),
+                    h('div', { class: 'text-xs text-muted-foreground' }, item.code),
+                  ]),
+              }
+            ),
+            h(
+              HoverCardContent,
+              { class: 'w-80 shadow-2xl' },
+              {
+                default: () =>
+                  h('div', { class: 'space-y-3' }, [
+                    item.image
+                      ? h(
+                          'div',
+                          {
+                            class:
+                              'relative aspect-video rounded-md overflow-hidden bg-muted border',
+                          },
+                          [
+                            h('img', {
+                              src: getImageUrl(item.image),
+                              class: 'absolute inset-0 w-full h-full object-contain',
+                            }),
+                          ]
+                        )
+                      : h(
+                          'div',
+                          {
+                            class:
+                              'aspect-video rounded-md bg-muted flex items-center justify-center border',
+                          },
+                          [h(Monitor, { class: 'w-8 h-8 opacity-20' })]
+                        ),
+                    h('div', { class: 'space-y-1' }, [
+                      h('div', { class: 'text-sm font-bold' }, item.name),
+                      h(
+                        'div',
+                        { class: 'grid grid-cols-[80px_1fr] gap-x-2 gap-y-0.5 text-[11px]' },
+                        [
+                          h('span', { class: 'text-muted-foreground' }, 'Device Code:'),
+                          h('span', { class: 'font-mono' }, item.code),
+                          h('span', { class: 'text-muted-foreground' }, 'Category:'),
+                          h(
+                            'span',
+                            item.category
+                              ? item.category.charAt(0).toUpperCase() + item.category.slice(1)
+                              : '-'
+                          ),
+                          h('span', { class: 'text-muted-foreground' }, 'Location:'),
+                          h('span', item.location || '-'),
+                        ]
+                      ),
+                      item.barcode
+                        ? h('div', { class: 'pt-2' }, [
+                            h(BarcodePreview, { value: item.barcode, height: 35, fontSize: 10 }),
+                          ])
+                        : null,
+                    ]),
+                  ]),
+              }
+            ),
+          ],
+        }
+      );
+    },
   },
-]);
+  {
+    accessorKey: 'category',
+    header: () => h('div', t('services.itHelp.stock.category')),
+    cell: ({ row }) => {
+      const category = row.getValue('category') as string;
+      return h('div', category ? category.charAt(0).toUpperCase() + category.slice(1) : '-');
+    },
+  },
+  {
+    accessorKey: 'stock',
+    header: () => h('div', { class: 'text-center' }, t('services.itHelp.stock.count')),
+    cell: ({ row }) => h('div', { class: 'text-center font-bold' }, row.getValue('stock')),
+  },
+  {
+    id: 'status',
+    header: () => h('div', t('common.status')),
+    cell: ({ row }) => {
+      const item = row.original;
+      const status = getStockStatus(item);
+      let badgeClass = 'bg-green-100 text-green-700';
+      if (status === 'Low Stock') badgeClass = 'bg-orange-100 text-orange-700';
+      if (status === 'Out of Stock') badgeClass = 'bg-red-100 text-red-700';
+
+      return h(
+        Badge,
+        {
+          variant: 'secondary',
+          class: badgeClass,
+        },
+        () => status
+      );
+    },
+  },
+  {
+    id: 'actions',
+    enableHiding: false,
+    header: () => h('div', { class: 'text-right' }, t('common.actions')),
+    cell: ({ row }) => {
+      const item = row.original;
+      return h(
+        'div',
+        { class: 'text-right' },
+        h(
+          Button,
+          {
+            variant: 'ghost',
+            size: 'icon',
+            class: 'h-8 w-8',
+            onClick: (e: Event) => {
+              e.stopPropagation();
+              handleEditStock(item);
+            },
+          },
+          () => h(Edit2, { class: 'w-4 h-4' })
+        )
+      );
+    },
+  },
+];
+
+const loadITAssets = async () => {
+  loadingStock.value = true;
+  try {
+    itStock.value = await itAssetsApi.getAll();
+  } catch (error) {
+    console.error('Failed to load IT assets:', error);
+    toast.error(t('common.errorLoading'));
+  } finally {
+    loadingStock.value = false;
+  }
+};
+
+const handleStockSuccess = () => {
+  isStockModalOpen.value = false;
+  loadITAssets();
+  toast.success(t('services.itHelp.stock.saveSuccess'));
+};
+
+const getStockStatus = (item: ITAsset) => {
+  if (item.stock <= 0) return 'Out of Stock';
+  if (item.stock <= (item.minStock || 0)) return 'Low Stock';
+  return 'In Stock';
+};
 
 // Mock Data
 const tickets = [
@@ -129,8 +305,6 @@ const tickets = [
   },
 ];
 
-// Removed kbArticles mock data
-
 // Pagination State
 const currentPage = ref(1);
 const itemsPerPage = ref(5);
@@ -162,10 +336,20 @@ const handleAddStock = () => {
   isStockModalOpen.value = true;
 };
 
-const handleEditStock = (item: any) => {
+const handleEditStock = (item: ITAsset) => {
   editingStockItem.value = item;
   isStockModalOpen.value = true;
 };
+
+// ... existing methods ...
+
+onMounted(() => {
+  loadBooks();
+  loadCategories();
+  if (isITDepartment.value) {
+    loadITAssets();
+  }
+});
 
 const isITDepartment = computed(() => {
   const userDept = authStore.user?.department;
@@ -431,61 +615,7 @@ onMounted(() => {
             </Button>
           </CardHeader>
           <CardContent>
-            <div class="border rounded-lg overflow-hidden">
-              <table class="w-full text-sm">
-                <thead class="bg-muted/50 border-b">
-                  <tr>
-                    <th class="text-left p-3 font-medium">
-                      {{ t('services.itHelp.stock.deviceName') }}
-                    </th>
-                    <th class="text-left p-3 font-medium">
-                      {{ t('services.itHelp.stock.category') }}
-                    </th>
-                    <th class="text-center p-3 font-medium">
-                      {{ t('services.itHelp.stock.count') }}
-                    </th>
-                    <th class="text-left p-3 font-medium">{{ t('common.status') }}</th>
-                    <th class="text-right p-3 font-medium">{{ t('common.actions') }}</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y">
-                  <tr
-                    v-for="item in itStock"
-                    :key="item.id"
-                    class="hover:bg-slate-50 transition-colors"
-                  >
-                    <td class="p-3">
-                      <div class="font-medium">{{ item.name }}</div>
-                      <div class="text-xs text-muted-foreground">{{ item.id }}</div>
-                    </td>
-                    <td class="p-3">{{ item.category }}</td>
-                    <td class="p-3 text-center font-bold">{{ item.stock }}</td>
-                    <td class="p-3">
-                      <Badge
-                        variant="secondary"
-                        :class="{
-                          'bg-green-100 text-green-700': item.status === 'In Stock',
-                          'bg-orange-100 text-orange-700': item.status === 'Low Stock',
-                          'bg-red-100 text-red-700': item.status === 'Out of Stock',
-                        }"
-                      >
-                        {{ item.status }}
-                      </Badge>
-                    </td>
-                    <td class="p-3 text-right">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        class="h-8 w-8"
-                        @click="handleEditStock(item)"
-                      >
-                        <Edit2 class="w-4 h-4" />
-                      </Button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            <DataTable :columns="itAssetColumns" :data="itStock" />
           </CardContent>
         </Card>
       </TabsContent>
@@ -690,7 +820,7 @@ onMounted(() => {
 
     <!-- IT Stock Dialog -->
     <Dialog v-model:open="isStockModalOpen">
-      <DialogContent class="sm:max-w-[600px]">
+      <DialogContent class="sm:max-w-[1000px]">
         <DialogHeader>
           <DialogTitle>{{
             editingStockItem
@@ -699,12 +829,11 @@ onMounted(() => {
           }}</DialogTitle>
           <DialogDescription>{{ t('services.itHelp.stock.subtitle') }}</DialogDescription>
         </DialogHeader>
-        <!-- <ITStockForm
+        <ITStockForm
           :initial-data="editingStockItem"
-          @success="isStockModalOpen = false"
+          @success="handleStockSuccess"
           @cancel="isStockModalOpen = false"
-        /> -->
-        <div>Temporarily Disabled</div>
+        />
       </DialogContent>
     </Dialog>
 

@@ -69,9 +69,10 @@ export class PrinterUsageService {
 
             const upserted = await this.prisma.printerUsageRecord.upsert({
                 where: {
-                    period_userName: {
+                    period_userName_serialNo: {
                         period: new Date(period),
                         userName,
+                        serialNo: data.serialNo || 'unknown',
                     },
                 },
                 update: {
@@ -82,6 +83,7 @@ export class PrinterUsageService {
                     period: new Date(period),
                     userName,
                     ...data,
+                    serialNo: data.serialNo || 'unknown',
                     departmentId: mapping?.departmentId || null,
                 },
             });

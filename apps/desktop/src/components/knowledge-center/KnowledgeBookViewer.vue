@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import api from '@/services/api';
 import { knowledgeBooksApi, type KnowledgeBook } from '@/services/knowledge-books';
-import VueOfficePptx from '@vue-office/pptx';
 import {
   ChevronLeft,
   ChevronRight,
@@ -12,9 +11,11 @@ import {
   Minimize2,
   Presentation,
 } from 'lucide-vue-next';
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import VuePdfEmbed from 'vue-pdf-embed';
+import 'vue-pdf-embed/dist/styles/annotationLayer.css';
+import 'vue-pdf-embed/dist/styles/textLayer.css';
 
 const { t } = useI18n();
 
@@ -110,47 +111,14 @@ async function loadContent() {
 
 // Navigation Logic
 function nextPage() {
-  if (props.book?.fileType === 'pdf') {
-    if (currentPage.value < pageCount.value) {
-      currentPage.value++;
-    }
-  } else if (props.book?.fileType === 'pptx') {
-    // PPTX Logic: Scroll container
-    navigatePptx('next');
+  if (currentPage.value < pageCount.value) {
+    currentPage.value++;
   }
 }
 
 function prevPage() {
-  if (props.book?.fileType === 'pdf') {
-    if (currentPage.value > 1) {
-      currentPage.value--;
-    }
-  } else if (props.book?.fileType === 'pptx') {
-    navigatePptx('prev');
-  }
-}
-
-function navigatePptx(direction: 'next' | 'prev') {
-  const wrapper = document.querySelector('.pptx-preview-wrapper');
-  if (!wrapper) return;
-
-  const slides = wrapper.children;
-  if (slides.length === 0) return;
-
-  // Set total pages if not set (rough estimate based on DOM, assuming loaded)
-  if (pageCount.value === 0) pageCount.value = slides.length;
-
-  if (direction === 'next' && currentPage.value < slides.length) {
-    currentPage.value++;
-  } else if (direction === 'prev' && currentPage.value > 1) {
+  if (currentPage.value > 1) {
     currentPage.value--;
-  }
-
-  // Scroll to slide
-  const targetIndex = currentPage.value - 1;
-  const targetSlide = slides[targetIndex] as HTMLElement;
-  if (targetSlide) {
-    targetSlide.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
   }
 }
 
@@ -158,18 +126,6 @@ function navigatePptx(direction: 'next' | 'prev') {
 function handlePdfLoaded(pdf: any) {
   // vue-pdf-embed 2.x passes the document proxy
   pageCount.value = pdf.numPages;
-}
-
-// Setup PPTX hacks after render
-function onPptxRendered() {
-  // Wait for DOM
-  nextTick(() => {
-    const wrapper = document.querySelector('.pptx-preview-wrapper');
-    if (wrapper) {
-      // Count slides
-      pageCount.value = wrapper.children.length;
-    }
-  });
 }
 
 // Watch both open and book to fix re-open bug
@@ -187,7 +143,7 @@ watch(
 <template>
   <Dialog :open="open" @update:open="handleClose">
     <DialogContent
-      :class="`p-0 gap-0 ${isFullscreen ? 'max-w-full h-screen' : 'max-w-5xl max-h-[90vh]'}`"
+      :class="`p-0 gap-0 ${isFullscreen ? 'max-w-full h-screen' : 'max-w-5xl h-[80vh]'}`"
       hide-close
     >
       <DialogTitle class="sr-only">{{ book?.title }}</DialogTitle>
@@ -244,25 +200,19 @@ watch(
           </div>
 
           <div class="h-full w-full overflow-hidden relative">
-            <!-- PDF Viewer -->
+            <!-- PDF Viewer (Unified for PDF and PPTX via conversion) -->
             <div
-              v-if="book?.fileType === 'pdf' && fileUrl"
+              v-if="(book?.fileType === 'pdf' || book?.fileType === 'pptx') && fileUrl"
               class="h-full w-full overflow-auto flex justify-center p-4"
             >
               <VuePdfEmbed
                 :source="fileUrl"
                 :page="currentPage"
-                class="shadow-lg max-h-full w-auto max-w-full object-contain"
+                :text-layer="true"
+                :annotation-layer="true"
+                :class="['shadow-lg w-full', isFullscreen ? 'max-w-none' : 'max-w-4xl']"
                 @loaded="handlePdfLoaded"
               />
-            </div>
-
-            <!-- PPTX Viewer -->
-            <div
-              v-else-if="book?.fileType === 'pptx' && fileUrl"
-              class="h-full w-full pptx-slide-mode"
-            >
-              <VueOfficePptx :src="fileUrl" @rendered="onPptxRendered" class="w-full h-full" />
             </div>
 
             <!-- Fallback -->
@@ -293,51 +243,3 @@ watch(
     </DialogContent>
   </Dialog>
 </template>
-
-<style>
-/* CSS Hacks for Slide Mode in PPTX */
-.pptx-slide-mode .vue-office-pptx {
-  height: 100% !important;
-  width: 100% !important;
-  overflow: hidden !important;
-}
-
-.pptx-slide-mode .vue-office-pptx-main {
-  height: 100% !important;
-  width: 100% !important;
-  overflow: hidden !important;
-}
-
-.pptx-slide-mode .pptx-preview-wrapper {
-  display: flex !important;
-  flex-direction: row !important;
-  overflow-x: hidden !important; /* Hide scrollbar, use buttons */
-  overflow-y: hidden !important;
-  height: 100% !important;
-  width: 100% !important;
-  scroll-behavior: smooth !important;
-  align-items: center !important;
-  background-color: #525659 !important; /* Dark background like PDF viewers */
-}
-
-/* Individual Slides */
-.pptx-slide-mode .pptx-preview-wrapper > div {
-  flex: 0 0 100% !important; /* Full width */
-  height: 100% !important;
-  display: flex !important;
-  justify-content: center !important;
-  align-items: center !important;
-  margin: 0 !important;
-  padding: 20px !important; /* Padding around slide */
-  box-sizing: border-box !important;
-}
-
-/* Inner Slide Content Scale */
-.pptx-slide-mode .pptx-preview-wrapper > div > div {
-  max-width: 100% !important;
-  max-height: 100% !important;
-  box-shadow:
-    0 4px 6px -1px rgb(0 0 0 / 0.1),
-    0 2px 4px -2px rgb(0 0 0 / 0.1) !important;
-}
-</style>

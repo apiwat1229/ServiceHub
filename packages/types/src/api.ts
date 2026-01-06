@@ -1,6 +1,6 @@
 // API Request/Response Types
 import { Type } from 'class-transformer';
-import { IsArray, IsBoolean, IsDate, IsEmail, IsIn, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsBoolean, IsDate, IsDateString, IsEmail, IsIn, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export interface ApiResponse<T = any> {
     success: boolean;
@@ -626,6 +626,7 @@ export class UpsertPrinterUserMappingDto {
     departmentId!: string;
 }
 
+
 export class SavePrinterUsageRecordDto {
     @IsDate()
     @Type(() => Date)
@@ -634,6 +635,10 @@ export class SavePrinterUsageRecordDto {
     @IsString()
     @IsNotEmpty()
     userName!: string;
+
+    @IsString()
+    @IsOptional()
+    serialNo?: string;
 
     @IsNumber()
     printBW!: number;
@@ -649,4 +654,116 @@ export class SavePrinterUsageRecordDto {
 
     @IsNumber()
     total!: number;
+}
+
+// ==================== IT Asset DTOs ====================
+
+export class CreateITAssetDto {
+    @IsString()
+    @IsNotEmpty()
+    code!: string;
+
+    @IsString()
+    @IsNotEmpty()
+    name!: string;
+
+    @IsString()
+    @IsNotEmpty()
+    category!: string;
+
+    @IsNumber()
+    stock!: number;
+
+    @IsNumber()
+    @IsOptional()
+    minStock?: number;
+
+    @IsString()
+    @IsOptional()
+    location?: string;
+
+    @IsString()
+    @IsOptional()
+    description?: string;
+
+    @IsString()
+    @IsOptional()
+    image?: string;
+
+    @IsNumber()
+    @IsOptional()
+    price?: number;
+
+    @IsDateString()
+    @IsOptional()
+    // @Type(() => Date) - Removing Type transformer to keep it as string for validation, or let backend define it. 
+    // Actually, if we use IsDateString, we can keep it as string in DTO or use Type to convert.
+    // Ideally for API DTO: Input is string (JSON). 
+    receivedDate?: Date | string;
+
+    @IsString()
+    @IsOptional()
+    receiver?: string;
+
+    @IsString()
+    @IsOptional()
+    serialNumber?: string;
+
+    @IsString()
+    @IsOptional()
+    barcode?: string;
+}
+
+export class UpdateITAssetDto {
+    @IsOptional()
+    @IsString()
+    code?: string;
+
+    @IsOptional()
+    @IsString()
+    name?: string;
+
+    @IsOptional()
+    @IsString()
+    category?: string;
+
+    @IsOptional()
+    @IsString()
+    serialNumber?: string;
+
+    @IsOptional()
+    @IsString()
+    barcode?: string;
+
+    @IsOptional()
+    @IsNumber()
+    stock?: number;
+
+    @IsOptional()
+    @IsNumber()
+    minStock?: number;
+
+    @IsOptional()
+    @IsString()
+    location?: string;
+
+    @IsOptional()
+    @IsString()
+    description?: string;
+
+    @IsOptional()
+    @IsString()
+    image?: string;
+
+    @IsOptional()
+    @IsNumber()
+    price?: number;
+
+    @IsOptional()
+    @IsDateString()
+    receivedDate?: Date | string;
+
+    @IsOptional()
+    @IsString()
+    receiver?: string;
 }

@@ -189,11 +189,11 @@ const saveManualMapping = async () => {
     results.forEach((result) => {
       if (result.success && result.data) {
         // Check if mapping already exists
-        const existingIndex = mappings.value.findIndex((m) => m.userName === result.data.userName);
+        const existingIndex = mappings.value.findIndex((m) => m.userName === result.data!.userName);
         if (existingIndex >= 0) {
           // Update existing mapping
           mappings.value[existingIndex] = {
-            ...result.data,
+            ...result.data!,
             department: department,
           };
         } else {
@@ -328,8 +328,15 @@ const confirmDelete = async () => {
       </div>
     </CardHeader>
     <CardContent>
-      <div v-if="importSummary.totalMonths === 0" class="text-center py-8 text-slate-400 italic">
-        No data imported yet
+      <div
+        v-if="importSummary.totalMonths === 0"
+        class="py-12 flex flex-col items-center justify-center border-2 border-dashed rounded-xl bg-muted/20"
+      >
+        <div class="w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-3">
+          <Database class="w-6 h-6 text-muted-foreground" />
+        </div>
+        <h3 class="text-lg font-semibold mb-1">No data imported yet</h3>
+        <p class="text-xs text-muted-foreground">Upload CSV files to see usage history</p>
       </div>
       <div v-else class="relative">
         <!-- Horizontal Scrollable Container -->

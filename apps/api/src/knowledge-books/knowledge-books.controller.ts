@@ -40,7 +40,11 @@ export class KnowledgeBooksController {
             throw new BadRequestException('No file uploaded');
         }
 
-        const fileType = file.mimetype === 'application/pdf' ? 'pdf' : 'pptx';
+        if (file.mimetype !== 'application/pdf') {
+            throw new BadRequestException('Invalid file type: Only PDF files are allowed');
+        }
+
+        const fileType = 'pdf';
 
         const createData: CreateBookDto = {
             title: body.title,
@@ -53,6 +57,8 @@ export class KnowledgeBooksController {
             author: body.author,
             tags: body.tags ? JSON.parse(body.tags) : [],
             uploadedBy: req.user.userId,
+            trainingDate: body.trainingDate ? new Date(body.trainingDate) : undefined,
+            attendees: body.attendees ? parseInt(body.attendees) : 0,
         };
 
         return this.knowledgeBooksService.create(createData);
@@ -94,12 +100,15 @@ export class KnowledgeBooksController {
         this.logger.debug(`File request for: ${id} from user: ${req.user?.userId}`);
         const book = await this.knowledgeBooksService.findOne(id);
 
+        // Serve PDF
+        const filePath = book.filePath;
+
         // Ensure path is absolute
-        const absolutePath = resolve(process.cwd(), book.filePath);
+        const absolutePath = resolve(process.cwd(), filePath);
 
         res.sendFile(absolutePath, {
             headers: {
-                'Content-Type': book.fileType === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                'Content-Type': 'application/pdf',
                 'Content-Disposition': `inline; filename="${encodeURIComponent(book.fileName)}"`,
             }
         });

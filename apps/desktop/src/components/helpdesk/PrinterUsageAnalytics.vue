@@ -2,6 +2,14 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -14,7 +22,9 @@ import { cn } from '@/lib/utils';
 import { printerService } from '@/services/printer';
 import { PrinterDepartmentDto } from '@my-app/types';
 import {
+  AlertCircle,
   BarChart3,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -26,7 +36,9 @@ import {
   Settings2,
   TrendingDown,
   TrendingUp,
+  Upload,
   Users,
+  X,
 } from 'lucide-vue-next';
 import Papa from 'papaparse';
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
@@ -135,6 +147,13 @@ const availablePeriods = computed(() => {
   return Array.from(periods).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
 });
 
+const availablePrinters = computed(() => {
+  const printers = new Set(historyRecords.value.filter((r) => r.serialNo).map((r) => r.serialNo));
+  return ['ALL', ...Array.from(printers).sort()];
+});
+
+const selectedPrinter = ref('ALL');
+
 // Helper: Format Date Label
 const formatPeriodLabel = (iso: string) => {
   if (!iso) return '';
@@ -154,19 +173,27 @@ const calculateUsage = (startIso: string, endIso: string) => {
   if (startIndex === -1 || endIndex === -1) return;
 
   // 1. Identify Target and Baseline Records
+  // Filter by selected printer first
+  const filterByPrinter = (r: any) =>
+    selectedPrinter.value === 'ALL' || r.serialNo === selectedPrinter.value;
+
   // Target = End Month Records
-  const targetRecords = historyRecords.value.filter((r) => r.period === endIso);
+  const targetRecords = historyRecords.value.filter(
+    (r) => r.period === endIso && filterByPrinter(r)
+  );
 
   // Baseline = (Start - 1) Month Records
-  // If Start is the very first recorded month, we treat Baseline as 0-meter or "Initial" state.
-  // Ideally, if we have continuous data, find sorted[startIndex - 1]
   const baselineIso = startIndex > 0 ? sorted[startIndex - 1] : null;
   const baselineRecords = baselineIso
-    ? historyRecords.value.filter((r) => r.period === baselineIso)
+    ? historyRecords.value.filter((r) => r.period === baselineIso && filterByPrinter(r))
     : [];
 
+  // Index baseline by Composite Key: UserName + SerialNo
   const baselineMap: Record<string, any> = {};
-  baselineRecords.forEach((r) => (baselineMap[r.userName] = r));
+  baselineRecords.forEach((r) => {
+    const key = `${r.userName}_${r.serialNo || 'unknown'}`;
+    baselineMap[key] = r;
+  });
 
   // 2. Mapping & Calculation
   let grandTotal = 0;
@@ -178,35 +205,55 @@ const calculateUsage = (startIso: string, endIso: string) => {
 
   // We iterate over Target Records (the "End" state)
   targetRecords.forEach((u) => {
-    const prev = baselineMap[u.userName];
+    const key = `${u.userName}_${u.serialNo || 'unknown'}`;
+    const prev = baselineMap[key];
 
     // Usage = EndMeter - StartPrevMeter
     // Note: If no baseline (first month selected), usage is 0 to match chart delta logic
+    // OR if we assume first month usage = meter reading? No, typically Delta.
+    // If Prev is missing but we have BaseLineISO, it means new printer or new user? Assumed 0 start.
     const printBW = baselineIso ? Math.max(0, (u.printBW || 0) - (prev?.printBW || 0)) : 0;
     const printColor = baselineIso ? Math.max(0, (u.printColor || 0) - (prev?.printColor || 0)) : 0;
     const copyBW = baselineIso ? Math.max(0, (u.copyBW || 0) - (prev?.copyBW || 0)) : 0;
     const copyColor = baselineIso ? Math.max(0, (u.copyColor || 0) - (prev?.copyColor || 0)) : 0;
     const total = baselineIso ? Math.max(0, (u.total || 0) - (prev?.total || 0)) : 0;
 
-    userMap[u.userName] = {
-      user_name: u.userName,
-      department: (() => {
-        // Resolve department
-        const mapping = userDepartmentMap.value[u.userName];
-        return mapping || 'other';
-      })(),
-      printBW,
-      printColor,
-      copyBW,
-      copyColor,
-      total,
-      // Keep raw meters for debug? Not needed for display
-      meterBW: u.printBW,
-      meterColor: u.printColor,
-      meterPrint: u.printBW, // Using generic mapping from Schema
-      meterCopy: u.copyBW,
-      meterTotal: u.total,
-    };
+    // Aggregate into User Map (Summing up if multiple printers per user)
+    if (!userMap[u.userName]) {
+      userMap[u.userName] = {
+        user_name: u.userName,
+        department: (() => {
+          // Resolve department
+          const mapping = userDepartmentMap.value[u.userName];
+          return mapping || 'other';
+        })(),
+        printBW: 0,
+        printColor: 0,
+        copyBW: 0,
+        copyColor: 0,
+        total: 0,
+        meterBW: 0,
+        meterColor: 0,
+        meterPrint: 0,
+        meterCopy: 0,
+        meterTotal: 0,
+      };
+    }
+
+    const agg = userMap[u.userName];
+    agg.printBW += printBW;
+    agg.printColor += printColor;
+    agg.copyBW += copyBW;
+    agg.copyColor += copyColor;
+    agg.total += total;
+
+    // For meters, we can't easily sum them meaningfully if they are from diff machines in 'ALL' view.
+    // But for 'Single Machine' view, it works.
+    // Let's just store the LAST one or Sum delta?
+    // We already stored DELTA in agg.
+    // lines 216-220 stored RAW meters.
+    // We'll just skip raw meters aggregation for now as they are less critical for charts.
+    agg.meterBW = (agg.meterBW || 0) + (u.printBW || 0); // Rough sum of meters? valid-ish.
 
     grandTotal += total;
     sumBW += printBW + copyBW;
@@ -306,6 +353,7 @@ const calculateUsage = (startIso: string, endIso: string) => {
 
 // Triggered when filters change
 const refreshDashboard = () => {
+  // If we change printer, we just recalculate based on current period(s)
   if (viewMode.value === 'single') {
     if (!selectedPeriod.value) return;
     calculateUsage(selectedPeriod.value, selectedPeriod.value);
@@ -637,6 +685,24 @@ const historyTrendData = computed(() => {
   return results;
 });
 
+const estimatedCost = computed(() => {
+  const quotaBW = 20000;
+  const rateBW = 0.25;
+  const rateColor = 2.3;
+
+  const excessBW = Math.max(0, stats.value.totalBW - quotaBW);
+  const costBW = excessBW * rateBW;
+  const costColor = stats.value.totalColor * rateColor;
+
+  return {
+    bw: costBW,
+    color: costColor,
+    total: costBW + costColor,
+    excessBW,
+    quotaBW,
+  };
+});
+
 const historyChartOptions = computed(() => ({
   ...baseChartOptions,
   chart: {
@@ -696,6 +762,27 @@ const historyChartOptions = computed(() => ({
     position: 'top' as const,
     horizontalAlign: 'right' as const,
   },
+  annotations: {
+    yaxis: [
+      {
+        y: 12000,
+        borderColor: '#ef4444', // Red-500
+        strokeDashArray: 4,
+        label: {
+          borderColor: '#ef4444',
+          style: {
+            color: '#fff',
+            background: '#ef4444',
+            fontSize: '10px',
+            fontWeight: 600,
+          },
+          text: 'Limit Quota (12,000)',
+          position: 'right',
+          offsetX: -5,
+        },
+      },
+    ],
+  },
 }));
 
 const historyChartSeries = computed(() => [
@@ -720,6 +807,71 @@ const renderCharts = () => {
 const isProcessing = ref(false);
 const uploadProgress = ref(0);
 const processingStatus = ref('');
+// Modal State
+const isUploadModalOpen = ref(false);
+const uploadStatus = ref<'idle' | 'processing' | 'success' | 'error'>('idle');
+const uploadResult = ref<{
+  success: number;
+  skipped: number;
+  total: number;
+  savedRecords: number;
+  skippedRecords: number;
+} | null>(null);
+const selectedFiles = ref<File[]>([]);
+const isDragging = ref(false);
+const errorMessage = ref('');
+
+const handleDragOver = (e: DragEvent) => {
+  e.preventDefault();
+  isDragging.value = true;
+};
+
+const handleDragLeave = () => {
+  isDragging.value = false;
+};
+
+const handleDrop = (e: DragEvent) => {
+  e.preventDefault();
+  isDragging.value = false;
+  if (e.dataTransfer?.files) {
+    addFiles(Array.from(e.dataTransfer.files));
+  }
+};
+
+const handleFileSelect = (e: Event) => {
+  const target = e.target as HTMLInputElement;
+  if (target.files) {
+    addFiles(Array.from(target.files));
+  }
+  target.value = ''; // Reset
+};
+
+const addFiles = (files: File[]) => {
+  const validFiles = files.filter((f) => f.name.toLowerCase().endsWith('.csv'));
+  if (validFiles.length < files.length) {
+    toast.error('Some files were ignored. Only CSV files are allowed.');
+  }
+  // Prevent duplicates
+  const newFiles = validFiles.filter(
+    (nf) => !selectedFiles.value.some((sf) => sf.name === nf.name)
+  );
+  selectedFiles.value = [...selectedFiles.value, ...newFiles];
+};
+
+const removeFile = (idx: number) => {
+  selectedFiles.value = selectedFiles.value.filter((_, i) => i !== idx);
+};
+
+const closeUploadModal = () => {
+  isUploadModalOpen.value = false;
+  // Reset state after delay if success to allow cleaner re-open
+  setTimeout(() => {
+    uploadStatus.value = 'idle';
+    selectedFiles.value = [];
+    uploadProgress.value = 0;
+    uploadResult.value = null;
+  }, 300);
+};
 
 const parseFilePromise = (file: File): Promise<{ file: File; data: any[]; period: string }> => {
   return new Promise((resolve, reject) => {
@@ -754,12 +906,11 @@ const parseFilePromise = (file: File): Promise<{ file: File; data: any[]; period
   });
 };
 
-const handleFileUpload = async (event: Event) => {
-  const target = event.target as HTMLInputElement;
-  const files = target.files ? Array.from(target.files) : [];
-  if (files.length === 0) return;
+const processBatchUpload = async () => {
+  if (selectedFiles.value.length === 0) return;
 
-  isProcessing.value = true;
+  isProcessing.value = true; // Keep for safety if used elsewhere
+  uploadStatus.value = 'processing';
   uploadProgress.value = 0;
   hasData.value = false;
   let successCount = 0;
@@ -768,10 +919,10 @@ const handleFileUpload = async (event: Event) => {
 
   try {
     // 1. Parse All Files
-    processingStatus.value = `Parsing ${files.length} file(s)...`;
+    processingStatus.value = `Parsing ${selectedFiles.value.length} file(s)...`;
     const parsedFiles = [];
 
-    for (const file of files) {
+    for (const file of selectedFiles.value) {
       try {
         const res = await parseFilePromise(file);
         parsedFiles.push(res);
@@ -783,13 +934,8 @@ const handleFileUpload = async (event: Event) => {
     }
 
     if (parsedFiles.length === 0) {
-      isProcessing.value = false;
-      target.value = '';
-      return;
+      throw new Error('No valid files to process');
     }
-
-    // Show total records found
-    toast.info(`Found ${totalRecordsCount} records in ${parsedFiles.length} file(s)`);
 
     // 2. Sort by Date (Ascending)
     parsedFiles.sort((a, b) => new Date(a.period).getTime() - new Date(b.period).getTime());
@@ -804,12 +950,11 @@ const handleFileUpload = async (event: Event) => {
       const periodTime = new Date(period).getTime();
       const progressPercent = Math.round(((i + 1) / total) * 100);
 
-      processingStatus.value = `Processing ${i + 1}/${total}: ${file.name} (${data.length} records)`;
+      processingStatus.value = `Processing ${i + 1}/${total}: ${file.name}`;
       uploadProgress.value = progressPercent;
 
       if (tempKnownPeriods.has(periodTime)) {
         skippedCount++;
-        toast.warning(`Skipped: ${file.name} - Period already exists (${data.length} records)`);
         continue;
       }
 
@@ -845,34 +990,52 @@ const handleFileUpload = async (event: Event) => {
       .filter((_, idx) => idx >= successCount)
       .reduce((sum, pf) => sum + pf.data.length, 0);
 
-    toast.success(
-      `Upload Complete!\n✓ Saved: ${successCount} file(s) (${savedRecords} records)\n⊘ Skipped: ${skippedCount} file(s) (${skippedRecords} records)\n📊 Total: ${totalRecordsCount} records`
-    );
-  } catch (err) {
+    uploadResult.value = {
+      success: successCount,
+      skipped: skippedCount,
+      total: totalRecordsCount,
+      savedRecords,
+      skippedRecords,
+    };
+    uploadStatus.value = 'success';
+    uploadProgress.value = 100;
+  } catch (err: any) {
     console.error('Batch Upload Error:', err);
-    toast.error('Batch Upload Failed');
+    uploadStatus.value = 'error';
+    errorMessage.value = err.message || 'Batch Upload Failed';
   } finally {
     isProcessing.value = false;
-    target.value = ''; // Reset input
   }
 };
 
 // Refined Payload Processor with preserved logic
 const processRawDataToPayload2 = (data: any[], periodIso: string) => {
-  const userMap: Record<
+  const usageMap: Record<
     string,
     {
+      userName: string;
+      serialNo: string;
       meterPrint: number;
       meterColor: number;
       meterCopy: number;
       meterTotal: number;
     }
   > = {};
+
   data.forEach((row) => {
     if (!row.user_name) return;
     const userName = row.user_name.trim();
+    // SERIAL NO handling: defaulting to 'unknown' if missing
+    const serialNo = row.serial_no?.trim() || 'unknown';
 
-    // Replicating EXACT logic from previous `processData` loop (first pass)
+    // Create a composite key to separate by Printer + User
+    const key = `${userName}_${serialNo}`;
+
+    // Replicating logic using Sum instead of Max if needed?
+    // User requested separation. If we separate, we simply take the reading for THAT printer.
+    // Assuming file contains one row per user per printer.
+    // If multiple rows for same user/printer, we'll keep Max logic for safety within that printer context.
+
     // mColor = TotalColor or (P_Col + C_Col)
     const mColor =
       parseInt(row.TotalColor) || parseInt(row.PrintColor) + parseInt(row.CopyColor) || 0;
@@ -886,32 +1049,34 @@ const processRawDataToPayload2 = (data: any[], periodIso: string) => {
     // mTotal = TotalMeter or (TotalBW + TotalColor)
     const mTotal = parseInt(row.TotalMeter) || (parseInt(row.TotalBW) || 0) + mColor || 0;
 
-    if (!userMap[userName]) {
-      userMap[userName] = {
+    if (!usageMap[key]) {
+      usageMap[key] = {
+        userName,
+        serialNo,
         meterPrint: 0,
         meterColor: 0,
         meterCopy: 0,
         meterTotal: 0,
       };
     }
-    const u = userMap[userName];
+    const u = usageMap[key];
     u.meterPrint = Math.max(u.meterPrint, mPrint);
     u.meterColor = Math.max(u.meterColor, mColor);
     u.meterCopy = Math.max(u.meterCopy, mCopy);
     u.meterTotal = Math.max(u.meterTotal, mTotal);
   });
 
-  // Map to DB payload format, replicating `saveToDb` logic
-  return Object.keys(userMap).map((userName) => {
-    const u = userMap[userName];
+  // Map to DB payload format
+  return Object.values(usageMap).map((u) => {
     return {
       period: new Date(periodIso),
-      userName,
-      printBW: u.meterPrint, // DB field `printBW` gets aggregated `meterPrint`
-      printColor: u.meterColor, // DB field `printColor` gets aggregated `meterColor`
-      copyBW: u.meterCopy, // DB field `copyBW` gets aggregated `meterCopy`
-      copyColor: u.meterCopy, // DB field `copyColor` also gets aggregated `meterCopy` (as per original `saveToDb` placeholder)
-      total: u.meterTotal, // DB field `total` gets aggregated `meterTotal`
+      userName: u.userName,
+      serialNo: u.serialNo,
+      printBW: u.meterPrint,
+      printColor: u.meterColor,
+      copyBW: u.meterCopy,
+      copyColor: u.meterCopy,
+      total: u.meterTotal,
     };
   });
 };
@@ -992,6 +1157,20 @@ onUnmounted(() => {
           <CardDescription>{{ t('services.itHelp.printer.subtitle') }}</CardDescription>
         </div>
         <div class="flex items-center gap-4">
+          <!-- Printer Selector -->
+          <div class="mr-4 w-[180px]">
+            <Select v-model="selectedPrinter" @update:model-value="refreshDashboard">
+              <SelectTrigger>
+                <SelectValue placeholder="Select Printer" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="printer in availablePrinters" :key="printer" :value="printer">
+                  {{ printer === 'ALL' ? 'All Printers' : printer }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           <!-- Date Controls -->
           <div class="flex items-center gap-2 mr-2">
             <!-- View Toggle -->
@@ -1105,53 +1284,28 @@ onUnmounted(() => {
         @data-changed="loadHistory"
       >
         <template #upload-button>
-          <Label for="csv-upload" class="cursor-pointer m-0">
-            <div
-              class="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90 transition-colors"
-            >
-              <FileUp class="w-4 h-4" /> {{ t('services.itHelp.printer.uploadTitle') }}
-            </div>
-          </Label>
-          <input
-            id="csv-upload"
-            type="file"
-            accept=".csv"
-            multiple
-            class="hidden"
-            @change="handleFileUpload"
-          />
+          <button
+            class="flex items-center gap-2 bg-primary text-primary-foreground h-9 px-3 text-sm rounded-md hover:bg-primary/90 transition-colors"
+            @click="isUploadModalOpen = true"
+          >
+            <FileUp class="w-4 h-4" /> {{ t('services.itHelp.printer.uploadTitle') }}
+          </button>
         </template>
       </PrinterSettings>
     </div>
 
-    <div
-      v-else-if="isProcessing"
-      class="py-20 flex flex-col items-center justify-center border-2 border-dashed rounded-xl bg-muted/20 animate-pulse"
-    >
-      <div class="w-full max-w-md space-y-4 text-center">
-        <h3 class="text-xl font-semibold">
-          {{ processingStatus || t('services.itHelp.printer.processing') }}
-        </h3>
-        <p class="text-sm text-muted-foreground">{{ uploadProgress }}%</p>
-        <div class="h-2 w-full bg-secondary overflow-hidden rounded-full">
-          <div
-            class="h-full bg-primary transition-all duration-300 ease-out"
-            :style="{ width: `${uploadProgress}%` }"
-          ></div>
-        </div>
-      </div>
-    </div>
+    <!-- Deprecated loading state removed -->
 
     <template v-else-if="!hasData">
       <!-- Empty State -->
       <div
-        class="py-20 flex flex-col items-center justify-center border-2 border-dashed rounded-xl bg-muted/20"
+        class="py-12 flex flex-col items-center justify-center border-2 border-dashed rounded-xl bg-muted/20"
       >
-        <div class="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
-          <Printer class="w-8 h-8 text-muted-foreground" />
+        <div class="w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-3">
+          <Printer class="w-6 h-6 text-muted-foreground" />
         </div>
-        <h3 class="text-xl font-semibold mb-2">{{ t('services.itHelp.printer.emptyState') }}</h3>
-        <p class="text-sm text-muted-foreground">
+        <h3 class="text-lg font-semibold mb-1">{{ t('services.itHelp.printer.emptyState') }}</h3>
+        <p class="text-xs text-muted-foreground">
           {{ t('services.itHelp.printer.emptyStateDesc') }}
         </p>
       </div>
@@ -1361,8 +1515,38 @@ onUnmounted(() => {
       <!-- Historical Trends -->
       <Card v-if="historyRecords.length > 0">
         <CardHeader>
-          <CardTitle class="text-base">{{ t('services.itHelp.printer.history.title') }}</CardTitle>
-          <CardDescription>{{ t('services.itHelp.printer.history.comparison') }}</CardDescription>
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <CardTitle class="text-base">{{
+                t('services.itHelp.printer.history.title')
+              }}</CardTitle>
+              <CardDescription>{{
+                t('services.itHelp.printer.history.comparison')
+              }}</CardDescription>
+            </div>
+            <div
+              class="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-md border border-slate-200"
+            >
+              <div class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Est. Monthly Cost
+              </div>
+              <div class="text-lg font-bold text-slate-800">
+                ฿{{ formatNumber(estimatedCost.total) }}
+              </div>
+              <div class="h-4 w-px bg-slate-300 mx-1 hidden sm:block"></div>
+              <div class="flex items-center gap-3 text-xs text-muted-foreground">
+                <span :class="{ 'text-orange-600 font-medium': estimatedCost.excessBW > 0 }">
+                  B&W: ฿{{ formatNumber(estimatedCost.bw) }}
+                  <span v-if="estimatedCost.excessBW > 0"
+                    >(Over {{ formatNumber(estimatedCost.excessBW) }})</span
+                  >
+                </span>
+                <span class="text-pink-600 font-medium"
+                  >Color: ฿{{ formatNumber(estimatedCost.color) }}</span
+                >
+              </div>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <div class="h-80 w-full">
@@ -1573,5 +1757,120 @@ onUnmounted(() => {
         </CardContent>
       </Card>
     </template>
+    <Dialog :open="isUploadModalOpen" @update:open="(v) => (!v ? closeUploadModal() : null)">
+      <DialogContent class="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>{{ t('services.itHelp.printer.uploadTitle') }}</DialogTitle>
+          <DialogDescription> Upload one or more CSV files (e.g., Monthly logs) </DialogDescription>
+        </DialogHeader>
+
+        <!-- Idle/Select State -->
+        <div v-if="uploadStatus === 'idle'" class="space-y-4">
+          <div
+            class="border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer hover:bg-muted/50"
+            :class="isDragging ? 'border-primary bg-primary/5' : 'border-border'"
+            @dragover="handleDragOver"
+            @dragleave="handleDragLeave"
+            @drop="handleDrop"
+            @click="() => ($refs.fileInput as HTMLInputElement)?.click()"
+          >
+            <Upload class="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+            <p class="text-sm font-medium mb-2">Drag & Drop CSV files here</p>
+            <p class="text-xs text-muted-foreground mb-4">or click to browse</p>
+            <input
+              ref="fileInput"
+              type="file"
+              class="hidden"
+              accept=".csv"
+              multiple
+              @change="handleFileSelect"
+            />
+          </div>
+
+          <!-- File List -->
+          <div v-if="selectedFiles.length > 0" class="space-y-2 max-h-[150px] overflow-y-auto">
+            <div
+              v-for="(file, idx) in selectedFiles"
+              :key="idx"
+              class="flex items-center gap-2 p-2 border rounded-md text-sm"
+            >
+              <div class="flex-1 truncate">{{ file.name }}</div>
+              <div class="text-xs text-muted-foreground">
+                {{ (file.size / 1024).toFixed(1) }} KB
+              </div>
+              <button
+                @click.stop="removeFile(idx)"
+                class="text-muted-foreground hover:text-red-500"
+              >
+                <X class="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Processing State -->
+        <div v-else-if="uploadStatus === 'processing'" class="py-10 text-center space-y-4">
+          <div class="relative w-16 h-16 mx-auto">
+            <div class="absolute inset-0 rounded-full border-4 border-muted"></div>
+            <div
+              class="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin"
+            ></div>
+          </div>
+          <div>
+            <h4 class="font-semibold">Processing...</h4>
+            <p class="text-sm text-muted-foreground">{{ processingStatus }}</p>
+          </div>
+          <div class="w-full h-2 bg-secondary rounded-full overflow-hidden">
+            <div
+              class="h-full bg-primary transition-all duration-300"
+              :style="{ width: `${uploadProgress}%` }"
+            ></div>
+          </div>
+        </div>
+
+        <!-- Success State -->
+        <div v-else-if="uploadStatus === 'success'" class="py-6 text-center space-y-4">
+          <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+            <CheckCircle2 class="w-8 h-8 text-green-600" />
+          </div>
+          <h3 class="text-lg font-semibold text-green-700">Upload Complete!</h3>
+          <div class="text-sm text-left bg-muted/30 p-4 rounded-md space-y-2">
+            <div class="flex justify-between">
+              <span>Files Saved:</span>
+              <span class="font-medium">{{ uploadResult?.success }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Files Skipped:</span>
+              <span class="font-medium text-orange-600">{{ uploadResult?.skipped }}</span>
+            </div>
+            <div class="flex justify-between border-t pt-2">
+              <span>Total Records Saved:</span>
+              <span class="font-medium">{{ formatNumber(uploadResult?.savedRecords || 0) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Error State -->
+        <div v-else-if="uploadStatus === 'error'" class="py-6 text-center space-y-4">
+          <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+            <AlertCircle class="w-8 h-8 text-red-600" />
+          </div>
+          <h3 class="text-lg font-semibold text-red-700">Upload Failed</h3>
+          <p class="text-sm text-muted-foreground">{{ errorMessage }}</p>
+        </div>
+
+        <DialogFooter>
+          <div v-if="uploadStatus === 'idle'" class="flex gap-2 justify-end w-full">
+            <Button variant="outline" @click="closeUploadModal">Cancel</Button>
+            <Button @click="processBatchUpload" :disabled="selectedFiles.length === 0">
+              <Upload class="w-4 h-4 mr-2" /> Upload
+            </Button>
+          </div>
+          <div v-else-if="uploadStatus === 'success' || uploadStatus === 'error'" class="w-full">
+            <Button class="w-full" @click="closeUploadModal">Close</Button>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>

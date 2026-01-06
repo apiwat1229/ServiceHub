@@ -3,6 +3,7 @@
     "save": "Save",
     "cancel": "Cancel",
     "delete": "Delete",
+    "confirmDelete": "Confirm Delete",
     "areYouSure": "Are you absolutely sure?",
     "add": "Add",
     "edit": "Edit",
@@ -158,11 +159,16 @@
           "mobile": "Mobile / Tablet",
           "other": "Other"
         },
+        "barcode": "Barcode",
+        "serialNumber": "Serial Number",
+        "confirmDeleteImage": "Are you sure you want to remove this device image?",
         "placeholder": {
           "name": "e.g. MacBook Pro 14\"",
           "code": "e.g. IT-LPT-001",
           "category": "Select category",
-          "location": "e.g. Cabinet A, Room 302"
+          "location": "e.g. Cabinet A, Room 302",
+          "barcode": "Scan or enter barcode",
+          "serialNumber": "e.g. SN1234567890"
         }
       },
       "searchPlaceholder": "Search tickets or articles...",

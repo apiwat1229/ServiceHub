@@ -561,6 +561,7 @@ model PrinterUsageRecord {
   departmentId String?            @map("department_id")
   department   PrinterDepartment? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
   
+  serialNo     String             @default("unknown") @map("serial_no")
   printBW      Int                @default(0) @map("print_bw")
   printColor   Int                @default(0) @map("print_color")
   copyBW       Int                @default(0) @map("copy_bw")
@@ -570,7 +571,7 @@ model PrinterUsageRecord {
   createdAt    DateTime           @default(now()) @map("created_at")
   updatedAt    DateTime           @updatedAt @map("updated_at")
 
-  @@unique([period, userName])
+  @@unique([period, userName, serialNo])
   @@map("printer_usage_records")
 }
 
@@ -583,7 +584,7 @@ model KnowledgeBook {
   title         String
   description   String?
   category      String   // 'Getting Started', 'Tutorials', 'Troubleshooting', 'System Guides'
-  fileType      String   @map("file_type") // 'pdf' or 'pptx'
+  fileType      String   @map("file_type") // 'pdf'
   filePath      String   @map("file_path") // Storage path
   fileName      String   @map("file_name") // Original filename
   fileSize      Int      @map("file_size") // Size in bytes
@@ -595,6 +596,8 @@ model KnowledgeBook {
   downloads     Int      @default(0)
   tags          String[] @default([]) // Array of tags for search
   isPublished   Boolean  @default(true) @map("is_published")
+  trainingDate  DateTime? @map("training_date")
+  attendees     Int?      @default(0)
   
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
@@ -618,4 +621,30 @@ model BookView {
   @@index([bookId])
   @@index([userId])
   @@map("book_views")
+}
+
+// ==========================================
+// IT Asset Management
+// ==========================================
+
+model ITAsset {
+  id           String   @id @default(uuid())
+  code         String   @unique
+  name         String
+  category     String // laptop, monitor, peripheral, network, mobile, other
+  stock        Int      @default(0)
+  minStock     Int      @default(2) @map("min_stock")
+  location     String?
+  description  String?
+  image        String? // Path to image file
+  price        Float?   @default(0)
+  receivedDate DateTime @default(now()) @map("received_date")
+  receiver     String? // Name of receiver
+  serialNumber String?  @map("serial_number")
+  barcode      String?  // Optional barcode for scanning
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("it_assets")
 }

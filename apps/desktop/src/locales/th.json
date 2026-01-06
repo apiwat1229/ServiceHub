@@ -3,6 +3,7 @@
     "save": "บันทึก",
     "cancel": "ยกเลิก",
     "delete": "ลบ",
+    "confirmDelete": "ยืนยันการลบ",
     "areYouSure": "คุณแน่ใจหรือไม่?",
     "edit": "แก้ไข",
     "create": "สร้าง",
@@ -153,11 +154,16 @@
           "mobile": "มือถือ / แท็บเล็ต",
           "other": "อื่นๆ"
         },
+        "barcode": "บาร์โค้ด",
+        "serialNumber": "หมายเลขซีเรียล",
+        "confirmDeleteImage": "คุณแน่ใจหรือไม่ว่าต้องการลบรูปภาพอุปกรณ์นี้?",
         "placeholder": {
           "name": "เช่น MacBook Pro 14\"",
           "code": "เช่น IT-LPT-001",
           "category": "เลือกประเภทอุปกรณ์",
-          "location": "เช่น ตู้ A, ห้อง 302"
+          "location": "เช่น ตู้ A, ห้อง 302",
+          "barcode": "สแกนหรือระบุบาร์โค้ด",
+          "serialNumber": "เช่น SN1234567890"
         }
       },
       "searchPlaceholder": "ค้นหาตั๋วหรือบทความ...",

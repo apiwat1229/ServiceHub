@@ -36,7 +36,11 @@ const fileIconColor = computed(() => {
 });
 
 const formattedDate = computed(() => {
-  return new Date(props.book.createdAt).toLocaleDateString('th-TH', {
+  const date = props.book.trainingDate
+    ? new Date(props.book.trainingDate)
+    : new Date(props.book.createdAt);
+  const localeStr = t('navbar.home') === 'Home' ? 'en-GB' : 'th-TH'; // Simple check or use locale.value
+  return date.toLocaleDateString(localeStr, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -45,7 +49,7 @@ const formattedDate = computed(() => {
 
 const formattedSize = computed(() => {
   const mb = props.book.fileSize / (1024 * 1024);
-  return `${mb.toFixed(2)} MB`;
+  return `${props.book.fileType.toUpperCase()} ${mb.toFixed(2)} MB`;
 });
 
 const uploaderName = computed(() => {
@@ -117,7 +121,7 @@ const uploaderName = computed(() => {
         </div>
         <div class="flex items-center gap-1">
           <Calendar class="w-3 h-3" />
-          <span>{{ formattedDate }}</span>
+          <span>Training Date: {{ formattedDate }}</span>
         </div>
       </div>
 
