@@ -4,11 +4,17 @@ import { fromDate, getLocalTimeZone, type DateValue } from '@internationalized/d
 import { format } from 'date-fns';
 import {
   Calendar as CalendarIcon,
+  CheckCircle2,
   Edit2,
   FileText,
+  Hash,
+  IdCard,
+  Package,
   Plus,
   RefreshCw,
   Trash2,
+  Truck,
+  User,
 } from 'lucide-vue-next';
 import { computed, onMounted, ref, watch, type Ref } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -31,7 +37,6 @@ import { Calendar } from '@/components/ui/calendar';
 import { Card } from '@/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuthStore } from '@/stores/auth';
 import { useRoute, useRouter } from 'vue-router';
 
@@ -485,83 +490,118 @@ watch(selectedSlot, (newSlot) => {
       <Card
         v-for="queue in queues"
         :key="queue.id"
-        class="p-3 transition-all hover:shadow-md border-l-4"
-        :style="{ borderLeftColor: DAY_COLORS[selectedDateJS.getDay()].queueBg }"
+        class="group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border-0 bg-card/60 backdrop-blur-sm shadow-sm flex flex-col"
       >
-        <div class="flex justify-between items-center mb-2">
-          <span class="font-semibold text-sm"
-            >{{ t('bookingQueue.queueNumber') }} : {{ queue.queueNo }}</span
+        <!-- Top Status Bar (Color by Day) -->
+        <div
+          class="h-1.5 w-full shrink-0"
+          :style="{ backgroundColor: DAY_COLORS[selectedDateJS.getDay()].queueBg }"
+        ></div>
+
+        <!-- Card Body -->
+        <div class="p-4 flex-1 flex flex-col">
+          <!-- Header: Queue & Actions -->
+          <div class="flex justify-between items-start mb-4">
+            <div class="flex flex-col">
+              <span class="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">{{
+                t('bookingQueue.queueNumber')
+              }}</span>
+              <div class="flex items-baseline gap-1">
+                <span class="text-3xl font-black text-primary leading-none">{{
+                  queue.queueNo
+                }}</span>
+              </div>
+            </div>
+
+            <div class="flex flex-col gap-1 items-end">
+              <div
+                v-if="queue.status === 'APPROVED'"
+                class="flex items-center text-green-600 bg-green-50 px-2.5 py-1 rounded-full border border-green-100 shadow-sm shrink-0"
+              >
+                <CheckCircle2 class="h-3 w-3 mr-1" />
+                <span class="text-[10px] font-bold uppercase tracking-tight">{{
+                  t('booking.deliveryCompleted') || 'Completed'
+                }}</span>
+              </div>
+
+              <div
+                v-if="queue.status !== 'APPROVED'"
+                class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <Button
+                  v-if="authStore.hasPermission('bookings:update')"
+                  variant="secondary"
+                  size="icon"
+                  class="h-8 w-8 rounded-full shadow-sm hover:bg-primary hover:text-white transition-colors"
+                  @click="handleEdit(queue)"
+                >
+                  <Edit2 class="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  v-if="authStore.hasPermission('bookings:delete')"
+                  variant="secondary"
+                  size="icon"
+                  class="h-8 w-8 rounded-full shadow-sm text-destructive hover:bg-destructive hover:text-white transition-colors"
+                  @click="handleDeleteClick(queue)"
+                >
+                  <Trash2 class="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Main Info -->
+          <div class="space-y-4 flex-1">
+            <!-- Supplier Section -->
+            <div class="space-y-1">
+              <div class="flex items-center gap-1.5">
+                <IdCard class="w-3 h-3 text-blue-600" />
+                <span class="text-[13px] font-bold text-blue-600 uppercase">{{
+                  queue.supplierCode
+                }}</span>
+              </div>
+              <div class="flex items-start gap-2">
+                <User class="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+                <p class="font-bold text-sm leading-snug line-clamp-2">{{ queue.supplierName }}</p>
+              </div>
+            </div>
+
+            <!-- Details Section -->
+            <div class="grid grid-cols-1 gap-2 border-t border-border/50 pt-3">
+              <div v-if="queue.truckType || queue.truckRegister" class="flex items-center gap-2">
+                <Truck class="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                <span class="text-xs font-medium text-foreground truncate">
+                  {{ [queue.truckType, queue.truckRegister].filter(Boolean).join(' - ') }}
+                </span>
+              </div>
+              <div class="flex items-center gap-2">
+                <Package class="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                <span class="text-xs font-medium text-foreground truncate">
+                  {{
+                    RUBBER_TYPE_MAP[queue.rubberType] || queue.rubberTypeName || queue.rubberType
+                  }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer: Booking Code & Ticket -->
+          <div
+            class="pt-3 border-t border-border/50 flex justify-between items-center bg-muted/30 -mx-4 px-4 py-2 mt-auto"
           >
-          <div v-if="queue.status !== 'APPROVED'" class="flex items-center gap-1">
-            <TooltipProvider v-if="authStore.hasPermission('bookings:update')">
-              <Tooltip>
-                <TooltipTrigger as-child>
-                  <Button variant="ghost" size="icon" class="h-8 w-8" @click="handleEdit(queue)">
-                    <Edit2 class="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>{{ t('common.edit') }}</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-            <TooltipProvider v-if="authStore.hasPermission('bookings:delete')">
-              <Tooltip>
-                <TooltipTrigger as-child>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    class="h-8 w-8 text-destructive hover:bg-destructive/10"
-                    @click="handleDeleteClick(queue)"
-                  >
-                    <Trash2 class="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>{{ t('common.delete') }}</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-          <div v-else>
-            <span
-              class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10"
-            >
-              {{ t('booking.deliveryCompleted') || 'Delivery Completed' }}
-            </span>
-          </div>
-        </div>
-
-        <div class="space-y-1 text-sm">
-          <div>
-            <p class="text-xs text-muted-foreground">{{ t('bookingQueue.supplierCode') }}</p>
-            <p class="font-bold text-blue-600">{{ queue.supplierCode }}</p>
-          </div>
-          <div>
-            <p class="text-xs text-muted-foreground">{{ t('bookingQueue.supplierName') }}</p>
-            <p class="font-bold break-words">{{ queue.supplierName }}</p>
-          </div>
-          <div v-if="queue.truckType || queue.truckRegister">
-            <p class="text-xs text-muted-foreground">{{ t('bookingQueue.truck') }}</p>
-            <p class="font-normal text-foreground">
-              {{ [queue.truckType, queue.truckRegister].filter(Boolean).join(' - ') }}
-            </p>
-          </div>
-          <div>
-            <p class="text-xs text-muted-foreground">{{ t('bookingQueue.type') }}</p>
-            <p class="font-normal text-foreground">
-              {{ RUBBER_TYPE_MAP[queue.rubberType] || queue.rubberTypeName || queue.rubberType }}
-            </p>
-          </div>
-          <div class="flex justify-between items-end">
-            <div>
-              <p class="text-xs text-muted-foreground">{{ t('bookingQueue.bookingCode') }}</p>
-              <p class="font-normal text-foreground">{{ queue.bookingCode }}</p>
+            <div class="flex items-center gap-1.5">
+              <Hash class="w-3 h-3 text-muted-foreground" />
+              <span class="text-[11px] font-mono font-medium text-muted-foreground">{{
+                queue.bookingCode
+              }}</span>
             </div>
             <Button
-              variant="link"
+              variant="outline"
               size="sm"
-              class="h-auto p-0 mb-0.5"
+              class="h-7 px-2.5 text-[11px] font-bold gap-1.5 bg-background shadow-sm hover:bg-primary hover:text-white transition-all rounded-lg"
               @click="handleShowTicket(queue)"
             >
-              <FileText class="h-3 w-3 mr-1" />
+              <FileText class="h-3 w-3" />
               {{ t('bookingQueue.ticket') }}
             </Button>
           </div>

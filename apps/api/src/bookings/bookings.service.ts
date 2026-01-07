@@ -55,14 +55,12 @@ export class BookingsService {
         console.log('Incoming Data:', JSON.stringify(data, null, 2));
         console.log('Target Slot:', slot);
 
-        // Get ALL bookings for this "Code Date" (prefix) to ensure we have the full picture
-        // and avoid unique constraint violations even for soft-deleted items.
+        // Get ACTIVE bookings for this date to calculate queue number and check collisions.
+        // We now rename cancelled bookings, so we don't need to check them for collisions anymore.
         const dayBookings = await this.prisma.booking.findMany({
             where: {
-                bookingCode: {
-                    startsWith: codePrefix,
-                },
-                // Do NOT filter deletedAt here, we need all to ensure unique bookingCode
+                date: new Date(date),
+                deletedAt: null,
             },
         });
 
@@ -114,19 +112,28 @@ export class BookingsService {
         // ONE LAST DB CHECK: Just in case a race condition happened between findMany and now
         const finalDuplicate = await this.prisma.booking.findUnique({
             where: { bookingCode },
-            select: { id: true }
         });
 
         if (finalDuplicate) {
-            console.warn(`[BookingsService] Last-second DB collision detected for ${bookingCode}. Finding next available...`);
-            // Find max queueNo for the day to jump ahead
-            const maxBooking = await this.prisma.booking.findFirst({
-                where: { bookingCode: { startsWith: codePrefix } },
-                orderBy: { queueNo: 'desc' },
-                select: { queueNo: true }
-            });
-            queueNo = (maxBooking?.queueNo || queueNo) + 1;
-            bookingCode = genBookingCode(new Date(date), queueNo);
+            // If the duplicate is a soft-deleted record, we rename it on-the-fly to free up the code
+            if (finalDuplicate.deletedAt) {
+                console.warn(`[BookingsService] Stale deleted record found for ${bookingCode}. Renaming to free up code...`);
+                await this.prisma.booking.update({
+                    where: { id: finalDuplicate.id },
+                    data: { bookingCode: `STALE-${finalDuplicate.bookingCode}-${Date.now()}` }
+                });
+                // Now we can proceed with the original bookingCode
+            } else {
+                console.warn(`[BookingsService] Last-second DB collision detected with active record for ${bookingCode}. Finding next available...`);
+                // Find max queueNo for the day to jump ahead (standard behavior for active collisions)
+                const maxBooking = await this.prisma.booking.findFirst({
+                    where: { bookingCode: { startsWith: codePrefix }, deletedAt: null },
+                    orderBy: { queueNo: 'desc' },
+                    select: { queueNo: true }
+                });
+                queueNo = (maxBooking?.queueNo || queueNo) + 1;
+                bookingCode = genBookingCode(new Date(date), queueNo);
+            }
         }
 
         try {
@@ -396,8 +403,9 @@ export class BookingsService {
                 data: {
                     deletedAt: new Date(),
                     deletedBy: user?.displayName || user?.username || 'System',
-                    status: 'CANCELLED'
-                }
+                    status: 'CANCELLED',
+                    bookingCode: `CANCELLED-${booking.bookingCode}-${Date.now()}`, // Free up the original code
+                },
             });
 
             await this.triggerNotification('Booking', 'DELETE', {
