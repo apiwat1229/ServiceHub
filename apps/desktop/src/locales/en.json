@@ -1215,7 +1215,7 @@
   },
   "bookingQueue": {
     "title": "Booking Queue",
-    "manageQueue": "Manage booking queue for supplier deliveries on",
+    "manageQueue": "Manage booking queue on",
     "addBooking": "Add Booking",
     "edit": "Edit Booking",
     "selectTime": "Select Time",

@@ -172,7 +172,7 @@ const handleCopyTicketImage = async () => {
             background: theme.cardBg,
             border: `2px solid ${theme.border}`,
             padding: '16px',
-            borderRadius: '12px',
+            borderRadius: '6px',
             fontFamily: '\'Sarabun\', \'Kanit\', sans-serif',
           }"
           class="relative"
@@ -246,12 +246,12 @@ const handleCopyTicketImage = async () => {
               :style="{
                 width: '56px',
                 height: '56px',
-                borderRadius: '10px',
+                borderRadius: '4px',
                 background: theme.queueBg,
                 color: '#fff',
                 fontSize: '28px',
                 fontWeight: 700,
-                border: `2px solid ${theme.border}`,
+                border: `2.5px solid rgba(0,0,0,0.2)`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -289,14 +289,16 @@ const handleCopyTicketImage = async () => {
 
           <!-- QR Code -->
           <div class="flex justify-center mt-4">
-            <QrcodeVue
-              v-if="ticket.bookingCode"
-              :value="String(ticket.bookingCode)"
-              :size="128"
-              level="M"
-              render-as="svg"
-              class="p-1 bg-white rounded border border-gray-100"
-            />
+            <div v-if="ticket.bookingCode" class="p-2">
+              <QrcodeVue
+                :value="String(ticket.bookingCode)"
+                :size="100"
+                level="H"
+                background="transparent"
+                render-as="canvas"
+                class="block"
+              />
+            </div>
             <div
               v-else
               class="w-32 h-32 bg-muted/50 rounded border border-dashed border-muted-foreground/30 flex items-center justify-center"
