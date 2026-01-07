@@ -79,6 +79,7 @@ const authStore = useAuthStore();
 const selectedDate = ref(fromDate(new Date(), getLocalTimeZone())) as Ref<DateValue>;
 const selectedSlot = ref<string>('08:00-09:00'); // Default slot
 const queues = ref<any[]>([]);
+const dailyQueues = ref<any[]>([]); // All bookings for the day
 const totalDailyQueues = ref(0);
 const loading = ref(false);
 const calendarPopoverOpen = ref(false); // Add popover state
@@ -137,6 +138,24 @@ const nextQueueNo = computed(() => {
   return null;
 });
 
+const slotStats = computed(() => {
+  const stats: Record<string, { booked: number; limit: number | null }> = {};
+
+  TIME_SLOTS.forEach((slot) => {
+    const booked = dailyQueues.value.filter((q) => q.slot === slot.value).length;
+    let limit = slot.limit;
+
+    // Special case Saturday
+    if (selectedDateJS.value.getDay() === 6 && slot.value === '10:00-11:00') {
+      limit = null;
+    }
+
+    stats[slot.value] = { booked, limit };
+  });
+
+  return stats;
+});
+
 const availableSlots = computed(() => {
   const dayOfWeek = selectedDateJS.value.getDay();
   if (dayOfWeek === 6) {
@@ -164,13 +183,15 @@ async function fetchQueues() {
     });
     queues.value = resp || [];
 
-    // Fetch daily total
+    // Fetch daily total and all slot info
     const dailyResp = await bookingsApi.getAll({ date: dateParam });
+    dailyQueues.value = dailyResp || [];
     totalDailyQueues.value = dailyResp?.length || 0;
   } catch (err) {
     console.error('Fetch queues error:', err);
     toast.error(t('bookingQueue.toast.loadFailed'));
     queues.value = [];
+    dailyQueues.value = [];
     totalDailyQueues.value = 0;
   } finally {
     loading.value = false;
@@ -326,44 +347,6 @@ watch(selectedSlot, (newSlot) => {
             {{ format(selectedDateJS, 'dd-MMM-yyyy') }}
           </p>
         </div>
-
-        <!-- Integrated Stats -->
-        <div class="flex items-center gap-2 border-l pl-4">
-          <div class="px-4 py-2 bg-muted/60 rounded-lg text-center min-w-[100px]">
-            <p class="text-[11px] font-medium text-black leading-none mb-1.5 whitespace-nowrap">
-              {{ t('bookingQueue.totalToday') }}
-            </p>
-            <p class="text-xl font-black leading-none">{{ totalDailyQueues }}</p>
-          </div>
-          <div class="px-4 py-2 bg-muted/60 rounded-lg text-center min-w-[100px]">
-            <p class="text-[11px] font-medium text-black leading-none mb-1.5 whitespace-nowrap">
-              {{ t('bookingQueue.currentQueue') }}
-            </p>
-            <p class="text-xl font-black text-primary leading-none">
-              {{ queues.length > 0 ? Math.max(...queues.map((q) => Number(q.queueNo) || 0)) : '-' }}
-            </p>
-          </div>
-          <div class="px-4 py-2 bg-muted/60 rounded-lg text-center min-w-[100px]">
-            <p class="text-[11px] font-medium text-black leading-none mb-1.5 whitespace-nowrap">
-              {{ t('bookingQueue.nextQueue') }}
-            </p>
-            <p class="text-xl font-black text-green-600 leading-none">
-              {{ nextQueueNo !== null ? nextQueueNo : '-' }}
-            </p>
-          </div>
-          <div class="px-4 py-2 bg-muted/60 rounded-lg text-center min-w-[100px]">
-            <p class="text-[11px] font-medium text-black leading-none mb-1.5 whitespace-nowrap">
-              {{ t('bookingQueue.available') }}
-            </p>
-            <p class="text-xl font-black text-blue-600 leading-none">
-              {{
-                currentSlotConfig.limit
-                  ? Math.max(0, currentSlotConfig.limit - queues.length)
-                  : t('bookingQueue.unlimited')
-              }}
-            </p>
-          </div>
-        </div>
       </div>
 
       <div class="flex items-center space-x-2">
@@ -430,29 +413,51 @@ watch(selectedSlot, (newSlot) => {
                   v-for="slot in availableSlots"
                   :key="slot.value"
                   :value="slot.value"
-                  class="whitespace-nowrap px-2 py-1 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground sm:text-sm"
+                  class="flex-1 flex flex-col gap-0.5 py-1.5 min-w-[80px] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
+                  :class="[
+                    slotStats[slot.value] &&
+                    slotStats[slot.value].limit !== null &&
+                    slotStats[slot.value].booked >= (slotStats[slot.value].limit || 0)
+                      ? 'bg-red-500 text-white hover:bg-red-600 data-[state=active]:bg-red-700 data-[state=active]:text-white'
+                      : '',
+                  ]"
                 >
-                  {{ slot.label }}
+                  <span class="text-xs font-bold leading-none">{{ slot.label }}</span>
+                  <div class="text-[10px] leading-none opacity-90">
+                    <template v-if="slotStats[slot.value]">
+                      <span
+                        v-if="
+                          slotStats[slot.value] &&
+                          slotStats[slot.value].limit !== null &&
+                          slotStats[slot.value].booked >= (slotStats[slot.value].limit || 0)
+                        "
+                        class="font-black"
+                      >
+                        {{ t('bookingQueue.slotFull') }}
+                      </span>
+                      <template v-else>
+                        {{
+                          slotStats[slot.value].limit !== null
+                            ? `${slotStats[slot.value].booked}/${slotStats[slot.value].limit}`
+                            : `${slotStats[slot.value].booked}/${t('bookingQueue.unlimited')}`
+                        }}
+                      </template>
+                    </template>
+                  </div>
                 </TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
         </div>
 
-        <!-- Right: Slot Info -->
+        <!-- Right: Daily Summary -->
         <div class="flex flex-col items-end text-right border-l pl-6 min-w-[240px]">
           <h3 class="text-lg font-semibold tracking-tight text-primary">
-            {{ t('bookingQueue.timeSlot') }} {{ selectedSlot }}
+            {{ t('bookingQueue.dailySummary') || 'Daily Summary' }}
           </h3>
           <p class="text-sm text-muted-foreground mt-1">
-            {{ format(selectedDateJS, 'dd-MMM-yyyy') }} • Queue
-            <span class="font-medium text-foreground">
-              {{ currentSlotConfig.start }}
-              <span v-if="currentSlotConfig.limit"
-                >- {{ currentSlotConfig.start + currentSlotConfig.limit - 1 }}</span
-              >
-              <span v-else>Upwards</span>
-            </span>
+            {{ t('bookingQueue.totalToday') }} :
+            <span class="font-bold text-foreground">{{ totalDailyQueues }}</span>
           </p>
         </div>
       </div>
@@ -527,33 +532,39 @@ watch(selectedSlot, (newSlot) => {
         <div class="space-y-1 text-sm">
           <div>
             <p class="text-xs text-muted-foreground">{{ t('bookingQueue.supplierCode') }}</p>
-            <p class="font-medium">{{ queue.supplierCode }}</p>
+            <p class="font-bold text-blue-600">{{ queue.supplierCode }}</p>
           </div>
           <div>
             <p class="text-xs text-muted-foreground">{{ t('bookingQueue.supplierName') }}</p>
-            <p class="font-medium break-words">{{ queue.supplierName }}</p>
+            <p class="font-bold break-words">{{ queue.supplierName }}</p>
           </div>
           <div v-if="queue.truckType || queue.truckRegister">
             <p class="text-xs text-muted-foreground">{{ t('bookingQueue.truck') }}</p>
-            <p>{{ [queue.truckType, queue.truckRegister].filter(Boolean).join(' - ') }}</p>
-          </div>
-          <div>
-            <p class="text-xs text-muted-foreground">{{ t('bookingQueue.type') }}</p>
-            <p>
-              {{ RUBBER_TYPE_MAP[queue.rubberType] || queue.rubberTypeName || queue.rubberType }}
+            <p class="font-normal text-foreground">
+              {{ [queue.truckType, queue.truckRegister].filter(Boolean).join(' - ') }}
             </p>
           </div>
           <div>
-            <p class="text-xs text-muted-foreground">{{ t('bookingQueue.bookingCode') }}</p>
-            <p>{{ queue.bookingCode }}</p>
+            <p class="text-xs text-muted-foreground">{{ t('bookingQueue.type') }}</p>
+            <p class="font-normal text-foreground">
+              {{ RUBBER_TYPE_MAP[queue.rubberType] || queue.rubberTypeName || queue.rubberType }}
+            </p>
           </div>
-        </div>
-
-        <div class="mt-4 pt-4 border-t flex justify-end">
-          <Button variant="link" size="sm" class="h-auto p-0" @click="handleShowTicket(queue)">
-            <FileText class="h-3 w-3 mr-1" />
-            {{ t('bookingQueue.ticket') }}
-          </Button>
+          <div class="flex justify-between items-end">
+            <div>
+              <p class="text-xs text-muted-foreground">{{ t('bookingQueue.bookingCode') }}</p>
+              <p class="font-normal text-foreground">{{ queue.bookingCode }}</p>
+            </div>
+            <Button
+              variant="link"
+              size="sm"
+              class="h-auto p-0 mb-0.5"
+              @click="handleShowTicket(queue)"
+            >
+              <FileText class="h-3 w-3 mr-1" />
+              {{ t('bookingQueue.ticket') }}
+            </Button>
+          </div>
         </div>
       </Card>
     </div>

@@ -20,9 +20,9 @@ function getSlotConfig(slot: string, date: Date) {
 
 function genBookingCode(date: Date, queueNo: number): string {
     const d = new Date(date);
-    const yy = String(d.getUTCFullYear()).slice(-2);
-    const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
-    const dd = String(d.getUTCDate()).padStart(2, '0');
+    const yy = String(d.getFullYear()).slice(-2);
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
     const q = String(queueNo).padStart(2, '0');
     return `${yy}${mm}${dd}${q}`;
 }
@@ -44,73 +44,90 @@ export class BookingsService {
         const slot = `${startTime}-${endTime}`;
         const slotConfig = getSlotConfig(slot, new Date(date));
 
-        // Generate the date prefix (YYMMDD) using UTC to match genBookingCode
+        // Generate the date prefix (YYMMDD) using Local time to match genBookingCode
         const d = new Date(date);
-        const yy = String(d.getUTCFullYear()).slice(-2);
-        const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
-        const dd = String(d.getUTCDate()).padStart(2, '0');
+        const yy = String(d.getFullYear()).slice(-2);
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
         const codePrefix = `${yy}${mm}${dd}`;
 
         console.log('--- DEBUG BOOKING CREATION ---');
-        console.log('Incoming Date:', date);
-        console.log('Code Prefix:', codePrefix);
+        console.log('Incoming Data:', JSON.stringify(data, null, 2));
         console.log('Target Slot:', slot);
 
         // Get ALL bookings for this "Code Date" (prefix) to ensure we have the full picture
+        // and avoid unique constraint violations even for soft-deleted items.
         const dayBookings = await this.prisma.booking.findMany({
             where: {
                 bookingCode: {
                     startsWith: codePrefix,
                 },
+                // Do NOT filter deletedAt here, we need all to ensure unique bookingCode
             },
         });
 
-        // Filter for the specific slot we are trying to book
-        const existingBookings = dayBookings.filter(b => b.slot === slot);
+        // Filter for active bookings in the specific slot for the capacity check
+        const activeBookingsInSlot = dayBookings.filter(b => b.slot === slot && !b.deletedAt);
 
-        // Check if slot is full
-        if (slotConfig.limit && existingBookings.length >= slotConfig.limit) {
+        // Check if slot is full (only counting active ones)
+        if (slotConfig.limit && activeBookingsInSlot.length >= slotConfig.limit) {
             throw new BadRequestException('This time slot is full');
         }
 
-        // Check for duplicate booking (Same Supplier, Same Truck, Same Slot)
+        // Check for duplicate booking (Same Supplier, Same Truck, Same Slot - Active Only)
         if (truckRegister) {
-            const duplicateBooking = dayBookings.find(b => b.supplierId === supplierId && b.slot === slot && b.truckRegister === truckRegister);
+            const duplicateBooking = dayBookings.find(b =>
+                !b.deletedAt &&
+                b.supplierId === supplierId &&
+                b.slot === slot &&
+                b.truckRegister === truckRegister
+            );
             if (duplicateBooking) {
                 throw new BadRequestException(`This truck (${truckRegister}) already has a booking for this slot.`);
             }
         }
 
-        // Calculate next queue number
-        let queueNo: number;
-        if (!slotConfig.limit) {
-            // Unlimited slot: increment from start or max existing
-            const usedNumbers = existingBookings.map((b) => b.queueNo).sort((a, b) => a - b);
-            if (usedNumbers.length === 0) {
-                queueNo = slotConfig.start;
-            } else {
-                queueNo = slotConfig.start;
-                for (const num of usedNumbers) {
-                    if (num === queueNo) {
-                        queueNo++;
-                    } else {
-                        break;
-                    }
-                }
-            }
-        } else {
-            const usedNumbers = existingBookings.map((b) => b.queueNo).sort((a, b) => a - b);
-            queueNo = slotConfig.start;
-            for (const num of usedNumbers) {
-                if (num === queueNo) {
-                    queueNo++;
-                } else {
-                    break;
-                }
+        // Calculate next queue number based on ALL bookings (including deleted)
+        // to avoid "Unique constraint failed" on booking_code
+        const existingBookingsInSlot = dayBookings.filter(b => b.slot === slot);
+        const usedNumbers = existingBookingsInSlot.map((b) => b.queueNo).sort((a, b) => a - b);
+        let queueNo = slotConfig.start;
+        for (const num of usedNumbers) {
+            if (num === queueNo) {
+                queueNo++;
+            } else if (num > queueNo) {
+                break;
             }
         }
 
-        const bookingCode = genBookingCode(new Date(date), queueNo);
+        // Generate initial code
+        let bookingCode = genBookingCode(new Date(date), queueNo);
+
+        // EXTRA ROBUST: Ensure code is unique across ALL slots and even soft-deleted records for this day
+        const allCodesToday = new Set(dayBookings.map(b => b.bookingCode));
+        while (allCodesToday.has(bookingCode)) {
+            console.warn(`[BookingsService] Code collision in memory for ${bookingCode}. Incrementing queueNo...`);
+            queueNo++;
+            bookingCode = genBookingCode(new Date(date), queueNo);
+        }
+
+        // ONE LAST DB CHECK: Just in case a race condition happened between findMany and now
+        const finalDuplicate = await this.prisma.booking.findUnique({
+            where: { bookingCode },
+            select: { id: true }
+        });
+
+        if (finalDuplicate) {
+            console.warn(`[BookingsService] Last-second DB collision detected for ${bookingCode}. Finding next available...`);
+            // Find max queueNo for the day to jump ahead
+            const maxBooking = await this.prisma.booking.findFirst({
+                where: { bookingCode: { startsWith: codePrefix } },
+                orderBy: { queueNo: 'desc' },
+                select: { queueNo: true }
+            });
+            queueNo = (maxBooking?.queueNo || queueNo) + 1;
+            bookingCode = genBookingCode(new Date(date), queueNo);
+        }
 
         try {
             const createdBooking = await this.prisma.booking.create({
@@ -139,9 +156,10 @@ export class BookingsService {
             });
 
             return createdBooking;
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error creating booking:', error);
-            throw new BadRequestException('Failed to create booking. Please check the data and try again.');
+            // Include actual error message for debugging
+            throw new BadRequestException(`Failed to create booking: ${error.message || 'Unknown error'}`);
         }
     }
 
@@ -306,19 +324,25 @@ export class BookingsService {
             updateData.approvedAt = new Date();
         }
 
-        const result = await this.prisma.booking.update({
-            where: { id },
-            data: updateData,
-        });
+        try {
+            console.log(`[BookingsService] Updating booking ${id} with:`, JSON.stringify(updateData, null, 2));
+            const result = await this.prisma.booking.update({
+                where: { id },
+                data: updateData,
+            });
 
-        // Trigger Notification
-        await this.triggerNotification('Booking', 'UPDATE', {
-            title: 'Booking Updated',
-            message: `Booking ${result.bookingCode} (${result.supplierName}) at ${result.slot} has been updated.`,
-            actionUrl: `/bookings?code=${result.bookingCode}`,
-        });
+            // Trigger Notification
+            await this.triggerNotification('Booking', 'UPDATE', {
+                title: 'Booking Updated',
+                message: `Booking ${result.bookingCode} (${result.supplierName}) at ${result.slot} has been updated.`,
+                actionUrl: `/bookings?code=${result.bookingCode}`,
+            });
 
-        return result;
+            return result;
+        } catch (error: any) {
+            console.error('[BookingsService] Update booking error:', error);
+            throw new BadRequestException(`Failed to update booking: ${error.message || 'Unknown error'}`);
+        }
     }
 
     async remove(id: string, user?: any) {
@@ -345,14 +369,14 @@ export class BookingsService {
                     reason: 'ต้องการยกเลิกการจอง',
                     sourceApp: 'Booking',
                 });
-
+    
                 // Notify Approvers
                 await this.triggerNotification('Booking', 'APPROVAL_REQUEST', {
                     title: 'Approval Requested: Booking Cancellation',
                     message: `User ${user.displayName} requested to cancel Booking ${booking.bookingCode}.`,
                     actionUrl: `/admin/approvals/${request.id}`,
                 });
-
+    
                 return {
                     status: 'PENDING_APPROVAL',
                     message: 'คำขอยกเลิกถูกส่งไปยังผู้อนุมัติแล้ว',

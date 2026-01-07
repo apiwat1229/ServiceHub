@@ -172,7 +172,7 @@ const handleCopyTicketImage = async () => {
             background: theme.cardBg,
             border: `2px solid ${theme.border}`,
             padding: '16px',
-            borderRadius: '6px',
+            borderRadius: '12px',
             fontFamily: '\'Sarabun\', \'Kanit\', sans-serif',
           }"
           class="relative"
@@ -246,7 +246,7 @@ const handleCopyTicketImage = async () => {
               :style="{
                 width: '56px',
                 height: '56px',
-                borderRadius: '4px',
+                borderRadius: '10px',
                 background: theme.queueBg,
                 color: '#fff',
                 fontSize: '28px',

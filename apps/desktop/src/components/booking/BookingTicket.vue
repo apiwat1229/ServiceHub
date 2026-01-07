@@ -100,7 +100,7 @@ function thaiDateWithWeekday(dateField: Date): string {
       background: theme.cardBg,
       border: `2px solid ${theme.border}`,
       padding: '24px 16px',
-      borderRadius: '6px',
+      borderRadius: '12px',
       fontFamily: '\'Sarabun\', \'Kanit\', sans-serif',
       minHeight: '310px',
     }"
@@ -168,7 +168,7 @@ function thaiDateWithWeekday(dateField: Date): string {
         :style="{
           width: '50px',
           height: '50px',
-          borderRadius: '4px',
+          borderRadius: '8px',
           background: theme.queueBg,
           color: '#fff',
           fontSize: '28px',
