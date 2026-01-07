@@ -135,7 +135,7 @@ const routes = [
             {
                 path: 'uss',
                 name: 'USS',
-                component: () => import('../views/Placeholder.vue'),
+                component: () => import('../views/admin/Uss.vue'),
             },
             {
                 path: 'project-timeline',
