@@ -39,7 +39,7 @@ export class BookingsService {
     ) { }
 
     async create(data: any) {
-        const { date, startTime, endTime, supplierId, supplierCode, supplierName, truckType, truckRegister, rubberType, recorder } = data;
+        const { date, startTime, endTime, supplierId, supplierCode, supplierName, truckType, truckRegister, rubberType, estimatedWeight, recorder } = data;
 
         const slot = `${startTime}-${endTime}`;
         const slotConfig = getSlotConfig(slot, new Date(date));
@@ -65,17 +65,30 @@ export class BookingsService {
         });
 
         // Filter for active bookings in the specific slot for the capacity check
-        const activeBookingsInSlot = dayBookings.filter(b => b.slot === slot && !b.deletedAt);
+        const isUSS = rubberType && (rubberType.toUpperCase().includes('USS'));
+        const prefix = isUSS ? 'U' : 'C';
 
-        // Check if slot is full (only counting active ones)
+        // Filter bookings by type (USS vs CL) for queue calculation
+        // Same slot capacity applies independently if they are different warehouses (as requested)
+        const relevantBookings = dayBookings.filter(b => {
+            const bIsUSS = b.rubberType && (b.rubberType.toUpperCase().includes('USS'));
+            return bIsUSS === isUSS;
+        });
+
+        // Filter for active bookings in the specific slot and type for capacity check
+        const activeBookingsInSlot = relevantBookings.filter(b => b.slot === slot && !b.deletedAt);
+
+        // Check if slot is full (only counting active ones of the same type)
         if (slotConfig.limit && activeBookingsInSlot.length >= slotConfig.limit) {
-            throw new BadRequestException('This time slot is full');
+            throw new BadRequestException(`This time slot is full for ${isUSS ? 'USS' : 'Cuplump'}`);
         }
 
         // Check for duplicate booking (Same Supplier, Same Truck, Same Slot - Active Only)
+        // Truck check should be GLOBAL (same truck cannot be in two places)
         if (truckRegister) {
             const duplicateBooking = dayBookings.find(b =>
                 !b.deletedAt &&
+                b.checkinAt === null && // Only check against non-completed? Or just active? Let's say all active.
                 b.supplierId === supplierId &&
                 b.slot === slot &&
                 b.truckRegister === truckRegister
@@ -85,11 +98,18 @@ export class BookingsService {
             }
         }
 
-        // Calculate next queue number based on ALL bookings (including deleted)
-        // to avoid "Unique constraint failed" on booking_code
-        const existingBookingsInSlot = dayBookings.filter(b => b.slot === slot);
-        const usedNumbers = existingBookingsInSlot.map((b) => b.queueNo).sort((a, b) => a - b);
-        let queueNo = slotConfig.start;
+        // Calculate next queue number based on RELEVANT bookings (including deleted) to maintain sequence per type
+        // For USS, we ignore slots and calculate sequentially for the whole day
+        const existingBookingsForQueue = isUSS
+            ? relevantBookings // All USS bookings for the day
+            : relevantBookings.filter(b => b.slot === slot); // CL bookings for specific slot
+
+        const usedNumbers = existingBookingsForQueue.map((b) => b.queueNo).sort((a, b) => a - b);
+        let queueNo = slotConfig.start; // Default start
+
+        // If USS, start from 1 (or config start) and increment irrespective of slot gaps, 
+        // but actually the gap logic below handles it.
+
         for (const num of usedNumbers) {
             if (num === queueNo) {
                 queueNo++;
@@ -99,14 +119,14 @@ export class BookingsService {
         }
 
         // Generate initial code
-        let bookingCode = genBookingCode(new Date(date), queueNo);
+        let bookingCode = prefix + genBookingCode(new Date(date), queueNo);
 
         // EXTRA ROBUST: Ensure code is unique across ALL slots and even soft-deleted records for this day
         const allCodesToday = new Set(dayBookings.map(b => b.bookingCode));
         while (allCodesToday.has(bookingCode)) {
             console.warn(`[BookingsService] Code collision in memory for ${bookingCode}. Incrementing queueNo...`);
             queueNo++;
-            bookingCode = genBookingCode(new Date(date), queueNo);
+            bookingCode = prefix + genBookingCode(new Date(date), queueNo);
         }
 
         // ONE LAST DB CHECK: Just in case a race condition happened between findMany and now
@@ -125,14 +145,19 @@ export class BookingsService {
                 // Now we can proceed with the original bookingCode
             } else {
                 console.warn(`[BookingsService] Last-second DB collision detected with active record for ${bookingCode}. Finding next available...`);
-                // Find max queueNo for the day to jump ahead (standard behavior for active collisions)
+
+                // Find max queueNo for the day AND type to jump ahead
+                // We need to filter by prefix in search or just logic
+                // Since 'startsWith' works with prefix, we can use it.
+                const searchPrefix = prefix + codePrefix; // e.g., U240101 or 240101
+
                 const maxBooking = await this.prisma.booking.findFirst({
-                    where: { bookingCode: { startsWith: codePrefix }, deletedAt: null },
+                    where: { bookingCode: { startsWith: searchPrefix }, deletedAt: null },
                     orderBy: { queueNo: 'desc' },
                     select: { queueNo: true }
                 });
                 queueNo = (maxBooking?.queueNo || queueNo) + 1;
-                bookingCode = genBookingCode(new Date(date), queueNo);
+                bookingCode = prefix + genBookingCode(new Date(date), queueNo);
             }
         }
 
@@ -151,6 +176,7 @@ export class BookingsService {
                     truckType,
                     truckRegister,
                     rubberType,
+                    estimatedWeight: estimatedWeight ? parseFloat(estimatedWeight) : null,
                     recorder,
                 },
             });
@@ -317,6 +343,7 @@ export class BookingsService {
             truckType: data.truckType,
             truckRegister: data.truckRegister,
             rubberType: data.rubberType,
+            estimatedWeight: data.estimatedWeight ? parseFloat(data.estimatedWeight) : null,
             recorder: data.recorder,
             lotNo: data.lotNo,
             moisture: data.moisture !== undefined ? parseFloat(data.moisture) : undefined,

@@ -101,7 +101,14 @@ const handleViewAll = () => {
 const handleNotificationClick = async (notification: NotificationDto) => {
   await handleMarkAsRead(notification.id);
   if (notification.actionUrl) {
-    router.push(notification.actionUrl);
+    // Handle specific booking URL pattern check
+    if (notification.actionUrl.startsWith('/bookings/')) {
+      const parts = notification.actionUrl.split('/');
+      const codeOrId = parts[parts.length - 1];
+      router.push({ name: 'BookingQueue', query: { code: codeOrId } });
+    } else {
+      router.push(notification.actionUrl);
+    }
   } else {
     router.push('/my-notifications');
   }
@@ -174,7 +181,7 @@ onMounted(() => {
         unstyled: false, // Keep Sonner's base styling
         action: {
           label: 'View',
-          onClick: () => router.push('/my-notifications'),
+          onClick: () => handleNotificationClick(newNotification),
         },
         classNames: {
           toast: 'bg-white border-2 shadow-lg',

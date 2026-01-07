@@ -457,7 +457,13 @@
     "completed": "เสร็จสิ้น",
     "pending": "รอดำเนินการ",
     "deliveryCompleted": "จัดส่งเสร็จแล้ว",
-    "queue": "คิว"
+    "queue": "คิว",
+    "estimatedWeight": "น้ำหนักโดยประมาณ (กก.)",
+    "estimatedWeightTon": "น้ำหนักโดยประมาณ (ตัน)",
+    "estimatedWeightPlaceholder": "ระบุน้ำหนัก (กก.)",
+    "validation": {
+      "estimatedWeightRequired": "กรุณาระบุน้ำหนักโดยประมาณ"
+    }
   },
   "admin": {
     "roles": {

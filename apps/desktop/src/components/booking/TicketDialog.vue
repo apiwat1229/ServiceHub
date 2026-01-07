@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import html2canvas from 'html2canvas';
 import { Copy, Download } from 'lucide-vue-next';
 import QrcodeVue from 'qrcode.vue';
@@ -160,7 +161,48 @@ const handleCopyTicketImage = async () => {
   <Dialog :open="open" @update:open="$emit('update:open', $event)">
     <DialogContent class="max-w-md">
       <DialogHeader>
-        <DialogTitle>{{ t('ticketDialog.title') }}</DialogTitle>
+        <div class="flex items-center justify-between pr-8">
+          <DialogTitle>{{ t('ticketDialog.title') }}</DialogTitle>
+          <div class="flex gap-1" v-if="ticket">
+            <TooltipProvider :delayDuration="300">
+              <Tooltip>
+                <TooltipTrigger as-child>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    class="h-8 w-8 hover:bg-muted"
+                    @click="handleSaveTicketImage"
+                    tabindex="-1"
+                  >
+                    <Download class="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{{ t('ticketDialog.saveTicket') }}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider :delayDuration="300">
+              <Tooltip>
+                <TooltipTrigger as-child>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    class="h-8 w-8 hover:bg-muted"
+                    @click="handleCopyTicketImage"
+                    tabindex="-1"
+                  >
+                    <Copy class="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{{ t('ticketDialog.copyTicket') }}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        </div>
         <DialogDescription>{{ t('ticketDialog.description') }}</DialogDescription>
       </DialogHeader>
 
@@ -187,7 +229,9 @@ const handleCopyTicketImage = async () => {
                 @error="(e: any) => (e.target.style.display = 'none')"
               />
             </div>
-            <span class="text-lg font-bold">{{ t('ticketDialog.queueTicket') }}</span>
+            <span class="text-lg font-bold">{{
+              ticket.rubberType?.includes('USS') ? 'Queue USS' : 'Queue Cuplump'
+            }}</span>
           </div>
 
           <!-- Details -->
@@ -306,21 +350,6 @@ const handleCopyTicketImage = async () => {
               <span class="text-gray-500 text-sm">{{ t('ticketDialog.noCode') }}</span>
             </div>
           </div>
-        </div>
-
-        <!-- Actions -->
-        <div class="flex justify-center gap-2">
-          <Button
-            @click="handleSaveTicketImage"
-            class="gap-2 bg-green-600 hover:bg-green-700 text-white flex-1"
-          >
-            <Download class="h-4 w-4" />
-            {{ t('ticketDialog.saveTicket') }}
-          </Button>
-          <Button @click="handleCopyTicketImage" variant="outline" class="gap-2 flex-1">
-            <Copy class="h-4 w-4" />
-            {{ t('ticketDialog.copyTicket') }}
-          </Button>
         </div>
       </div>
     </DialogContent>

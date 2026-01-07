@@ -477,7 +477,13 @@
     "completed": "Completed",
     "pending": "Pending",
     "deliveryCompleted": "Delivery Completed",
-    "queue": "Queue"
+    "queue": "Queue",
+    "estimatedWeight": "Estimated Weight (Kg.)",
+    "estimatedWeightTon": "Estimated Weight (Ton)",
+    "estimatedWeightPlaceholder": "Enter weight in Kg.",
+    "validation": {
+      "estimatedWeightRequired": "Please enter Estimated Weight"
+    }
   },
   "admin": {
     "notifications": {

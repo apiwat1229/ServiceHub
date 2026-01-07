@@ -117,7 +117,7 @@ function thaiDateWithWeekday(dateField: Date): string {
         />
       </div>
       <span class="text-[10px] font-bold opacity-40 uppercase tracking-widest">{{
-        t('ticketDialog.queueTicket')
+        ticket.rubberType?.includes('USS') ? 'Queue USS' : 'Queue Cuplump'
       }}</span>
     </div>
 

@@ -12,6 +12,7 @@ import {
   Package,
   Plus,
   RefreshCw,
+  Scale,
   Trash2,
   Truck,
   User,
@@ -36,6 +37,13 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Card } from '@/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuthStore } from '@/stores/auth';
 import { useRoute, useRouter } from 'vue-router';
@@ -79,15 +87,19 @@ const SLOT_QUEUE_CONFIG: Record<string, { start: number; limit: number | null }>
 };
 
 // --- State ---
+// --- State ---
 const { t } = useI18n();
 const authStore = useAuthStore();
+const route = useRoute();
+const router = useRouter();
 const selectedDate = ref(fromDate(new Date(), getLocalTimeZone())) as Ref<DateValue>;
 const selectedSlot = ref<string>('08:00-09:00'); // Default slot
 const queues = ref<any[]>([]);
 const dailyQueues = ref<any[]>([]); // All bookings for the day
-const totalDailyQueues = ref(0);
 const loading = ref(false);
 const calendarPopoverOpen = ref(false); // Add popover state
+
+const queueMode = ref<'Cuplump' | 'USS'>('Cuplump'); // Booking Mode
 
 const sheetOpen = ref(false);
 const ticketDialogOpen = ref(false);
@@ -103,6 +115,36 @@ const selectedDateJS = computed(() => {
 });
 
 // --- Computeds ---
+
+// Filter queues based on Mode
+const filteredQueues = computed(() => {
+  // queues.value is already set correctly by fetchQueues based on mode
+  if (queueMode.value === 'USS') {
+    // Ensure sorted by queueNo for USS
+    return [...queues.value].sort((a, b) => a.queueNo - b.queueNo);
+  }
+  // For Cuplump, ensure we filter out any stray USS if API returns mixed (safety check)
+  return queues.value.filter((q) => {
+    const isUSS = q.rubberType && q.rubberType.toUpperCase().includes('USS');
+    return !isUSS;
+  });
+});
+
+const dailyFiltered = computed(() => {
+  return dailyQueues.value.filter((q) => {
+    const isUSS = q.rubberType && q.rubberType.toUpperCase().includes('USS');
+    return queueMode.value === 'USS' ? isUSS : !isUSS;
+  });
+});
+
+const totalDailyQueues = computed(() => dailyFiltered.value.length);
+
+const totalDailyWeight = computed(() => {
+  return dailyFiltered.value.reduce((sum, q) => {
+    return sum + (Number(q.estimatedWeight) || 0);
+  }, 0);
+});
+
 const currentSlotConfig = computed(() => {
   const dayOfWeek = selectedDateJS.value.getDay();
   // Special case: Saturday 10:00-11:00
@@ -113,14 +155,18 @@ const currentSlotConfig = computed(() => {
 });
 
 const isSlotFull = computed(() => {
+  // USS mode has no slot limits
+  if (queueMode.value === 'USS') return false;
+
   if (currentSlotConfig.value.limit === null) return false;
-  return queues.value.length >= currentSlotConfig.value.limit;
+  // Use filtered queues for limit check (per warehouse/mode)
+  return filteredQueues.value.length >= currentSlotConfig.value.limit;
 });
 
 const nextQueueNo = computed(() => {
-  if (isSlotFull.value) return null;
+  if (isSlotFull.value) return null; // isSlotFull now handles USS mode correctly
 
-  const used = queues.value
+  const used = filteredQueues.value
     .map((q) => Number(q.queueNo))
     .filter((n) => !Number.isNaN(n))
     .sort((a, b) => a - b);
@@ -147,7 +193,14 @@ const slotStats = computed(() => {
   const stats: Record<string, { booked: number; limit: number | null }> = {};
 
   TIME_SLOTS.forEach((slot) => {
-    const booked = dailyQueues.value.filter((q) => q.slot === slot.value).length;
+    // Filter dailyQueues by slot AND mode
+    const booked = dailyQueues.value.filter((q) => {
+      const matchSlot = q.slot === slot.value;
+      const isUSS = q.rubberType && q.rubberType.toUpperCase().includes('USS');
+      const matchMode = queueMode.value === 'USS' ? isUSS : !isUSS;
+      return matchSlot && matchMode;
+    }).length;
+
     let limit = slot.limit;
 
     // Special case Saturday
@@ -175,29 +228,39 @@ const availableSlots = computed(() => {
 
 // --- Methods ---
 async function fetchQueues() {
-  if (!selectedDate.value || !selectedSlot.value) return;
+  if (!selectedDate.value) return;
+
+  // For USS, we don't need a slot. For Cuplump, we need a slot.
+  if (queueMode.value === 'Cuplump' && !selectedSlot.value) return;
 
   try {
     loading.value = true;
     const dateParam = format(selectedDateJS.value, 'yyyy-MM-dd');
 
-    // Fetch slot queues
-    const resp = await bookingsApi.getAll({
-      date: dateParam,
-      slot: selectedSlot.value,
-    });
-    queues.value = resp || [];
-
-    // Fetch daily total and all slot info
+    // 1. Fetch Daily Total (needed for stats and USS mode)
     const dailyResp = await bookingsApi.getAll({ date: dateParam });
     dailyQueues.value = dailyResp || [];
-    totalDailyQueues.value = dailyResp?.length || 0;
+
+    // 2. Set 'queues' based on mode
+    if (queueMode.value === 'USS') {
+      // For USS, show ALL daily USS bookings
+      queues.value = dailyQueues.value.filter(
+        (q) => q.rubberType && q.rubberType.toUpperCase().includes('USS')
+      );
+    } else {
+      // For Cuplump, fetch specific slot bookings (or filter from daily if optimized, but sticking to API for now)
+      // Actually, existing logic fetched slot specific. Let's keep it consistent.
+      const resp = await bookingsApi.getAll({
+        date: dateParam,
+        slot: selectedSlot.value,
+      });
+      queues.value = resp || [];
+    }
   } catch (err) {
     console.error('Fetch queues error:', err);
     toast.error(t('bookingQueue.toast.loadFailed'));
     queues.value = [];
     dailyQueues.value = [];
-    totalDailyQueues.value = 0;
   } finally {
     loading.value = false;
   }
@@ -206,10 +269,16 @@ async function fetchQueues() {
 // ... handleCreateBooking and others use computeds, so no change needed mostly
 
 function handleCreateBooking() {
-  if (isSlotFull.value) {
+  if (isSlotFull.value && queueMode.value !== 'USS') {
     toast.error(t('bookingQueue.slotFull'));
     return;
   }
+
+  // For USS, ensure we have a slot value (even if dummy) for the form
+  if (queueMode.value === 'USS') {
+    selectedSlot.value = '08:00-17:00'; // Default daily slot
+  }
+
   editingBooking.value = null;
   sheetOpen.value = true;
 }
@@ -252,8 +321,8 @@ function handleShowTicket(booking: any) {
   ticketDialogOpen.value = true;
 }
 
-// Watch for date/slot changes
-watch([selectedDate, selectedSlot], () => {
+// Watch for date/slot/mode changes
+watch([selectedDate, selectedSlot, queueMode], () => {
   fetchQueues();
   calendarPopoverOpen.value = false; // Close calendar on selection
 });
@@ -273,7 +342,6 @@ const STORAGE_KEY = 'booking_queue_slot_pref';
 
 onMounted(async () => {
   // 1. Check for 'code' query param implies Deep Link
-  const route = useRoute();
   const code = route.query.code as string;
 
   if (code) {
@@ -315,7 +383,7 @@ onMounted(async () => {
   // Check Read Permission
   if (!authStore.hasPermission('bookings:read')) {
     toast.error("You don't have permission to view Booking Queue");
-    useRouter().push('/'); // Assuming router is available or import it
+    router.push('/'); // Assuming router is available or import it
     return;
   }
 
@@ -355,6 +423,16 @@ watch(selectedSlot, (newSlot) => {
       </div>
 
       <div class="flex items-center space-x-2">
+        <Select v-model="queueMode">
+          <SelectTrigger class="w-[150px] h-9">
+            <SelectValue placeholder="Select Queue" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="Cuplump">Queue Cuplump</SelectItem>
+            <SelectItem value="USS">Queue USS</SelectItem>
+          </SelectContent>
+        </Select>
+
         <Button variant="outline" size="sm" @click="fetchQueues">
           <RefreshCw class="mr-2 h-4 w-4" />
           {{ t('bookingQueue.refresh') }}
@@ -418,11 +496,19 @@ watch(selectedSlot, (newSlot) => {
                   v-for="slot in availableSlots"
                   :key="slot.value"
                   :value="slot.value"
-                  class="flex-1 flex flex-col gap-0.5 py-1.5 min-w-[80px] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
+                  @click="queueMode !== 'USS' ? (selectedSlot = slot.value) : null"
+                  class="flex-1 flex flex-col gap-0.5 py-1.5 min-w-[80px] transition-all"
                   :class="[
+                    selectedSlot === slot.value
+                      ? 'bg-primary text-primary-foreground shadow-md scale-105 font-bold ring-2 ring-primary/20'
+                      : 'bg-card hover:border-primary/50 text-card-foreground hover:shadow-sm',
+                    queueMode === 'USS'
+                      ? 'opacity-40 pointer-events-none grayscale cursor-default'
+                      : '',
                     slotStats[slot.value] &&
                     slotStats[slot.value].limit !== null &&
-                    slotStats[slot.value].booked >= (slotStats[slot.value].limit || 0)
+                    slotStats[slot.value].booked >= (slotStats[slot.value].limit || 0) &&
+                    queueMode !== 'USS'
                       ? 'bg-red-500 text-white hover:bg-red-600 data-[state=active]:bg-red-700 data-[state=active]:text-white'
                       : '',
                   ]"
@@ -432,6 +518,7 @@ watch(selectedSlot, (newSlot) => {
                     <template v-if="slotStats[slot.value]">
                       <span
                         v-if="
+                          queueMode !== 'USS' &&
                           slotStats[slot.value] &&
                           slotStats[slot.value].limit !== null &&
                           slotStats[slot.value].booked >= (slotStats[slot.value].limit || 0)
@@ -464,6 +551,25 @@ watch(selectedSlot, (newSlot) => {
             {{ t('bookingQueue.totalToday') }} :
             <span class="font-bold text-foreground">{{ totalDailyQueues }}</span>
           </p>
+          <p class="text-sm text-muted-foreground mt-0.5" v-if="queueMode !== 'Cuplump'">
+            {{ t('booking.estimatedWeightTon') }} :
+            <span
+              class="font-bold"
+              :class="{
+                'text-orange-500': totalDailyWeight >= 100000 && totalDailyWeight < 120000,
+                'text-red-500': totalDailyWeight >= 120000,
+                'text-foreground': totalDailyWeight < 100000,
+              }"
+            >
+              {{
+                new Intl.NumberFormat('en-US', {
+                  minimumFractionDigits: 1,
+                  maximumFractionDigits: 1,
+                }).format(totalDailyWeight / 1000)
+              }}
+            </span>
+            Ton
+          </p>
         </div>
       </div>
     </Card>
@@ -488,9 +594,9 @@ watch(selectedSlot, (newSlot) => {
 
     <div v-else class="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
       <Card
-        v-for="queue in queues"
+        v-for="queue in filteredQueues"
         :key="queue.id"
-        class="group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border-0 bg-card/60 backdrop-blur-sm shadow-sm flex flex-col"
+        class="group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border border-slate-300 bg-card/60 backdrop-blur-sm shadow-sm flex flex-col"
       >
         <!-- Top Status Bar (Color by Day) -->
         <div
@@ -582,6 +688,12 @@ watch(selectedSlot, (newSlot) => {
                   }}
                 </span>
               </div>
+              <div v-if="queue.estimatedWeight !== null" class="flex items-center gap-2">
+                <Scale class="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                <span class="text-xs font-medium text-foreground truncate">
+                  {{ new Intl.NumberFormat('en-US').format(queue.estimatedWeight) }} Kg
+                </span>
+              </div>
             </div>
           </div>
 
@@ -616,6 +728,7 @@ watch(selectedSlot, (newSlot) => {
       :selectedSlot="selectedSlot"
       :nextQueueNo="nextQueueNo || 1"
       :editingBooking="editingBooking"
+      :queueMode="queueMode"
       @success="handleBookingSuccess"
     />
 

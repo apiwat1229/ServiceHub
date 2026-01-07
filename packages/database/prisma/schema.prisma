@@ -257,6 +257,7 @@ model Booking {
   // Rubber Information
   rubberType String @map("rubber_type")
   lotNo      String? @map("lot_no")
+  estimatedWeight Float? @map("estimated_weight")
 
   // Lab Results (Main)
   moisture     Float? @map("moisture")

@@ -287,12 +287,14 @@ const handlePostComment = async () => {
 
 <template>
   <Dialog v-model:open="isOpen">
-    <DialogContent class="sm:max-w-[800px] p-0 gap-0 overflow-hidden bg-white shadow-xl border">
+    <DialogContent
+      class="sm:max-w-[850px] w-full max-h-[90vh] p-0 gap-0 overflow-hidden bg-white shadow-xl border flex flex-col"
+    >
       <DialogDescription class="sr-only">
         Details for ticket {{ localTicket?.ticketNo }}
       </DialogDescription>
       <!-- Header Area -->
-      <div class="p-6 pr-14 border-b bg-muted/10">
+      <div class="p-6 pr-14 border-b bg-muted/10 shrink-0">
         <div class="flex items-start justify-between gap-4">
           <div class="space-y-1.5 flex-1">
             <div class="flex items-center gap-2 text-sm text-muted-foreground">
@@ -350,7 +352,7 @@ const handlePostComment = async () => {
       </div>
 
       <!-- Approver Action Banner -->
-      <div v-if="isApprover" class="px-6 mt-6 mb-2">
+      <div v-if="isApprover" class="px-6 mt-6 mb-2 shrink-0">
         <div
           class="bg-purple-50 border border-purple-100 rounded-xl p-4 shadow-sm flex items-center justify-between gap-4"
         >
@@ -385,7 +387,7 @@ const handlePostComment = async () => {
         </div>
       </div>
 
-      <div class="flex flex-col md:flex-row h-[600px]">
+      <div class="flex flex-col md:flex-row flex-1 min-h-0 overflow-hidden h-[600px]">
         <!-- Main Content (Scrollable) -->
         <div class="flex-1 p-6 overflow-y-auto border-r border-border/50">
           <div class="space-y-8">
