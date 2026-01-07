@@ -8,10 +8,11 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { bookingsApi } from '@/services/bookings';
+import { rubberTypesApi, type RubberType } from '@/services/rubberTypes';
 import { getLocalTimeZone, today } from '@internationalized/date';
 import type { ColumnDef } from '@tanstack/vue-table';
 import { format } from 'date-fns';
-import { Calendar as CalendarIcon, Edit, Search } from 'lucide-vue-next';
+import { Calendar as CalendarIcon, Droplets, Edit, Search } from 'lucide-vue-next';
 import { VisuallyHidden } from 'radix-vue';
 import { computed, h, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -23,6 +24,7 @@ const { t } = useI18n();
 
 // State
 const bookings = ref<any[]>([]);
+const rubberTypes = ref<RubberType[]>([]);
 const isLoading = ref(false);
 const searchQuery = ref('');
 const activeTab = ref('all'); // all, complete, incomplete
@@ -60,10 +62,16 @@ const handleRowClick = (row: any) => {
 const fetchBookings = async () => {
   isLoading.value = true;
   try {
-    const response = await bookingsApi.getAll({ date: selectedDate.value });
-    bookings.value = Array.isArray(response) ? response : (response as any).data || [];
+    const [bookingsResponse, typesResponse] = await Promise.all([
+      bookingsApi.getAll({ date: selectedDate.value }),
+      rubberTypesApi.getAll(),
+    ]);
+    bookings.value = Array.isArray(bookingsResponse)
+      ? bookingsResponse
+      : (bookingsResponse as any).data || [];
+    rubberTypes.value = typesResponse;
   } catch (error) {
-    console.error('Failed to fetch bookings:', error);
+    console.error('Failed to fetch data:', error);
     toast.error(t('truckScale.toast.loadBookingsFailed'));
     bookings.value = [];
   } finally {
@@ -71,55 +79,59 @@ const fetchBookings = async () => {
   }
 };
 
+// Helper to get Rubber Type Name
+const getRubberTypeName = (code: string) => {
+  const type = rubberTypes.value.find((t) => t.code === code);
+  return type ? type.name : code;
+};
+
+// Helper to check if Rubber Type is Cuplump
+const isCuplumpType = (code: string) => {
+  if (!code) return false;
+  const type = rubberTypes.value.find((t) => t.code === code);
+  return type ? type.category === 'Cuplump' : false;
+};
+
 // Processed Data (Split logic)
 const processedBookings = computed(() => {
   const result: any[] = [];
 
   bookings.value.forEach((b) => {
-    // Check if this booking should be in the list? (Maybe filter by service type if API doesn't?)
-    // For now assume all bookings.
-
     const isTrailer = ['10 ล้อ พ่วง', '10 ล้อ (พ่วง)'].includes(b.truckType);
 
-    // 1. Main Truck
-    // If weights were combined in TruckScale, weightIn includes both, and trailerWeightIn is 0.
-    // So we don't need complex matching here, just check if trailerWeightIn exists.
-
-    result.push({
-      ...b,
-      id: b.id + '-main',
-      originalId: b.id,
-      isTrailerPart: false,
-      partLabel: t('truckScale.mainTruck') || 'Main Truck',
-      // Display values
-      displayRubberType: b.rubberType,
-      displayRubberSource: b.rubberSource,
-      displayWeightIn: b.weightIn,
-      displayWeightOut: b.weightOut,
-      // Stats (Mock or real if available)
-      moisture: b.moisture || '-',
-      drcEst: b.drcEst || '-',
-      drcRequested: b.drcRequested || '-',
-      drcActual: b.drcActual || '-',
-      cpAvg: b.cpAvg || '-',
-      lotNo: b.lotNo || '-',
-    });
+    // Filter Main Truck by Rubber Type
+    if (isCuplumpType(b.rubberType)) {
+      result.push({
+        ...b,
+        id: b.id + '-main',
+        originalId: b.id,
+        isTrailerPart: false,
+        partLabel: t('truckScale.mainTruck') || 'Main Truck',
+        displayRubberType: getRubberTypeName(b.rubberType),
+        displayRubberSource: b.rubberSource,
+        displayWeightIn: b.weightIn,
+        displayWeightOut: b.weightOut,
+        moisture: b.moisture || '-',
+        drcEst: b.drcEst || '-',
+        drcRequested: b.drcRequested || '-',
+        drcActual: b.drcActual || '-',
+        cpAvg: b.cpAvg || '-',
+        lotNo: b.lotNo || '-',
+      });
+    }
 
     // 2. Trailer Part
-    // Only add if there is a separate trailer weight
-    if (isTrailer && b.trailerWeightIn > 0) {
+    if (isTrailer && b.trailerWeightIn > 0 && isCuplumpType(b.trailerRubberType)) {
       result.push({
         ...b,
         id: b.id + '-trailer',
         originalId: b.id,
         isTrailerPart: true,
         partLabel: t('truckScale.trailer') || 'Trailer',
-        // Display values (Trailer specific)
-        displayRubberType: b.trailerRubberType || '-',
+        displayRubberType: getRubberTypeName(b.trailerRubberType),
         displayRubberSource: b.trailerRubberSource || '-',
         displayWeightIn: b.trailerWeightIn || 0,
-        displayWeightOut: b.trailerWeightOut || 0, // Assuming simple split or 0
-        // Stats
+        displayWeightOut: b.trailerWeightOut || 0,
         moisture: b.trailerMoisture || '-',
         drcEst: b.trailerDrcEst || '-',
         cpAvg: b.trailerCpAvg || '-',
@@ -128,18 +140,14 @@ const processedBookings = computed(() => {
     }
   });
 
-  // Filter by Tab and Search
   let data = result;
 
-  // Tab Filter
   if (activeTab.value === 'complete') {
-    // Logic: Has Weight Out? Or Lab Data?
     data = data.filter((item) => item.displayWeightOut > 0);
   } else if (activeTab.value === 'incomplete') {
     data = data.filter((item) => !item.displayWeightOut);
   }
 
-  // Search Filter
   if (searchQuery.value) {
     const q = searchQuery.value.toLowerCase();
     data = data.filter(
@@ -153,23 +161,19 @@ const processedBookings = computed(() => {
   return data;
 });
 
-// Stats for Header
 const stats = computed(() => {
   const total = processedBookings.value.length;
   const complete = processedBookings.value.filter((i) => i.displayWeightOut > 0).length;
   const incomplete = total - complete;
-
-  // Weight Sums
   const grossWeight = processedBookings.value.reduce((sum, i) => sum + (i.displayWeightIn || 0), 0);
   const netWeight = processedBookings.value.reduce((sum, i) => {
     const net = (i.displayWeightIn || 0) - (i.displayWeightOut || 0);
-    return sum + (net > 0 ? net : 0); // Only positive nets
+    return sum + (net > 0 ? net : 0);
   }, 0);
 
   return { total, complete, incomplete, grossWeight, netWeight };
 });
 
-// Columns
 const columns: ColumnDef<any>[] = [
   {
     accessorKey: 'lotNo',
@@ -215,7 +219,6 @@ const columns: ColumnDef<any>[] = [
     cell: ({ row }) =>
       h('div', { class: 'flex flex-col' }, [
         h('span', { class: 'font-medium' }, row.original.displayRubberType || '-'),
-        // Mock Location if needed
         h(
           'span',
           { class: 'text-xs text-muted-foreground' },
@@ -270,10 +273,8 @@ const columns: ColumnDef<any>[] = [
   },
   {
     accessorKey: 'netWeight',
-    header: () => t('cuplump.netWeight'), // This would normally be calculated after deduction
+    header: () => t('cuplump.netWeight'),
     cell: ({ row }) => {
-      // Mock calculation: Net = Gross - Tare (WeightOut).
-      // If WeightOut is 0, Net is 0 or '-'? Dashboard image shows lower net than gross.
       const net = (row.original.displayWeightIn || 0) - (row.original.displayWeightOut || 0);
       return h(
         'div',
@@ -284,18 +285,23 @@ const columns: ColumnDef<any>[] = [
   },
   {
     id: 'actions',
+    header: () => h('div', { class: 'text-right' }, t('common.actions')),
     cell: ({ row }) => {
       return h(
-        Button,
-        {
-          variant: 'ghost',
-          size: 'icon',
-          onClick: (e: any) => {
-            e.stopPropagation(); // Prevent duplicate trigger if row click exists
-            handleRowClick(row.original);
+        'div',
+        { class: 'text-right' },
+        h(
+          Button,
+          {
+            variant: 'ghost',
+            size: 'icon',
+            onClick: (e: any) => {
+              e.stopPropagation();
+              handleRowClick(row.original);
+            },
           },
-        },
-        () => h(Edit, { class: 'w-4 h-4 text-muted-foreground' })
+          () => h(Edit, { class: 'w-4 h-4 text-muted-foreground' })
+        )
       );
     },
   },
@@ -310,20 +316,65 @@ onMounted(() => {
   <div class="h-full flex flex-col max-w-[1600px] mx-auto p-6 space-y-6">
     <!-- Header Controls -->
     <Card class="border-border/50 shadow-sm bg-card/50 backdrop-blur-sm">
-      <CardContent class="p-4 flex flex-col lg:flex-row items-center justify-between gap-4">
-        <!-- Date & Search -->
-        <div class="flex items-center gap-4 w-full lg:w-auto">
-          <div class="flex flex-col gap-1.5">
-            <span class="text-xs font-medium text-muted-foreground">{{
-              t('truckScale.date')
-            }}</span>
+      <CardContent
+        class="p-4 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6"
+      >
+        <!-- Title Section -->
+        <div class="flex items-center gap-4 min-w-fit">
+          <div class="p-3 bg-primary/10 rounded-xl text-primary flex items-center justify-center">
+            <Droplets class="h-8 w-8" />
+          </div>
+          <div>
+            <h1 class="text-2xl font-bold tracking-tight text-foreground">
+              {{ t('services.cuplump.name') }}
+            </h1>
+            <p class="text-sm text-muted-foreground">
+              {{ t('services.cuplump.description') }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Right Side Controls -->
+        <div class="flex flex-col lg:flex-row items-center gap-6 w-full xl:w-auto justify-end">
+          <!-- Date & Search -->
+          <div class="flex items-center gap-2">
+            <Popover>
+              <PopoverTrigger as-child>
+                <Button
+                  variant="outline"
+                  class="w-9 px-0 border-input/50 h-9 bg-background"
+                  :class="{
+                    'text-primary border-primary/50 bg-primary/5': searchQuery,
+                    'text-muted-foreground': !searchQuery,
+                  }"
+                >
+                  <Search class="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent class="w-[300px] p-0" align="start">
+                <div class="p-2">
+                  <div class="relative">
+                    <Search
+                      class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"
+                    />
+                    <Input
+                      v-model="searchQuery"
+                      placeholder="Search..."
+                      class="pl-9 border-none focus-visible:ring-0"
+                      autoFocus
+                    />
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+
             <Popover v-model:open="isDatePopoverOpen">
               <PopoverTrigger as-child>
                 <Button
                   variant="outline"
-                  class="w-[180px] justify-start text-left font-normal border-input/50"
+                  class="w-[150px] justify-start text-left font-normal border-input/50 h-9"
                 >
-                  <CalendarIcon class="mr-2 h-4 w-4" />
+                  <CalendarIcon class="mr-2 h-4 w-4 text-muted-foreground" />
                   {{
                     selectedDate
                       ? format(new Date(selectedDate), 'dd-MMM-yyyy')
@@ -342,55 +393,42 @@ onMounted(() => {
             </Popover>
           </div>
 
-          <div class="flex flex-col gap-1.5 flex-1 lg:w-[300px]">
-            <span class="text-xs font-medium text-muted-foreground">{{ t('common.search') }}</span>
-            <div class="relative">
-              <Search
-                class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"
-              />
-              <Input
-                v-model="searchQuery"
-                :placeholder="t('truckScale.searchPlaceholder')"
-                class="pl-9 border-input/50"
-              />
-            </div>
-          </div>
-        </div>
-
-        <!-- Filter Tabs -->
-        <div class="flex items-center gap-2 bg-muted/50 p-1 rounded-lg">
-          <Button
-            size="sm"
-            :variant="activeTab === 'all' ? 'secondary' : 'ghost'"
-            @click="activeTab = 'all'"
-            class="gap-2"
-          >
-            {{ t('cuplump.all') }} <Badge variant="secondary" class="ml-1">{{ stats.total }}</Badge>
-          </Button>
-          <Button
-            size="sm"
-            :variant="activeTab === 'complete' ? 'secondary' : 'ghost'"
-            @click="activeTab = 'complete'"
-            class="gap-2 text-green-600"
-          >
-            {{ t('cuplump.complete') }}
-            <Badge class="ml-1 bg-green-100 text-green-700 hover:bg-green-100">{{
-              stats.complete
-            }}</Badge>
-          </Button>
-          <Button
-            size="sm"
-            :variant="activeTab === 'incomplete' ? 'secondary' : 'ghost'"
-            @click="activeTab = 'incomplete'"
-            class="gap-2 text-orange-600"
-            :class="{ 'bg-orange-100/50 hover:bg-orange-100/70': activeTab === 'incomplete' }"
-          >
-            {{ t('cuplump.incomplete') }}
-            <Badge
-              class="ml-1 bg-orange-100 text-orange-700 hover:bg-orange-100 border-orange-200"
-              >{{ stats.incomplete }}</Badge
+          <!-- Filter Tabs -->
+          <div class="flex items-center gap-2 bg-muted/50 p-1 rounded-lg self-end lg:self-center">
+            <Button
+              size="sm"
+              :variant="activeTab === 'all' ? 'secondary' : 'ghost'"
+              @click="activeTab = 'all'"
+              class="gap-2 h-8"
             >
-          </Button>
+              {{ t('cuplump.all') }}
+              <Badge variant="secondary" class="ml-1">{{ stats.total }}</Badge>
+            </Button>
+            <Button
+              size="sm"
+              :variant="activeTab === 'complete' ? 'secondary' : 'ghost'"
+              @click="activeTab = 'complete'"
+              class="gap-2 text-green-600 h-8"
+            >
+              {{ t('cuplump.complete') }}
+              <Badge class="ml-1 bg-green-100 text-green-700 hover:bg-green-100">{{
+                stats.complete
+              }}</Badge>
+            </Button>
+            <Button
+              size="sm"
+              :variant="activeTab === 'incomplete' ? 'secondary' : 'ghost'"
+              @click="activeTab = 'incomplete'"
+              class="gap-2 text-orange-600 h-8"
+              :class="{ 'bg-orange-100/50 hover:bg-orange-100/70': activeTab === 'incomplete' }"
+            >
+              {{ t('cuplump.incomplete') }}
+              <Badge
+                class="ml-1 bg-orange-100 text-orange-700 hover:bg-orange-100 border-orange-200"
+                >{{ stats.incomplete }}</Badge
+              >
+            </Button>
+          </div>
         </div>
 
         <!-- Summary Stats (Right Side) -->

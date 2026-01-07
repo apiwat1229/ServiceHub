@@ -88,7 +88,7 @@
     },
     "cuplump": {
       "name": "Cuplump",
-      "description": "Cuplump Management and tracking system."
+      "description": "Cuplump Management System"
     },
     "booking": {
       "name": "Booking Queue",
@@ -97,6 +97,10 @@
     "truck": {
       "name": "Truck Scale",
       "description": "Weighing System integration for inbound/outbound logistics."
+    },
+    "warehouse": {
+      "name": "Warehouse Management",
+      "description": "Manage inventory, stock movements, and warehouse operations"
     },
     "maintenance": {
       "name": "Maintenance",
@@ -409,8 +413,8 @@
       "description": "Manage contract expirations and renewal tracking."
     },
     "uss": {
-      "name": "Rubber Sheet",
-      "description": "Rubber Sheet receiving operations."
+      "name": "USS",
+      "description": "USS receiving operations."
     },
     "shipping": {
       "name": "Shipping",

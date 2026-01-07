@@ -274,7 +274,10 @@ export class BookingsService {
         const where: any = {};
 
         if (code) {
-            where.bookingCode = code;
+            where.OR = [
+                { bookingCode: code },
+                { bookingCode: { startsWith: `CANCELLED-${code}-` } }
+            ];
         } else {
             if (date) where.date = new Date(date);
             if (slot) where.slot = slot;
@@ -502,7 +505,7 @@ export class BookingsService {
                     userId: userId,
                     title: payload.title,
                     message: payload.message,
-                    type: 'REQUEST', // Use REQUEST type regarding approval
+                    type: actionType === 'APPROVAL_REQUEST' ? 'REQUEST' : 'INFO',
                     sourceApp,
                     actionType,
                     actionUrl: payload.actionUrl

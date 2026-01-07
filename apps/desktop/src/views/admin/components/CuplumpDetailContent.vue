@@ -243,86 +243,81 @@ onMounted(() => {
 <template>
   <div class="h-full flex flex-col space-y-3">
     <!-- Header (Optional simpler header for Modal) -->
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-xl font-bold">{{ t('cuplump.mainInfo') }} ({{ partLabel }})</h1>
-        <div class="text-muted-foreground text-sm" v-if="booking">
-          {{ booking.bookingCode }} | {{ booking.lotNo || 'No Lot' }} |
-          {{ format(new Date(booking.date), 'dd-MMM-yyyy') }}
+    <!-- Header -->
+    <div class="flex items-start justify-between pb-4 border-b">
+      <div v-if="booking">
+        <h1 class="text-2xl font-bold tracking-tight">
+          {{ booking.supplierCode }} : {{ booking.supplierName }}
+        </h1>
+        <div class="text-muted-foreground text-sm mt-1 flex items-center gap-2">
+          <span>{{ booking.bookingCode }}</span>
+          <span class="text-border">|</span>
+          <span>{{ format(new Date(booking.date), 'dd-MMM-yyyy') }}</span>
+          <span class="text-border">|</span>
+          <span class="font-medium text-primary">{{ partLabel }}</span>
         </div>
       </div>
-      <!-- Close Button handled by Dialog usually, but can add explicit one or actions -->
+      <div v-else>
+        <h1 class="text-xl font-bold">{{ t('cuplump.mainInfo') }}</h1>
+      </div>
+
+      <!-- Lot No (Right, Editable) -->
+      <div class="flex flex-col items-end" v-if="booking">
+        <span class="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">{{
+          t('cuplump.lotNo')
+        }}</span>
+        <div class="flex items-center gap-2 h-8" :class="{ 'mb-4': isEditingLotNo && lotNoError }">
+          <template v-if="isEditingLotNo">
+            <div class="relative">
+              <Input
+                v-model="booking.lotNo"
+                class="h-8 w-[140px] text-right font-medium px-2 py-1"
+                :class="{ 'border-red-500 focus-visible:ring-red-500': lotNoError }"
+                placeholder="Lot No."
+                @keydown.enter="handleUpdateLotNo"
+                @input="validateLotInput"
+                autoFocus
+              />
+              <span
+                v-if="lotNoError"
+                class="absolute top-9 right-0 text-[10px] text-red-500 whitespace-nowrap bg-red-50 px-1 rounded border border-red-100"
+              >
+                {{ lotNoError }}
+              </span>
+            </div>
+            <Button
+              size="icon"
+              variant="ghost"
+              class="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50 disabled:opacity-50"
+              :disabled="!!lotNoError"
+              @click="handleUpdateLotNo"
+            >
+              <Save class="w-4 h-4" />
+            </Button>
+          </template>
+          <template v-else>
+            <span class="text-xl font-bold tabular-nums tracking-tight">{{
+              booking.lotNo || '-'
+            }}</span>
+            <Button
+              size="icon"
+              variant="ghost"
+              class="h-8 w-8 text-muted-foreground hover:text-primary ml-1"
+              @click="isEditingLotNo = true"
+            >
+              <Pencil class="w-4 h-4" />
+            </Button>
+          </template>
+        </div>
+      </div>
     </div>
 
     <div v-if="isLoading" class="flex justify-center p-8">Loading...</div>
 
-    <div v-else class="space-y-3 overflow-y-auto max-h-[80vh] pr-2">
+    <div v-else class="space-y-4 overflow-y-auto max-h-[80vh] pr-2 pt-2">
       <!-- Main Info Cards -->
-      <Card v-if="booking" class="bg-card">
-        <CardContent class="p-3 grid gap-3">
-          <!-- Top Row (Single Line) -->
-          <div class="flex items-center justify-between gap-4">
-            <!-- Supplier (Left) -->
-            <div class="flex flex-col">
-              <span class="text-[10px] text-muted-foreground uppercase tracking-wider">{{
-                t('cuplump.supplier')
-              }}</span>
-              <span class="font-medium text-lg leading-none"
-                >{{ booking.supplierCode }} : {{ booking.supplierName }}</span
-              >
-            </div>
-
-            <!-- Lot No (Right, Editable with Toggle) -->
-            <div class="flex flex-col items-end relative">
-              <span class="text-[10px] text-muted-foreground uppercase tracking-wider">{{
-                t('cuplump.lotNo')
-              }}</span>
-              <div
-                class="flex items-center gap-2 h-7"
-                :class="{ 'mb-4': isEditingLotNo && lotNoError }"
-              >
-                <template v-if="isEditingLotNo">
-                  <div class="relative">
-                    <Input
-                      v-model="booking.lotNo"
-                      class="h-7 w-[140px] text-right font-medium px-2 py-1 transition-colors"
-                      :class="{ 'border-red-500 focus-visible:ring-red-500': lotNoError }"
-                      placeholder="Lot No."
-                      @keydown.enter="handleUpdateLotNo"
-                      @input="validateLotInput"
-                    />
-                    <span
-                      v-if="lotNoError"
-                      class="absolute top-8 right-0 text-[10px] text-red-500 whitespace-nowrap bg-red-50 px-1 rounded border border-red-100"
-                    >
-                      {{ lotNoError }}
-                    </span>
-                  </div>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    class="h-7 w-7 text-green-600 hover:text-green-700 hover:bg-green-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    :disabled="!!lotNoError"
-                    @click="handleUpdateLotNo"
-                  >
-                    <Save class="w-4 h-4" />
-                  </Button>
-                </template>
-                <template v-else>
-                  <span class="font-medium text-lg leading-none">{{ booking.lotNo || '-' }}</span>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    class="h-7 w-7 text-muted-foreground hover:text-primary"
-                    @click="isEditingLotNo = true"
-                  >
-                    <Pencil class="w-3.5 h-3.5" />
-                  </Button>
-                </template>
-              </div>
-            </div>
-          </div>
-
+      <Card v-if="booking" class="bg-card border-none shadow-none">
+        <CardContent class="p-0 grid gap-3">
           <!-- Stats Row -->
           <!-- Stats & Weight Row -->
           <!-- Stats Row -->

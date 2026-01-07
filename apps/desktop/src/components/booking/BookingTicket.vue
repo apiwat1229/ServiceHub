@@ -57,6 +57,10 @@ const formattedDate = computed(() => {
   return thaiDateWithWeekday(date);
 });
 
+const isCancelled = computed(() => {
+  return props.ticket?.status === 'CANCELLED' || !!props.ticket?.deletedAt;
+});
+
 // --- Helpers ---
 function thaiDateWithWeekday(dateField: Date): string {
   const weekdays = [
@@ -104,120 +108,144 @@ function thaiDateWithWeekday(dateField: Date): string {
       fontFamily: '\'Sarabun\', \'Kanit\', sans-serif',
       minHeight: '310px',
     }"
-    class="shadow-md w-full max-w-[250px] relative transition-all duration-300 hover:scale-[1.2] hover:z-50 hover:shadow-2xl cursor-default flex flex-col"
+    class="shadow-md w-full max-w-[250px] relative transition-all duration-300 hover:scale-[1.2] hover:z-50 hover:shadow-2xl cursor-default flex flex-col overflow-hidden"
   >
-    <!-- Header -->
-    <div class="flex items-center justify-between mb-4">
-      <div class="flex items-center gap-2">
-        <img
-          src="/logo-dark.png"
-          alt="YTRC Logo"
-          class="h-5 w-auto"
-          @error="(e: any) => (e.target.style.display = 'none')"
-        />
-      </div>
-      <span class="text-[10px] font-bold opacity-40 uppercase tracking-widest">{{
-        ticket.rubberType?.includes('USS') ? 'Queue USS' : 'Queue Cuplump'
-      }}</span>
-    </div>
-
-    <!-- Details -->
-    <div class="space-y-1.5">
-      <div class="flex justify-between text-[12px] leading-tight">
-        <span class="font-medium text-muted-foreground/70">{{ t('ticketDialog.code') }}:</span>
-        <span class="text-right flex-1 ml-2 font-bold">{{ ticket.supplierCode || '-' }}</span>
-      </div>
-      <div class="flex justify-between text-[12px] leading-tight">
-        <span class="font-medium text-muted-foreground/70">{{ t('ticketDialog.name') }}:</span>
-        <span class="text-right flex-1 ml-2 font-bold">{{ ticket.supplierName || '-' }}</span>
-      </div>
-      <div class="flex justify-between text-[12px] leading-tight text-muted-foreground">
-        <span class="font-medium">{{ t('ticketDialog.date') }}:</span>
-        <span class="text-right flex-1 ml-2">{{ formattedDate }}</span>
-      </div>
-      <div class="flex justify-between text-[12px] leading-tight text-muted-foreground">
-        <span class="font-medium">{{ t('ticketDialog.time') }}:</span>
-        <span class="text-right flex-1 ml-2">{{ ticket.startTime || '-' }}</span>
-      </div>
-      <div class="flex justify-between text-[12px] leading-tight text-muted-foreground">
-        <span class="font-medium">{{ t('ticketDialog.truck') }}:</span>
-        <span class="text-right flex-1 ml-2">{{ truckPreview }}</span>
-      </div>
-      <div class="flex justify-between text-[12px] leading-tight">
-        <span class="font-medium text-muted-foreground/70">{{ t('ticketDialog.type') }}:</span>
-        <span class="text-right flex-1 ml-2 font-bold">
-          {{
-            RUBBER_TYPE_MAP[ticket.rubberType] || ticket.rubberTypeName || ticket.rubberType || '-'
-          }}
-        </span>
-      </div>
-      <div class="flex justify-between text-[11px] leading-tight text-muted-foreground/60">
-        <span class="font-medium">{{ t('ticketDialog.booking') }}:</span>
-        <span class="text-right flex-1 ml-2 font-mono text-[11px]">{{
-          ticket.bookingCode || '-'
+    <!-- Content Wrapper (Full visibility) -->
+    <div class="flex-1 flex flex-col">
+      <!-- Header -->
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2">
+          <img
+            src="/logo-dark.png"
+            alt="YTRC Logo"
+            class="h-5 w-auto"
+            @error="(e: any) => (e.target.style.display = 'none')"
+          />
+        </div>
+        <span class="text-[10px] font-bold opacity-40 uppercase tracking-widest">{{
+          ticket.rubberType?.includes('USS') ? 'Queue USS' : 'Queue Cuplump'
         }}</span>
       </div>
-    </div>
 
-    <!-- Queue Number -->
-    <div class="flex justify-between items-center my-4">
-      <span class="text-[11px] font-black opacity-60 uppercase tracking-tight">{{
-        t('ticketDialog.queue')
-      }}</span>
-      <div
-        :style="{
-          width: '50px',
-          height: '50px',
-          borderRadius: '8px',
-          background: theme.queueBg,
-          color: '#fff',
-          fontSize: '28px',
-          fontWeight: 900,
-          border: `2px solid rgba(0,0,0,0.15)`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          lineHeight: '1',
-        }"
-      >
-        <div :id="'queue-number-val-' + ticket.id">
-          {{ ticket.queueNo ?? '-' }}
+      <!-- Details -->
+      <div class="space-y-1.5">
+        <div class="flex justify-between text-[12px] leading-tight">
+          <span class="font-medium text-muted-foreground/70">{{ t('ticketDialog.code') }}:</span>
+          <span class="text-right flex-1 ml-2 font-bold">{{ ticket.supplierCode || '-' }}</span>
+        </div>
+        <div class="flex justify-between text-[12px] leading-tight">
+          <span class="font-medium text-muted-foreground/70">{{ t('ticketDialog.name') }}:</span>
+          <span class="text-right flex-1 ml-2 font-bold">{{ ticket.supplierName || '-' }}</span>
+        </div>
+        <div class="flex justify-between text-[12px] leading-tight text-muted-foreground">
+          <span class="font-medium">{{ t('ticketDialog.date') }}:</span>
+          <span class="text-right flex-1 ml-2">{{ formattedDate }}</span>
+        </div>
+        <div class="flex justify-between text-[12px] leading-tight text-muted-foreground">
+          <span class="font-medium">{{ t('ticketDialog.time') }}:</span>
+          <span class="text-right flex-1 ml-2">{{ ticket.startTime || '-' }}</span>
+        </div>
+        <div class="flex justify-between text-[12px] leading-tight text-muted-foreground">
+          <span class="font-medium">{{ t('ticketDialog.truck') }}:</span>
+          <span class="text-right flex-1 ml-2">{{ truckPreview }}</span>
+        </div>
+        <div class="flex justify-between text-[12px] leading-tight">
+          <span class="font-medium text-muted-foreground/70">{{ t('ticketDialog.type') }}:</span>
+          <span class="text-right flex-1 ml-2 font-bold">
+            {{
+              RUBBER_TYPE_MAP[ticket.rubberType] ||
+              ticket.rubberTypeName ||
+              ticket.rubberType ||
+              '-'
+            }}
+          </span>
+        </div>
+        <div class="flex justify-between text-[11px] leading-tight text-muted-foreground/60">
+          <span class="font-medium">{{ t('ticketDialog.booking') }}:</span>
+          <span class="text-right flex-1 ml-2 font-mono text-[11px]">{{
+            ticket.bookingCode || '-'
+          }}</span>
+        </div>
+        <div class="flex justify-between text-[11px] leading-tight text-muted-foreground/60">
+          <span class="font-medium">Recorder:</span>
+          <span class="text-right flex-1 ml-2 font-mono text-[11px]">{{
+            ticket.recorder || '-'
+          }}</span>
+        </div>
+      </div>
+
+      <!-- Queue Number -->
+      <div class="flex justify-between items-center my-4">
+        <span class="text-[11px] font-black opacity-60 uppercase tracking-tight">{{
+          t('ticketDialog.queue')
+        }}</span>
+        <div
+          :style="{
+            width: '50px',
+            height: '50px',
+            borderRadius: '8px',
+            background: theme.queueBg,
+            color: '#fff',
+            fontSize: '28px',
+            fontWeight: 900,
+            border: `2px solid rgba(0,0,0,0.15)`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            lineHeight: '1',
+          }"
+        >
+          <div :id="'queue-number-val-' + ticket.id">
+            {{ ticket.queueNo ?? '-' }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Info (Ultra Compact) -->
+      <div class="text-center my-3 leading-tight px-1">
+        <p class="text-[8px] font-bold text-gray-500 uppercase tracking-wide">
+          VEHICLES CAN PARK OVERNIGHT IN FRONT OF THE FACTORY
+        </p>
+        <p class="text-[8px] font-bold text-red-600 uppercase tracking-wide mt-0.5">
+          * DO NOT PARK ON THE FACTORY ENTRANCE ROAD *
+        </p>
+      </div>
+
+      <!-- QR Code -->
+      <div class="flex justify-center mt-auto">
+        <div v-if="ticket.bookingCode" class="p-2">
+          <QrcodeVue
+            :value="String(ticket.bookingCode)"
+            :size="100"
+            level="H"
+            background="transparent"
+            render-as="canvas"
+            class="block"
+          />
+        </div>
+        <div
+          v-else
+          class="w-20 h-20 bg-muted/50 rounded border border-dashed border-muted-foreground/30 flex items-center justify-center"
+        >
+          <span class="text-gray-400 text-[10px]">{{ t('ticketDialog.noCode') }}</span>
         </div>
       </div>
     </div>
 
-    <!-- Cancelled Status Indicator -->
+    <!-- Cancelled Status Indicator (Reference Stamp Style) -->
     <div
-      v-if="ticket.status === 'CANCELLED' || ticket.deletedAt"
-      class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 border-red-600 border-2 rounded-lg p-2 rotate-[-15deg] opacity-70 pointer-events-none z-10"
+      v-if="isCancelled"
+      class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none rotate-[-12deg] opacity-90 select-none"
     >
-      <span class="text-2xl font-black text-red-600 uppercase tracking-widest">CANCELLED</span>
-    </div>
-
-    <!-- Info (Ultra Compact) -->
-    <div class="text-center my-2 leading-none">
-      <p class="text-[9px] font-bold opacity-40 uppercase tracking-tighter">
-        {{ t('ticketDialog.parkingInfo') }}
-      </p>
-    </div>
-
-    <!-- QR Code -->
-    <div class="flex justify-center mt-auto">
-      <div v-if="ticket.bookingCode" class="p-2">
-        <QrcodeVue
-          :value="String(ticket.bookingCode)"
-          :size="100"
-          level="H"
-          background="transparent"
-          render-as="canvas"
-          class="block"
-        />
-      </div>
       <div
-        v-else
-        class="w-20 h-20 bg-muted/50 rounded border border-dashed border-muted-foreground/30 flex items-center justify-center"
+        class="border-[6px] border-red-600/80 rounded-xl px-6 py-2 bg-white/10 backdrop-blur-[1px] shadow-sm flex items-center justify-center mask-image-grunge"
       >
-        <span class="text-gray-400 text-[10px]">{{ t('ticketDialog.noCode') }}</span>
+        <span
+          class="text-4xl font-black text-red-600/90 uppercase tracking-[0.15em] leading-none drop-shadow-sm"
+          style="font-family: 'Sarabun', sans-serif"
+        >
+          CANCELLED
+        </span>
       </div>
     </div>
   </div>

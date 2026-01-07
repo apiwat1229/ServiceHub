@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { usePermissions } from '@/composables/usePermissions';
+import { bookingsApi } from '@/services/bookings';
 import { notificationsApi } from '@/services/notifications';
 import { socketService } from '@/services/socket';
 import { useAuthStore } from '@/stores/auth';
@@ -44,6 +45,10 @@ const authStore = useAuthStore();
 const router = useRouter();
 const route = useRoute();
 const showThemeSettings = ref(false);
+const isTicketPreviewOpen = ref(false);
+const previewTicket = ref<any>(null);
+const isErrorDialogOpen = ref(false);
+const errorDialogMessage = ref('');
 
 const { isAdmin } = usePermissions();
 
@@ -100,16 +105,73 @@ const handleViewAll = () => {
 
 const handleNotificationClick = async (notification: NotificationDto) => {
   await handleMarkAsRead(notification.id);
-  if (notification.actionUrl) {
-    // Handle specific booking URL pattern check
-    if (notification.actionUrl.startsWith('/bookings/')) {
-      const parts = notification.actionUrl.split('/');
-      const codeOrId = parts[parts.length - 1];
-      router.push({ name: 'BookingQueue', query: { code: codeOrId } });
+
+  if (notification.actionUrl && notification.actionUrl.startsWith('/bookings')) {
+    let bookingId = '';
+    if (notification.actionUrl.includes('?code=')) {
+      bookingId = notification.actionUrl.split('?code=')[1];
     } else {
-      router.push(notification.actionUrl);
+      const parts = notification.actionUrl.split('/');
+      bookingId = parts[parts.length - 1];
     }
-  } else {
+
+    if (bookingId) {
+      let booking;
+      try {
+        const isUuid = bookingId.length > 30;
+        if (isUuid) {
+          booking = await bookingsApi.getById(bookingId);
+        } else {
+          const bookings = await bookingsApi.getAll({ code: bookingId });
+          if (bookings && bookings.length > 0) {
+            booking = bookings[0];
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to fetch booking preview:', error);
+      }
+
+      if (booking) {
+        setTimeout(() => {
+          previewTicket.value = {
+            date: booking.date || booking.bookingDate,
+            startTime: booking.startTime || booking.slot || booking.timeSlot,
+            truckType: booking.truckType,
+            truckRegister: booking.truckRegister || booking.truckLicensePlate,
+            rubberType: booking.rubberType,
+            supplierCode: booking.supplierCode || booking.supplier?.code,
+            supplierName: booking.supplierName || booking.supplier?.name,
+            bookingCode: booking.bookingCode,
+            queueNo: booking.queueNo || booking.queueNumber,
+            recorder:
+              booking.recorder ||
+              booking.createdBy?.displayName ||
+              booking.createdBy?.username ||
+              'System',
+            status: booking.status,
+            deletedAt: booking.deletedAt,
+          };
+          isTicketPreviewOpen.value = true;
+        }, 100);
+        return;
+      } else {
+        if (
+          notification.title.toLowerCase().includes('cancel') ||
+          notification.message.toLowerCase().includes('cancel')
+        ) {
+          setTimeout(() => {
+            errorDialogMessage.value = 'Booking was cancelled and data is no longer available.';
+            isErrorDialogOpen.value = true;
+          }, 100);
+          return;
+        }
+      }
+    }
+  }
+
+  if (notification.actionUrl && !notification.actionUrl.startsWith('/bookings')) {
+    router.push(notification.actionUrl);
+  } else if (!notification.actionUrl) {
     router.push('/my-notifications');
   }
 };
@@ -453,6 +515,24 @@ onUnmounted(() => {
         </div>
       </DialogContent>
     </Dialog>
+
+    <!-- Ticket Preview Dialog -->
+    <TicketDialog v-model:open="isTicketPreviewOpen" :ticket="previewTicket" />
+
+    <!-- Error/Info Dialog (For Missing Data) -->
+    <AlertDialog v-model:open="isErrorDialogOpen">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Data Unavailable</AlertDialogTitle>
+          <AlertDialogDescription>
+            {{ errorDialogMessage }}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogAction @click="isErrorDialogOpen = false">OK</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   </header>
 </template>
 
