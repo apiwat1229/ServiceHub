@@ -172,8 +172,15 @@ const nextQueueNo = computed(() => {
     .sort((a, b) => a - b);
 
   if (currentSlotConfig.value.limit === null) {
-    if (used.length === 0) return currentSlotConfig.value.start;
-    return used[used.length - 1] + 1;
+    let candidate = currentSlotConfig.value.start;
+    while (true) {
+      if (!used.includes(candidate)) {
+        return candidate;
+      }
+      candidate++;
+      // Safety break to prevent infinite loops in weird cases (though unlikely)
+      if (candidate > 1000) return candidate;
+    }
   }
 
   // Find gaps for limited slots
@@ -592,11 +599,11 @@ watch(selectedSlot, (newSlot) => {
       <p class="text-muted-foreground mt-1">{{ t('bookingQueue.noBookings') }}</p>
     </div>
 
-    <div v-else class="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+    <div v-else class="flex flex-wrap justify-center gap-6">
       <Card
         v-for="queue in filteredQueues"
         :key="queue.id"
-        class="group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border border-slate-300 bg-card/60 backdrop-blur-sm shadow-sm flex flex-col"
+        class="group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border border-slate-300 bg-card/60 backdrop-blur-sm shadow-sm flex flex-col w-full max-w-[310px]"
       >
         <!-- Top Status Bar (Color by Day) -->
         <div

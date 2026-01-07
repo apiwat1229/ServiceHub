@@ -420,6 +420,7 @@ const weightInData = ref({
 
 const weightInputError = ref('');
 const trailerWeightInputError = ref('');
+const weightOutInputError = ref('');
 
 const handleWeightInputKeydown = (e: KeyboardEvent, isTrailer: boolean = false) => {
   if (
@@ -446,6 +447,22 @@ const handleWeightInputKeydown = (e: KeyboardEvent, isTrailer: boolean = false) 
     } else {
       weightInputError.value = '';
     }
+  }
+};
+
+const handleWeightOutInputKeydown = (e: KeyboardEvent) => {
+  if (
+    !/^[0-9]$/.test(e.key) &&
+    !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter'].includes(e.key)
+  ) {
+    e.preventDefault();
+    const message = t('truckScale.toast.invalidWeight') || 'Please enter numbers only';
+    weightOutInputError.value = message;
+    setTimeout(() => {
+      weightOutInputError.value = '';
+    }, 3000);
+  } else {
+    weightOutInputError.value = '';
   }
 };
 
@@ -485,7 +502,20 @@ const isSameRubberType = computed(() => {
 });
 
 const rubberTypeOptions = computed(() => {
-  return rubberTypes.value.map((t) => ({
+  let types = rubberTypes.value;
+
+  if (selectedDrainBooking.value) {
+    const bookingType = (selectedDrainBooking.value.rubberType || '').toUpperCase();
+    const isUSS = bookingType.includes('USS');
+
+    if (isUSS) {
+      types = types.filter((t) => t.name.toUpperCase().includes('USS'));
+    } else {
+      types = types.filter((t) => !t.name.toUpperCase().includes('USS'));
+    }
+  }
+
+  return types.map((t) => ({
     value: t.name,
     label: t.name,
   }));
@@ -503,7 +533,8 @@ const openStopDrain = (booking: any) => {
 };
 
 const openWeightIn = (booking: any) => {
-  if (!booking.stopDrainAt) {
+  const isUSS = (booking.rubberType || '').toUpperCase().includes('USS');
+  if (!booking.stopDrainAt && !isUSS) {
     toast.error(t('truckScale.warnDrainNotComplete') || 'Please complete drain process first');
     return;
   }
@@ -582,6 +613,30 @@ const saveWeightIn = async () => {
     weightInData.value.rubberType === weightInData.value.trailerRubberType &&
     weightInData.value.rubberType !== '' &&
     weightInData.value.trailerRubberType !== '';
+
+  // Validation
+  if (
+    !weightInData.value.rubberSource ||
+    !weightInData.value.rubberType ||
+    !weightInData.value.weightIn
+  ) {
+    toast.error(t('common.fillAllRequiredFields') || 'Please fill all required fields');
+    return;
+  }
+
+  if (isTrailerTruck) {
+    if (!weightInData.value.trailerWeightIn) {
+      toast.error(t('common.fillAllRequiredFields') || 'Please fill all required fields');
+      return;
+    }
+
+    if (!sameRubberType) {
+      if (!weightInData.value.trailerRubberSource || !weightInData.value.trailerRubberType) {
+        toast.error(t('common.fillAllRequiredFields') || 'Please fill all required fields');
+        return;
+      }
+    }
+  }
 
   let dataToSend;
 
@@ -761,6 +816,9 @@ const scaleInColumns: ColumnDef<any>[] = [
     accessorKey: 'startDrainAt',
     header: () => h('div', { class: 'text-center' }, t('truckScale.startDrain') || 'Start Drain'),
     cell: ({ row }) => {
+      const isUSS = (row.original.rubberType || '').toUpperCase().includes('USS');
+      if (isUSS) return h('div', { class: 'text-center text-muted-foreground' }, '-');
+
       if (row.original.startDrainAt) {
         return h(
           'div',
@@ -796,6 +854,9 @@ const scaleInColumns: ColumnDef<any>[] = [
     accessorKey: 'stopDrainAt',
     header: () => h('div', { class: 'text-center' }, t('truckScale.stopDrain') || 'Stop Drain'),
     cell: ({ row }) => {
+      const isUSS = (row.original.rubberType || '').toUpperCase().includes('USS');
+      if (isUSS) return h('div', { class: 'text-center text-muted-foreground' }, '-');
+
       if (row.original.stopDrainAt) {
         return h(
           'div',
@@ -838,6 +899,9 @@ const scaleInColumns: ColumnDef<any>[] = [
     id: 'totalDrain',
     header: () => h('div', { class: 'text-center' }, t('truckScale.totalDrain') || 'Total Drain'),
     cell: ({ row }) => {
+      const isUSS = (row.original.rubberType || '').toUpperCase().includes('USS');
+      if (isUSS) return h('div', { class: 'text-center text-muted-foreground' }, '-');
+
       if (row.original.startDrainAt) {
         return h(
           'div',
@@ -921,7 +985,8 @@ const scaleInColumns: ColumnDef<any>[] = [
           );
         }
       } else {
-        const drainCompleted = !!row.original.stopDrainAt;
+        const isUSS = (row.original.rubberType || '').toUpperCase().includes('USS');
+        const drainCompleted = !!row.original.stopDrainAt || isUSS;
 
         if (!drainCompleted) {
           button = h(
@@ -980,6 +1045,9 @@ const scaleOutColumns: ColumnDef<any>[] = [
     id: 'totalDrain',
     header: () => t('truckScale.totalDrain'),
     cell: ({ row }) => {
+      const isUSS = (row.original.rubberType || '').toUpperCase().includes('USS');
+      if (isUSS) return '-';
+
       if (row.original.startDrainAt) {
         return h(LiveDuration, {
           start: row.original.startDrainAt,
@@ -2387,25 +2455,16 @@ onUnmounted(() => {
                     e.target.value = value ? Number(value).toLocaleString() : '';
                   }
                 "
-                @keydown="
-                  (e: KeyboardEvent) => {
-                    if (
-                      !/^[0-9]$/.test(e.key) &&
-                      !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter'].includes(
-                        e.key
-                      )
-                    ) {
-                      e.preventDefault();
-                      toast.error(
-                        t('truckScale.toast.invalidWeight') || 'Please enter numbers only'
-                      );
-                    }
-                  }
-                "
+                @keydown="handleWeightOutInputKeydown"
                 type="text"
                 class="text-xl h-12"
                 placeholder="0"
               />
+              <span
+                v-if="weightOutInputError"
+                class="text-xs text-red-500 font-medium animate-pulse"
+                >{{ weightOutInputError }}</span
+              >
             </div>
           </div>
 
@@ -2433,25 +2492,16 @@ onUnmounted(() => {
                     e.target.value = value ? Number(value).toLocaleString() : '';
                   }
                 "
-                @keydown="
-                  (e: KeyboardEvent) => {
-                    if (
-                      !/^[0-9]$/.test(e.key) &&
-                      !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter'].includes(
-                        e.key
-                      )
-                    ) {
-                      e.preventDefault();
-                      toast.error(
-                        t('truckScale.toast.invalidWeight') || 'Please enter numbers only'
-                      );
-                    }
-                  }
-                "
+                @keydown="handleWeightOutInputKeydown"
                 type="text"
                 class="text-xl h-12"
                 placeholder="0"
               />
+              <span
+                v-if="weightOutInputError"
+                class="text-xs text-red-500 font-medium animate-pulse"
+                >{{ weightOutInputError }}</span
+              >
             </div>
           </div>
         </div>
