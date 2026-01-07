@@ -466,7 +466,7 @@
     "type": "Type",
     "saveTicket": "Save Ticket",
     "copyTicket": "Copy Ticket",
-    "ticketTitle": "CL Queue Ticket",
+    "ticketTitle": "Queue Cuplump",
     "parkingInstruction": "Please park your vehicle at the designated area only.",
     "securityWarning": "This app is unnecessary security risks.",
     "ticketSaved": "Ticket saved successfully",
@@ -1261,7 +1261,7 @@
   "ticketDialog": {
     "title": "Ticket Details",
     "description": "Preview of the booking ticket details.",
-    "queueTicket": "Queue Ticket CL",
+    "queueTicket": "Queue Cuplump",
     "code": "Code",
     "name": "Name",
     "date": "Date",

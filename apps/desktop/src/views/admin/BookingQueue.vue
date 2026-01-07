@@ -496,10 +496,11 @@ watch(selectedSlot, (newSlot) => {
 
     <div
       v-else
-      class="grid gap-4"
-      :class="{
-        'grid-cols-1 md:grid-cols-2 lg:grid-cols-4': true,
-      }"
+      :class="[
+        viewMode === 'card'
+          ? 'grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4'
+          : 'flex flex-wrap justify-center gap-2',
+      ]"
     >
       <template v-if="viewMode === 'card'">
         <Card

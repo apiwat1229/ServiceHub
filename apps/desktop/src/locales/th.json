@@ -446,7 +446,7 @@
     "type": "ประเภท",
     "saveTicket": "บันทึกตั๋ว",
     "copyTicket": "คัดลอกตั๋ว",
-    "ticketTitle": "ตั๋วคิว CL",
+    "ticketTitle": "คิว Cuplump",
     "parkingInstruction": "กรุณาจอดรถในพื้นที่ที่กำหนดเท่านั้น",
     "securityWarning": "แอปนี้มีความเสี่ยงด้านความปลอดภัยที่ไม่จำเป็น",
     "ticketSaved": "บันทึกตั๋วสำเร็จ",
@@ -1226,7 +1226,7 @@
   "ticketDialog": {
     "title": "รายละเอียดตั๋ว",
     "description": "ตัวอย่างรายละเอียดตั๋วการจอง",
-    "queueTicket": "บัตรคิว CL",
+    "queueTicket": "คิว Cuplump",
     "code": "รหัส",
     "name": "ชื่อ",
     "date": "วันที่",
