@@ -1038,7 +1038,9 @@
       "pending": "Pending",
       "totalTrips": "Total Truck",
       "totalNetWeight": "Total Net Weight",
+      "totalGrossWeight": "Total Gross Weight",
       "totalGross": "Total Gross",
+      "totalWeightIn": "Total Weight In",
       "inOut": "In / Out"
     },
     "confirmCheckIn": "Confirm Check-in",

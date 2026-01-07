@@ -1003,6 +1003,8 @@
       "totalTrips": "เที่ยวทั้งหมด",
       "totalNetWeight": "น้ำหนักสุทธิ",
       "totalGross": "น้ำหนักรวม",
+      "totalGrossWeight": "น้ำหนักรวมสุทธิ",
+      "totalWeightIn": "น้ำหนักรวมขาเข้า",
       "inOut": "เข้า / ออก"
     },
     "confirmCheckIn": "ยืนยันการเช็คอิน",

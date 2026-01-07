@@ -421,19 +421,14 @@ onMounted(() => {
           </div>
 
           <div
-            class="hidden md:flex col-span-2 px-6 py-2.5 rounded-xl bg-gradient-to-br from-blue-50/50 to-green-50/50 border border-blue-100/50 dark:from-blue-900/10 dark:to-green-900/10 dark:border-blue-800 items-center justify-between min-h-[70px] relative overflow-hidden group"
+            class="hidden md:grid grid-cols-3 px-6 py-2.5 rounded-xl bg-gradient-to-br from-blue-50/50 to-green-50/50 border border-blue-100/50 dark:from-blue-900/10 dark:to-green-900/10 dark:border-blue-800 items-center justify-between min-h-[70px] relative overflow-hidden group divide-x divide-slate-200/50 dark:divide-slate-700/50"
           >
-            <!-- Background Decoration -->
-            <div
-              class="absolute inset-y-0 left-1/2 w-px bg-gradient-to-b from-transparent via-slate-200 dark:via-slate-700 to-transparent"
-            ></div>
-
-            <!-- Gross Weight (Left) -->
-            <div class="flex flex-col items-start min-w-[120px]">
+            <!-- Weight In (Left) -->
+            <div class="flex flex-col items-center">
               <div
-                class="text-[9px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-0.5 flex items-center gap-1.5"
+                class="text-[9px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-0.5"
               >
-                {{ t('cuplump.grossWeight') }}
+                Weight In
               </div>
               <div
                 class="text-2xl font-black text-blue-900 dark:text-blue-100 leading-none tracking-tight"
@@ -443,17 +438,32 @@ onMounted(() => {
               </div>
             </div>
 
-            <!-- Net Weight (Right) -->
-            <div class="flex flex-col items-end min-w-[120px]">
+            <!-- Gross Weight (Center) -->
+            <div class="flex flex-col items-center">
               <div
-                class="text-[9px] font-bold text-green-600 dark:text-green-400 uppercase tracking-widest mb-0.5 flex items-center gap-1.5"
+                class="text-[9px] font-bold text-green-600 dark:text-green-400 uppercase tracking-widest mb-0.5"
               >
-                {{ t('cuplump.netWeight') }}
+                {{ t('cuplump.grossWeight') }}
               </div>
               <div
                 class="text-2xl font-black text-green-900 dark:text-green-100 leading-none tracking-tight"
               >
                 {{ displayNetWeight }}
+                <span class="text-[10px] font-medium opacity-60 ml-0.5">Kg</span>
+              </div>
+            </div>
+
+            <!-- Net Weight (Right - New/Empty) -->
+            <div class="flex flex-col items-center">
+              <div
+                class="text-[9px] font-bold text-red-600 dark:text-red-400 uppercase tracking-widest mb-0.5"
+              >
+                {{ t('cuplump.netWeight') }}
+              </div>
+              <div
+                class="text-2xl font-black text-red-900 dark:text-red-100 leading-none tracking-tight"
+              >
+                -
                 <span class="text-[10px] font-medium opacity-60 ml-0.5">Kg</span>
               </div>
             </div>
@@ -466,7 +476,7 @@ onMounted(() => {
             <div
               class="text-[9px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-0.5"
             >
-              {{ t('cuplump.grossWeight') }}
+              Weight In
             </div>
             <div class="text-xl font-black text-blue-900 dark:text-blue-100 leading-none">
               {{ displayWeightIn }}
@@ -480,10 +490,24 @@ onMounted(() => {
             <div
               class="text-[9px] font-bold text-green-600 dark:text-green-400 uppercase tracking-widest mb-0.5"
             >
-              {{ t('cuplump.netWeight') }}
+              {{ t('cuplump.grossWeight') }}
             </div>
             <div class="text-xl font-black text-green-900 dark:text-green-100 leading-none">
               {{ displayNetWeight }}
+              <span class="text-[10px] font-medium opacity-60 ml-0.5">Kg</span>
+            </div>
+          </div>
+
+          <div
+            class="md:hidden px-3 py-2.5 rounded-xl bg-red-50/50 border border-red-100 dark:bg-red-900/20 dark:border-red-800 flex flex-col justify-center min-h-[70px]"
+          >
+            <div
+              class="text-[9px] font-bold text-red-600 dark:text-red-400 uppercase tracking-widest mb-0.5"
+            >
+              {{ t('cuplump.netWeight') }}
+            </div>
+            <div class="text-xl font-black text-red-900 dark:text-red-100 leading-none">
+              -
               <span class="text-[10px] font-medium opacity-60 ml-0.5">Kg</span>
             </div>
           </div>

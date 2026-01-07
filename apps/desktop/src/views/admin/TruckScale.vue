@@ -46,6 +46,7 @@ import {
   Calendar as CalendarIcon,
   Check,
   CheckCircle,
+  Circle,
   ClipboardList,
   Clock,
   Play,
@@ -1198,11 +1199,23 @@ const dashboardColumns: ColumnDef<any>[] = [
     },
   },
   {
-    id: 'netWeight',
-    header: () => t('truckScale.netWeight') || 'Net',
+    id: 'grossWeight',
+    header: () => t('truckScale.grossWeight') || 'Gross',
     cell: ({ row }) => {
       const net = Math.abs((row.original.weightIn || 0) - (row.original.weightOut || 0));
       return h('span', { class: 'font-bold' }, `${net.toLocaleString()} Kg.`);
+    },
+  },
+  {
+    id: 'netWeight',
+    header: () => t('truckScale.netWeight') || 'Net Weight',
+    cell: ({ row }) => {
+      const booking = row.original;
+      if (booking.weightIn && booking.weightOut) {
+        const net = Math.abs(booking.weightIn - booking.weightOut);
+        return h('span', { class: 'font-bold' }, `${net.toLocaleString()} Kg.`);
+      }
+      return '-';
     },
   },
   {
@@ -1397,23 +1410,26 @@ onUnmounted(() => {
         <Card class="border-none shadow-sm bg-card/50 backdrop-blur-sm">
           <CardContent class="p-6 space-y-6">
             <!-- Filters & Stats Combined Row -->
-            <div class="flex flex-col xl:flex-row gap-6 items-end justify-between">
+            <!-- Filters & Stats Combined Row -->
+            <div class="flex flex-col xl:flex-row gap-4 items-end justify-between w-full">
               <!-- Filters Group -->
-              <div class="flex flex-col md:flex-row gap-4 items-end w-full xl:w-auto">
-                <div class="grid gap-2 w-full md:w-auto">
-                  <Label>{{ t('truckScale.date') }}</Label>
+              <div class="flex flex-col md:flex-row gap-3 items-end w-full xl:w-auto shrink-0">
+                <div class="grid gap-1.5 w-full md:w-auto">
+                  <Label class="text-xs font-semibold text-muted-foreground ml-0.5">{{
+                    t('truckScale.date')
+                  }}</Label>
                   <Popover v-model:open="isDatePopoverOpen">
                     <PopoverTrigger as-child>
                       <Button
                         variant="outline"
                         :class="
                           cn(
-                            'w-full md:w-[200px] justify-start text-left font-normal',
+                            'w-full md:w-[200px] justify-start text-left font-normal h-10',
                             !selectedDate && 'text-muted-foreground'
                           )
                         "
                       >
-                        <CalendarIcon class="mr-2 h-4 w-4" />
+                        <CalendarIcon class="mr-2 h-4 w-4 text-muted-foreground" />
                         <span>{{
                           selectedDate
                             ? format(new Date(selectedDate), 'dd-MMM-yyyy')
@@ -1431,72 +1447,81 @@ onUnmounted(() => {
                     </PopoverContent>
                   </Popover>
                 </div>
-                <div class="grid gap-2 w-full md:w-[320px]">
-                  <Label>{{ t('common.search') }}</Label>
-                  <div class="relative">
-                    <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      v-model="searchQuery"
-                      :placeholder="t('truckScale.searchPlaceholder')"
-                      class="pl-9"
-                    />
-                  </div>
+                <div class="flex items-center">
+                  <Popover>
+                    <PopoverTrigger as-child>
+                      <Button variant="outline" size="icon" class="w-10 h-10 shrink-0">
+                        <Search class="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent class="w-80" align="start" side="bottom">
+                      <div class="grid gap-4">
+                        <div class="space-y-2">
+                          <h4 class="font-medium leading-none">{{ t('common.search') }}</h4>
+                          <p class="text-sm text-muted-foreground">
+                            {{ t('truckScale.searchPlaceholder') }}
+                          </p>
+                        </div>
+                        <div class="relative">
+                          <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            v-model="searchQuery"
+                            :placeholder="t('truckScale.searchPlaceholder')"
+                            class="pl-9"
+                            @keydown.enter="fetchBookings"
+                          />
+                        </div>
+                        <Button class="w-full" @click="fetchBookings">
+                          {{ t('common.search') }}
+                        </Button>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </div>
-                <Button
-                  class="bg-blue-600 hover:bg-blue-700 w-full md:w-auto"
-                  @click="fetchBookings"
-                >
-                  <Search class="w-4 h-4 mr-2" />
-                  {{ t('common.search') }}
-                </Button>
               </div>
 
               <!-- Stats Cards Group (Right Aligned) -->
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 w-full xl:w-auto mt-4 xl:mt-0">
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3 w-full xl:flex-1 mt-4 xl:mt-0">
                 <div
-                  class="rounded-lg border bg-background px-4 py-2 flex items-center gap-4 border-l-4 border-l-blue-500 shadow-sm min-w-[200px]"
+                  class="rounded-xl border bg-blue-50/50 border-blue-100 px-3 py-2 flex flex-col items-center justify-center gap-0.5 shadow-sm w-full min-h-[72px]"
                 >
-                  <div class="p-2 bg-blue-50 rounded-lg text-blue-600">
-                    <Truck class="w-4 h-4" />
-                  </div>
-                  <div class="flex flex-col">
-                    <span class="text-xs text-muted-foreground font-medium">{{
+                  <div class="flex items-center gap-1.5 mb-0.5">
+                    <Truck class="w-3.5 h-3.5 text-blue-600" />
+                    <span class="text-[10px] text-blue-600 font-bold uppercase tracking-wider">{{
                       t('truckScale.totalExpected') || 'Total Expected'
                     }}</span>
-                    <span class="text-xl font-bold leading-none">{{ stats.total }}</span>
                   </div>
+                  <span class="text-3xl font-black text-blue-950 leading-none">{{
+                    stats.total
+                  }}</span>
                 </div>
 
                 <div
-                  class="rounded-lg border bg-background px-4 py-2 flex items-center gap-4 border-l-4 border-l-green-500 shadow-sm min-w-[200px]"
+                  class="rounded-xl border bg-green-50/50 border-green-100 px-3 py-2 flex flex-col items-center justify-center gap-0.5 shadow-sm w-full min-h-[72px]"
                 >
-                  <div class="p-2 bg-green-50 rounded-lg text-green-600">
-                    <CheckCircle class="w-4 h-4" />
-                  </div>
-                  <div class="flex flex-col">
-                    <span class="text-xs text-muted-foreground font-medium">{{
+                  <div class="flex items-center gap-1.5 mb-0.5">
+                    <CheckCircle class="w-3.5 h-3.5 text-green-600" />
+                    <span class="text-[10px] text-green-600 font-bold uppercase tracking-wider">{{
                       t('truckScale.stats.checkedIn')
                     }}</span>
-                    <span class="text-xl font-bold leading-none text-green-600">{{
-                      stats.checkedIn
-                    }}</span>
                   </div>
+                  <span class="text-3xl font-black text-green-950 leading-none">{{
+                    stats.checkedIn
+                  }}</span>
                 </div>
 
                 <div
-                  class="rounded-lg border bg-background px-4 py-2 flex items-center gap-4 border-l-4 border-l-orange-500 shadow-sm min-w-[200px]"
+                  class="rounded-xl border bg-orange-50/50 border-orange-100 px-3 py-2 flex flex-col items-center justify-center gap-0.5 shadow-sm w-full min-h-[72px]"
                 >
-                  <div class="p-2 bg-orange-50 rounded-lg text-orange-600">
-                    <Clock class="w-4 h-4" />
-                  </div>
-                  <div class="flex flex-col">
-                    <span class="text-xs text-muted-foreground font-medium">{{
+                  <div class="flex items-center gap-1.5 mb-0.5">
+                    <Clock class="w-3.5 h-3.5 text-orange-600" />
+                    <span class="text-[10px] text-orange-600 font-bold uppercase tracking-wider">{{
                       t('truckScale.stats.pending')
                     }}</span>
-                    <span class="text-xl font-bold leading-none text-orange-600">{{
-                      stats.pending
-                    }}</span>
                   </div>
+                  <span class="text-3xl font-black text-orange-950 leading-none">{{
+                    stats.pending
+                  }}</span>
                 </div>
               </div>
             </div>
@@ -1511,23 +1536,26 @@ onUnmounted(() => {
         <!-- Controls & Stats (Scale In) -->
         <Card class="border-none shadow-sm bg-card/50 backdrop-blur-sm">
           <CardContent class="p-6 space-y-6">
-            <div class="flex flex-col xl:flex-row gap-6 items-end justify-between">
+            <!-- Scale-In Filters & Stats -->
+            <div class="flex flex-col xl:flex-row gap-4 items-end justify-between w-full">
               <!-- Filters Group -->
-              <div class="flex flex-col md:flex-row gap-4 items-end w-full xl:w-auto">
-                <div class="grid gap-2 w-full md:w-auto">
-                  <Label>{{ t('booking.selectDate') }}</Label>
+              <div class="flex flex-col md:flex-row gap-3 items-end w-full xl:w-auto shrink-0">
+                <div class="grid gap-1.5 w-full md:w-auto">
+                  <Label class="text-xs font-semibold text-muted-foreground ml-0.5">{{
+                    t('booking.selectDate')
+                  }}</Label>
                   <Popover v-model:open="isDatePopoverOpen">
                     <PopoverTrigger as-child>
                       <Button
                         variant="outline"
                         :class="
                           cn(
-                            'w-full md:w-[200px] justify-start text-left font-normal',
+                            'w-full md:w-[200px] justify-start text-left font-normal h-10',
                             !selectedDate && 'text-muted-foreground'
                           )
                         "
                       >
-                        <CalendarIcon class="mr-2 h-4 w-4" />
+                        <CalendarIcon class="mr-2 h-4 w-4 text-muted-foreground" />
                         <span>{{
                           selectedDate
                             ? format(new Date(selectedDate), 'dd-MMM-yyyy')
@@ -1545,72 +1573,83 @@ onUnmounted(() => {
                     </PopoverContent>
                   </Popover>
                 </div>
-                <div class="grid gap-2 w-full md:w-[320px]">
-                  <Label>{{ t('truckScale.searchBooking') }}</Label>
-                  <div class="relative">
-                    <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      v-model="searchQuery"
-                      :placeholder="t('truckScale.searchPlaceholder')"
-                      class="pl-9"
-                    />
-                  </div>
+                <div class="flex items-center">
+                  <Popover>
+                    <PopoverTrigger as-child>
+                      <Button variant="outline" size="icon" class="w-10 h-10 shrink-0">
+                        <Search class="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent class="w-80" align="start" side="bottom">
+                      <div class="grid gap-4">
+                        <div class="space-y-2">
+                          <h4 class="font-medium leading-none">
+                            {{ t('truckScale.searchBooking') }}
+                          </h4>
+                          <p class="text-sm text-muted-foreground">
+                            {{ t('truckScale.searchPlaceholder') }}
+                          </p>
+                        </div>
+                        <div class="relative">
+                          <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            v-model="searchQuery"
+                            :placeholder="t('truckScale.searchPlaceholder')"
+                            class="pl-9"
+                            @keydown.enter="fetchBookings"
+                          />
+                        </div>
+                        <Button class="w-full" @click="fetchBookings">
+                          {{ t('common.search') }}
+                        </Button>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </div>
-                <Button
-                  class="bg-blue-600 hover:bg-blue-700 w-full md:w-auto"
-                  @click="fetchBookings"
-                >
-                  <Search class="w-4 h-4 mr-2" />
-                  {{ t('common.search') }}
-                </Button>
               </div>
 
               <!-- Stats Cards Group -->
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 w-full xl:w-auto mt-4 xl:mt-0">
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3 w-full xl:flex-1 mt-4 xl:mt-0">
                 <div
-                  class="rounded-lg border bg-background px-4 py-2 flex items-center gap-4 border-l-4 border-l-blue-500 shadow-sm min-w-[200px]"
+                  class="rounded-xl border bg-blue-50/50 border-blue-100 px-3 py-2 flex flex-col items-center justify-center gap-0.5 shadow-sm w-full min-h-[72px]"
                 >
-                  <div class="p-2 bg-blue-50 rounded-lg text-blue-600">
-                    <Truck class="w-4 h-4" />
-                  </div>
-                  <div class="flex flex-col">
-                    <span class="text-xs text-muted-foreground font-medium">{{
+                  <div class="flex items-center gap-1.5 mb-0.5">
+                    <Truck class="w-3.5 h-3.5 text-blue-600" />
+                    <span class="text-[10px] text-blue-600 font-bold uppercase tracking-wider">{{
                       t('truckScale.totalExpected')
                     }}</span>
-                    <span class="text-xl font-bold leading-none">{{ stats.total }}</span>
                   </div>
+                  <span class="text-3xl font-black text-blue-950 leading-none">{{
+                    stats.total
+                  }}</span>
                 </div>
 
                 <div
-                  class="rounded-lg border bg-background px-4 py-2 flex items-center gap-4 border-l-4 border-l-green-500 shadow-sm min-w-[200px]"
+                  class="rounded-xl border bg-green-50/50 border-green-100 px-3 py-2 flex flex-col items-center justify-center gap-0.5 shadow-sm w-full min-h-[72px]"
                 >
-                  <div class="p-2 bg-green-50 rounded-lg text-green-600">
-                    <CheckCircle class="w-4 h-4" />
-                  </div>
-                  <div class="flex flex-col">
-                    <span class="text-xs text-muted-foreground font-medium">{{
+                  <div class="flex items-center gap-1.5 mb-0.5">
+                    <CheckCircle class="w-3.5 h-3.5 text-green-600" />
+                    <span class="text-[10px] text-green-600 font-bold uppercase tracking-wider">{{
                       t('truckScale.stats.checkedIn')
                     }}</span>
-                    <span class="text-xl font-bold leading-none text-green-600">{{
-                      stats.checkedIn
-                    }}</span>
                   </div>
+                  <span class="text-3xl font-black text-green-950 leading-none">{{
+                    stats.checkedIn
+                  }}</span>
                 </div>
 
                 <div
-                  class="rounded-lg border bg-background px-4 py-2 flex items-center gap-4 border-l-4 border-l-orange-500 shadow-sm min-w-[200px]"
+                  class="rounded-xl border bg-orange-50/50 border-orange-100 px-3 py-2 flex flex-col items-center justify-center gap-0.5 shadow-sm w-full min-h-[72px]"
                 >
-                  <div class="p-2 bg-orange-50 rounded-lg text-orange-600">
-                    <Clock class="w-4 h-4" />
-                  </div>
-                  <div class="flex flex-col">
-                    <span class="text-xs text-muted-foreground font-medium">{{
+                  <div class="flex items-center gap-1.5 mb-0.5">
+                    <Clock class="w-3.5 h-3.5 text-orange-600" />
+                    <span class="text-[10px] text-orange-600 font-bold uppercase tracking-wider">{{
                       t('truckScale.stats.pending')
                     }}</span>
-                    <span class="text-xl font-bold leading-none text-orange-600">{{
-                      stats.pending
-                    }}</span>
                   </div>
+                  <span class="text-3xl font-black text-orange-950 leading-none">{{
+                    stats.pending
+                  }}</span>
                 </div>
               </div>
             </div>
@@ -1624,23 +1663,26 @@ onUnmounted(() => {
         <!-- Controls & Stats (Scale Out) -->
         <Card class="border-none shadow-sm bg-card/50 backdrop-blur-sm">
           <CardContent class="p-6 space-y-6">
-            <div class="flex flex-col xl:flex-row gap-6 items-end justify-between">
+            <!-- Scale-Out Filters & Stats -->
+            <div class="flex flex-col xl:flex-row gap-4 items-end justify-between w-full">
               <!-- Filters Group -->
-              <div class="flex flex-col md:flex-row gap-4 items-end w-full xl:w-auto">
-                <div class="grid gap-2 w-full md:w-auto">
-                  <Label>{{ t('booking.selectDate') }}</Label>
+              <div class="flex flex-col md:flex-row gap-3 items-end w-full xl:w-auto shrink-0">
+                <div class="grid gap-1.5 w-full md:w-auto">
+                  <Label class="text-xs font-semibold text-muted-foreground ml-0.5">{{
+                    t('booking.selectDate')
+                  }}</Label>
                   <Popover v-model:open="isDatePopoverOpen">
                     <PopoverTrigger as-child>
                       <Button
                         variant="outline"
                         :class="
                           cn(
-                            'w-full md:w-[200px] justify-start text-left font-normal',
+                            'w-full md:w-[200px] justify-start text-left font-normal h-10',
                             !selectedDate && 'text-muted-foreground'
                           )
                         "
                       >
-                        <CalendarIcon class="mr-2 h-4 w-4" />
+                        <CalendarIcon class="mr-2 h-4 w-4 text-muted-foreground" />
                         <span>{{
                           selectedDate
                             ? format(new Date(selectedDate), 'dd-MMM-yyyy')
@@ -1658,72 +1700,83 @@ onUnmounted(() => {
                     </PopoverContent>
                   </Popover>
                 </div>
-                <div class="grid gap-2 w-full md:w-[320px]">
-                  <Label>{{ t('truckScale.searchBooking') }}</Label>
-                  <div class="relative">
-                    <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      v-model="searchQuery"
-                      :placeholder="t('truckScale.searchPlaceholder')"
-                      class="pl-9"
-                    />
-                  </div>
+                <div class="flex items-center">
+                  <Popover>
+                    <PopoverTrigger as-child>
+                      <Button variant="outline" size="icon" class="w-10 h-10 shrink-0">
+                        <Search class="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent class="w-80" align="start" side="bottom">
+                      <div class="grid gap-4">
+                        <div class="space-y-2">
+                          <h4 class="font-medium leading-none">
+                            {{ t('truckScale.searchBooking') }}
+                          </h4>
+                          <p class="text-sm text-muted-foreground">
+                            {{ t('truckScale.searchPlaceholder') }}
+                          </p>
+                        </div>
+                        <div class="relative">
+                          <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            v-model="searchQuery"
+                            :placeholder="t('truckScale.searchPlaceholder')"
+                            class="pl-9"
+                            @keydown.enter="fetchBookings"
+                          />
+                        </div>
+                        <Button class="w-full" @click="fetchBookings">
+                          {{ t('common.search') }}
+                        </Button>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </div>
-                <Button
-                  class="bg-blue-600 hover:bg-blue-700 w-full md:w-auto"
-                  @click="fetchBookings"
-                >
-                  <Search class="w-4 h-4 mr-2" />
-                  {{ t('common.search') }}
-                </Button>
               </div>
 
               <!-- Stats Cards Group -->
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 w-full xl:w-auto mt-4 xl:mt-0">
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3 w-full xl:flex-1 mt-4 xl:mt-0">
                 <div
-                  class="rounded-lg border bg-background px-4 py-2 flex items-center gap-4 border-l-4 border-l-blue-500 shadow-sm min-w-[200px]"
+                  class="rounded-xl border bg-blue-50/50 border-blue-100 px-3 py-2 flex flex-col items-center justify-center gap-0.5 shadow-sm w-full min-h-[72px]"
                 >
-                  <div class="p-2 bg-blue-50 rounded-lg text-blue-600">
-                    <Truck class="w-4 h-4" />
-                  </div>
-                  <div class="flex flex-col">
-                    <span class="text-xs text-muted-foreground font-medium">{{
+                  <div class="flex items-center gap-1.5 mb-0.5">
+                    <Truck class="w-3.5 h-3.5 text-blue-600" />
+                    <span class="text-[10px] text-blue-600 font-bold uppercase tracking-wider">{{
                       t('truckScale.totalExpected')
                     }}</span>
-                    <span class="text-xl font-bold leading-none">{{ stats.total }}</span>
                   </div>
+                  <span class="text-3xl font-black text-blue-950 leading-none">{{
+                    stats.total
+                  }}</span>
                 </div>
 
                 <div
-                  class="rounded-lg border bg-background px-4 py-2 flex items-center gap-4 border-l-4 border-l-green-500 shadow-sm min-w-[200px]"
+                  class="rounded-xl border bg-green-50/50 border-green-100 px-3 py-2 flex flex-col items-center justify-center gap-0.5 shadow-sm w-full min-h-[72px]"
                 >
-                  <div class="p-2 bg-green-50 rounded-lg text-green-600">
-                    <CheckCircle class="w-4 h-4" />
-                  </div>
-                  <div class="flex flex-col">
-                    <span class="text-xs text-muted-foreground font-medium">{{
+                  <div class="flex items-center gap-1.5 mb-0.5">
+                    <CheckCircle class="w-3.5 h-3.5 text-green-600" />
+                    <span class="text-[10px] text-green-600 font-bold uppercase tracking-wider">{{
                       t('truckScale.stats.checkedIn')
                     }}</span>
-                    <span class="text-xl font-bold leading-none text-green-600">{{
-                      stats.checkedIn
-                    }}</span>
                   </div>
+                  <span class="text-3xl font-black text-green-950 leading-none">{{
+                    stats.checkedIn
+                  }}</span>
                 </div>
 
                 <div
-                  class="rounded-lg border bg-background px-4 py-2 flex items-center gap-4 border-l-4 border-l-orange-500 shadow-sm min-w-[200px]"
+                  class="rounded-xl border bg-orange-50/50 border-orange-100 px-3 py-2 flex flex-col items-center justify-center gap-0.5 shadow-sm w-full min-h-[72px]"
                 >
-                  <div class="p-2 bg-orange-50 rounded-lg text-orange-600">
-                    <Clock class="w-4 h-4" />
-                  </div>
-                  <div class="flex flex-col">
-                    <span class="text-xs text-muted-foreground font-medium">{{
+                  <div class="flex items-center gap-1.5 mb-0.5">
+                    <Clock class="w-3.5 h-3.5 text-orange-600" />
+                    <span class="text-[10px] text-orange-600 font-bold uppercase tracking-wider">{{
                       t('truckScale.stats.pending')
                     }}</span>
-                    <span class="text-xl font-bold leading-none text-orange-600">{{
-                      stats.pending
-                    }}</span>
                   </div>
+                  <span class="text-3xl font-black text-orange-950 leading-none">{{
+                    stats.pending
+                  }}</span>
                 </div>
               </div>
             </div>
@@ -1736,23 +1789,26 @@ onUnmounted(() => {
         <!-- Controls & Stats (Dashboard) -->
         <Card class="border-none shadow-sm bg-card/50 backdrop-blur-sm">
           <CardContent class="p-6 space-y-6">
-            <div class="flex flex-col xl:flex-row gap-6 items-end justify-between">
-              <!-- Filters Group -->
-              <div class="flex flex-col md:flex-row gap-4 items-end w-full xl:w-auto">
-                <div class="grid gap-2 w-full md:w-auto">
-                  <Label>{{ t('booking.selectDate') }}</Label>
+            <!-- Toolbar & Stats Row -->
+            <div class="flex flex-col xl:flex-row gap-4 items-end justify-between w-full">
+              <!-- Left: Filters -->
+              <div class="flex flex-col md:flex-row gap-3 items-end w-full xl:w-auto shrink-0">
+                <div class="grid gap-1.5 w-full md:w-auto">
+                  <Label class="text-xs font-semibold text-muted-foreground ml-0.5">{{
+                    t('booking.selectDate')
+                  }}</Label>
                   <Popover v-model:open="isDatePopoverOpen">
                     <PopoverTrigger as-child>
                       <Button
                         variant="outline"
                         :class="
                           cn(
-                            'w-full md:w-[200px] justify-start text-left font-normal',
+                            'w-full md:w-[220px] justify-start text-left font-normal h-10',
                             !selectedDate && 'text-muted-foreground'
                           )
                         "
                       >
-                        <CalendarIcon class="mr-2 h-4 w-4" />
+                        <CalendarIcon class="mr-2 h-4 w-4 text-muted-foreground" />
                         <span>{{
                           selectedDate
                             ? format(new Date(selectedDate), 'dd-MMM-yyyy')
@@ -1770,74 +1826,114 @@ onUnmounted(() => {
                     </PopoverContent>
                   </Popover>
                 </div>
-                <div class="grid gap-2 w-full md:w-[320px]">
-                  <Label>{{ t('truckScale.searchBooking') }}</Label>
-                  <div class="relative">
-                    <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      v-model="searchQuery"
-                      :placeholder="t('truckScale.searchPlaceholder')"
-                      class="pl-9"
-                    />
-                  </div>
+
+                <div class="flex items-center">
+                  <Popover>
+                    <PopoverTrigger as-child>
+                      <Button variant="outline" size="icon" class="w-10 h-10 shrink-0">
+                        <Search class="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent class="w-80" align="start" side="bottom">
+                      <div class="grid gap-4">
+                        <div class="space-y-2">
+                          <h4 class="font-medium leading-none">
+                            {{ t('truckScale.searchBooking') }}
+                          </h4>
+                          <p class="text-sm text-muted-foreground">
+                            {{ t('truckScale.searchPlaceholder') }}
+                          </p>
+                        </div>
+                        <div class="relative">
+                          <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            v-model="searchQuery"
+                            :placeholder="t('truckScale.searchPlaceholder')"
+                            class="pl-9"
+                            @keydown.enter="fetchBookings"
+                          />
+                        </div>
+                        <Button class="w-full" @click="fetchBookings">
+                          {{ t('common.search') }}
+                        </Button>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </div>
-                <Button
-                  class="bg-blue-600 hover:bg-blue-700 w-full md:w-auto"
-                  @click="fetchBookings"
-                >
-                  <Search class="w-4 h-4 mr-2" />
-                  {{ t('common.search') }}
-                </Button>
               </div>
 
-              <!-- Stats Cards Group (Dashboard Specific) -->
-              <div class="grid grid-cols-1 md:grid-cols-4 gap-4 w-full xl:w-auto mt-4 xl:mt-0">
+              <!-- Right: Stats Cards -->
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-3 w-full xl:flex-1 mt-4 xl:mt-0">
+                <!-- Total Truck -->
                 <div
-                  class="rounded-lg border bg-background px-4 py-2 flex flex-col justify-center gap-1 border-l-4 border-l-blue-500 shadow-sm min-w-[150px]"
+                  class="rounded-xl border bg-blue-50/50 border-blue-100 px-3 py-2 flex flex-col items-center justify-center gap-0.5 shadow-sm w-full min-h-[72px]"
                 >
-                  <span class="text-xs text-muted-foreground font-medium">{{
-                    t('truckScale.stats.totalTrips')
+                  <div class="flex items-center gap-1.5 mb-0.5">
+                    <Truck class="w-3.5 h-3.5 text-blue-600" />
+                    <span class="text-[10px] text-blue-600 font-bold uppercase tracking-wider">{{
+                      t('truckScale.stats.totalTrips')
+                    }}</span>
+                  </div>
+                  <span class="text-3xl font-black text-blue-950 leading-none">{{
+                    dashboardStats.count
                   }}</span>
-                  <span class="text-xl font-bold leading-none">{{ dashboardStats.count }}</span>
                 </div>
 
+                <!-- Gross Weight -->
                 <div
-                  class="rounded-lg border bg-background px-4 py-2 flex flex-col justify-center gap-1 border-l-4 border-l-green-500 shadow-sm min-w-[150px]"
+                  class="rounded-xl border bg-green-50/50 border-green-100 px-3 py-2 flex flex-col items-center justify-center gap-0.5 shadow-sm w-full min-h-[72px]"
                 >
-                  <span class="text-xs text-muted-foreground font-medium">{{
-                    t('truckScale.stats.totalNetWeight')
-                  }}</span>
-                  <span class="text-xl font-bold leading-none text-green-600"
-                    >{{ dashboardStats.net.toLocaleString() }} Kg.</span
-                  >
-                </div>
-
-                <div
-                  class="rounded-lg border bg-background px-4 py-2 flex flex-col justify-center gap-1 border-l-4 border-l-blue-400 shadow-sm min-w-[150px]"
-                >
-                  <span class="text-xs text-muted-foreground font-medium">{{
-                    t('truckScale.stats.totalGross')
-                  }}</span>
-                  <span class="text-xl font-bold leading-none text-blue-500"
-                    >{{ dashboardStats.gross.toLocaleString() }} Kg.</span
-                  >
-                </div>
-
-                <div
-                  class="rounded-lg border bg-background px-4 py-2 flex flex-col justify-center gap-1 border-l-4 border-l-orange-500 shadow-sm min-w-[150px]"
-                >
-                  <span class="text-xs text-muted-foreground font-medium">{{
-                    t('truckScale.stats.inOut')
-                  }}</span>
+                  <div class="flex items-center gap-1.5 mb-0.5">
+                    <Circle class="w-2 h-2 fill-current text-green-500" />
+                    <span class="text-[10px] text-green-600 font-bold uppercase tracking-wider">{{
+                      t('truckScale.stats.totalGrossWeight') || 'Total Gross Weight'
+                    }}</span>
+                  </div>
                   <div class="flex items-baseline gap-1">
-                    <span class="text-lg font-bold text-blue-600">{{
+                    <span class="text-3xl font-black text-green-950 leading-none">{{
+                      dashboardStats.net.toLocaleString()
+                    }}</span>
+                    <span class="text-[10px] font-bold text-green-600/70">Kg.</span>
+                  </div>
+                </div>
+
+                <!-- Weight In -->
+                <div
+                  class="rounded-xl border bg-indigo-50/50 border-indigo-100 px-3 py-2 flex flex-col items-center justify-center gap-0.5 shadow-sm w-full min-h-[72px]"
+                >
+                  <div class="flex items-center gap-1.5 mb-0.5">
+                    <Weight class="w-3.5 h-3.5 text-indigo-600" />
+                    <span class="text-[10px] text-indigo-600 font-bold uppercase tracking-wider">{{
+                      t('truckScale.stats.totalWeightIn') || 'Total Weight In'
+                    }}</span>
+                  </div>
+                  <div class="flex items-baseline gap-1">
+                    <span class="text-3xl font-black text-indigo-950 leading-none">{{
+                      dashboardStats.gross.toLocaleString()
+                    }}</span>
+                    <span class="text-[10px] font-bold text-indigo-600/70">Kg.</span>
+                  </div>
+                </div>
+
+                <!-- In / Out -->
+                <div
+                  class="rounded-xl border bg-orange-50/50 border-orange-100 px-3 py-2 flex flex-col items-center justify-center gap-0.5 shadow-sm w-full min-h-[72px]"
+                >
+                  <div class="flex items-center gap-1.5 mb-0.5">
+                    <Circle class="w-2 h-2 fill-current text-orange-500" />
+                    <span class="text-[10px] text-orange-600 font-bold uppercase tracking-wider">{{
+                      t('truckScale.stats.inOut')
+                    }}</span>
+                  </div>
+                  <div class="flex items-baseline gap-1">
+                    <span class="text-lg font-black text-orange-950">{{
                       dashboardStats.weightIn.toLocaleString()
                     }}</span>
-                    <span class="text-muted-foreground">/</span>
-                    <span class="text-lg font-bold text-orange-600">{{
+                    <span class="text-orange-400 font-light mx-0.5">/</span>
+                    <span class="text-lg font-bold text-orange-800">{{
                       dashboardStats.weightOut.toLocaleString()
                     }}</span>
-                    <span class="text-sm text-muted-foreground ml-1">Kg.</span>
+                    <span class="text-[10px] font-bold text-orange-600/70 ml-0.5">Kg.</span>
                   </div>
                 </div>
               </div>
