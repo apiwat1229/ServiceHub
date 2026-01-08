@@ -8,6 +8,7 @@ import {
   ClipboardCheck,
   Layers,
   LayoutDashboard,
+  Server,
   Shield,
   Truck,
   Users,
@@ -73,7 +74,10 @@ const allMenuGroups = computed(() => [
   },
   {
     title: t('admin.sidebar.system'),
-    items: [{ name: t('admin.sidebar.analytics'), path: '/admin/analytics', icon: Activity }], // Pending permission module
+    items: [
+      { name: t('admin.sidebar.analytics'), path: '/admin/analytics', icon: Activity },
+      { name: t('admin.systemStatus.title'), path: '/admin/system-status', icon: Server },
+    ],
   },
 ]);
 

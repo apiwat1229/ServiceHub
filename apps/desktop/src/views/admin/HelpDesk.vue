@@ -38,6 +38,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import Spinner from '@/components/ui/spinner/Spinner.vue';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { itAssetsApi, type ITAsset } from '@/services/it-assets';
 import { itTicketsApi, type ITTicket } from '@/services/it-tickets';
@@ -832,8 +833,8 @@ const categories = computed(() => {
         </div>
 
         <!-- eBook Grid -->
-        <div v-if="loadingBooks" class="text-center py-12">
-          <p class="text-muted-foreground">{{ t('services.itHelp.kb.loading') }}</p>
+        <div v-if="loadingBooks" class="flex justify-center py-12">
+          <Spinner class="h-8 w-8 text-primary" />
         </div>
 
         <div v-else-if="filteredBooks.length === 0" class="text-center py-12">
@@ -897,7 +898,10 @@ const categories = computed(() => {
             </div>
           </CardHeader>
           <CardContent>
-            <DataTable :columns="itAssetColumns" :data="filteredITStock" />
+            <div v-if="loadingStock" class="flex justify-center py-12">
+              <Spinner class="h-8 w-8 text-primary" />
+            </div>
+            <DataTable v-else :columns="itAssetColumns" :data="filteredITStock" />
           </CardContent>
         </Card>
       </TabsContent>
@@ -994,7 +998,10 @@ const categories = computed(() => {
       </TabsContent>
 
       <TabsContent value="tickets" class="space-y-4">
-        <template v-if="tickets.length > 0">
+        <div v-if="loadingTickets" class="flex justify-center py-12">
+          <Spinner class="h-8 w-8 text-primary" />
+        </div>
+        <template v-else-if="tickets.length > 0">
           <!-- Stats Header & Filter -->
           <template v-if="isITDepartment">
             <div class="flex items-center justify-between">

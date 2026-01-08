@@ -2,6 +2,7 @@
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
+import Spinner from '@/components/ui/spinner/Spinner.vue';
 import api from '@/services/api';
 import { knowledgeBooksApi, type KnowledgeBook } from '@/services/knowledge-books';
 import { useElementSize } from '@vueuse/core';
@@ -123,8 +124,17 @@ async function loadContent() {
   } catch (error) {
     console.error('Failed to load document:', error);
   } finally {
-    loading.value = false;
+    // If not PDF, stop loading immediately (as we show fallback)
+    // If PDF, we wait for 'loaded' event from VuePdfEmbed
+    if (props.book?.fileType !== 'pdf') {
+      loading.value = false;
+    }
   }
+}
+
+function handlePdfLoadFailed() {
+  loading.value = false;
+  console.error('PDF rendering failed');
 }
 
 // Navigation Logic
@@ -144,6 +154,7 @@ function prevPage() {
 function handlePdfLoaded(pdf: any) {
   // vue-pdf-embed 2.x passes the document proxy
   pageCount.value = pdf.numPages;
+  loading.value = false;
 }
 
 // Watch both open and book to fix re-open bug
@@ -242,7 +253,10 @@ watch(
             >
               <div class="space-y-2 w-full text-center">
                 <div class="flex items-center justify-between text-sm">
-                  <span class="font-medium">{{ t('common.loading') }}</span>
+                  <span class="font-medium flex items-center gap-2">
+                    <Spinner class="h-3.5 w-3.5" />
+                    {{ t('common.loading') }}
+                  </span>
                   <span class="text-muted-foreground">{{ progress }}%</span>
                 </div>
                 <Progress :model-value="progress" class="h-2" />
@@ -255,7 +269,7 @@ watch(
 
           <!-- PDF Viewer Wrapper -->
           <div
-            v-if="(book?.fileType === 'pdf' || book?.fileType === 'pptx') && fileUrl"
+            v-if="book?.fileType === 'pdf' && fileUrl"
             class="w-full flex items-center justify-center p-2 sm:p-4"
           >
             <div class="max-w-full bg-white shadow-xl ring-1 ring-black/5">
@@ -267,6 +281,7 @@ watch(
                 :width="containerWidth > 48 ? containerWidth - 48 : undefined"
                 class="max-w-full"
                 @loaded="handlePdfLoaded"
+                @loading-failed="handlePdfLoadFailed"
               />
             </div>
           </div>

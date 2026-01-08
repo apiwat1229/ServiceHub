@@ -2,8 +2,10 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import Spinner from '@/components/ui/spinner/Spinner.vue';
 import api from '@/services/api';
 import { AlertCircle, CheckCircle2, Clock, XCircle } from 'lucide-vue-next';
+import { onMounted, ref } from 'vue';
 import { toast } from 'vue-sonner';
 
 interface ApprovalRequest {
@@ -96,7 +98,9 @@ onMounted(() => {
 
 <template>
   <div class="space-y-4">
-    <div v-if="isLoading" class="text-center py-8 text-muted-foreground">Loading approvals...</div>
+    <div v-if="isLoading" class="flex justify-center py-8">
+      <Spinner class="h-8 w-8 text-primary" />
+    </div>
 
     <div v-else-if="approvals.length === 0" class="text-center py-8 text-muted-foreground">
       <AlertCircle class="w-12 h-12 mx-auto mb-2 opacity-50" />

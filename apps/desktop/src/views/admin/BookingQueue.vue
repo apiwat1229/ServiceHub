@@ -44,6 +44,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import Spinner from '@/components/ui/spinner/Spinner.vue';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuthStore } from '@/stores/auth';
 import { useRoute, useRouter } from 'vue-router';
@@ -583,7 +584,7 @@ watch(selectedSlot, (newSlot) => {
 
     <!-- Queue Grid -->
     <div v-if="loading" class="flex justify-center p-12">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <Spinner class="h-8 w-8 text-primary" />
     </div>
 
     <div

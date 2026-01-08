@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import Spinner from '@/components/ui/spinner/Spinner.vue';
 import { Eye, EyeOff } from 'lucide-vue-next';
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -96,7 +97,10 @@ defineExpose({
         </div>
 
         <Button type="submit" class="w-full" :disabled="loading">
-          <span v-if="loading">{{ t('auth.signingIn') }}</span>
+          <span v-if="loading" class="flex items-center gap-2">
+            <Spinner class="h-4 w-4" />
+            {{ t('auth.signingIn') }}
+          </span>
           <span v-else>{{ t('auth.login') }}</span>
         </Button>
       </form>

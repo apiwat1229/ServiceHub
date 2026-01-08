@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import Spinner from '@/components/ui/spinner/Spinner.vue';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { itAssetsApi, type ITAsset } from '@/services/it-assets';
@@ -187,7 +188,11 @@ const getImageUrl = (path: string | null | undefined) => {
 
 <template>
   <form @submit.prevent="handleSubmit" class="pt-2">
+    <div v-if="loadingAssets" class="flex justify-center py-12">
+      <Spinner class="h-8 w-8 text-primary" />
+    </div>
     <div
+      v-else
       :class="
         cn(
           'transition-all duration-500',
@@ -411,7 +416,10 @@ const getImageUrl = (path: string | null | undefined) => {
       </Button>
       <Button type="submit" class="flex-1 gap-2" :disabled="loading">
         <Send v-if="!loading" class="w-4 h-4" />
-        <span v-if="loading">{{ t('services.itHelp.request.submitting') }}</span>
+        <span v-if="loading" class="flex items-center gap-2">
+          <Spinner class="h-4 w-4" />
+          {{ t('services.itHelp.request.submitting') }}
+        </span>
         <span v-else>{{ t('services.itHelp.request.submit') }}</span>
       </Button>
     </div>

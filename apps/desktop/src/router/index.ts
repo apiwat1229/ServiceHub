@@ -93,6 +93,11 @@ const routes = [
                 component: () => import('../views/admin/Dashboard.vue'),
             },
             {
+                path: 'system-status',
+                name: 'SystemStatus',
+                component: () => import('../views/admin/SystemStatus.vue'),
+            },
+            {
                 path: 'roles',
                 name: 'Roles',
                 component: () => import('../views/admin/Roles.vue'),
@@ -141,16 +146,6 @@ const routes = [
                 path: 'project-timeline',
                 name: 'ProjectTimeline',
                 component: () => import('../views/admin/ProjectTimeline.vue'),
-            },
-            {
-                path: 'contracts',
-                name: 'Contracts',
-                component: () => import('../views/admin/Contracts.vue'),
-            },
-            {
-                path: 'contact-management',
-                name: 'ContactManagement',
-                component: () => import('../views/admin/ContactManagement.vue'),
             },
             {
                 path: 'bookings',
@@ -205,6 +200,28 @@ const routes = [
         path: '/:pathMatch(.*)*',
         name: 'NotFound',
         component: () => import('../views/NotFound.vue'),
+    },
+    {
+        path: '/admin/contracts',
+        component: () => import('@/components/layout/NavbarOnlyLayout.vue'),
+        meta: { requiresAuth: true },
+        children: [
+            {
+                path: '',
+                name: 'Contracts',
+                component: () => import('../views/admin/contracts/ContractList.vue'),
+            },
+            {
+                path: 'create',
+                name: 'CreateContract',
+                component: () => import('../views/admin/contracts/ContractForm.vue'),
+            },
+            {
+                path: ':id',
+                name: 'EditContract',
+                component: () => import('../views/admin/contracts/ContractForm.vue'),
+            },
+        ]
     }
 ];
 

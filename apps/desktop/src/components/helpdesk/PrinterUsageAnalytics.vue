@@ -78,6 +78,7 @@ const selectedPeriod = ref<string>('');
 const userDepartmentMap = ref<Record<string, string>>({});
 const dbDepartments = ref<PrinterDepartmentDto[]>([]);
 const showSettings = ref(false);
+const loading = ref(false);
 
 // Load data from DB
 const loadDbData = async () => {
@@ -395,9 +396,10 @@ const loadHistory = async () => {
   }
 };
 
-onMounted(() => {
-  loadDbData();
-  loadHistory();
+onMounted(async () => {
+  loading.value = true;
+  await Promise.all([loadDbData(), loadHistory()]);
+  loading.value = false;
 });
 
 const formatNumber = (num: number) => {
@@ -1294,7 +1296,12 @@ onUnmounted(() => {
       </PrinterSettings>
     </div>
 
-    <!-- Deprecated loading state removed -->
+    <!-- Loading State -->
+    <template v-if="loading">
+      <div class="flex justify-center py-12">
+        <Spinner class="h-8 w-8 text-primary" />
+      </div>
+    </template>
 
     <template v-else-if="!hasData">
       <!-- Empty State -->

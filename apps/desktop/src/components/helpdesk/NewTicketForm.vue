@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import Spinner from '@/components/ui/spinner/Spinner.vue';
 import { Textarea } from '@/components/ui/textarea';
 import { itTicketsApi } from '@/services/it-tickets';
 import { Paperclip, Send, Trash2 } from 'lucide-vue-next';
@@ -318,7 +319,10 @@ const handleSubmit = async () => {
       </Button>
       <Button type="submit" class="flex-1 gap-2" :disabled="loading">
         <Send v-if="!loading" class="w-4 h-4" />
-        <span v-if="loading">{{ t('services.itHelp.request.submitting') }}</span>
+        <span v-if="loading" class="flex items-center gap-2">
+          <Spinner class="h-4 w-4" />
+          {{ t('services.itHelp.request.submitting') }}
+        </span>
         <span v-else>{{ t('services.itHelp.tickets.submit') }}</span>
       </Button>
     </div>
