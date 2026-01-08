@@ -8,7 +8,7 @@ import { Server, Socket } from 'socket.io';
 
 @WebSocketGateway({
     cors: {
-        origin: true, // Reflect origin
+        origin: ['https://app.ytrc.co.th', 'http://localhost:5173'],
         credentials: true,
     },
     transports: ['websocket', 'polling'],
