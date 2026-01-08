@@ -1,0 +1,38 @@
+name: Deploy Production
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.KEY }}
+          port: 22
+          script: |
+            cd /home/admin/Desktop/Desktop-NestJS
+            git pull origin main
+            npm install
+            
+            # Build API
+            echo "Building API..."
+            npm run build:api
+            pm2 restart nestjs-api
+            
+            # Build Frontend
+            echo "Building Frontend..."
+            npm install @unovis/ts @unovis/vue --workspace=apps/desktop # Ensure deps
+            npm run build:web --workspace=apps/desktop
+            
+            # Update Static Files (No sudo needed now)
+            echo "Updating Static Files..."
+            rm -rf /var/www/ytrc-app/*
+            cp -r apps/desktop/dist/* /var/www/ytrc-app/
+            
+            echo "Deployment Complete!"

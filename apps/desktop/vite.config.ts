@@ -117,5 +117,10 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(__dirname, './src'),
       },
     },
+    server: {
+      host: true,
+      port: 5173,
+      allowedHosts: ['app.ytrc.co.th', 'localhost', '122.154.46.21'],
+    },
   }
 })
