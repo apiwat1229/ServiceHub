@@ -86,10 +86,14 @@ const getRubberTypeName = (code: string) => {
 };
 
 // Helper to check if Rubber Type is Cuplump
-const isCuplumpType = (code: string) => {
-  if (!code) return false;
-  const type = rubberTypes.value.find((t) => t.code === code);
-  return type ? type.category === 'Cuplump' : false;
+const isCuplumpType = (val: string) => {
+  if (!val) return false;
+  // Look up in master data by code or name
+  const type = rubberTypes.value.find((t) => t.code === val || t.name === val);
+  if (type) return type.category === 'Cuplump';
+  // Robust fallback for names like "EUDR CL", "Regular CL"
+  const upperVal = val.toUpperCase();
+  return upperVal.includes('CL') || upperVal.includes('CUPLUMP');
 };
 
 // Processed Data (Split logic)
@@ -99,8 +103,15 @@ const processedBookings = computed(() => {
   bookings.value.forEach((b) => {
     const isTrailer = ['10 ล้อ พ่วง', '10 ล้อ (พ่วง)'].includes(b.truckType);
 
-    // Filter Main Truck by Rubber Type
-    if (isCuplumpType(b.rubberType)) {
+    // 1. Main Truck Part
+    const hasMainWeight =
+      (b.weightIn && b.weightIn > 0) ||
+      (b.grossWeight && b.grossWeight > 0) ||
+      (b.actualWeight && b.actualWeight > 0) ||
+      (b.estimatedWeight && b.estimatedWeight > 0);
+
+    if (isCuplumpType(b.rubberType) && hasMainWeight) {
+      const isComplete = (b.moisture || 0) > 0 && (b.cpAvg || 0) > 0;
       result.push({
         ...b,
         id: b.id + '-main',
@@ -117,17 +128,19 @@ const processedBookings = computed(() => {
         drcActual: b.drcActual || '-',
         cpAvg: b.cpAvg || '-',
         lotNo: b.lotNo || '-',
+        isComplete,
       });
     }
 
     // 2. Trailer Part
-    const hasTrailerData =
+    const hasTrailerWeight =
       (b.trailerWeightIn && b.trailerWeightIn > 0) ||
       (b.trailerGrossWeight && b.trailerGrossWeight > 0) ||
       (b.trailerActualWeight && b.trailerActualWeight > 0) ||
       (b.trailerEstimatedWeight && b.trailerEstimatedWeight > 0);
 
-    if (isTrailer && hasTrailerData && isCuplumpType(b.trailerRubberType)) {
+    if (isTrailer && hasTrailerWeight && isCuplumpType(b.trailerRubberType)) {
+      const isComplete = (b.trailerMoisture || 0) > 0 && (b.trailerCpAvg || 0) > 0;
       result.push({
         ...b,
         id: b.id + '-trailer',
@@ -142,6 +155,7 @@ const processedBookings = computed(() => {
         drcEst: b.trailerDrcEst || '-',
         cpAvg: b.trailerCpAvg || '-',
         lotNo: b.trailerLotNo || '1251226-' + b.queueNo + '/2',
+        isComplete,
       });
     }
   });
@@ -149,9 +163,9 @@ const processedBookings = computed(() => {
   let data = result;
 
   if (activeTab.value === 'complete') {
-    data = data.filter((item) => item.displayWeightOut > 0);
+    data = data.filter((item) => item.isComplete);
   } else if (activeTab.value === 'incomplete') {
-    data = data.filter((item) => !item.displayWeightOut);
+    data = data.filter((item) => !item.isComplete);
   }
 
   if (searchQuery.value) {
@@ -169,13 +183,10 @@ const processedBookings = computed(() => {
 
 const stats = computed(() => {
   const total = processedBookings.value.length;
-  const complete = processedBookings.value.filter((i) => i.displayWeightOut > 0).length;
+  const complete = processedBookings.value.filter((i) => i.isComplete).length;
   const incomplete = total - complete;
   const grossWeight = processedBookings.value.reduce((sum, i) => sum + (i.displayWeightIn || 0), 0);
-  const netWeight = processedBookings.value.reduce((sum, i) => {
-    const net = (i.displayWeightIn || 0) - (i.displayWeightOut || 0);
-    return sum + (net > 0 ? net : 0);
-  }, 0);
+  const netWeight = 0; // Set to 0 as net weight is placeholder now
 
   return { total, complete, incomplete, grossWeight, netWeight };
 });
@@ -201,7 +212,7 @@ const columns: ColumnDef<any>[] = [
       h('div', { class: 'flex flex-col' }, [
         h(
           'span',
-          { class: 'font-medium' },
+          { class: 'font-bold text-slate-950 dark:text-slate-50' },
           row.original.supplierCode + ' : ' + row.original.supplierName
         ),
       ]),
@@ -269,25 +280,18 @@ const columns: ColumnDef<any>[] = [
   },
   {
     accessorKey: 'weightIn',
-    header: () => t('cuplump.grossWeight'),
+    header: () => h('div', { class: 'text-right w-full pr-4' }, t('cuplump.grossWeight')),
     cell: ({ row }) =>
       h(
         'div',
-        { class: 'font-bold' },
+        { class: 'font-bold text-right pr-4' },
         (row.original.displayWeightIn || 0).toLocaleString() + ' ' + t('cuplump.kg')
       ),
   },
   {
     accessorKey: 'netWeight',
-    header: () => t('cuplump.netWeight'),
-    cell: ({ row }) => {
-      const net = (row.original.displayWeightIn || 0) - (row.original.displayWeightOut || 0);
-      return h(
-        'div',
-        { class: 'font-bold text-green-600' },
-        (net > 0 ? net : 0).toLocaleString() + ' ' + t('cuplump.kg')
-      );
-    },
+    header: () => h('div', { class: 'text-right w-full pr-4' }, t('cuplump.netWeight')),
+    cell: () => h('div', { class: 'font-bold text-green-600 text-right pr-4' }, '-'),
   },
   {
     id: 'actions',

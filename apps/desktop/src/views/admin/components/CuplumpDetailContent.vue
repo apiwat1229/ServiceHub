@@ -511,7 +511,7 @@ onMounted(() => {
         <div class="grid grid-cols-12 gap-3">
           <!-- Rubber Type -->
           <div
-            class="col-span-2 px-4 py-3 rounded-xl bg-slate-50/50 border border-slate-100 dark:bg-slate-900/20 dark:border-slate-800 flex flex-col justify-center min-h-[5.5rem]"
+            class="col-span-2 px-4 py-3 rounded-xl bg-slate-50/50 border border-slate-100 dark:bg-slate-900/20 dark:border-slate-800 flex flex-col justify-center min-h-[4.5rem]"
           >
             <div class="text-[0.625rem] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
               {{ t('cuplump.rubberType') }}
@@ -523,7 +523,7 @@ onMounted(() => {
 
           <!-- Gross Weight -->
           <div
-            class="col-span-2 p-2 rounded-xl bg-blue-50/50 border border-blue-100 dark:bg-blue-900/20 dark:border-blue-800 flex flex-col justify-center items-center text-center min-h-[5.5rem]"
+            class="col-span-2 p-2 rounded-xl bg-blue-50/50 border border-blue-100 dark:bg-blue-900/20 dark:border-blue-800 flex flex-col justify-center items-center text-center min-h-[4.5rem]"
           >
             <div
               class="text-[0.5625rem] font-bold text-blue-600 uppercase tracking-tighter mb-1.5 leading-none"
@@ -538,7 +538,7 @@ onMounted(() => {
 
           <!-- Net Weight -->
           <div
-            class="col-span-2 p-2 rounded-xl bg-green-50/50 border border-green-100 dark:bg-green-900/20 dark:border-green-800 flex flex-col justify-center items-center text-center min-h-[5.5rem]"
+            class="col-span-2 p-2 rounded-xl bg-green-50/50 border border-green-100 dark:bg-green-900/20 dark:border-green-800 flex flex-col justify-center items-center text-center min-h-[4.5rem]"
           >
             <div
               class="text-[0.5625rem] font-bold text-green-600 uppercase tracking-tighter mb-1.5 leading-none"
@@ -553,7 +553,7 @@ onMounted(() => {
 
           <!-- Ave. %CP -->
           <div
-            class="col-span-1 p-2 rounded-xl bg-indigo-50/50 border border-indigo-100 dark:bg-indigo-900/20 dark:border-indigo-800 flex flex-col justify-center items-center text-center min-h-[5.5rem]"
+            class="col-span-1 p-2 rounded-xl bg-indigo-50/50 border border-indigo-100 dark:bg-indigo-900/20 dark:border-indigo-800 flex flex-col justify-center items-center text-center min-h-[4.5rem]"
           >
             <div
               class="text-[0.5625rem] font-bold text-indigo-600 uppercase tracking-tighter mb-1.5"
@@ -567,7 +567,7 @@ onMounted(() => {
           <Popover v-model:open="isMoistureOpen">
             <PopoverTrigger as-child>
               <div
-                class="col-span-1 cursor-pointer p-2 rounded-xl bg-orange-50/50 border border-orange-100 dark:bg-orange-900/20 dark:border-orange-800 flex flex-col justify-center items-center text-center min-h-[5.5rem] hover:bg-orange-100/50 transition-colors"
+                class="col-span-1 cursor-pointer p-2 rounded-xl bg-orange-50/50 border border-orange-100 dark:bg-orange-900/20 dark:border-orange-800 flex flex-col justify-center items-center text-center min-h-[4.5rem] hover:bg-orange-100/50 transition-colors"
               >
                 <div
                   class="text-[0.5625rem] font-bold text-orange-600 uppercase tracking-tighter mb-1.5"
@@ -613,7 +613,7 @@ onMounted(() => {
           <Popover v-model:open="isDrcOpen">
             <PopoverTrigger as-child>
               <div
-                class="col-span-4 cursor-pointer p-3 rounded-xl bg-teal-50/50 border border-teal-100 dark:bg-teal-900/20 dark:border-teal-800 flex flex-col min-h-[5.5rem] hover:bg-teal-100/50 transition-colors group relative"
+                class="col-span-4 cursor-pointer p-3 rounded-xl bg-teal-50/50 border border-teal-100 dark:bg-teal-900/20 dark:border-teal-800 flex flex-col min-h-[4.5rem] hover:bg-teal-100/50 transition-colors group relative"
               >
                 <!-- Main Header -->
                 <div
