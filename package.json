@@ -8,9 +8,9 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev:api\" \"npm run dev:vite\"",
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:desktop\" \"npm run dev:vite\"",
     "dev:web": "concurrently \"npm run dev:api\" \"npm run dev:vite\"",
-    "dev:app": "npm run dev:desktop",
+    "dev:app": "concurrently \"npm run dev:api\" \"npm run dev:desktop\"",
     "dev:api": "cross-env API_PORT=2530 npm run start:dev --workspace=apps/api",
     "dev:desktop": "npm run dev --workspace=apps/desktop",
     "dev:vite": "npm run dev:web --workspace=apps/desktop",
