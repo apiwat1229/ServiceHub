@@ -10,6 +10,7 @@ export class RubberTypesService {
             data: {
                 code: data.code,
                 name: data.name,
+                category: data.category,
                 description: data.description,
                 is_active: data.status === 'ACTIVE' || data.is_active === true, // handle both
             },
@@ -42,6 +43,7 @@ export class RubberTypesService {
             data: {
                 code: data.code,
                 name: data.name,
+                category: data.category,
                 description: data.description,
                 is_active: data.status ? data.status === 'ACTIVE' : data.is_active,
             },

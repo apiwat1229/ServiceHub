@@ -10,11 +10,21 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import type { KnowledgeBook } from '@/services/knowledge-books';
-import { Calendar, Download, Eye, FileText, Presentation, Trash2, User } from 'lucide-vue-next';
+import {
+  Calendar,
+  Download,
+  Eye,
+  FileText,
+  Pencil,
+  Presentation,
+  Trash2,
+  User,
+  Users,
+} from 'lucide-vue-next';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 const props = defineProps<{
   book: KnowledgeBook;
@@ -25,6 +35,7 @@ const emit = defineEmits<{
   view: [];
   download: [];
   delete: [];
+  edit: [];
 }>();
 
 const fileIcon = computed(() => {
@@ -39,7 +50,7 @@ const formattedDate = computed(() => {
   const date = props.book.trainingDate
     ? new Date(props.book.trainingDate)
     : new Date(props.book.createdAt);
-  const localeStr = t('navbar.home') === 'Home' ? 'en-GB' : 'th-TH'; // Simple check or use locale.value
+  const localeStr = locale.value === 'th' ? 'th-TH' : 'en-GB';
   return date.toLocaleDateString(localeStr, {
     year: 'numeric',
     month: 'short',
@@ -64,14 +75,14 @@ const uploaderName = computed(() => {
 </script>
 
 <template>
-  <Card class="hover:shadow-lg transition-shadow cursor-pointer group" @click="emit('view')">
+  <Card class="hover:shadow-lg transition-shadow group">
     <CardHeader class="pb-3">
       <div class="flex items-start gap-3">
         <div class="p-3 rounded-lg bg-muted">
           <component :is="fileIcon" :class="['w-8 h-8', fileIconColor]" />
         </div>
         <div class="flex-1 min-w-0">
-          <CardTitle class="text-lg line-clamp-2 group-hover:text-primary transition-colors">
+          <CardTitle class="text-lg line-clamp-2 transition-colors">
             {{ book.title }}
           </CardTitle>
           <Badge variant="secondary" class="mt-2">
@@ -114,25 +125,34 @@ const uploaderName = computed(() => {
         </div>
       </div>
 
-      <div class="flex items-center justify-between w-full text-xs text-muted-foreground">
-        <div class="flex items-center gap-1">
-          <User class="w-3 h-3" />
-          <span>{{ uploaderName }}</span>
+      <div class="flex flex-col gap-1 w-full text-xs text-muted-foreground">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-1 text-muted-foreground/80">
+            <User class="w-3 h-3" />
+            <span>{{ uploaderName }}</span>
+          </div>
+          <div v-if="book.attendees" class="flex items-center gap-1 text-primary/80 font-medium">
+            <Users class="w-3 h-3" />
+            <span>{{ t('services.itHelp.kb.fields.attendees') }}: {{ book.attendees }}</span>
+          </div>
         </div>
-        <div class="flex items-center gap-1">
+        <div class="flex items-center justify-end gap-1">
           <Calendar class="w-3 h-3" />
-          <span>Training Date: {{ formattedDate }}</span>
+          <span>{{ t('services.itHelp.kb.fields.trainingDate') }}: {{ formattedDate }}</span>
         </div>
       </div>
 
       <div class="flex gap-2 w-full" @click.stop>
         <Button variant="default" size="sm" class="flex-1" @click="emit('view')">
           <Eye class="w-3 h-3 mr-1" />
-          {{ t('navbar.home') === 'Home' ? 'View' : 'ดู' }}
+          {{ t('common.view') }}
         </Button>
         <Button variant="outline" size="sm" class="flex-1" @click="emit('download')">
           <Download class="w-3 h-3 mr-1" />
-          {{ t('navbar.home') === 'Home' ? 'Download' : 'ดาวน์โหลด' }}
+          {{ t('common.download') || (locale === 'th' ? 'ดาวน์โหลด' : 'Download') }}
+        </Button>
+        <Button v-if="canDelete" variant="outline" size="sm" class="px-2" @click="emit('edit')">
+          <Pencil class="w-3 h-3 text-blue-500" />
         </Button>
         <Button
           v-if="canDelete"

@@ -4,6 +4,7 @@ export interface RubberType {
     id: string;
     code: string;
     name: string;
+    category?: string;
     description?: string;
     is_active: boolean;
     createdAt?: string;

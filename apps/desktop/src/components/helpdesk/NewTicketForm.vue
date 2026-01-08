@@ -212,18 +212,42 @@ const handleSubmit = async () => {
       <div class="space-y-2">
         <Label for="priority">{{ t('services.itHelp.tickets.priority') }}</Label>
         <Select v-model="form.priority">
-          <SelectTrigger id="priority">
+          <SelectTrigger id="priority" class="h-10">
             <SelectValue :placeholder="t('services.itHelp.tickets.priority')" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="low">{{ t('services.itHelp.tickets.priorities.low') }}</SelectItem>
-            <SelectItem value="medium">{{
-              t('services.itHelp.tickets.priorities.medium')
-            }}</SelectItem>
-            <SelectItem value="high">{{ t('services.itHelp.tickets.priorities.high') }}</SelectItem>
-            <SelectItem value="critical">{{
-              t('services.itHelp.tickets.priorities.critical')
-            }}</SelectItem>
+            <SelectItem value="low">
+              <div class="flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-emerald-500 shadow-sm" />
+                <span class="text-emerald-700 font-medium">{{
+                  t('services.itHelp.tickets.priorities.low')
+                }}</span>
+              </div>
+            </SelectItem>
+            <SelectItem value="medium">
+              <div class="flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-amber-500 shadow-sm" />
+                <span class="text-amber-700 font-medium">{{
+                  t('services.itHelp.tickets.priorities.medium')
+                }}</span>
+              </div>
+            </SelectItem>
+            <SelectItem value="high">
+              <div class="flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-orange-600 shadow-sm" />
+                <span class="text-orange-700 font-medium">{{
+                  t('services.itHelp.tickets.priorities.high')
+                }}</span>
+              </div>
+            </SelectItem>
+            <SelectItem value="critical">
+              <div class="flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-red-600 shadow-sm animate-pulse" />
+                <span class="text-red-700 font-bold">
+                  {{ t('services.itHelp.tickets.priorities.critical') }}
+                </span>
+              </div>
+            </SelectItem>
           </SelectContent>
         </Select>
       </div>

@@ -20,9 +20,6 @@ import { toast } from 'vue-sonner';
 
 const { t } = useI18n();
 
-// Refs for inputs
-// Refs for inputs (Removed unused refs and focusNext)
-
 const props = defineProps<{
   bookingId: string;
   isTrailer: boolean;
@@ -69,7 +66,6 @@ watch(isDrcOpen, (newVal) => {
   }
 });
 
-// New Sample Form
 // New Sample Form (Batch)
 const newSamples = ref<any[]>([]);
 
@@ -137,8 +133,8 @@ const fetchData = async () => {
   }
 };
 
-// Calculate Cuplump (Before - Basket)
-const calculateCuplump = (before: number, basket: number) => {
+// Calculate USS (Before - Basket) -- Similar to Cuplump calculation
+const calculateUss = (before: number, basket: number) => {
   return Math.max(0, before - basket).toFixed(2);
 };
 
@@ -148,70 +144,61 @@ const handleSaveAllSamples = async () => {
   // Validation
   const valid = newSamples.value.every((s) => s.beforePress);
   if (!valid) {
-    toast.error(t('cuplump.enterBeforePress'));
+    toast.error(t('uss.enterBeforePress')); // Changed locale key
     return;
   }
 
-  if (!confirm(t('cuplump.confirmSaveAll', { count: newSamples.value.length }) + '?')) return;
+  if (!confirm(t('uss.confirmSaveAll', { count: newSamples.value.length }) + '?')) return; // Changed locale key
 
   isSaving.value = true;
   try {
     const promises = newSamples.value.map((sample) => {
       return bookingsApi.saveSample(props.bookingId, {
         ...sample,
-        basketWeight: parseFloat(sample.basket), // Map frontend 'basket' to backend 'basketWeight'
+        basketWeight: parseFloat(sample.basket),
         isTrailer: props.isTrailer,
-        cuplumpWeight: parseFloat(sample.beforePress) - parseFloat(sample.basket),
+        cuplumpWeight: parseFloat(sample.beforePress) - parseFloat(sample.basket), // Backend likely expects same field name
       });
     });
 
     await Promise.all(promises);
-    toast.success(t('cuplump.sampleSaved'));
-    emit('update'); // Notify parent to refresh
+    toast.success(t('uss.sampleSaved')); // Changed locale key
+    emit('update');
 
     // Reset and Reload
     newSamples.value = [];
     fetchData();
   } catch (error) {
     console.error('Failed to save samples:', error);
-    toast.error(t('cuplump.failedToSave'));
+    toast.error(t('uss.failedToSave')); // Changed locale key
   } finally {
     isSaving.value = false;
   }
 };
 
 const handleDeleteSample = async (sampleId: string) => {
-  if (!confirm(t('cuplump.confirmDelete'))) return;
+  if (!confirm(t('uss.confirmDelete'))) return; // Changed locale key
   try {
     await bookingsApi.deleteSample(props.bookingId, sampleId);
-    toast.success(t('cuplump.sampleDeleted'));
+    toast.success(t('uss.sampleDeleted')); // Changed locale key
     emit('update');
     fetchData();
   } catch (e) {
-    toast.error(t('cuplump.failedToDelete'));
+    toast.error(t('uss.failedToDelete')); // Changed locale key
   }
 };
 
 const validateLotInput = (event: Event) => {
   const input = event.target as HTMLInputElement;
   const rawValue = input.value;
-
-  // Clean value (keep only digits)
   const cleanedValue = rawValue.replace(/\D/g, '');
 
   if (rawValue !== cleanedValue) {
-    // If characters were stripped, show error
-    lotNoError.value = t('cuplump.numericOnly');
-    booking.value.lotNo = cleanedValue; // Force update model
-
-    // v-model sync might need nextTick or direct value update if it lags,
-    // but usually updating the reactive ref is enough.
-    // However, to ensure visual input update immediately for the user:
+    lotNoError.value = t('uss.numericOnly'); // Changed locale key
+    booking.value.lotNo = cleanedValue;
     input.value = cleanedValue;
   } else {
-    // If input is clean, clear error
     lotNoError.value = '';
-    // Model is already updated by v-model, but ensuring consistency:
     booking.value.lotNo = cleanedValue;
   }
 };
@@ -225,13 +212,12 @@ const saveBookingInfo = async () => {
       drcRequested: booking.value.drcRequested,
       drcActual: booking.value.drcActual,
     });
-    originalLotNo.value = booking.value.lotNo; // Update original value on success
+    originalLotNo.value = booking.value.lotNo;
     toast.success(t('common.saved'));
     emit('update');
   } catch (error) {
     console.error('Failed to update Main Info:', error);
     toast.error(t('common.errorSaving'));
-    // Revert on error
     booking.value.lotNo = originalLotNo.value;
   }
 };
@@ -239,15 +225,12 @@ const saveBookingInfo = async () => {
 const handleUpdateLotNo = async () => {
   if (!booking.value) return;
 
-  // Validation: Numeric only for LotNo
   if (booking.value.lotNo && !/^\d+$/.test(booking.value.lotNo)) {
-    lotNoError.value = t('cuplump.numericOnly');
+    lotNoError.value = t('uss.numericOnly'); // Changed locale key
     return;
   }
 
-  // Skip update if empty or unchanged
   if (!booking.value.lotNo || booking.value.lotNo === originalLotNo.value) {
-    // Revert if invalid/empty if needed, but for now just don't save.
     if (!booking.value.lotNo) booking.value.lotNo = originalLotNo.value;
     lotNoError.value = '';
     return;
@@ -269,7 +252,6 @@ const handleSaveDrc = async () => {
       drcRequested: parseFloat(drcForm.value.drcRequested) || 0,
       drcActual: parseFloat(drcForm.value.drcActual) || 0,
     });
-    // Update local model on success
     Object.assign(booking.value, drcForm.value);
     toast.success(t('common.saved'));
     emit('update');
@@ -291,7 +273,6 @@ const handleSaveMoisture = async () => {
       drcRequested: booking.value.drcRequested,
       drcActual: booking.value.drcActual,
     });
-    // Update local model on success
     booking.value.moisture = parseFloat(moistureForm.value) || 0;
     toast.success(t('common.saved'));
     emit('update');
@@ -309,7 +290,6 @@ const averageCp = computed(() => {
   return (sum / samples.value.length).toFixed(2);
 });
 
-// Watch bookingId change if modal context changes (though likely re-mounted)
 watch(
   () => props.bookingId,
   () => {
@@ -338,7 +318,7 @@ onMounted(() => {
       <div class="flex items-center justify-between pb-4 border-b">
         <div class="min-w-0 flex-1">
           <div class="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mb-1">
-            {{ t('cuplump.supplier') }}
+            {{ t('uss.supplier') }}
           </div>
           <h1 class="text-xl font-bold tracking-tight truncate flex items-center gap-2">
             <span class="text-primary">{{ booking.supplierCode }}</span>
@@ -350,7 +330,7 @@ onMounted(() => {
         <div class="flex flex-col items-end pr-6">
           <div class="flex flex-col items-center min-w-[6rem]">
             <div class="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mb-1">
-              {{ t('cuplump.lotNo') }}
+              {{ t('uss.lotNo') }}
             </div>
             <Popover v-model:open="isLotNoOpen">
               <PopoverTrigger as-child>
@@ -377,7 +357,7 @@ onMounted(() => {
               <PopoverContent class="w-60">
                 <div class="grid gap-4">
                   <div class="space-y-2">
-                    <h4 class="font-medium leading-none">{{ t('cuplump.lotNo') }}</h4>
+                    <h4 class="font-medium leading-none">{{ t('uss.lotNo') }}</h4>
                     <p class="text-xs text-muted-foreground">Enter the Lot Number.</p>
                   </div>
                   <div class="flex gap-2">
@@ -411,7 +391,7 @@ onMounted(() => {
             <div
               class="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1.5"
             >
-              {{ t('cuplump.rubberType') }}
+              {{ t('uss.rubberType') }}
             </div>
             <div
               class="text-xs font-bold text-slate-900 dark:text-slate-100 leading-tight truncate"
@@ -443,7 +423,7 @@ onMounted(() => {
               <div
                 class="text-[9px] font-bold text-green-600 dark:text-green-400 uppercase tracking-widest mb-0.5"
               >
-                {{ t('cuplump.grossWeight') }}
+                {{ t('uss.grossWeight') }}
               </div>
               <div
                 class="text-2xl font-black text-green-900 dark:text-green-100 leading-none tracking-tight"
@@ -458,7 +438,7 @@ onMounted(() => {
               <div
                 class="text-[9px] font-bold text-red-600 dark:text-red-400 uppercase tracking-widest mb-0.5"
               >
-                {{ t('cuplump.netWeight') }}
+                {{ t('uss.netWeight') }}
               </div>
               <div
                 class="text-2xl font-black text-red-900 dark:text-red-100 leading-none tracking-tight"
@@ -490,7 +470,7 @@ onMounted(() => {
             <div
               class="text-[9px] font-bold text-green-600 dark:text-green-400 uppercase tracking-widest mb-0.5"
             >
-              {{ t('cuplump.grossWeight') }}
+              {{ t('uss.grossWeight') }}
             </div>
             <div class="text-xl font-black text-green-900 dark:text-green-100 leading-none">
               {{ displayNetWeight }}
@@ -504,7 +484,7 @@ onMounted(() => {
             <div
               class="text-[9px] font-bold text-red-600 dark:text-red-400 uppercase tracking-widest mb-0.5"
             >
-              {{ t('cuplump.netWeight') }}
+              {{ t('uss.netWeight') }}
             </div>
             <div class="text-xl font-black text-red-900 dark:text-red-100 leading-none">
               -
@@ -518,7 +498,7 @@ onMounted(() => {
             <div
               class="text-[9px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-0.5"
             >
-              {{ t('cuplump.avgCp') }}
+              {{ t('uss.avgCp') }}
             </div>
             <div class="text-xl font-black text-indigo-900 dark:text-indigo-100 leading-none">
               {{ averageCp }}%
@@ -533,7 +513,7 @@ onMounted(() => {
                 <div
                   class="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest mb-1.5"
                 >
-                  {{ t('cuplump.moisture') }}
+                  {{ t('uss.moisture') }}
                 </div>
                 <div class="text-xl font-black text-amber-900 dark:text-amber-100 leading-none">
                   {{ booking.moisture || '-' }}
@@ -544,7 +524,7 @@ onMounted(() => {
             <PopoverContent class="w-60">
               <div class="grid gap-4">
                 <div class="space-y-2">
-                  <h4 class="font-medium leading-none">{{ t('cuplump.moisture') }}</h4>
+                  <h4 class="font-medium leading-none">{{ t('uss.moisture') }}</h4>
                   <p class="text-xs text-muted-foreground">Adjust moisture percentage.</p>
                 </div>
                 <div class="flex gap-2 items-center">
@@ -621,7 +601,7 @@ onMounted(() => {
                 </div>
                 <div class="grid gap-3">
                   <div class="grid grid-cols-3 items-center gap-4">
-                    <Label for="drcEst">{{ t('cuplump.drcEst') }}</Label>
+                    <Label for="drcEst">{{ t('uss.drcEst') }}</Label>
                     <Input
                       id="drcEst"
                       v-model="drcForm.drcEst"
@@ -672,7 +652,7 @@ onMounted(() => {
             <h3
               class="text-xs font-bold flex items-center gap-2 uppercase tracking-wide text-muted-foreground"
             >
-              {{ t('cuplump.recordedItems') }}
+              {{ t('uss.recordedItems') }}
               <span class="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[9px]">{{
                 samples.length
               }}</span>
@@ -702,23 +682,23 @@ onMounted(() => {
                   >
                   <TableHead
                     class="h-9 text-[9px] uppercase font-bold text-center text-muted-foreground"
-                    >{{ t('cuplump.beforePress') }}</TableHead
+                    >{{ t('uss.beforePress') }}</TableHead
                   >
                   <TableHead
                     class="h-9 text-[9px] uppercase font-bold text-center text-muted-foreground"
-                    >{{ t('cuplump.basket') }}</TableHead
+                    >{{ t('uss.basket') }}</TableHead
                   >
                   <TableHead
                     class="h-9 text-[9px] uppercase font-bold text-primary text-center bg-blue-50/30 dark:bg-blue-900/10"
-                    >{{ t('cuplump.cuplump') }}</TableHead
+                    >{{ t('uss.uss') }}</TableHead
                   >
                   <TableHead
                     class="h-9 text-[9px] uppercase font-bold text-center text-muted-foreground"
-                    >{{ t('cuplump.afterPress') }}</TableHead
+                    >{{ t('uss.afterPress') }}</TableHead
                   >
                   <TableHead
                     class="h-9 text-[9px] uppercase font-bold text-indigo-600 dark:text-indigo-400 text-center bg-indigo-50/30 dark:bg-indigo-900/10"
-                    >{{ t('cuplump.percentCp') }}</TableHead
+                    >{{ t('uss.percentCp') }}</TableHead
                   >
                   <TableHead
                     class="h-9 text-[9px] uppercase font-bold text-center text-muted-foreground"
@@ -761,7 +741,7 @@ onMounted(() => {
                     class="text-center bg-blue-50/30 dark:bg-blue-900/5 p-1.5 font-black text-primary text-xs tracking-tight"
                   >
                     {{
-                      calculateCuplump(
+                      calculateUss(
                         parseFloat(sample.beforePress || '0'),
                         parseFloat(sample.basket || '0')
                       )
@@ -798,79 +778,68 @@ onMounted(() => {
                       type="number"
                       class="h-7 w-16 mx-auto p-1 text-center text-xs"
                   /></TableCell>
-                  <TableCell class="text-center py-1.5">
+                  <TableCell class="py-1.5 text-center">
                     <Button
-                      variant="ghost"
                       size="icon"
-                      class="h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full"
+                      variant="ghost"
+                      class="h-6 w-6 text-muted-foreground hover:text-destructive"
                       @click="removeNewSampleRow(index)"
                     >
-                      <Trash2 class="w-3 h-3" />
+                      <Trash2 class="w-3.5 h-3.5" />
                     </Button>
                   </TableCell>
                 </TableRow>
 
-                <!-- Saved Samples -->
+                <!-- Existing Samples -->
                 <TableRow
-                  v-for="item in samples"
-                  :key="item.id"
-                  class="hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-colors"
+                  v-for="(sample, index) in samples"
+                  :key="sample.id"
+                  class="group hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors border-b border-slate-100 dark:border-slate-800"
                 >
-                  <TableCell class="text-center font-medium text-xs text-muted-foreground py-2">{{
-                    item.sampleNo
+                  <TableCell class="text-center font-medium text-muted-foreground text-xs">{{
+                    index + 1
                   }}</TableCell>
-                  <TableCell class="text-center font-bold text-xs py-2">{{
-                    item.beforePress?.toFixed(2)
+                  <TableCell class="text-center font-bold text-xs">{{
+                    sample.beforePress || '-'
                   }}</TableCell>
-                  <TableCell class="text-center text-xs text-muted-foreground py-2">{{
-                    item.basketWeight?.toFixed(2)
+                  <TableCell class="text-center text-xs text-muted-foreground font-medium">{{
+                    sample.basketWeight || '-'
+                  }}</TableCell>
+                  <TableCell class="text-center font-bold text-primary text-xs">{{
+                    sample.cuplumpWeight || '-'
+                  }}</TableCell>
+                  <TableCell class="text-center text-xs text-muted-foreground">{{
+                    sample.afterPress || '-'
                   }}</TableCell>
                   <TableCell
-                    class="text-center bg-blue-50/30 dark:bg-blue-900/5 font-black text-primary text-xs py-2"
-                    >{{ item.cuplumpWeight?.toFixed(2) }}</TableCell
+                    class="text-center font-bold text-indigo-600 dark:text-indigo-400 text-xs"
+                    >{{ sample.percentCp || '-' }}%</TableCell
                   >
-                  <TableCell class="text-center font-semibold text-xs py-2">{{
-                    item.afterPress?.toFixed(2)
+                  <TableCell class="text-center text-xs text-muted-foreground">{{
+                    sample.beforeBaking1 || '-'
                   }}</TableCell>
-                  <TableCell
-                    class="text-center bg-indigo-50/30 dark:bg-indigo-900/5 font-bold text-indigo-600 dark:text-indigo-400 text-xs py-2"
-                    >{{ item.percentCp?.toFixed(2) }}%</TableCell
-                  >
-                  <TableCell class="text-center text-xs py-2 text-muted-foreground">{{
-                    item.beforeBaking1 || '-'
+                  <TableCell class="text-center text-xs text-muted-foreground">{{
+                    sample.beforeBaking2 || '-'
                   }}</TableCell>
-                  <TableCell class="text-center text-xs py-2 text-muted-foreground">{{
-                    item.beforeBaking2 || '-'
+                  <TableCell class="text-center text-xs text-muted-foreground">{{
+                    sample.beforeBaking3 || '-'
                   }}</TableCell>
-                  <TableCell class="text-center text-xs py-2 text-muted-foreground">{{
-                    item.beforeBaking3 || '-'
-                  }}</TableCell>
-                  <TableCell class="text-center py-2">
+                  <TableCell class="py-1.5 text-center">
                     <Button
-                      variant="ghost"
                       size="icon"
-                      class="h-6 w-6 text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 rounded-full"
-                      @click="handleDeleteSample(item.id)"
+                      variant="ghost"
+                      class="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                      @click="handleDeleteSample(sample.id)"
                     >
-                      <Trash2 class="w-3 h-3" />
+                      <Trash2 class="w-3.5 h-3.5" />
                     </Button>
                   </TableCell>
                 </TableRow>
 
                 <TableRow v-if="samples.length === 0 && newSamples.length === 0">
                   <TableCell colspan="10" class="h-24 text-center">
-                    <div class="text-xs text-muted-foreground flex flex-col items-center gap-1">
-                      <div class="p-2 rounded-full bg-slate-100 dark:bg-slate-800 mb-1">
-                        <Plus class="w-4 h-4 opacity-50" />
-                      </div>
-                      {{ t('common.noData') }}
-                      <Button
-                        variant="link"
-                        size="sm"
-                        class="h-auto p-0 text-xs"
-                        @click="addNewSampleRow"
-                        >{{ t('cuplump.addFirstSample') }}</Button
-                      >
+                    <div class="flex flex-col items-center justify-center text-muted-foreground">
+                      <p class="text-xs">{{ t('uss.noSamples') }}</p>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -878,15 +847,10 @@ onMounted(() => {
             </Table>
           </div>
 
-          <div v-if="newSamples.length > 0" class="flex justify-end pt-2">
-            <Button
-              size="sm"
-              class="bg-green-600 hover:bg-green-700 h-8 text-xs gap-1.5 shadow-sm px-4"
-              :disabled="isSaving"
-              @click="handleSaveAllSamples"
-            >
-              <Save class="w-3.5 h-3.5" />
-              {{ t('common.save') }} ({{ newSamples.length }})
+          <div class="flex justify-end pt-2" v-if="newSamples.length > 0">
+            <Button @click="handleSaveAllSamples" :disabled="isSaving" class="gap-2">
+              <Save class="w-4 h-4" />
+              {{ t('uss.saveRecord') }}
             </Button>
           </div>
         </div>
@@ -894,4 +858,3 @@ onMounted(() => {
     </template>
   </div>
 </template>
-```

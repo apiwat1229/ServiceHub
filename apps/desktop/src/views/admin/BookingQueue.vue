@@ -4,11 +4,18 @@ import { fromDate, getLocalTimeZone, type DateValue } from '@internationalized/d
 import { format } from 'date-fns';
 import {
   Calendar as CalendarIcon,
+  CheckCircle2,
   Edit2,
   FileText,
+  Hash,
+  IdCard,
+  Package,
   Plus,
   RefreshCw,
+  Scale,
   Trash2,
+  Truck,
+  User,
 } from 'lucide-vue-next';
 import { computed, onMounted, ref, watch, type Ref } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -30,8 +37,14 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Card } from '@/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuthStore } from '@/stores/auth';
 import { useRoute, useRouter } from 'vue-router';
 
@@ -74,13 +87,19 @@ const SLOT_QUEUE_CONFIG: Record<string, { start: number; limit: number | null }>
 };
 
 // --- State ---
+// --- State ---
 const { t } = useI18n();
 const authStore = useAuthStore();
+const route = useRoute();
+const router = useRouter();
 const selectedDate = ref(fromDate(new Date(), getLocalTimeZone())) as Ref<DateValue>;
 const selectedSlot = ref<string>('08:00-09:00'); // Default slot
 const queues = ref<any[]>([]);
-const totalDailyQueues = ref(0);
+const dailyQueues = ref<any[]>([]); // All bookings for the day
 const loading = ref(false);
+const calendarPopoverOpen = ref(false); // Add popover state
+
+const queueMode = ref<'Cuplump' | 'USS'>('Cuplump'); // Booking Mode
 
 const sheetOpen = ref(false);
 const ticketDialogOpen = ref(false);
@@ -96,6 +115,36 @@ const selectedDateJS = computed(() => {
 });
 
 // --- Computeds ---
+
+// Filter queues based on Mode
+const filteredQueues = computed(() => {
+  // queues.value is already set correctly by fetchQueues based on mode
+  if (queueMode.value === 'USS') {
+    // Ensure sorted by queueNo for USS
+    return [...queues.value].sort((a, b) => a.queueNo - b.queueNo);
+  }
+  // For Cuplump, ensure we filter out any stray USS if API returns mixed (safety check)
+  return queues.value.filter((q) => {
+    const isUSS = q.rubberType && q.rubberType.toUpperCase().includes('USS');
+    return !isUSS;
+  });
+});
+
+const dailyFiltered = computed(() => {
+  return dailyQueues.value.filter((q) => {
+    const isUSS = q.rubberType && q.rubberType.toUpperCase().includes('USS');
+    return queueMode.value === 'USS' ? isUSS : !isUSS;
+  });
+});
+
+const totalDailyQueues = computed(() => dailyFiltered.value.length);
+
+const totalDailyWeight = computed(() => {
+  return dailyFiltered.value.reduce((sum, q) => {
+    return sum + (Number(q.estimatedWeight) || 0);
+  }, 0);
+});
+
 const currentSlotConfig = computed(() => {
   const dayOfWeek = selectedDateJS.value.getDay();
   // Special case: Saturday 10:00-11:00
@@ -106,21 +155,32 @@ const currentSlotConfig = computed(() => {
 });
 
 const isSlotFull = computed(() => {
+  // USS mode has no slot limits
+  if (queueMode.value === 'USS') return false;
+
   if (currentSlotConfig.value.limit === null) return false;
-  return queues.value.length >= currentSlotConfig.value.limit;
+  // Use filtered queues for limit check (per warehouse/mode)
+  return filteredQueues.value.length >= currentSlotConfig.value.limit;
 });
 
 const nextQueueNo = computed(() => {
-  if (isSlotFull.value) return null;
+  if (isSlotFull.value) return null; // isSlotFull now handles USS mode correctly
 
-  const used = queues.value
+  const used = filteredQueues.value
     .map((q) => Number(q.queueNo))
     .filter((n) => !Number.isNaN(n))
     .sort((a, b) => a - b);
 
   if (currentSlotConfig.value.limit === null) {
-    if (used.length === 0) return currentSlotConfig.value.start;
-    return used[used.length - 1] + 1;
+    let candidate = currentSlotConfig.value.start;
+    while (true) {
+      if (!used.includes(candidate)) {
+        return candidate;
+      }
+      candidate++;
+      // Safety break to prevent infinite loops in weird cases (though unlikely)
+      if (candidate > 1000) return candidate;
+    }
   }
 
   // Find gaps for limited slots
@@ -134,6 +194,31 @@ const nextQueueNo = computed(() => {
     candidate++;
   }
   return null;
+});
+
+const slotStats = computed(() => {
+  const stats: Record<string, { booked: number; limit: number | null }> = {};
+
+  TIME_SLOTS.forEach((slot) => {
+    // Filter dailyQueues by slot AND mode
+    const booked = dailyQueues.value.filter((q) => {
+      const matchSlot = q.slot === slot.value;
+      const isUSS = q.rubberType && q.rubberType.toUpperCase().includes('USS');
+      const matchMode = queueMode.value === 'USS' ? isUSS : !isUSS;
+      return matchSlot && matchMode;
+    }).length;
+
+    let limit = slot.limit;
+
+    // Special case Saturday
+    if (selectedDateJS.value.getDay() === 6 && slot.value === '10:00-11:00') {
+      limit = null;
+    }
+
+    stats[slot.value] = { booked, limit };
+  });
+
+  return stats;
 });
 
 const availableSlots = computed(() => {
@@ -150,27 +235,39 @@ const availableSlots = computed(() => {
 
 // --- Methods ---
 async function fetchQueues() {
-  if (!selectedDate.value || !selectedSlot.value) return;
+  if (!selectedDate.value) return;
+
+  // For USS, we don't need a slot. For Cuplump, we need a slot.
+  if (queueMode.value === 'Cuplump' && !selectedSlot.value) return;
 
   try {
     loading.value = true;
     const dateParam = format(selectedDateJS.value, 'yyyy-MM-dd');
 
-    // Fetch slot queues
-    const resp = await bookingsApi.getAll({
-      date: dateParam,
-      slot: selectedSlot.value,
-    });
-    queues.value = resp || [];
-
-    // Fetch daily total
+    // 1. Fetch Daily Total (needed for stats and USS mode)
     const dailyResp = await bookingsApi.getAll({ date: dateParam });
-    totalDailyQueues.value = dailyResp?.length || 0;
+    dailyQueues.value = dailyResp || [];
+
+    // 2. Set 'queues' based on mode
+    if (queueMode.value === 'USS') {
+      // For USS, show ALL daily USS bookings
+      queues.value = dailyQueues.value.filter(
+        (q) => q.rubberType && q.rubberType.toUpperCase().includes('USS')
+      );
+    } else {
+      // For Cuplump, fetch specific slot bookings (or filter from daily if optimized, but sticking to API for now)
+      // Actually, existing logic fetched slot specific. Let's keep it consistent.
+      const resp = await bookingsApi.getAll({
+        date: dateParam,
+        slot: selectedSlot.value,
+      });
+      queues.value = resp || [];
+    }
   } catch (err) {
     console.error('Fetch queues error:', err);
     toast.error(t('bookingQueue.toast.loadFailed'));
     queues.value = [];
-    totalDailyQueues.value = 0;
+    dailyQueues.value = [];
   } finally {
     loading.value = false;
   }
@@ -179,10 +276,16 @@ async function fetchQueues() {
 // ... handleCreateBooking and others use computeds, so no change needed mostly
 
 function handleCreateBooking() {
-  if (isSlotFull.value) {
+  if (isSlotFull.value && queueMode.value !== 'USS') {
     toast.error(t('bookingQueue.slotFull'));
     return;
   }
+
+  // For USS, ensure we have a slot value (even if dummy) for the form
+  if (queueMode.value === 'USS') {
+    selectedSlot.value = '08:00-17:00'; // Default daily slot
+  }
+
   editingBooking.value = null;
   sheetOpen.value = true;
 }
@@ -225,9 +328,10 @@ function handleShowTicket(booking: any) {
   ticketDialogOpen.value = true;
 }
 
-// Watch for date/slot changes
-watch([selectedDate, selectedSlot], () => {
+// Watch for date/slot/mode changes
+watch([selectedDate, selectedSlot, queueMode], () => {
   fetchQueues();
+  calendarPopoverOpen.value = false; // Close calendar on selection
 });
 
 function handleBookingSuccess(_booking?: any) {
@@ -245,7 +349,6 @@ const STORAGE_KEY = 'booking_queue_slot_pref';
 
 onMounted(async () => {
   // 1. Check for 'code' query param implies Deep Link
-  const route = useRoute();
   const code = route.query.code as string;
 
   if (code) {
@@ -287,7 +390,7 @@ onMounted(async () => {
   // Check Read Permission
   if (!authStore.hasPermission('bookings:read')) {
     toast.error("You don't have permission to view Booking Queue");
-    useRouter().push('/'); // Assuming router is available or import it
+    router.push('/'); // Assuming router is available or import it
     return;
   }
 
@@ -316,17 +419,29 @@ watch(selectedSlot, (newSlot) => {
   <div class="h-full flex-1 flex-col space-y-4 p-4 md:flex">
     <!-- Header -->
     <div class="flex items-center justify-between space-y-2">
-      <div>
-        <h2 class="text-2xl font-bold tracking-tight">{{ t('bookingQueue.title') }}</h2>
-        <p class="text-muted-foreground">
-          {{ t('bookingQueue.manageQueue') }}
-          {{ format(selectedDateJS, 'dd-MMM-yyyy') }}
-        </p>
+      <div class="flex items-center gap-4">
+        <div>
+          <h2 class="text-2xl font-bold tracking-tight">{{ t('bookingQueue.title') }}</h2>
+          <p class="text-muted-foreground text-xs">
+            {{ t('bookingQueue.manageQueue') }}
+            {{ format(selectedDateJS, 'dd-MMM-yyyy') }}
+          </p>
+        </div>
       </div>
+
       <div class="flex items-center space-x-2">
+        <Select v-model="queueMode">
+          <SelectTrigger class="w-[150px] h-9">
+            <SelectValue placeholder="Select Queue" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="Cuplump">Queue Cuplump</SelectItem>
+            <SelectItem value="USS">Queue USS</SelectItem>
+          </SelectContent>
+        </Select>
+
         <Button variant="outline" size="sm" @click="fetchQueues">
           <RefreshCw class="mr-2 h-4 w-4" />
-
           {{ t('bookingQueue.refresh') }}
         </Button>
         <Button
@@ -349,7 +464,7 @@ watch(selectedSlot, (newSlot) => {
           <!-- Date Picker -->
           <div class="flex flex-col gap-2 min-w-[200px]">
             <span class="text-sm text-muted-foreground">{{ t('bookingQueue.selectDate') }}</span>
-            <Popover>
+            <Popover v-model:open="calendarPopoverOpen">
               <PopoverTrigger as-child>
                 <Button
                   variant="outline"
@@ -388,63 +503,83 @@ watch(selectedSlot, (newSlot) => {
                   v-for="slot in availableSlots"
                   :key="slot.value"
                   :value="slot.value"
-                  class="whitespace-nowrap px-2 py-1 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground sm:text-sm"
+                  @click="queueMode !== 'USS' ? (selectedSlot = slot.value) : null"
+                  class="flex-1 flex flex-col gap-0.5 py-1.5 min-w-[80px] transition-all"
+                  :class="[
+                    selectedSlot === slot.value
+                      ? 'bg-primary text-primary-foreground shadow-md scale-105 font-bold ring-2 ring-primary/20'
+                      : 'bg-card hover:border-primary/50 text-card-foreground hover:shadow-sm',
+                    queueMode === 'USS'
+                      ? 'opacity-40 pointer-events-none grayscale cursor-default'
+                      : '',
+                    slotStats[slot.value] &&
+                    slotStats[slot.value].limit !== null &&
+                    slotStats[slot.value].booked >= (slotStats[slot.value].limit || 0) &&
+                    queueMode !== 'USS'
+                      ? 'bg-red-500 text-white hover:bg-red-600 data-[state=active]:bg-red-700 data-[state=active]:text-white'
+                      : '',
+                  ]"
                 >
-                  {{ slot.label }}
+                  <span class="text-xs font-bold leading-none">{{ slot.label }}</span>
+                  <div class="text-[10px] leading-none opacity-90">
+                    <template v-if="slotStats[slot.value]">
+                      <span
+                        v-if="
+                          queueMode !== 'USS' &&
+                          slotStats[slot.value] &&
+                          slotStats[slot.value].limit !== null &&
+                          slotStats[slot.value].booked >= (slotStats[slot.value].limit || 0)
+                        "
+                        class="font-black"
+                      >
+                        {{ t('bookingQueue.slotFull') }}
+                      </span>
+                      <template v-else>
+                        {{
+                          slotStats[slot.value].limit !== null
+                            ? `${slotStats[slot.value].booked}/${slotStats[slot.value].limit}`
+                            : `${slotStats[slot.value].booked}/${t('bookingQueue.unlimited')}`
+                        }}
+                      </template>
+                    </template>
+                  </div>
                 </TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
         </div>
 
-        <!-- Right: Slot Info -->
+        <!-- Right: Daily Summary -->
         <div class="flex flex-col items-end text-right border-l pl-6 min-w-[240px]">
           <h3 class="text-lg font-semibold tracking-tight text-primary">
-            {{ t('bookingQueue.timeSlot') }} {{ selectedSlot }}
+            {{ t('bookingQueue.dailySummary') || 'Daily Summary' }}
           </h3>
           <p class="text-sm text-muted-foreground mt-1">
-            {{ format(selectedDateJS, 'dd-MMM-yyyy') }} • Queue
-            <span class="font-medium text-foreground">
-              {{ currentSlotConfig.start }}
-              <span v-if="currentSlotConfig.limit"
-                >- {{ currentSlotConfig.start + currentSlotConfig.limit - 1 }}</span
-              >
-              <span v-else>Upwards</span>
+            {{ t('bookingQueue.totalToday') }} :
+            <span class="font-bold text-foreground">{{ totalDailyQueues }}</span>
+          </p>
+          <p class="text-sm text-muted-foreground mt-0.5" v-if="queueMode !== 'Cuplump'">
+            {{ t('booking.estimatedWeightTon') }} :
+            <span
+              class="font-bold"
+              :class="{
+                'text-orange-500': totalDailyWeight >= 100000 && totalDailyWeight < 120000,
+                'text-red-500': totalDailyWeight >= 120000,
+                'text-foreground': totalDailyWeight < 100000,
+              }"
+            >
+              {{
+                new Intl.NumberFormat('en-US', {
+                  minimumFractionDigits: 1,
+                  maximumFractionDigits: 1,
+                }).format(totalDailyWeight / 1000)
+              }}
             </span>
+            Ton
           </p>
         </div>
       </div>
     </Card>
-
-    <!-- Stats -->
-    <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      <Card class="p-3 flex flex-col items-center justify-center text-center">
-        <p class="text-sm text-muted-foreground mb-1">{{ t('bookingQueue.totalToday') }}</p>
-        <p class="text-2xl font-bold">{{ totalDailyQueues }}</p>
-      </Card>
-      <Card class="p-3 flex flex-col items-center justify-center text-center">
-        <p class="text-sm text-muted-foreground mb-1">{{ t('bookingQueue.currentQueue') }}</p>
-        <p class="text-2xl font-bold text-primary">
-          {{ queues.length > 0 ? Math.max(...queues.map((q) => Number(q.queueNo) || 0)) : '-' }}
-        </p>
-      </Card>
-      <Card class="p-3 flex flex-col items-center justify-center text-center">
-        <p class="text-sm text-muted-foreground mb-1">{{ t('bookingQueue.nextQueue') }}</p>
-        <p class="text-2xl font-bold text-green-600">
-          {{ nextQueueNo !== null ? nextQueueNo : '-' }}
-        </p>
-      </Card>
-      <Card class="p-3 flex flex-col items-center justify-center text-center">
-        <p class="text-sm text-muted-foreground mb-1">{{ t('bookingQueue.available') }}</p>
-        <p class="text-2xl font-bold text-blue-600">
-          {{
-            currentSlotConfig.limit
-              ? Math.max(0, currentSlotConfig.limit - queues.length)
-              : t('bookingQueue.unlimited')
-          }}
-        </p>
-      </Card>
-    </div>
 
     <!-- Queue Grid -->
     <div v-if="loading" class="flex justify-center p-12">
@@ -464,84 +599,131 @@ watch(selectedSlot, (newSlot) => {
       <p class="text-muted-foreground mt-1">{{ t('bookingQueue.noBookings') }}</p>
     </div>
 
-    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div v-else class="flex flex-wrap justify-center gap-6">
       <Card
-        v-for="queue in queues"
+        v-for="queue in filteredQueues"
         :key="queue.id"
-        class="p-3 transition-all hover:shadow-md border-l-4"
-        :style="{ borderLeftColor: DAY_COLORS[selectedDateJS.getDay()].queueBg }"
+        class="group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border border-slate-300 bg-card/60 backdrop-blur-sm shadow-sm flex flex-col w-full max-w-[310px]"
       >
-        <div class="flex justify-between items-center mb-2">
-          <span class="font-semibold text-sm"
-            >{{ t('bookingQueue.queueNumber') }} : {{ queue.queueNo }}</span
+        <!-- Top Status Bar (Color by Day) -->
+        <div
+          class="h-1.5 w-full shrink-0"
+          :style="{ backgroundColor: DAY_COLORS[selectedDateJS.getDay()].queueBg }"
+        ></div>
+
+        <!-- Card Body -->
+        <div class="p-4 flex-1 flex flex-col">
+          <!-- Header: Queue & Actions -->
+          <div class="flex justify-between items-start mb-4">
+            <div class="flex flex-col">
+              <span class="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">{{
+                t('bookingQueue.queueNumber')
+              }}</span>
+              <div class="flex items-baseline gap-1">
+                <span class="text-3xl font-black text-primary leading-none">{{
+                  queue.queueNo
+                }}</span>
+              </div>
+            </div>
+
+            <div class="flex flex-col gap-1 items-end">
+              <div
+                v-if="queue.status === 'APPROVED'"
+                class="flex items-center text-green-600 bg-green-50 px-2.5 py-1 rounded-full border border-green-100 shadow-sm shrink-0"
+              >
+                <CheckCircle2 class="h-3 w-3 mr-1" />
+                <span class="text-[10px] font-bold uppercase tracking-tight">{{
+                  t('booking.deliveryCompleted') || 'Completed'
+                }}</span>
+              </div>
+
+              <div
+                v-if="queue.status !== 'APPROVED'"
+                class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <Button
+                  v-if="authStore.hasPermission('bookings:update')"
+                  variant="secondary"
+                  size="icon"
+                  class="h-8 w-8 rounded-full shadow-sm hover:bg-primary hover:text-white transition-colors"
+                  @click="handleEdit(queue)"
+                >
+                  <Edit2 class="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  v-if="authStore.hasPermission('bookings:delete')"
+                  variant="secondary"
+                  size="icon"
+                  class="h-8 w-8 rounded-full shadow-sm text-destructive hover:bg-destructive hover:text-white transition-colors"
+                  @click="handleDeleteClick(queue)"
+                >
+                  <Trash2 class="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Main Info -->
+          <div class="space-y-4 flex-1">
+            <!-- Supplier Section -->
+            <div class="space-y-1">
+              <div class="flex items-center gap-1.5">
+                <IdCard class="w-3 h-3 text-blue-600" />
+                <span class="text-[13px] font-bold text-blue-600 uppercase">{{
+                  queue.supplierCode
+                }}</span>
+              </div>
+              <div class="flex items-start gap-2">
+                <User class="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+                <p class="font-bold text-sm leading-snug line-clamp-2">{{ queue.supplierName }}</p>
+              </div>
+            </div>
+
+            <!-- Details Section -->
+            <div class="grid grid-cols-1 gap-2 border-t border-border/50 pt-3">
+              <div v-if="queue.truckType || queue.truckRegister" class="flex items-center gap-2">
+                <Truck class="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                <span class="text-xs font-medium text-foreground truncate">
+                  {{ [queue.truckType, queue.truckRegister].filter(Boolean).join(' - ') }}
+                </span>
+              </div>
+              <div class="flex items-center gap-2">
+                <Package class="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                <span class="text-xs font-medium text-foreground truncate">
+                  {{
+                    RUBBER_TYPE_MAP[queue.rubberType] || queue.rubberTypeName || queue.rubberType
+                  }}
+                </span>
+              </div>
+              <div v-if="queue.estimatedWeight !== null" class="flex items-center gap-2">
+                <Scale class="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                <span class="text-xs font-medium text-foreground truncate">
+                  {{ new Intl.NumberFormat('en-US').format(queue.estimatedWeight) }} Kg
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer: Booking Code & Ticket -->
+          <div
+            class="pt-3 border-t border-border/50 flex justify-between items-center bg-muted/30 -mx-4 px-4 py-2 mt-auto"
           >
-          <div v-if="queue.status !== 'APPROVED'" class="flex items-center gap-1">
-            <TooltipProvider v-if="authStore.hasPermission('bookings:update')">
-              <Tooltip>
-                <TooltipTrigger as-child>
-                  <Button variant="ghost" size="icon" class="h-8 w-8" @click="handleEdit(queue)">
-                    <Edit2 class="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>{{ t('common.edit') }}</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-            <TooltipProvider v-if="authStore.hasPermission('bookings:delete')">
-              <Tooltip>
-                <TooltipTrigger as-child>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    class="h-8 w-8 text-destructive hover:bg-destructive/10"
-                    @click="handleDeleteClick(queue)"
-                  >
-                    <Trash2 class="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>{{ t('common.delete') }}</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-          <div v-else>
-            <span
-              class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10"
+            <div class="flex items-center gap-1.5">
+              <Hash class="w-3 h-3 text-muted-foreground" />
+              <span class="text-[11px] font-mono font-medium text-muted-foreground">{{
+                queue.bookingCode
+              }}</span>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              class="h-7 px-2.5 text-[11px] font-bold gap-1.5 bg-background shadow-sm hover:bg-primary hover:text-white transition-all rounded-lg"
+              @click="handleShowTicket(queue)"
             >
-              {{ t('booking.deliveryCompleted') || 'Delivery Completed' }}
-            </span>
+              <FileText class="h-3 w-3" />
+              {{ t('bookingQueue.ticket') }}
+            </Button>
           </div>
-        </div>
-
-        <div class="space-y-1 text-sm">
-          <div>
-            <p class="text-xs text-muted-foreground">{{ t('bookingQueue.supplierCode') }}</p>
-            <p class="font-medium">{{ queue.supplierCode }}</p>
-          </div>
-          <div>
-            <p class="text-xs text-muted-foreground">{{ t('bookingQueue.supplierName') }}</p>
-            <p class="font-medium break-words">{{ queue.supplierName }}</p>
-          </div>
-          <div v-if="queue.truckType || queue.truckRegister">
-            <p class="text-xs text-muted-foreground">{{ t('bookingQueue.truck') }}</p>
-            <p>{{ [queue.truckType, queue.truckRegister].filter(Boolean).join(' - ') }}</p>
-          </div>
-          <div>
-            <p class="text-xs text-muted-foreground">{{ t('bookingQueue.type') }}</p>
-            <p>
-              {{ RUBBER_TYPE_MAP[queue.rubberType] || queue.rubberTypeName || queue.rubberType }}
-            </p>
-          </div>
-          <div>
-            <p class="text-xs text-muted-foreground">{{ t('bookingQueue.bookingCode') }}</p>
-            <p>{{ queue.bookingCode }}</p>
-          </div>
-        </div>
-
-        <div class="mt-4 pt-4 border-t flex justify-end">
-          <Button variant="link" size="sm" class="h-auto p-0" @click="handleShowTicket(queue)">
-            <FileText class="h-3 w-3 mr-1" />
-            {{ t('bookingQueue.ticket') }}
-          </Button>
         </div>
       </Card>
     </div>
@@ -553,6 +735,7 @@ watch(selectedSlot, (newSlot) => {
       :selectedSlot="selectedSlot"
       :nextQueueNo="nextQueueNo || 1"
       :editingBooking="editingBooking"
+      :queueMode="queueMode"
       @success="handleBookingSuccess"
     />
 

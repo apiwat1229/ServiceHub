@@ -12,6 +12,8 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Permissions } from '../auth/decorators/permissions.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { CreateRubberTypeDto } from './dto/create-rubber-type.dto';
+import { UpdateRubberTypeDto } from './dto/update-rubber-type.dto';
 import { RubberTypesService } from './rubber-types.service';
 
 @Controller('rubber-types')
@@ -24,7 +26,7 @@ export class RubberTypesController {
 
     @Post()
     @Permissions(RUBBER_TYPES_CREATE)
-    create(@Body() createRubberTypeDto: any) {
+    create(@Body() createRubberTypeDto: CreateRubberTypeDto) {
         return this.rubberTypesService.create(createRubberTypeDto);
     }
 
@@ -42,7 +44,7 @@ export class RubberTypesController {
 
     @Patch(':id')
     @Permissions(RUBBER_TYPES_UPDATE)
-    update(@Param('id') id: string, @Body() updateRubberTypeDto: any) {
+    update(@Param('id') id: string, @Body() updateRubberTypeDto: UpdateRubberTypeDto) {
         return this.rubberTypesService.update(id, updateRubberTypeDto);
     }
 
@@ -58,7 +60,7 @@ export class RubberTypesController {
     @Permissions(RUBBER_TYPES_UPDATE_REQUEST)
     async requestUpdate(
         @Param('id') id: string,
-        @Body() updateDto: any,
+        @Body() updateDto: UpdateRubberTypeDto,
         @CurrentUser() user: any,
     ) {
         const currentData = await this.rubberTypesService.findOne(id);

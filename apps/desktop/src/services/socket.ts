@@ -6,7 +6,7 @@ class SocketService {
     private isConnected = false;
 
     connect() {
-        if (this.socket && this.isConnected) return;
+        if (this.socket) return;
 
         // eslint-disable-next-line react-hooks/rules-of-hooks
         const authStore = useAuthStore();
@@ -87,4 +87,12 @@ class SocketService {
     }
 }
 
-export const socketService = new SocketService();
+// Singleton pattern handling for HMR
+const globalKey = Symbol.for('AppSocketService');
+const globalScope = window as any;
+
+if (!globalScope[globalKey]) {
+    globalScope[globalKey] = new SocketService();
+}
+
+export const socketService = globalScope[globalKey] as SocketService;

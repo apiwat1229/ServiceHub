@@ -276,7 +276,10 @@ const handleSubmit = async () => {
       await itAssetsApi.uploadImage(assetId, form.value.image);
     }
 
-    toast.success(t('services.itHelp.stock.saveSuccess'));
+    if (form.value.image instanceof File && assetId) {
+      await itAssetsApi.uploadImage(assetId, form.value.image);
+    }
+
     if (props.onSuccess) props.onSuccess();
   } catch (error: any) {
     console.error('Failed to save stock item:', error);

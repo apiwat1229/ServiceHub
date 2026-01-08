@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import html2canvas from 'html2canvas';
 import { Copy, Download } from 'lucide-vue-next';
 import QrcodeVue from 'qrcode.vue';
@@ -20,7 +21,7 @@ const props = defineProps<{
   ticket: any;
 }>();
 
-const emit = defineEmits(['update:open']);
+defineEmits(['update:open']);
 
 // --- State ---
 const { t } = useI18n();
@@ -160,7 +161,48 @@ const handleCopyTicketImage = async () => {
   <Dialog :open="open" @update:open="$emit('update:open', $event)">
     <DialogContent class="max-w-md">
       <DialogHeader>
-        <DialogTitle>{{ t('ticketDialog.title') }}</DialogTitle>
+        <div class="flex items-center justify-between pr-8">
+          <DialogTitle>{{ t('ticketDialog.title') }}</DialogTitle>
+          <div class="flex gap-1" v-if="ticket">
+            <TooltipProvider :delayDuration="300">
+              <Tooltip>
+                <TooltipTrigger as-child>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    class="h-8 w-8 hover:bg-muted"
+                    @click="handleSaveTicketImage"
+                    tabindex="-1"
+                  >
+                    <Download class="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{{ t('ticketDialog.saveTicket') }}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider :delayDuration="300">
+              <Tooltip>
+                <TooltipTrigger as-child>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    class="h-8 w-8 hover:bg-muted"
+                    @click="handleCopyTicketImage"
+                    tabindex="-1"
+                  >
+                    <Copy class="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{{ t('ticketDialog.copyTicket') }}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        </div>
         <DialogDescription>{{ t('ticketDialog.description') }}</DialogDescription>
       </DialogHeader>
 
@@ -175,6 +217,7 @@ const handleCopyTicketImage = async () => {
             borderRadius: '12px',
             fontFamily: '\'Sarabun\', \'Kanit\', sans-serif',
           }"
+          class="relative"
         >
           <!-- Header -->
           <div class="flex items-center justify-between mb-4">
@@ -182,38 +225,46 @@ const handleCopyTicketImage = async () => {
               <img
                 src="/logo-dark.png"
                 alt="YTRC Logo"
-                class="h-8 w-auto"
+                class="h-6 w-auto"
                 @error="(e: any) => (e.target.style.display = 'none')"
               />
             </div>
-            <span class="text-lg font-bold">{{ t('ticketDialog.queueTicket') }}</span>
+            <span class="text-lg font-bold">{{
+              ticket.rubberType?.includes('USS') ? 'Queue USS' : 'Queue Cuplump'
+            }}</span>
           </div>
 
           <!-- Details -->
           <div class="space-y-2">
             <div class="flex justify-between text-sm">
               <span class="font-semibold">{{ t('ticketDialog.code') }}:</span>
-              <span class="text-right flex-1 ml-2">{{ ticket.supplierCode || '-' }}</span>
+              <span class="text-right flex-1 ml-2 font-bold">{{ ticket.supplierCode || '-' }}</span>
             </div>
             <div class="flex justify-between text-sm">
               <span class="font-semibold">{{ t('ticketDialog.name') }}:</span>
-              <span class="text-right flex-1 ml-2">{{ ticket.supplierName || '-' }}</span>
+              <span class="text-right flex-1 ml-2 font-bold">{{ ticket.supplierName || '-' }}</span>
             </div>
-            <div class="flex justify-between text-sm">
-              <span class="font-semibold">{{ t('ticketDialog.date') }}:</span>
-              <span class="text-right flex-1 ml-2">{{ formattedDate }}</span>
+            <div class="flex justify-between text-sm text-muted-foreground">
+              <span class="font-semibold shrink-0">{{ t('ticketDialog.date') }}:</span>
+              <span class="text-right flex-1 ml-2 font-medium text-foreground">{{
+                formattedDate
+              }}</span>
             </div>
-            <div class="flex justify-between text-sm">
-              <span class="font-semibold">{{ t('ticketDialog.time') }}:</span>
-              <span class="text-right flex-1 ml-2">{{ ticket.startTime || '-' }}</span>
+            <div class="flex justify-between text-sm text-muted-foreground">
+              <span class="font-semibold shrink-0">{{ t('ticketDialog.time') }}:</span>
+              <span class="text-right flex-1 ml-2 font-medium text-foreground">{{
+                ticket.startTime || '-'
+              }}</span>
             </div>
-            <div class="flex justify-between text-sm">
-              <span class="font-semibold">{{ t('ticketDialog.truck') }}:</span>
-              <span class="text-right flex-1 ml-2">{{ truckPreview }}</span>
+            <div class="flex justify-between text-sm text-muted-foreground">
+              <span class="font-semibold shrink-0">{{ t('ticketDialog.truck') }}:</span>
+              <span class="text-right flex-1 ml-2 font-bold text-foreground pr-1">{{
+                truckPreview
+              }}</span>
             </div>
             <div class="flex justify-between text-sm">
               <span class="font-semibold">{{ t('ticketDialog.type') }}:</span>
-              <span class="text-right flex-1 ml-2">
+              <span class="text-right flex-1 ml-2 font-bold">
                 {{
                   RUBBER_TYPE_MAP[ticket.rubberType] ||
                   ticket.rubberTypeName ||
@@ -222,11 +273,11 @@ const handleCopyTicketImage = async () => {
                 }}
               </span>
             </div>
-            <div class="flex justify-between text-sm">
+            <div class="flex justify-between text-sm text-muted-foreground/60">
               <span class="font-semibold">{{ t('ticketDialog.booking') }}:</span>
               <span class="text-right flex-1 ml-2">{{ ticket.bookingCode || '-' }}</span>
             </div>
-            <div class="flex justify-between text-sm">
+            <div class="flex justify-between text-sm text-muted-foreground/60">
               <span class="font-semibold">{{ t('ticketDialog.recorder') }}:</span>
               <span class="text-right flex-1 ml-2">{{ ticket.recorder || '-' }}</span>
             </div>
@@ -234,7 +285,7 @@ const handleCopyTicketImage = async () => {
 
           <!-- Queue Number -->
           <div class="flex justify-between items-center my-4">
-            <span class="font-bold">{{ t('ticketDialog.queue') }}:</span>
+            <span class="font-bold opacity-60">{{ t('ticketDialog.queue') }}:</span>
             <div
               :style="{
                 width: '56px',
@@ -244,7 +295,7 @@ const handleCopyTicketImage = async () => {
                 color: '#fff',
                 fontSize: '28px',
                 fontWeight: 700,
-                border: `2px solid ${theme.border}`,
+                border: `2.5px solid rgba(0,0,0,0.2)`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -269,23 +320,29 @@ const handleCopyTicketImage = async () => {
 
           <!-- Warning -->
           <div class="text-center my-4 leading-tight">
-            <p class="text-xs font-semibold">{{ t('ticketDialog.parkingInfo') }}</p>
-            <p class="text-xs font-semibold">{{ t('ticketDialog.parkingLocation') }}</p>
-            <p class="text-xs font-bold text-red-600 mt-2">
+            <p class="text-xs font-semibold opacity-50 uppercase">
+              {{ t('ticketDialog.parkingInfo') }}
+            </p>
+            <p class="text-xs font-semibold opacity-50 uppercase">
+              {{ t('ticketDialog.parkingLocation') }}
+            </p>
+            <p class="text-xs font-bold text-red-600 mt-2 uppercase">
               {{ t('ticketDialog.parkingWarning') }}
             </p>
           </div>
 
           <!-- QR Code -->
           <div class="flex justify-center mt-4">
-            <QrcodeVue
-              v-if="ticket.bookingCode"
-              :value="String(ticket.bookingCode)"
-              :size="128"
-              level="M"
-              render-as="svg"
-              class="p-1 bg-white rounded"
-            />
+            <div v-if="ticket.bookingCode" class="p-2">
+              <QrcodeVue
+                :value="String(ticket.bookingCode)"
+                :size="100"
+                level="H"
+                background="transparent"
+                render-as="canvas"
+                class="block"
+              />
+            </div>
             <div
               v-else
               class="w-32 h-32 bg-muted/50 rounded border border-dashed border-muted-foreground/30 flex items-center justify-center"
@@ -293,21 +350,6 @@ const handleCopyTicketImage = async () => {
               <span class="text-gray-500 text-sm">{{ t('ticketDialog.noCode') }}</span>
             </div>
           </div>
-        </div>
-
-        <!-- Actions -->
-        <div class="flex justify-center gap-2">
-          <Button
-            @click="handleSaveTicketImage"
-            class="gap-2 bg-green-600 hover:bg-green-700 text-white"
-          >
-            <Download class="h-4 w-4" />
-            {{ t('ticketDialog.saveTicket') }}
-          </Button>
-          <Button @click="handleCopyTicketImage" variant="outline" class="gap-2">
-            <Copy class="h-4 w-4" />
-            {{ t('ticketDialog.copyTicket') }}
-          </Button>
         </div>
       </div>
     </DialogContent>

@@ -191,6 +191,10 @@ const settingDefinitions = [
   { sourceApp: 'Booking', actionType: 'APPROVAL_REQUEST', label: 'Approval Requested' },
   { sourceApp: 'Booking', actionType: 'APPROVE', label: 'Request Approved' },
   { sourceApp: 'Booking', actionType: 'REJECT', label: 'Request Rejected' },
+  { sourceApp: 'IT_HELP_DESK', actionType: 'TICKET_CREATED', label: 'New IT Ticket Created' },
+  { sourceApp: 'IT_HELP_DESK', actionType: 'TICKET_UPDATED', label: 'Ticket Status Updated' },
+  { sourceApp: 'IT_HELP_DESK', actionType: 'TICKET_ASSIGNED', label: 'Ticket Assigned' },
+  { sourceApp: 'IT_HELP_DESK', actionType: 'NEW_COMMENT', label: 'New Comment Added' },
 ];
 
 const selectedCategory = ref<string | null>(null);
@@ -209,9 +213,23 @@ const getCategoryIcon = (category: string) => {
   switch (category) {
     case 'Booking':
       return Briefcase;
+    case 'IT_HELP_DESK':
+      return Bell;
     default:
       return Settings;
   }
+};
+
+const categoryToLabel = (category: string) => {
+  if (category === 'IT_HELP_DESK') return 'IT Help Desk';
+  return category;
+};
+
+const actionToLabel = (action: string) => {
+  return action
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
 };
 
 const fetchSettings = async () => {
@@ -997,8 +1015,10 @@ onMounted(() => {
               >
                 <component :is="getCategoryIcon(category)" class="w-5 h-5" />
               </div>
-              <CardTitle>{{ category }} System</CardTitle>
-              <CardDescription>Configure notifications for {{ category }} module</CardDescription>
+              <CardTitle>{{ categoryToLabel(category) }} System</CardTitle>
+              <CardDescription
+                >Configure notifications for {{ categoryToLabel(category) }} module</CardDescription
+              >
             </CardHeader>
           </Card>
         </div>
@@ -1011,9 +1031,10 @@ onMounted(() => {
                   <ArrowLeft class="w-4 h-4" />
                 </Button>
                 <div>
-                  <CardTitle>{{ selectedCategory }} Settings</CardTitle>
+                  <CardTitle>{{ categoryToLabel(selectedCategory || '') }} Settings</CardTitle>
                   <CardDescription
-                    >Manage notifications for {{ selectedCategory }} events</CardDescription
+                    >Manage notifications for
+                    {{ categoryToLabel(selectedCategory || '') }} events</CardDescription
                   >
                 </div>
               </div>
@@ -1046,8 +1067,8 @@ onMounted(() => {
               <div class="flex items-center justify-between">
                 <div class="space-y-0.5">
                   <Label class="text-base font-medium">{{ def.label }}</Label>
-                  <p class="text-sm text-muted-foreground">
-                    Source: {{ def.sourceApp }} | Event: {{ def.actionType }}
+                  <p class="text-xs text-muted-foreground opacity-70">
+                    {{ categoryToLabel(def.sourceApp) }} &bull; {{ actionToLabel(def.actionType) }}
                   </p>
                 </div>
                 <div class="flex items-center gap-2">

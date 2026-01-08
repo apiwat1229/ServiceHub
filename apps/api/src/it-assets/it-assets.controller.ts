@@ -1,12 +1,14 @@
 import { CreateITAssetDto, UpdateITAssetDto } from '@my-app/types';
-import { Body, Controller, Delete, Get, Param, Patch, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { existsSync, mkdirSync } from 'fs';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ITAssetsService } from './it-assets.service';
 
 @Controller('it-assets')
+@UseGuards(JwtAuthGuard)
 export class ITAssetsController {
     constructor(private readonly itAssetsService: ITAssetsService) { }
 

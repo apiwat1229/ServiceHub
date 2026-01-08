@@ -62,7 +62,7 @@ const attendees = ref<number | ''>('');
 const uploadStatus = ref<'idle' | 'success' | 'error'>('idle');
 const errorMessage = ref('');
 
-const { locale } = useI18n();
+const { t, locale } = useI18n();
 
 const dateLocale = computed(() => {
   return locale.value === 'th' ? th : enUS;
@@ -96,7 +96,8 @@ function handleDragOver(e: DragEvent) {
   isDragging.value = true;
 }
 
-function handleDragLeave() {
+function handleDragLeave(e: DragEvent) {
+  e.preventDefault();
   isDragging.value = false;
 }
 
@@ -122,14 +123,22 @@ function validateAndSetFile(selectedFile: File) {
   const allowedTypes = ['application/pdf'];
 
   if (!allowedTypes.includes(selectedFile.type)) {
-    console.error('Invalid file type: Only PDF files are allowed');
-    alert('Invalid file type: Only PDF files are allowed');
+    const msg =
+      locale.value === 'th'
+        ? 'รองรับเฉพาะไฟล์ PDF เท่านั้น'
+        : 'Invalid file type: Only PDF files are allowed';
+    console.error(msg);
+    alert(msg);
     return;
   }
 
   if (selectedFile.size > 50 * 1024 * 1024) {
-    console.error('File too large: Maximum file size is 50MB');
-    alert('File too large: Maximum file size is 50MB');
+    const msg =
+      locale.value === 'th'
+        ? 'ไฟล์ใหญ่เกินไป: ขนาดสูงสุดคือ 50MB'
+        : 'File too large: Maximum file size is 50MB';
+    console.error(msg);
+    alert(msg);
     return;
   }
 
@@ -195,7 +204,9 @@ async function handleUpload() {
   } catch (error: any) {
     console.error('Upload failed:', error);
     uploadStatus.value = 'error';
-    errorMessage.value = error.response?.data?.message || 'Failed to upload eBook';
+    const defaultError =
+      locale.value === 'th' ? 'อัปโหลด eBook ไม่สำเร็จ' : 'Failed to upload eBook';
+    errorMessage.value = error.response?.data?.message || defaultError;
   } finally {
     uploading.value = false;
   }
@@ -222,8 +233,10 @@ function handleClose() {
   <Dialog :open="open" @update:open="handleClose">
     <DialogContent class="max-w-2xl">
       <DialogHeader>
-        <DialogTitle>Upload eBook</DialogTitle>
-        <DialogDescription> Upload a PDF file to the Knowledge Center </DialogDescription>
+        <DialogTitle>{{ t('services.itHelp.kb.uploadModal.title') }}</DialogTitle>
+        <DialogDescription>
+          {{ t('services.itHelp.kb.uploadModal.subtitle') }}
+        </DialogDescription>
       </DialogHeader>
 
       <div class="space-y-4" v-if="uploadStatus === 'idle' && !uploading">
@@ -238,8 +251,10 @@ function handleClose() {
           @click="() => fileInput?.click()"
         >
           <Upload class="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-          <p class="text-sm font-medium mb-2">Drag and drop your file here</p>
-          <p class="text-xs text-muted-foreground mb-4">or click to browse</p>
+          <p class="text-sm font-medium mb-2">{{ t('services.itHelp.kb.uploadModal.dragDrop') }}</p>
+          <p class="text-xs text-muted-foreground mb-4 font-normal">
+            {{ t('services.itHelp.kb.uploadModal.orClick') }}
+          </p>
           <input
             ref="fileInput"
             type="file"
@@ -247,7 +262,9 @@ function handleClose() {
             accept=".pdf"
             @change="handleFileSelect"
           />
-          <p class="text-xs text-muted-foreground mt-4">Supported: PDF (Max 50MB)</p>
+          <p class="text-xs text-muted-foreground mt-4 font-normal">
+            {{ t('services.itHelp.kb.uploadModal.supported') }}
+          </p>
         </div>
 
         <!-- Selected File -->
@@ -264,17 +281,21 @@ function handleClose() {
 
         <!-- Title -->
         <div class="space-y-2">
-          <Label for="title">Title *</Label>
-          <Input id="title" v-model="title" placeholder="Enter eBook title" />
+          <Label for="title">{{ t('services.itHelp.kb.fields.title') }} *</Label>
+          <Input
+            id="title"
+            v-model="title"
+            :placeholder="t('services.itHelp.kb.placeholders.title')"
+          />
         </div>
 
         <!-- Description -->
         <div class="space-y-2">
-          <Label for="description">Description</Label>
+          <Label for="description">{{ t('services.itHelp.kb.fields.description') }}</Label>
           <Textarea
             id="description"
             v-model="description"
-            placeholder="Enter description (optional)"
+            :placeholder="t('services.itHelp.kb.placeholders.description')"
             rows="3"
           />
         </div>
@@ -282,10 +303,10 @@ function handleClose() {
         <!-- Category & Author -->
         <div class="grid grid-cols-2 gap-4">
           <div class="space-y-2">
-            <Label for="category">Category *</Label>
+            <Label for="category">{{ t('services.itHelp.kb.fields.category') }} *</Label>
             <Select v-model="category">
               <SelectTrigger>
-                <SelectValue placeholder="Select category" />
+                <SelectValue :placeholder="t('services.itHelp.kb.placeholders.category')" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem v-for="cat in categories" :key="cat" :value="cat">
@@ -296,15 +317,19 @@ function handleClose() {
           </div>
 
           <div class="space-y-2">
-            <Label for="author">Author</Label>
-            <Input id="author" v-model="author" placeholder="Author name (optional)" />
+            <Label for="author">{{ t('services.itHelp.kb.fields.author') }}</Label>
+            <Input
+              id="author"
+              v-model="author"
+              :placeholder="t('services.itHelp.kb.placeholders.author')"
+            />
           </div>
         </div>
 
-        <!-- Training Data -->
+        <!-- Training Date -->
         <div class="grid grid-cols-2 gap-4">
           <div class="space-y-2">
-            <Label for="trainingDate">Training Date</Label>
+            <Label for="trainingDate">{{ t('services.itHelp.kb.fields.trainingDate') }}</Label>
             <div class="relative">
               <Popover>
                 <PopoverTrigger as-child>
@@ -324,7 +349,7 @@ function handleClose() {
                         ? format(trainingDate.toDate(getLocalTimeZone()), 'dd MMM yyyy', {
                             locale: dateLocale,
                           })
-                        : 'Pick a date'
+                        : t('services.itHelp.kb.placeholders.pickDate')
                     }}
                   </Button>
                 </PopoverTrigger>
@@ -336,22 +361,24 @@ function handleClose() {
           </div>
 
           <div class="space-y-2">
-            <Label for="attendees">Attendees</Label>
+            <Label for="attendees">{{ t('services.itHelp.kb.fields.attendees') }}</Label>
             <Input id="attendees" type="number" v-model="attendees" placeholder="0" min="0" />
           </div>
         </div>
 
         <!-- Tags -->
         <div class="space-y-2">
-          <Label for="tags">Tags</Label>
+          <Label for="tags">{{ t('services.itHelp.kb.fields.tags') }}</Label>
           <div class="flex gap-2">
             <Input
               id="tags"
               v-model="tagInput"
-              placeholder="Add tags..."
+              :placeholder="t('services.itHelp.kb.placeholders.tags')"
               @keydown.enter.prevent="addTag"
             />
-            <Button variant="outline" @click="addTag"> Add </Button>
+            <Button variant="outline" @click="addTag">
+              {{ t('services.itHelp.kb.placeholders.add') }}
+            </Button>
           </div>
           <div v-if="tags.length > 0" class="flex flex-wrap gap-2 mt-2">
             <Badge
@@ -380,11 +407,19 @@ function handleClose() {
             <Upload class="absolute inset-0 w-8 h-8 m-auto text-primary animate-pulse" />
           </div>
           <div class="space-y-1">
-            <h3 class="font-semibold text-lg">Uploading...</h3>
-            <p class="text-sm text-muted-foreground">Please wait while we process your file.</p>
+            <h3 class="font-semibold text-lg">
+              {{ locale === 'th' ? 'กำลังอัปโหลด...' : 'Uploading...' }}
+            </h3>
+            <p class="text-sm text-muted-foreground">
+              {{
+                locale === 'th'
+                  ? 'กรุณารอสักครู่ในขณะที่เราประมวลผลไฟล์ของคุณ'
+                  : 'Please wait while we process your file.'
+              }}
+            </p>
           </div>
           <Progress :model-value="uploadProgress" class="w-full h-2" />
-          <p class="text-xs text-muted-foreground text-right">{{ uploadProgress }}%</p>
+          <p class="text-xs text-muted-foreground text-right font-normal">{{ uploadProgress }}%</p>
         </div>
 
         <!-- Success -->
@@ -398,9 +433,15 @@ function handleClose() {
             <CheckCircleIcon class="w-8 h-8 text-green-600 dark:text-green-400" />
           </div>
           <div class="space-y-1">
-            <h3 class="font-semibold text-lg">Upload Complete!</h3>
+            <h3 class="font-semibold text-lg">
+              {{ locale === 'th' ? 'อัปโหลดเสร็จสิ้น!' : 'Upload Complete!' }}
+            </h3>
             <p class="text-sm text-muted-foreground">
-              Your eBook has been successfully added to the library.
+              {{
+                locale === 'th'
+                  ? 'eBook ของคุณถูกเพิ่มลงในคลังเรียบร้อยแล้ว'
+                  : 'Your eBook has been successfully added to the library.'
+              }}
             </p>
           </div>
         </div>
@@ -416,22 +457,26 @@ function handleClose() {
             <AlertCircleIcon class="w-8 h-8 text-red-600 dark:text-red-400" />
           </div>
           <div class="space-y-1">
-            <h3 class="font-semibold text-lg text-red-600">Upload Failed</h3>
-            <p class="text-sm text-muted-foreground">{{ errorMessage }}</p>
+            <h3 class="font-semibold text-lg text-red-600">
+              {{ locale === 'th' ? 'อัปโหลดล้มเหลว' : 'Upload Failed' }}
+            </h3>
+            <p class="text-sm text-muted-foreground font-normal">{{ errorMessage }}</p>
           </div>
-          <Button variant="outline" @click="uploadStatus = 'idle'">Try Again</Button>
+          <Button variant="outline" @click="uploadStatus = 'idle'">{{
+            locale === 'th' ? 'ลองอีกครั้ง' : 'Try Again'
+          }}</Button>
         </div>
       </div>
 
       <DialogFooter v-if="uploadStatus === 'idle' && !uploading">
-        <Button variant="outline" @click="handleClose"> Cancel </Button>
+        <Button variant="outline" @click="handleClose"> {{ t('common.cancel') }} </Button>
         <Button @click="handleUpload" :disabled="!isValid">
           <Upload class="w-4 h-4 mr-2" />
-          Upload
+          {{ t('services.itHelp.kb.uploadBtn') }}
         </Button>
       </DialogFooter>
       <DialogFooter v-else-if="uploadStatus === 'success'">
-        <Button @click="handleClose" class="w-full sm:w-auto">Close</Button>
+        <Button @click="handleClose" class="w-full sm:w-auto">{{ t('common.close') }}</Button>
       </DialogFooter>
     </DialogContent>
   </Dialog>

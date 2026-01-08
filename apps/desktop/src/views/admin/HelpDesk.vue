@@ -4,6 +4,7 @@ import BarcodePreview from '@/components/helpdesk/BarcodePreview.vue';
 import NewTicketForm from '@/components/helpdesk/NewTicketForm.vue';
 import PrinterUsageAnalytics from '@/components/helpdesk/PrinterUsageAnalytics.vue';
 import KnowledgeBookCard from '@/components/knowledge-center/KnowledgeBookCard.vue';
+import KnowledgeBookEdit from '@/components/knowledge-center/KnowledgeBookEdit.vue';
 import KnowledgeBookUpload from '@/components/knowledge-center/KnowledgeBookUpload.vue';
 import KnowledgeBookViewer from '@/components/knowledge-center/KnowledgeBookViewer.vue';
 import {
@@ -45,6 +46,7 @@ import { getLocalTimeZone, today } from '@internationalized/date';
 import type { ColumnDef } from '@tanstack/vue-table';
 import { format, formatDistanceToNowStrict, intervalToDuration } from 'date-fns';
 import {
+  ArrowUpDown,
   BookOpen,
   CheckCircle2,
   Clock,
@@ -62,14 +64,16 @@ import {
 import type { DateRange } from 'reka-ui';
 import { computed, h, onMounted, ref, watch, type Ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { toast } from 'vue-sonner';
 
 import { useAuthStore } from '@/stores/auth';
 
 const route = useRoute();
+const router = useRouter();
 const isDetailModalOpen = ref(false);
 const selectedTicket = ref<ITTicket | null>(null);
+const loadingTickets = ref(false);
 
 const handleTicketClick = (ticket: ITTicket) => {
   selectedTicket.value = ticket;
@@ -89,15 +93,31 @@ watch(
   async (newId) => {
     if (newId && typeof newId === 'string') {
       try {
+        // If tickets aren't loaded yet, we might need to fetch this specific ticket or wait.
+        // For now, let's fetch individual ticket to ensure we have it.
+        loadingTickets.value = true;
         const ticket = await itTicketsApi.getById(newId);
-        if (ticket) handleTicketClick(ticket);
+        if (ticket) {
+          handleTicketClick(ticket);
+        }
       } catch (e) {
         console.error('Failed to load deep linked ticket', e);
+        toast.error('Failed to load ticket details');
+      } finally {
+        loadingTickets.value = false;
       }
     }
   },
   { immediate: true }
 );
+
+watch(isDetailModalOpen, (isOpen) => {
+  if (!isOpen && route.query.ticketId) {
+    const query = { ...route.query };
+    delete query.ticketId;
+    router.replace({ query });
+  }
+});
 
 const { t } = useI18n();
 const authStore = useAuthStore();
@@ -112,6 +132,7 @@ const editingStockItem = ref<ITAsset | null>(null);
 
 // eBook State
 const isUploadModalOpen = ref(false);
+const isEditModalOpen = ref(false);
 const isViewerModalOpen = ref(false);
 const selectedBook = ref<KnowledgeBook | null>(null);
 const books = ref<KnowledgeBook[]>([]);
@@ -120,6 +141,15 @@ const selectedCategory = ref<string>('');
 const ebookSearchQuery = ref('');
 const ebookCategories = ref<string[]>([]);
 const loadingCategories = ref(false);
+
+const handleEditBook = (book: KnowledgeBook) => {
+  selectedBook.value = book;
+  isEditModalOpen.value = true;
+};
+
+const onBookUpdated = () => {
+  loadBooks();
+};
 
 // Delete Confirmation State
 const isDeleteConfirmOpen = ref(false);
@@ -130,10 +160,39 @@ const itStock = ref<ITAsset[]>([]);
 const loadingStock = ref(false);
 const isStockDeleteConfirmOpen = ref(false);
 const stockItemToDelete = ref<ITAsset | null>(null);
+const stockCategoryFilter = ref<string>('ALL');
+
+const stockCategories = computed(() => {
+  const cats = new Set(itStock.value.map((item) => item.category).filter(Boolean));
+  return Array.from(cats).sort();
+});
+
+const filteredITStock = computed(() => {
+  let filtered = itStock.value;
+
+  if (stockCategoryFilter.value && stockCategoryFilter.value !== 'ALL') {
+    filtered = filtered.filter((item) => item.category === stockCategoryFilter.value);
+  }
+
+  if (searchQuery.value) {
+    const q = searchQuery.value.toLowerCase();
+    filtered = filtered.filter(
+      (item) =>
+        item.name.toLowerCase().includes(q) ||
+        item.code.toLowerCase().includes(q) ||
+        (item.category && item.category.toLowerCase().includes(q))
+    );
+  }
+
+  return filtered;
+});
 
 // Ticket State
 const tickets = ref<ITTicket[]>([]);
-const loadingTickets = ref(false);
+
+const assetRequests = computed(() => {
+  return tickets.value.filter((t) => t.isAssetRequest);
+});
 
 const getImageUrl = (path: string | null) => {
   if (!path) return null;
@@ -265,7 +324,17 @@ const itAssetColumns: ColumnDef<ITAsset>[] = [
   },
   {
     accessorKey: 'stock',
-    header: () => h('div', { class: 'text-center' }, t('services.itHelp.stock.count')),
+    header: ({ column }) => {
+      return h(
+        Button,
+        {
+          variant: 'ghost',
+          onClick: () => column.toggleSorting(column.getIsSorted() === 'asc'),
+          class: 'text-center w-full hover:bg-muted font-bold px-0 gap-2',
+        },
+        () => [t('services.itHelp.stock.count'), h(ArrowUpDown, { class: 'h-4 w-4' })]
+      );
+    },
     cell: ({ row }) => h('div', { class: 'text-center font-bold' }, row.getValue('stock')),
   },
   {
@@ -531,15 +600,34 @@ const isITDepartment = computed(() => {
 });
 
 const getStatusColor = (status: string) => {
-  switch (status.toLowerCase()) {
-    case 'open':
-      return 'bg-yellow-100 text-yellow-800';
-    case 'in progress':
+  switch (status) {
+    case 'Open':
       return 'bg-blue-100 text-blue-800';
-    case 'resolved':
+    case 'In Progress':
+      return 'bg-yellow-100 text-yellow-800';
+    case 'Pending':
+      return 'bg-orange-100 text-orange-800';
+    case 'Resolved':
       return 'bg-green-100 text-green-800';
-    default:
+    case 'Closed':
       return 'bg-gray-100 text-gray-800';
+    case 'Cancelled':
+      return 'bg-red-100 text-red-800';
+    default:
+      return 'bg-slate-100 text-slate-800';
+  }
+};
+
+const getPriorityIconStyles = (priority: string) => {
+  switch (priority) {
+    case 'Critical':
+      return 'bg-red-50 text-red-600 border-red-100/50 group-hover:bg-red-100 group-hover:border-red-200';
+    case 'High':
+      return 'bg-orange-50 text-orange-600 border-orange-100/50 group-hover:bg-orange-100 group-hover:border-orange-200';
+    case 'Medium':
+      return 'bg-blue-50 text-blue-600 border-blue-100/50 group-hover:bg-blue-100 group-hover:border-blue-200';
+    default:
+      return 'bg-slate-50 text-slate-600 border-slate-100/50 group-hover:bg-slate-100 group-hover:border-slate-200';
   }
 };
 
@@ -584,6 +672,19 @@ async function handleDownloadBook(book: KnowledgeBook) {
   link.href = knowledgeBooksApi.getDownloadUrl(book.id);
   link.download = book.fileName;
   link.click();
+
+  // Increment download count locally
+  const bookIndex = books.value.findIndex((b) => b.id === book.id);
+  if (bookIndex !== -1) {
+    books.value[bookIndex].downloads++;
+  }
+}
+
+function onViewTracked(bookId: string) {
+  const bookIndex = books.value.findIndex((b) => b.id === bookId);
+  if (bookIndex !== -1) {
+    books.value[bookIndex].views++;
+  }
 }
 
 async function handleDeleteBook(book: KnowledgeBook) {
@@ -690,41 +791,44 @@ const categories = computed(() => {
 
       <!-- Knowledge Base Tab -->
       <TabsContent value="kb" class="space-y-4">
-        <!-- Header with Upload Button -->
-        <div class="flex items-center justify-between">
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h3 class="text-lg font-semibold">{{ t('services.itHelp.kb.title') }}</h3>
             <p class="text-sm text-muted-foreground">{{ t('services.itHelp.kb.subtitle') }}</p>
           </div>
-          <Button v-if="isITDepartment" @click="isUploadModalOpen = true" class="gap-2">
-            <Upload class="w-4 h-4" />
-            {{ t('services.itHelp.kb.uploadBtn') }}
-          </Button>
-        </div>
-
-        <!-- Filters -->
-        <div class="flex gap-4">
-          <div class="relative flex-1">
-            <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              :placeholder="t('services.itHelp.kb.searchPlaceholder')"
-              class="pl-9"
-              v-model="ebookSearchQuery"
-              @input="loadBooks"
-            />
+          <div class="flex flex-1 items-center gap-3 max-w-2xl">
+            <div class="relative flex-1">
+              <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                :placeholder="t('services.itHelp.kb.searchPlaceholder')"
+                class="pl-9 h-9"
+                v-model="ebookSearchQuery"
+                @input="loadBooks"
+              />
+            </div>
+            <Select v-model="selectedCategory" @update:model-value="loadBooks">
+              <SelectTrigger class="w-[180px] h-9">
+                <SelectValue :placeholder="t('services.itHelp.kb.allCategories')" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">{{ t('services.itHelp.kb.allCategories') }}</SelectItem>
+                <SelectItem v-for="cat in categories" :key="cat" :value="cat">
+                  {{ cat }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              v-if="isITDepartment"
+              size="sm"
+              @click="isUploadModalOpen = true"
+              class="gap-2 h-9 whitespace-nowrap"
+            >
+              <Upload class="w-4 h-4" />
+              {{ t('services.itHelp.kb.uploadBtn') }}
+            </Button>
           </div>
-          <Select v-model="selectedCategory" @update:model-value="loadBooks">
-            <SelectTrigger class="w-[200px]">
-              <SelectValue :placeholder="t('services.itHelp.kb.allCategories')" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">{{ t('services.itHelp.kb.allCategories') }}</SelectItem>
-              <SelectItem v-for="cat in categories" :key="cat" :value="cat">
-                {{ cat }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
         </div>
 
         <!-- eBook Grid -->
@@ -762,6 +866,7 @@ const categories = computed(() => {
             @view="handleViewBook(book)"
             @download="handleDownloadBook(book)"
             @delete="handleDeleteBook(book)"
+            @edit="handleEditBook(book)"
           />
         </div>
       </TabsContent>
@@ -770,16 +875,29 @@ const categories = computed(() => {
       <TabsContent v-if="isITDepartment" value="stock" class="space-y-4">
         <Card>
           <CardHeader class="flex flex-row items-center justify-between">
-            <div>
+            <div class="space-y-1">
               <CardTitle>{{ t('services.itHelp.stock.title') }}</CardTitle>
               <CardDescription>{{ t('services.itHelp.stock.subtitle') }}</CardDescription>
             </div>
-            <Button size="sm" class="gap-2" @click="handleAddStock">
-              <Plus class="w-4 h-4" /> {{ t('services.itHelp.stock.addItem') }}
-            </Button>
+            <div class="flex items-center gap-3">
+              <Select v-model="stockCategoryFilter">
+                <SelectTrigger class="w-[180px] h-9">
+                  <SelectValue :placeholder="t('services.itHelp.stock.category') || 'Category'" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">{{ t('services.itHelp.kb.allCategories') }}</SelectItem>
+                  <SelectItem v-for="cat in stockCategories" :key="cat" :value="cat">
+                    {{ cat.charAt(0).toUpperCase() + cat.slice(1) }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <Button size="sm" class="gap-2 h-9" @click="handleAddStock">
+                <Plus class="w-4 h-4" /> {{ t('services.itHelp.stock.addItem') }}
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
-            <DataTable :columns="itAssetColumns" :data="itStock" />
+            <DataTable :columns="itAssetColumns" :data="filteredITStock" />
           </CardContent>
         </Card>
       </TabsContent>
@@ -789,8 +907,78 @@ const categories = computed(() => {
       </TabsContent>
 
       <!-- Assets Tab -->
-      <TabsContent value="assets">
-        <Card>
+      <TabsContent value="assets" class="space-y-4">
+        <template v-if="assetRequests.length > 0">
+          <Card>
+            <CardHeader class="pb-3 border-b border-muted">
+              <div class="space-y-1">
+                <CardTitle class="text-xl font-bold">My Asset Requests</CardTitle>
+                <CardDescription> Track your equipment and hardware requests. </CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent class="p-0">
+              <div class="divide-y divide-border/50">
+                <div
+                  v-for="ticket in assetRequests"
+                  :key="ticket.id"
+                  class="p-4 hover:bg-muted/30 transition-colors group flex items-center gap-4"
+                >
+                  <!-- Icon -->
+                  <div
+                    class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center border bg-slate-50 text-slate-600 border-slate-100"
+                  >
+                    <Monitor class="w-5 h-5" />
+                  </div>
+
+                  <!-- Content -->
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-1.5 w-full">
+                      <span
+                        class="font-semibold text-base text-foreground truncate block hover:underline cursor-pointer"
+                        @click="handleTicketClick(ticket)"
+                      >
+                        {{ ticket.title }}
+                      </span>
+                    </div>
+                    <div class="flex items-center gap-3 text-xs text-muted-foreground">
+                      <div class="flex items-center gap-1.5">
+                        <span class="text-muted-foreground/70">{{
+                          ticket.category || 'Asset'
+                        }}</span>
+                        <span v-if="ticket.assetId" class="text-muted-foreground/40">&gt;</span>
+                        <span v-if="ticket.assetId"> {{ ticket.quantity }} items</span>
+                      </div>
+                      <span class="text-muted-foreground/40">&bull;</span>
+                      <span class="flex items-center gap-1.5">
+                        <Clock class="w-3 h-3 text-muted-foreground/70" />
+                        {{ formatTicketDate(ticket.createdAt) }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- Right Side: Ticket No & Status -->
+                  <div class="flex items-center gap-3 flex-shrink-0 pl-4">
+                    <Badge
+                      variant="secondary"
+                      class="text-[10px] h-5 px-1.5 font-mono font-medium text-muted-foreground bg-muted border border-border rounded pointer-events-none"
+                    >
+                      {{ ticket.ticketNo }}
+                    </Badge>
+                    <Badge
+                      :class="[
+                        getStatusColor(ticket.status),
+                        'px-2.5 py-0.5 text-[10px] font-bold border-0 rounded uppercase tracking-wide pointer-events-none',
+                      ]"
+                    >
+                      {{ ticket.status }}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </template>
+        <Card v-else>
           <CardContent class="pt-6">
             <div class="text-center py-10 text-muted-foreground">
               <Monitor class="h-12 w-12 mx-auto mb-4 opacity-20" />
@@ -808,152 +996,154 @@ const categories = computed(() => {
       <TabsContent value="tickets" class="space-y-4">
         <template v-if="tickets.length > 0">
           <!-- Stats Header & Filter -->
-          <div class="flex items-center justify-between">
-            <h3 class="text-lg font-medium text-muted-foreground">
-              {{ t('services.itHelp.stats.overview') }}
-            </h3>
-            <div class="flex items-center gap-2">
-              <DateRangePicker v-model="dateRange" />
+          <template v-if="isITDepartment">
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-medium text-muted-foreground">
+                {{ t('services.itHelp.stats.overview') }}
+              </h3>
+              <div class="flex items-center gap-2">
+                <DateRangePicker v-model="dateRange" />
+              </div>
             </div>
-          </div>
 
-          <!-- Stats Section -->
-          <!-- Stats Section -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card>
-              <CardContent class="flex items-center justify-between p-6">
-                <div
-                  class="flex-1 flex flex-col items-center justify-center border-r border-border pr-4"
-                >
-                  <div class="text-sm font-medium text-muted-foreground mb-2">Total Tickets</div>
-                  <div class="text-3xl font-bold">{{ ticketStats.total }}</div>
-                </div>
-                <div class="flex-1 flex flex-col items-center justify-center pl-4">
-                  <div class="text-sm font-medium text-green-600 flex items-center gap-1 mb-2">
-                    <CheckCircle2 class="w-4 h-4" /> Total Resolved
+            <!-- Stats Section -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card>
+                <CardContent class="flex items-center justify-between p-6">
+                  <div
+                    class="flex-1 flex flex-col items-center justify-center border-r border-border pr-4"
+                  >
+                    <div class="text-sm font-medium text-muted-foreground mb-2">Total Tickets</div>
+                    <div class="text-3xl font-bold">{{ ticketStats.total }}</div>
                   </div>
-                  <div class="text-3xl font-bold text-green-600">{{ ticketStats.resolved }}</div>
-                </div>
-              </CardContent>
-            </Card>
+                  <div class="flex-1 flex flex-col items-center justify-center pl-4">
+                    <div class="text-sm font-medium text-green-600 flex items-center gap-1 mb-2">
+                      <CheckCircle2 class="w-4 h-4" /> Total Resolved
+                    </div>
+                    <div class="text-3xl font-bold text-green-600">{{ ticketStats.resolved }}</div>
+                  </div>
+                </CardContent>
+              </Card>
 
-            <Card>
-              <CardContent class="flex items-center justify-between p-6">
-                <div
-                  class="flex-1 flex flex-col items-center justify-center border-r border-border pr-4"
-                >
-                  <div class="text-sm font-medium text-blue-600 mb-2">Open</div>
-                  <div class="text-3xl font-bold text-blue-600">{{ ticketStats.openCount }}</div>
-                </div>
-                <div class="flex-1 flex flex-col items-center justify-center pl-4">
-                  <div class="text-sm font-medium text-yellow-600 mb-2">In Progress</div>
-                  <div class="text-3xl font-bold text-yellow-600">
-                    {{ ticketStats.inProgressCount }}
+              <Card>
+                <CardContent class="flex items-center justify-between p-6">
+                  <div
+                    class="flex-1 flex flex-col items-center justify-center border-r border-border pr-4"
+                  >
+                    <div class="text-sm font-medium text-blue-600 mb-2">Open</div>
+                    <div class="text-3xl font-bold text-blue-600">{{ ticketStats.openCount }}</div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                  <div class="flex-1 flex flex-col items-center justify-center pl-4">
+                    <div class="text-sm font-medium text-yellow-600 mb-2">In Progress</div>
+                    <div class="text-3xl font-bold text-yellow-600">
+                      {{ ticketStats.inProgressCount }}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-            <Card>
-              <CardContent class="flex items-center justify-between p-6">
-                <div
-                  class="flex-1 flex flex-col items-center justify-center border-r border-border pr-4"
-                >
-                  <div class="text-sm font-medium text-muted-foreground mb-2">
-                    {{ t('services.itHelp.stats.avgResponse') }}
+              <Card>
+                <CardContent class="flex items-center justify-between p-6">
+                  <div
+                    class="flex-1 flex flex-col items-center justify-center border-r border-border pr-4"
+                  >
+                    <div class="text-sm font-medium text-muted-foreground mb-2">
+                      {{ t('services.itHelp.stats.avgResponse') }}
+                    </div>
+                    <div class="text-3xl font-bold">{{ ticketStats.avgResponse }}h</div>
                   </div>
-                  <div class="text-3xl font-bold">{{ ticketStats.avgResponse }}h</div>
-                </div>
-                <div class="flex-1 flex flex-col items-center justify-center pl-4">
-                  <div class="text-sm font-medium text-green-600 flex items-center gap-1 mb-2">
-                    <Zap class="w-4 h-4" /> Best Time
+                  <div class="flex-1 flex flex-col items-center justify-center pl-4">
+                    <div class="text-sm font-medium text-green-600 flex items-center gap-1 mb-2">
+                      <Zap class="w-4 h-4" /> Best Time
+                    </div>
+                    <div class="text-3xl font-bold text-green-600">
+                      {{ ticketStats.bestResponse }}h
+                    </div>
                   </div>
-                  <div class="text-3xl font-bold text-green-600">
-                    {{ ticketStats.bestResponse }}h
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                </CardContent>
+              </Card>
+            </div>
+          </template>
 
           <Card>
             <CardHeader class="pb-3 border-b border-muted">
-              <div class="flex items-center justify-between">
-                <div>
-                  <CardTitle class="text-lg">{{ t('services.itHelp.tickets.title') }}</CardTitle>
-                  <CardDescription>{{ t('services.itHelp.tickets.subtitle') }}</CardDescription>
-                </div>
-                <div
-                  v-if="loadingTickets"
-                  class="animate-spin h-5 w-5 border-2 border-primary border-t-transparent rounded-full"
-                />
+              <div class="space-y-1">
+                <CardTitle class="text-xl font-bold">Support Tickets</CardTitle>
+                <CardDescription>Report an issue or request assistance.</CardDescription>
               </div>
             </CardHeader>
             <CardContent class="p-0">
-              <div class="divide-y divide-muted">
+              <div class="divide-y divide-border/50">
                 <div
                   v-for="ticket in paginatedTickets"
                   :key="ticket.id"
-                  class="p-4 hover:bg-muted/30 transition-colors group cursor-pointer flex items-center gap-4"
-                  @click="handleTicketClick(ticket)"
+                  class="p-4 hover:bg-muted/30 transition-colors group flex items-center gap-4"
                 >
                   <!-- Icon -->
                   <div
-                    class="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600"
+                    :class="[
+                      'flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center border transition-colors duration-300',
+                      getPriorityIconStyles(ticket.priority),
+                    ]"
                   >
                     <Ticket class="w-5 h-5" />
                   </div>
 
                   <!-- Content -->
                   <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-2 mb-1">
-                      <span class="font-semibold text-foreground truncate">
+                    <div class="flex items-center gap-2 mb-1.5 w-full">
+                      <span
+                        class="font-semibold text-base text-foreground truncate block hover:underline cursor-pointer"
+                        @click="handleTicketClick(ticket)"
+                      >
                         {{ ticket.title }}
                       </span>
-                      <Badge
-                        variant="outline"
-                        class="text-[10px] h-5 px-1.5 font-mono text-muted-foreground bg-muted/50 border-muted"
-                      >
-                        {{ ticket.ticketNo }}
-                      </Badge>
                     </div>
                     <div class="flex items-center gap-3 text-xs text-muted-foreground">
-                      <span class="flex items-center gap-1.5">
-                        {{ ticket.category }}
-                      </span>
+                      <div class="flex items-center gap-1.5">
+                        <span class="text-muted-foreground/70">{{
+                          ticket.location || 'Unknown'
+                        }}</span>
+                        <span class="text-muted-foreground/40">&gt;</span>
+                        <span>{{ ticket.category }}</span>
+                      </div>
                       <span class="text-muted-foreground/40">&bull;</span>
                       <span class="flex items-center gap-1.5">
-                        <Clock class="w-3 h-3" />
+                        <Clock class="w-3 h-3 text-muted-foreground/70" />
                         {{ formatTicketDate(ticket.createdAt) }}
                       </span>
                     </div>
                   </div>
 
-                  <!-- Status -->
-                  <div class="flex-shrink-0">
+                  <!-- Right Side: Ticket No & Status -->
+                  <div class="flex items-center gap-3 flex-shrink-0 pl-4">
+                    <Badge
+                      variant="secondary"
+                      class="text-[10px] h-5 px-1.5 font-mono font-medium text-muted-foreground bg-muted border border-border rounded pointer-events-none"
+                    >
+                      {{ ticket.ticketNo }}
+                    </Badge>
                     <Badge
                       :class="[
                         getStatusColor(ticket.status),
-                        'px-2.5 py-1 font-medium border-0 rounded-md',
+                        'px-2.5 py-0.5 text-[10px] font-bold border-0 rounded uppercase tracking-wide pointer-events-none',
                       ]"
                     >
-                      {{ ticket.status.toUpperCase() }}
+                      {{ ticket.status }}
                     </Badge>
                   </div>
                 </div>
               </div>
 
               <!-- Pagination Controls -->
-              <div class="flex items-center justify-between pt-4 border-t mt-4">
-                <div class="flex items-center gap-2">
-                  <p class="text-sm text-muted-foreground">
-                    {{ t('common.table.rowsPerPage') }}
-                  </p>
+              <div class="flex items-center justify-between p-4 border-t bg-muted/5">
+                <div class="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>Rows per page:</span>
                   <Select
                     :model-value="itemsPerPage.toString()"
                     @update:model-value="(v) => (itemsPerPage = parseInt(v))"
                   >
-                    <SelectTrigger class="w-[70px]">
+                    <SelectTrigger class="h-8 w-[60px] bg-background">
                       <SelectValue :placeholder="itemsPerPage.toString()" />
                     </SelectTrigger>
                     <SelectContent>
@@ -968,26 +1158,28 @@ const categories = computed(() => {
                   </Select>
                 </div>
 
-                <div class="flex items-center gap-2">
-                  <div class="text-sm text-muted-foreground mr-2">
-                    {{ startItemIndex }} - {{ endItemIndex }} of {{ tickets.length }}
+                <div class="flex items-center gap-4 text-sm text-muted-foreground">
+                  <div>{{ startItemIndex }} - {{ endItemIndex }} of {{ tickets.length }}</div>
+                  <div class="flex items-center gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      class="h-8 px-3 bg-background"
+                      :disabled="currentPage === 1"
+                      @click="handlePageChange(currentPage - 1)"
+                    >
+                      Previous
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      class="h-8 px-3 bg-background"
+                      :disabled="currentPage === totalPages"
+                      @click="handlePageChange(currentPage + 1)"
+                    >
+                      Next
+                    </Button>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    :disabled="currentPage === 1"
-                    @click="handlePageChange(currentPage - 1)"
-                  >
-                    {{ t('common.previous') }}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    :disabled="currentPage === totalPages"
-                    @click="handlePageChange(currentPage + 1)"
-                  >
-                    {{ t('common.next') }}
-                  </Button>
                 </div>
               </div>
             </CardContent>
@@ -1013,7 +1205,7 @@ const categories = computed(() => {
 
     <!-- Dialogs -->
     <Dialog v-model:open="isAssetModalOpen">
-      <DialogContent class="sm:max-w-[600px]">
+      <DialogContent class="sm:max-w-[1000px]">
         <DialogHeader>
           <DialogTitle>{{ t('services.itHelp.request.title') }}</DialogTitle>
           <DialogDescription>{{ t('services.itHelp.request.subtitle') }}</DialogDescription>
@@ -1055,7 +1247,11 @@ const categories = computed(() => {
     <KnowledgeBookUpload v-model:open="isUploadModalOpen" @uploaded="handleUploadSuccess" />
 
     <!-- eBook Viewer Modal -->
-    <KnowledgeBookViewer v-model:open="isViewerModalOpen" :book="selectedBook" />
+    <KnowledgeBookViewer
+      v-model:open="isViewerModalOpen"
+      :book="selectedBook"
+      @view-tracked="onViewTracked"
+    />
 
     <!-- Delete Confirmation Dialog -->
     <AlertDialog v-model:open="isDeleteConfirmOpen">
@@ -1101,6 +1297,11 @@ const categories = computed(() => {
       v-model:open="isDetailModalOpen"
       :ticket="selectedTicket"
       @ticket-updated="onTicketUpdated"
+    />
+    <KnowledgeBookEdit
+      v-model:open="isEditModalOpen"
+      :book="selectedBook"
+      @updated="onBookUpdated"
     />
   </div>
 </template>

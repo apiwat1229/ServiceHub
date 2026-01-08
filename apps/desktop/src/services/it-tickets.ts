@@ -1,4 +1,5 @@
 import api from './api';
+import type { ITAsset } from './it-assets';
 
 export interface ITTicket {
     id: string;
@@ -27,8 +28,33 @@ export interface ITTicket {
         username?: string;
     };
     location?: string;
+    // Asset Request Fields
+    isAssetRequest?: boolean;
+    assetId?: string;
+    asset?: ITAsset;
+    quantity?: number;
+    expectedDate?: string;
+    approverId?: string;
+    issuedAt?: string;
+    issuedBy?: string;
     createdAt: string;
     updatedAt: string;
+    comments?: TicketComment[];
+}
+
+export interface TicketComment {
+    id: string;
+    content: string;
+    ticketId: string;
+    userId: string;
+    user: {
+        id: string;
+        displayName: string;
+        firstName?: string;
+        lastName?: string;
+        avatar?: string;
+    };
+    createdAt: string;
 }
 
 export interface CreateITTicketDto {
@@ -37,6 +63,12 @@ export interface CreateITTicketDto {
     category: string;
     priority?: string;
     location?: string;
+    // Asset Request Fields
+    isAssetRequest?: boolean;
+    assetId?: string;
+    quantity?: number;
+    expectedDate?: string;
+    approverId?: string;
 }
 
 export interface UpdateITTicketDto {
@@ -47,6 +79,14 @@ export interface UpdateITTicketDto {
     status?: string;
     location?: string;
     assigneeId?: string;
+    // Asset Request Fields
+    isAssetRequest?: boolean;
+    assetId?: string;
+    quantity?: number;
+    expectedDate?: string;
+    approverId?: string;
+    issuedAt?: string;
+    issuedBy?: string;
 }
 
 export const itTicketsApi = {
@@ -62,6 +102,11 @@ export const itTicketsApi = {
 
     create: async (data: CreateITTicketDto): Promise<ITTicket> => {
         const response = await api.post('/it-tickets', data);
+        return response.data;
+    },
+
+    addComment: async (id: string, content: string): Promise<TicketComment> => {
+        const response = await api.post(`/it-tickets/${id}/comments`, { content });
         return response.data;
     },
 

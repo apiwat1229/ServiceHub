@@ -8,7 +8,7 @@ export const en = {
         },
         cuplump: {
             name: "Cuplump Pool",
-            description: "Rubber Cup Lump Management and tracking system."
+            description: "Cuplump Management and tracking system."
         },
         booking: {
             name: "Booking Queue",

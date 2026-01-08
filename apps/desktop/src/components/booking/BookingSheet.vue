@@ -44,6 +44,7 @@ const props = defineProps<{
   selectedSlot: string;
   nextQueueNo: number | null;
   editingBooking?: any;
+  queueMode?: 'Cuplump' | 'USS';
 }>();
 
 const emit = defineEmits(['update:open', 'success']);
@@ -56,13 +57,44 @@ const suppliers = ref<any[]>([]);
 const rubberTypes = ref<any[]>([]);
 const openSupplierCombo = ref(false);
 
-const form = ref({
+const form = ref<{
+  supplierId: string;
+  truckType: string;
+  truckRegister: string;
+  rubberType: string;
+  supplierCode: string;
+  supplierName: string;
+  estimatedWeight: string | number;
+}>({
   supplierId: '',
   truckType: '',
   truckRegister: '',
   rubberType: '',
   supplierCode: '', // Helper for display/search
   supplierName: '', // Helper
+  estimatedWeight: '',
+});
+
+const filteredRubberTypes = computed(() => {
+  return rubberTypes.value.filter((type) => {
+    const isUSS =
+      type.category === 'USS' ||
+      type.name.includes('USS') ||
+      type.code.includes('USS') ||
+      type.name.includes('EUDR USS') ||
+      type.name.includes('FSC USS');
+
+    const isCuplump =
+      type.category === 'Cuplump' ||
+      type.category === 'CL' ||
+      type.name.includes('CL') ||
+      type.name.includes('Regular CL');
+
+    if (props.queueMode === 'USS') {
+      return isUSS;
+    }
+    return isCuplump; // Default to Cuplump
+  });
 });
 
 const TRUCK_TYPES = computed(() => [
@@ -90,7 +122,30 @@ const displayBookingCode = computed(() => {
     return props.editingBooking.bookingCode;
   }
   if (!props.selectedDate || props.nextQueueNo === null) return '-';
-  return genBookingCode(props.selectedDate, props.nextQueueNo);
+  const code = genBookingCode(props.selectedDate, props.nextQueueNo);
+  return props.queueMode === 'USS' ? `U${code}` : `C${code}`;
+});
+
+const displayEstimatedWeight = computed({
+  get: () => {
+    if (
+      form.value.estimatedWeight === '' ||
+      form.value.estimatedWeight === null ||
+      form.value.estimatedWeight === undefined
+    ) {
+      return '';
+    }
+    return new Intl.NumberFormat('en-US').format(Number(form.value.estimatedWeight));
+  },
+  set: (val) => {
+    // Remove commas and non-digits
+    const raw = val.replace(/,/g, '').replace(/\D/g, '');
+    if (raw === '') {
+      form.value.estimatedWeight = '';
+      return;
+    }
+    form.value.estimatedWeight = parseInt(raw, 10);
+  },
 });
 
 // --- Watchers ---
@@ -114,6 +169,7 @@ watch(
           rubberType: rubberTypeValue,
           supplierCode: props.editingBooking.supplierCode || '',
           supplierName: props.editingBooking.supplierName || '',
+          estimatedWeight: props.editingBooking.estimatedWeight || '',
         };
         console.log('[BookingSheet] Edit mode - rubberType:', form.value.rubberType);
       } else {
@@ -125,6 +181,7 @@ watch(
           rubberType: '',
           supplierCode: '',
           supplierName: '',
+          estimatedWeight: '',
         };
       }
     }
@@ -156,10 +213,17 @@ async function fetchMasterData() {
 }
 
 async function handleSubmit() {
-  if (!form.value.supplierId || !form.value.rubberType) {
-    toast.error(t('validation.required'), {
-      description: t('validation.required'),
-    });
+  // Validation
+  const errors: string[] = [];
+  if (!form.value.supplierId)
+    errors.push(t('booking.validation.supplierNameRequired') || 'Supplier Name is required');
+  if (!form.value.rubberType)
+    errors.push(t('booking.validation.rubberTypeRequired') || 'Rubber Type is required');
+  if (props.queueMode !== 'Cuplump' && !form.value.estimatedWeight)
+    errors.push(t('booking.validation.estimatedWeightRequired') || 'Estimated Weight is required');
+
+  if (errors.length > 0) {
+    errors.forEach((e) => toast.error(e));
     return;
   }
 
@@ -180,6 +244,7 @@ async function handleSubmit() {
     truckType: form.value.truckType,
     truckRegister: form.value.truckRegister,
     rubberType: form.value.rubberType,
+    estimatedWeight: props.queueMode === 'Cuplump' ? 0 : form.value.estimatedWeight,
     recorder: authStore.user?.username || authStore.user?.email || 'System',
   };
 
@@ -189,13 +254,12 @@ async function handleSubmit() {
       const updated = await bookingsApi.update(props.editingBooking.id, payload);
       if (updated && updated.status === 'PENDING_APPROVAL') {
         toast.info(t('bookingSheet.editRequest'));
-      } else {
-        toast.success(t('bookingSheet.updateSuccess'));
       }
+      // Success toast handled by global socket notification
       emit('success', updated);
     } else {
       const created = await bookingsApi.create(payload as any);
-      toast.success(t('common.success'));
+      // Success toast handled by global socket notification
       emit('success', created);
     }
     emit('update:open', false);
@@ -247,7 +311,7 @@ async function handleSubmit() {
 
         <!-- Supplier -->
         <div class="space-y-2">
-          <Label>{{ t('booking.supplierName') }}</Label>
+          <Label>{{ t('booking.supplierName') }} <span class="text-destructive">*</span></Label>
           <Popover v-model:open="openSupplierCombo">
             <PopoverTrigger as-child>
               <Button
@@ -326,19 +390,31 @@ async function handleSubmit() {
           </div>
         </div>
 
-        <!-- Rubber Type -->
-        <div class="space-y-2">
-          <Label>{{ t('booking.rubberType') }} <span class="text-red-500">*</span></Label>
-          <Select v-model="form.rubberType">
-            <SelectTrigger>
-              <SelectValue :placeholder="t('booking.rubberType')" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem v-for="type in rubberTypes" :key="type.id" :value="type.code">
-                {{ type.name }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
+        <div class="grid grid-cols-2 gap-4">
+          <!-- Rubber Type -->
+          <div class="space-y-2">
+            <Label>{{ t('booking.rubberType') }} <span class="text-red-500">*</span></Label>
+            <Select v-model="form.rubberType">
+              <SelectTrigger>
+                <SelectValue :placeholder="t('booking.rubberType')" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="type in filteredRubberTypes" :key="type.id" :value="type.code">
+                  {{ type.name }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <!-- Estimated Weight -->
+          <div class="space-y-2" v-if="queueMode !== 'Cuplump'">
+            <Label>{{ t('booking.estimatedWeight') }} <span class="text-red-500">*</span></Label>
+            <Input
+              v-model="displayEstimatedWeight"
+              type="text"
+              :placeholder="t('booking.estimatedWeightPlaceholder')"
+              class="font-mono"
+            />
+          </div>
         </div>
 
         <DialogFooter class="mt-6">

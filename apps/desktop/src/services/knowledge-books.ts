@@ -15,6 +15,8 @@ export interface KnowledgeBook {
     views: number;
     downloads: number;
     tags: string[];
+    trainingDate?: string;
+    attendees?: number;
     isPublished: boolean;
     createdAt: string;
     updatedAt: string;

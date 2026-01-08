@@ -12,12 +12,12 @@ import { rubberTypesApi, type RubberType } from '@/services/rubberTypes';
 import { getLocalTimeZone, today } from '@internationalized/date';
 import type { ColumnDef } from '@tanstack/vue-table';
 import { format } from 'date-fns';
-import { Calendar as CalendarIcon, Droplets, Edit, Search } from 'lucide-vue-next';
+import { Calendar as CalendarIcon, Edit, Search, Sheet } from 'lucide-vue-next'; // Changed Droplets to Sheet
 import { VisuallyHidden } from 'radix-vue';
 import { computed, h, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
-import CuplumpDetailContent from './components/CuplumpDetailContent.vue';
+import UssDetailContent from './components/UssDetailContent.vue'; // Changed import
 
 const { t } = useI18n();
 // const router = useRouter(); // Router might not be needed for nav anymore if fully modal based
@@ -85,11 +85,12 @@ const getRubberTypeName = (code: string) => {
   return type ? type.name : code;
 };
 
-// Helper to check if Rubber Type is Cuplump
-const isCuplumpType = (code: string) => {
+// Helper to check if Rubber Type is USS
+const isUssType = (code: string) => {
+  // Changed function name
   if (!code) return false;
   const type = rubberTypes.value.find((t) => t.code === code);
-  return type ? type.category === 'Cuplump' : false;
+  return type ? type.category === 'USS' : false; // Changed Category Check
 };
 
 // Processed Data (Split logic)
@@ -100,7 +101,8 @@ const processedBookings = computed(() => {
     const isTrailer = ['10 ล้อ พ่วง', '10 ล้อ (พ่วง)'].includes(b.truckType);
 
     // Filter Main Truck by Rubber Type
-    if (isCuplumpType(b.rubberType)) {
+    if (isUssType(b.rubberType)) {
+      // Changed check
       result.push({
         ...b,
         id: b.id + '-main',
@@ -121,7 +123,8 @@ const processedBookings = computed(() => {
     }
 
     // 2. Trailer Part
-    if (isTrailer && b.trailerWeightIn > 0 && isCuplumpType(b.trailerRubberType)) {
+    if (isTrailer && b.trailerWeightIn > 0 && isUssType(b.trailerRubberType)) {
+      // Changed check
       result.push({
         ...b,
         id: b.id + '-trailer',
@@ -177,7 +180,7 @@ const stats = computed(() => {
 const columns: ColumnDef<any>[] = [
   {
     accessorKey: 'lotNo',
-    header: () => t('cuplump.lotNo'),
+    header: () => t('uss.lotNo'),
     cell: ({ row }) =>
       h('div', { class: 'flex flex-col' }, [
         h('span', { class: 'font-bold text-blue-600' }, row.original.lotNo),
@@ -190,7 +193,7 @@ const columns: ColumnDef<any>[] = [
   },
   {
     accessorKey: 'supplierName',
-    header: () => t('cuplump.supplier'),
+    header: () => t('uss.supplier'),
     cell: ({ row }) =>
       h('div', { class: 'flex flex-col' }, [
         h(
@@ -202,7 +205,7 @@ const columns: ColumnDef<any>[] = [
   },
   {
     accessorKey: 'truckRegister',
-    header: () => t('cuplump.truck'),
+    header: () => t('uss.truck'),
     cell: ({ row }) =>
       h('div', { class: 'flex flex-col' }, [
         h('span', { class: 'font-medium' }, row.original.truckRegister || '-'),
@@ -215,7 +218,7 @@ const columns: ColumnDef<any>[] = [
   },
   {
     accessorKey: 'rubberType',
-    header: () => t('cuplump.rubberType'),
+    header: () => t('uss.rubberType'),
     cell: ({ row }) =>
       h('div', { class: 'flex flex-col' }, [
         h('span', { class: 'font-medium' }, row.original.displayRubberType || '-'),
@@ -234,7 +237,7 @@ const columns: ColumnDef<any>[] = [
         {
           class: 'bg-orange-100/50 text-orange-700 px-2 py-1 rounded text-center text-xs font-bold',
         },
-        t('cuplump.moisture')
+        t('uss.moisture')
       ),
     cell: ({ row }) =>
       h('div', { class: 'text-center font-bold text-orange-600' }, row.original.moisture),
@@ -245,7 +248,7 @@ const columns: ColumnDef<any>[] = [
       h(
         'div',
         { class: 'bg-blue-100/50 text-blue-700 px-2 py-1 rounded text-center text-xs font-bold' },
-        t('cuplump.drcEst')
+        t('uss.drcEst')
       ),
     cell: ({ row }) =>
       h('div', { class: 'text-center font-bold text-blue-600' }, row.original.drcEst),
@@ -256,30 +259,30 @@ const columns: ColumnDef<any>[] = [
       h(
         'div',
         { class: 'bg-green-100/50 text-green-700 px-2 py-1 rounded text-center text-xs font-bold' },
-        t('cuplump.avgCp')
+        t('uss.avgCp')
       ),
     cell: ({ row }) =>
       h('div', { class: 'text-center font-bold text-green-600' }, row.original.cpAvg),
   },
   {
     accessorKey: 'weightIn',
-    header: () => t('cuplump.grossWeight'),
+    header: () => t('uss.grossWeight'),
     cell: ({ row }) =>
       h(
         'div',
         { class: 'font-bold' },
-        (row.original.displayWeightIn || 0).toLocaleString() + ' ' + t('cuplump.kg')
+        (row.original.displayWeightIn || 0).toLocaleString() + ' ' + t('uss.kg')
       ),
   },
   {
     accessorKey: 'netWeight',
-    header: () => t('cuplump.netWeight'),
+    header: () => t('uss.netWeight'),
     cell: ({ row }) => {
       const net = (row.original.displayWeightIn || 0) - (row.original.displayWeightOut || 0);
       return h(
         'div',
         { class: 'font-bold text-green-600' },
-        (net > 0 ? net : 0).toLocaleString() + ' ' + t('cuplump.kg')
+        (net > 0 ? net : 0).toLocaleString() + ' ' + t('uss.kg')
       );
     },
   },
@@ -321,15 +324,15 @@ onMounted(() => {
       >
         <!-- Title Section -->
         <div class="flex items-center gap-4 min-w-fit">
-          <div class="p-3 bg-primary/10 rounded-xl text-primary flex items-center justify-center">
-            <Droplets class="h-8 w-8" />
+          <div class="p-3 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
+            <Sheet class="h-8 w-8" />
           </div>
           <div>
             <h1 class="text-2xl font-bold tracking-tight text-foreground">
-              {{ t('services.cuplump.name') }}
+              {{ t('services.uss.name') || 'USS' }}
             </h1>
             <p class="text-sm text-muted-foreground">
-              {{ t('services.cuplump.description') }}
+              {{ t('services.uss.description') }}
             </p>
           </div>
         </div>
@@ -401,7 +404,7 @@ onMounted(() => {
               @click="activeTab = 'all'"
               class="gap-2 h-8"
             >
-              {{ t('cuplump.all') }}
+              {{ t('uss.all') }}
               <Badge variant="secondary" class="ml-1">{{ stats.total }}</Badge>
             </Button>
             <Button
@@ -410,7 +413,7 @@ onMounted(() => {
               @click="activeTab = 'complete'"
               class="gap-2 text-green-600 h-8"
             >
-              {{ t('cuplump.complete') }}
+              {{ t('uss.complete') }}
               <Badge class="ml-1 bg-green-100 text-green-700 hover:bg-green-100">{{
                 stats.complete
               }}</Badge>
@@ -422,7 +425,7 @@ onMounted(() => {
               class="gap-2 text-orange-600 h-8"
               :class="{ 'bg-orange-100/50 hover:bg-orange-100/70': activeTab === 'incomplete' }"
             >
-              {{ t('cuplump.incomplete') }}
+              {{ t('uss.incomplete') }}
               <Badge
                 class="ml-1 bg-orange-100 text-orange-700 hover:bg-orange-100 border-orange-200"
                 >{{ stats.incomplete }}</Badge
@@ -435,20 +438,20 @@ onMounted(() => {
         <div class="items-center gap-8 px-4 border-l border-border/50 hidden xl:flex">
           <div>
             <div class="text-xs text-muted-foreground text-right mb-0.5">
-              {{ t('cuplump.grossWeight') }}
+              {{ t('uss.grossWeight') }}
             </div>
             <div class="text-lg font-bold">
               {{ stats.grossWeight.toLocaleString() }}
-              <span class="text-xs font-normal text-muted-foreground">{{ t('cuplump.kg') }}</span>
+              <span class="text-xs font-normal text-muted-foreground">{{ t('uss.kg') }}</span>
             </div>
           </div>
           <div>
             <div class="text-xs text-muted-foreground text-right mb-0.5">
-              {{ t('cuplump.netWeight') }}
+              {{ t('uss.netWeight') }}
             </div>
             <div class="text-lg font-bold text-green-600">
               {{ stats.netWeight.toLocaleString() }}
-              <span class="text-xs font-normal text-muted-foreground">{{ t('cuplump.kg') }}</span>
+              <span class="text-xs font-normal text-muted-foreground">{{ t('uss.kg') }}</span>
             </div>
           </div>
         </div>
@@ -469,10 +472,10 @@ onMounted(() => {
     <Dialog v-model:open="isDetailOpen">
       <DialogContent class="max-w-[95vw] h-auto max-h-[95vh] overflow-y-auto flex flex-col p-6">
         <VisuallyHidden>
-          <DialogTitle>{{ t('cuplump.mainInfo') }}</DialogTitle>
+          <DialogTitle>{{ t('uss.mainInfo') }}</DialogTitle>
           <DialogDescription>Booking Details</DialogDescription>
         </VisuallyHidden>
-        <CuplumpDetailContent
+        <UssDetailContent
           v-if="selectedBooking"
           :booking-id="selectedBooking.bookingId"
           :is-trailer="selectedBooking.isTrailer"

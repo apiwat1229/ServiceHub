@@ -79,6 +79,7 @@ model User {
   // IT Help Desk Tickets
   requesterTickets ITTicket[] @relation("TicketRequester")
   assigneeTickets  ITTicket[] @relation("TicketAssignee")
+  ticketComments   TicketComment[]
 
   @@map("users")
 }
@@ -256,6 +257,7 @@ model Booking {
   // Rubber Information
   rubberType String @map("rubber_type")
   lotNo      String? @map("lot_no")
+  estimatedWeight Float? @map("estimated_weight")
 
   // Lab Results (Main)
   moisture     Float? @map("moisture")
@@ -650,6 +652,8 @@ model ITAsset {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  tickets ITTicket[]
+
   @@map("it_assets")
 }
 
@@ -669,11 +673,39 @@ model ITTicket {
   assigneeId String? @map("assignee_id")
   assignee   User?   @relation("TicketAssignee", fields: [assigneeId], references: [id])
 
+  // Asset Request Fields
+  isAssetRequest Boolean   @default(false) @map("is_asset_request")
+  assetId        String?   @map("asset_id")
+  asset          ITAsset?  @relation(fields: [assetId], references: [id])
+  quantity       Int?      @default(0)
+  expectedDate   DateTime? @map("expected_date")
+  approverId     String?   @map("approver_id")
+  
+  issuedAt       DateTime? @map("issued_at")
+  issuedBy       String?   @map("issued_by")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([requesterId])
   @@index([assigneeId])
   @@index([status])
+  @@index([assetId])
   @@map("it_tickets")
+
+  comments TicketComment[]
+}
+
+model TicketComment {
+  id        String   @id @default(uuid())
+  content   String
+  ticketId  String   @map("ticket_id")
+  ticket    ITTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([ticketId])
+  @@index([userId])
+  @@map("ticket_comments")
 }

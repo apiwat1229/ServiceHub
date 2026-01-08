@@ -3,6 +3,8 @@
     "save": "บันทึก",
     "cancel": "ยกเลิก",
     "delete": "ลบ",
+    "view": "ดู",
+    "download": "ดาวน์โหลด",
     "confirmDelete": "ยืนยันการลบ",
     "areYouSure": "คุณแน่ใจหรือไม่?",
     "edit": "แก้ไข",
@@ -43,6 +45,7 @@
     "optional": "ระบุหรือไม่ก็ได้",
     "next": "ถัดไป",
     "previous": "ย้อนกลับ",
+    "fillAllRequiredFields": "กรุณากรอกข้อมูลให้ครบถ้วน",
     "sortAZ": "A-Z",
     "sortRecent": "ใช้งานล่าสุด",
     "sortBy": "เรียงตาม",
@@ -89,6 +92,10 @@
       "name": "เครื่องชั่งรถบรรทุก",
       "description": "ระบบชั่งน้ำหนักสำหรับการขนส่งขาเข้า/ขาออก"
     },
+    "warehouse": {
+      "name": "จัดการคลังสินค้า",
+      "description": "จัดการสินค้าคงคลัง การเคลื่อนย้ายสินค้า และการดำเนินงานในคลังสินค้า"
+    },
     "maintenance": {
       "name": "การบำรุงรักษา",
       "description": "การบำรุงรักษาอุปกรณ์และจัดการใบสั่งงาน"
@@ -125,7 +132,36 @@
         "unknownUploader": "ไม่ระบุ",
         "pptxNotSupported": "ไม่รองรับการแสดงผล PowerPoint",
         "pptxNotSupportedDesc": "บราวเซอร์ไม่สามารถแสดงผลไฟล์ PowerPoint ได้โดยตรง กรุณาดาวน์โหลดไฟล์เพื่อเปิดดูด้วยโปรแกรมในเครื่องของคุณ",
-        "pptxDirectDownload": "ไม่สามารถแสดงตัวอย่าง PowerPoint ได้ ระบบกำลังเริ่มดาวน์โหลดไฟล์ให้คุณ"
+        "pptxDirectDownload": "ไม่สามารถแสดงตัวอย่าง PowerPoint ได้ ระบบกำลังเริ่มดาวน์โหลดไฟล์ให้คุณ",
+        "uploadModal": {
+          "title": "อัปโหลด eBook",
+          "subtitle": "อัปโหลดไฟล์ PDF ไปยังศูนย์การเรียนรู้",
+          "dragDrop": "ลากและวางไฟล์ของคุณที่นี่",
+          "orClick": "หรือคลิกเพื่อเลือกไฟล์",
+          "supported": "รองรับ: PDF (สูงสุด 50MB)"
+        },
+        "editModal": {
+          "title": "แก้ไขรายละเอียด eBook",
+          "subtitle": "อัปเดตข้อมูลสำหรับ \"{title}\""
+        },
+        "fields": {
+          "title": "หัวข้อ",
+          "description": "รายละเอียด",
+          "category": "หมวดหมู่",
+          "author": "ผู้แต่ง / วิทยากร",
+          "trainingDate": "วันที่อบรม",
+          "attendees": "ผู้ร่วมอบรม",
+          "tags": "แท็ก"
+        },
+        "placeholders": {
+          "title": "ระบุชื่อ eBook",
+          "description": "ระบุรายละเอียด (ไม่บังคับ)",
+          "category": "เลือกหมวดหมู่",
+          "author": "ระบุชื่อผู้แต่ง (ไม่บังคับ)",
+          "pickDate": "เลือกวันที่",
+          "tags": "เพิ่มแท็ก...",
+          "add": "เพิ่ม"
+        }
       },
       "stock": {
         "title": "คลังอุปกรณ์คอมพิวเตอร์",
@@ -334,7 +370,12 @@
         "back": "กลับไปหน้า Help Desk",
         "category": "ประเภทอุปกรณ์",
         "urgency": "ความเร่งด่วน",
-        "model": "รุ่น / รายละเอียดอุปกรณ์ (ถ้ามี)",
+        "urgencyLevels": {
+          "low": "รายการปกติ",
+          "medium": "จำเป็นต่อการทำงาน",
+          "high": "เร่งด่วนมาก / มีผลต่อการทำงาน"
+        },
+        "model": "รุ่น / รายละเอียดอุปกรณ์",
         "quantity": "จำนวน",
         "expectedDate": "วันที่คาดว่าจะมารับ",
         "approver": "ผู้อนุมัติ (หัวหน้างาน/ผู้จัดการ)",
@@ -348,13 +389,9 @@
         "infoDesc": "การแจ้งเบิกอุปกรณ์มาตรฐานมักใช้เวลา 2-3 วันทำการ คุณจะได้รับการแจ้งเตือนเมื่อคำขอได้รับอนุมัติ"
       }
     },
-    "warehouse": {
-      "name": "คลังสินค้า",
-      "description": "การจัดการสินค้าคงคลังสำหรับสินค้าสำเร็จรูปและอะไหล่"
-    },
     "uss": {
-      "name": "ยางแผ่น",
-      "description": "ระบบรับซื้อยางแผ่น"
+      "name": "USS",
+      "description": "ระบบรับซื้อ USS"
     },
     "shipping": {
       "name": "การจัดส่งสินค้า",
@@ -410,7 +447,7 @@
     "type": "ประเภท",
     "saveTicket": "บันทึกตั๋ว",
     "copyTicket": "คัดลอกตั๋ว",
-    "ticketTitle": "ตั๋วคิว CL",
+    "ticketTitle": "คิว Cuplump",
     "parkingInstruction": "กรุณาจอดรถในพื้นที่ที่กำหนดเท่านั้น",
     "securityWarning": "แอปนี้มีความเสี่ยงด้านความปลอดภัยที่ไม่จำเป็น",
     "ticketSaved": "บันทึกตั๋วสำเร็จ",
@@ -421,7 +458,13 @@
     "completed": "เสร็จสิ้น",
     "pending": "รอดำเนินการ",
     "deliveryCompleted": "จัดส่งเสร็จแล้ว",
-    "queue": "คิว"
+    "queue": "คิว",
+    "estimatedWeight": "น้ำหนักโดยประมาณ (กก.)",
+    "estimatedWeightTon": "น้ำหนักโดยประมาณ (ตัน)",
+    "estimatedWeightPlaceholder": "ระบุน้ำหนัก (กก.)",
+    "validation": {
+      "estimatedWeightRequired": "กรุณาระบุน้ำหนักโดยประมาณ"
+    }
   },
   "admin": {
     "roles": {
@@ -960,6 +1003,8 @@
       "totalTrips": "เที่ยวทั้งหมด",
       "totalNetWeight": "น้ำหนักสุทธิ",
       "totalGross": "น้ำหนักรวม",
+      "totalGrossWeight": "น้ำหนักรวมสุทธิ",
+      "totalWeightIn": "น้ำหนักรวมขาเข้า",
       "inOut": "เข้า / ออก"
     },
     "confirmCheckIn": "ยืนยันการเช็คอิน",
@@ -1021,6 +1066,7 @@
     "beforeBaking": "ก่อนอบ",
     "action": "จัดการ",
     "saveRecord": "บันทึกข้อมูล",
+    "addFirstSample": "เพิ่มตัวอย่างแรก",
     "clear": "ล้างข้อมูล",
     "noSamples": "ยังไม่มีรายการที่บันทึก",
     "confirmDelete": "ต้องการลบรายการนี้?",
@@ -1029,6 +1075,45 @@
     "enterBeforePress": "กรุณากรอกน้ำหนักก่อนอัด",
     "failedToSave": "บันทึกไม่สำเร็จ",
     "failedToDelete": "ลบไม่สำเร็จ"
+  },
+  "uss": {
+    "title": "ยางแผ่นรมควัน",
+    "lotNo": "หมายเลขล็อต",
+    "supplier": "ผู้จัดจำหน่าย",
+    "truck": "รถบรรทุก",
+    "rubberType": "ประเภทยาง",
+    "moisture": "ความชื้น",
+    "drcEst": "DRC โดยประมาณ",
+    "avgCp": "%เนื้อยางเฉลี่ย",
+    "grossWeight": "น้ำหนักรวม",
+    "netWeight": "น้ำหนักสุทธิ",
+    "all": "ทั้งหมด",
+    "complete": "เสร็จสิ้น",
+    "incomplete": "ไม่สมบูรณ์",
+    "kg": "กก.",
+    "noData": "ไม่พบข้อมูล",
+    "mainInfo": "ข้อมูลหลัก",
+    "date": "วันที่",
+    "recordedItems": "รายการที่บันทึกแล้ว",
+    "specialReceiving": "รายการรับเศษยาง",
+    "beforePress": "ก่อนอัด",
+    "basket": "ตะกร้า",
+    "uss": "ยางแผ่น",
+    "afterPress": "หลังอัด",
+    "percentCp": "%เนื้อยาง",
+    "beforeBaking": "ก่อนอบ",
+    "action": "จัดการ",
+    "saveRecord": "บันทึกข้อมูล",
+    "addFirstSample": "เพิ่มตัวอย่างแรก",
+    "clear": "ล้างข้อมูล",
+    "noSamples": "ยังไม่มีรายการที่บันทึก",
+    "confirmDelete": "ต้องการลบรายการนี้?",
+    "sampleSaved": "บันทึกรายการเรียบร้อย",
+    "sampleDeleted": "ลบรายการเรียบร้อย",
+    "enterBeforePress": "กรุณากรอกน้ำหนักก่อนอัด",
+    "failedToSave": "บันทึกไม่สำเร็จ",
+    "failedToDelete": "ลบไม่สำเร็จ",
+    "numericOnly": "ตัวเลขเท่านั้น"
   },
   "approval": {
     "title": "คำขออนุมัติ",
@@ -1146,15 +1231,16 @@
   },
   "bookingQueue": {
     "title": "คิวการจอง",
-    "manageQueue": "จัดการคิวการจองสำหรับการส่งมอบของผู้จัดจำหน่ายในวันที่",
+    "manageQueue": "จัดการคิวการจองในวันที่",
+    "dailySummary": "สรุปคิวทั้งวัน",
     "addBooking": "เพิ่มการจอง",
     "slotFull": "เต็ม",
     "selectDate": "เลือกวันที่",
     "timeSlot": "ช่วงเวลา",
-    "totalToday": "คิวทั้งหมดวันนี้",
+    "totalToday": "จองทั้งหมดวันนี้",
     "currentQueue": "คิวปัจจุบัน",
     "nextQueue": "คิวถัดไป",
-    "available": "ว่าง",
+    "available": "สล็อตว่าง",
     "unlimited": "ไม่จำกัด",
     "noData": "ไม่มีข้อมูล",
     "noBookings": "ไม่พบการจองสำหรับช่วงเวลานี้",
@@ -1190,7 +1276,7 @@
   "ticketDialog": {
     "title": "รายละเอียดตั๋ว",
     "description": "ตัวอย่างรายละเอียดตั๋วการจอง",
-    "queueTicket": "บัตรคิว CL",
+    "queueTicket": "คิว Cuplump",
     "code": "รหัส",
     "name": "ชื่อ",
     "date": "วันที่",

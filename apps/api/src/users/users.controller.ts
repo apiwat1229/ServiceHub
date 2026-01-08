@@ -21,46 +21,44 @@ import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { UsersService } from './users.service';
 
 @Controller('users')
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@UseGuards(JwtAuthGuard)
 export class UsersController {
     constructor(private readonly usersService: UsersService) { }
 
     @Post()
-    @Post()
     @Permissions('users:create')
+    @UseGuards(PermissionsGuard)
     create(@Body() createUserDto: CreateUserDto) {
         return this.usersService.create(createUserDto);
     }
 
     @Get()
-    @Get()
-    @Permissions('users:read')
     findAll() {
         return this.usersService.findAll();
     }
 
     @Get(':id')
-    @Permissions('users:read')
     findOne(@Param('id') id: string) {
         return this.usersService.findOne(id);
     }
 
     @Patch(':id')
     @Permissions('users:update')
+    @UseGuards(PermissionsGuard)
     update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
         return this.usersService.update(id, updateUserDto);
     }
 
     @Delete(':id')
-    @Delete(':id')
     @Permissions('users:delete')
+    @UseGuards(PermissionsGuard)
     remove(@Param('id') id: string) {
         return this.usersService.remove(id);
     }
 
     @Patch(':id/unlock')
-    @Patch(':id/unlock')
     @Permissions('users:update')
+    @UseGuards(PermissionsGuard)
     async unlockUser(@Param('id') id: string) {
         return this.usersService.unlockUser(id);
     }
@@ -82,6 +80,7 @@ export class UsersController {
         })
     }))
     @Permissions('users:update')
+    @UseGuards(PermissionsGuard)
     async uploadAvatar(@Param('id') id: string, @UploadedFile() file: Express.Multer.File) {
         return this.usersService.updateAvatar(id, `/uploads/avatars/${file.filename}`);
     }

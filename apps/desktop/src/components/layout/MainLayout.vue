@@ -11,7 +11,8 @@ const showSidebar = computed(() => {
   if (
     route.path.startsWith('/admin/cuplump') ||
     route.path.startsWith('/admin/uss') ||
-    route.path.startsWith('/admin/helpdesk')
+    route.path.startsWith('/admin/helpdesk') ||
+    route.path.startsWith('/admin/project-timeline')
   ) {
     return false;
   }
