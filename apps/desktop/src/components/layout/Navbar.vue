@@ -1,6 +1,16 @@
 <script setup lang="ts">
 import LanguageSwitcher from '@/components/LanguageSwitcher.vue';
 import AppearanceSettings from '@/components/settings/AppearanceSettings.vue';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar/index';
 import { Button } from '@/components/ui/button';
 import {
@@ -49,6 +59,7 @@ const isTicketPreviewOpen = ref(false);
 const previewTicket = ref<any>(null);
 const isErrorDialogOpen = ref(false);
 const errorDialogMessage = ref('');
+const isCloseConfirmOpen = ref(false);
 
 const { isAdmin } = usePermissions();
 
@@ -101,6 +112,24 @@ const handleMarkAsRead = async (id: string) => {
 
 const handleViewAll = () => {
   router.push('/my-notifications');
+};
+
+// Window Controls
+const handleMinimize = () => {
+  (window as any).ipcRenderer?.window?.minimize();
+};
+
+const handleMaximize = () => {
+  (window as any).ipcRenderer?.window?.maximize();
+};
+
+const handleClose = () => {
+  isCloseConfirmOpen.value = true;
+};
+
+const confirmClose = () => {
+  (window as any).ipcRenderer?.window?.close();
+  isCloseConfirmOpen.value = false;
 };
 
 const handleNotificationClick = async (notification: NotificationDto) => {
@@ -292,9 +321,9 @@ onUnmounted(() => {
 
 <template>
   <header
-    class="h-12 border-b border-border bg-card/80 backdrop-blur px-6 flex items-center justify-between sticky top-0 z-50"
+    class="h-12 border-b border-border bg-card/80 backdrop-blur px-6 flex items-center justify-between sticky top-0 z-50 draggable-region"
   >
-    <div class="flex items-center gap-4">
+    <div class="flex items-center gap-4 no-drag">
       <!-- Navigation Controls -->
       <div class="flex items-center gap-1">
         <Button variant="ghost" size="icon" class="h-8 w-8" @click="router.back()" title="Back">
@@ -327,7 +356,7 @@ onUnmounted(() => {
       </span>
     </div>
 
-    <div class="flex items-center gap-4">
+    <div class="flex items-center gap-4 no-drag">
       <!-- Notifications -->
       <DropdownMenu>
         <DropdownMenuTrigger as-child>
@@ -338,7 +367,7 @@ onUnmounted(() => {
             />
             <span
               v-if="unreadCount > 0"
-              class="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground animate-in zoom-in duration-300"
+              class="absolute top-1 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground animate-in zoom-in duration-300"
             >
               {{ unreadCount > 9 ? '9+' : unreadCount }}
             </span>
@@ -439,7 +468,13 @@ onUnmounted(() => {
       <!-- Window Controls -->
       <div class="flex items-center gap-1 border-l pl-2 ml-2">
         <LanguageSwitcher />
-        <Button variant="ghost" size="icon" class="h-8 w-8" title="Minimize">
+        <Button
+          variant="ghost"
+          size="icon"
+          class="h-8 w-8"
+          title="Minimize"
+          @click="handleMinimize"
+        >
           <svg
             width="15"
             height="15"
@@ -456,7 +491,13 @@ onUnmounted(() => {
             />
           </svg>
         </Button>
-        <Button variant="ghost" size="icon" class="h-8 w-8" title="Maximize">
+        <Button
+          variant="ghost"
+          size="icon"
+          class="h-8 w-8"
+          title="Maximize"
+          @click="handleMaximize"
+        >
           <svg
             width="15"
             height="15"
@@ -478,6 +519,7 @@ onUnmounted(() => {
           size="icon"
           class="h-8 w-8 hover:bg-red-500 hover:text-white"
           title="Close"
+          @click="handleClose"
         >
           <svg
             width="15"
@@ -533,10 +575,39 @@ onUnmounted(() => {
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+
+    <!-- Close Confirmation Dialog -->
+    <AlertDialog v-model:open="isCloseConfirmOpen">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Close Application?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to close the application? Any unsaved changes will be lost.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction @click="confirmClose">Close</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   </header>
 </template>
 
 <style scoped>
+/* Draggable window region */
+.draggable-region {
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+
+/* Make interactive elements clickable */
+.no-drag,
+.no-drag * {
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
 @keyframes bell-ring {
   0%,
   100% {

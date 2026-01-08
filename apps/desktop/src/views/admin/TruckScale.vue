@@ -1209,14 +1209,7 @@ const dashboardColumns: ColumnDef<any>[] = [
   {
     id: 'netWeight',
     header: () => t('truckScale.netWeight') || 'Net Weight',
-    cell: ({ row }) => {
-      const booking = row.original;
-      if (booking.weightIn && booking.weightOut) {
-        const net = Math.abs(booking.weightIn - booking.weightOut);
-        return h('span', { class: 'font-bold' }, `${net.toLocaleString()} Kg.`);
-      }
-      return '-';
-    },
+    cell: () => '-',
   },
   {
     id: 'actions',

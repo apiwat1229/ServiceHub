@@ -21,6 +21,12 @@ electron.contextBridge.exposeInMainWorld("ipcRenderer", {
     get: (key) => electron.ipcRenderer.sendSync("electron-store-get", key),
     set: (key, value) => electron.ipcRenderer.send("electron-store-set", key, value),
     delete: (key) => electron.ipcRenderer.send("electron-store-delete", key)
+  },
+  // Window Controls
+  window: {
+    minimize: () => electron.ipcRenderer.send("window-minimize"),
+    maximize: () => electron.ipcRenderer.send("window-maximize"),
+    close: () => electron.ipcRenderer.send("window-close")
   }
   // You can expose other APTs you need here.
   // ...

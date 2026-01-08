@@ -88,7 +88,7 @@
       "description": "Material Requirements Planning for production and inventory."
     },
     "cuplump": {
-      "name": "Cuplump",
+      "name": "Cuplump Pool",
       "description": "Cuplump Management System"
     },
     "booking": {
@@ -1076,12 +1076,22 @@
   },
   "cuplump": {
     "title": "Cuplump",
+    "pageTitle": "Cuplump",
+    "pageDescription": "Cuplump Management System",
     "lotNo": "Lot Number",
     "supplier": "Supplier",
     "truck": "Truck",
     "rubberType": "Rubber Type",
     "moisture": "MOISTURE",
     "drcEst": "DRC EST.",
+    "drcReq": "DRC REQ.",
+    "drcActual": "DRC ACTUAL",
+    "drcEstShort": "Est.",
+    "drcReqShort": "Req.",
+    "drcActualShort": "Actual",
+    "drcManagement": "DRC Management",
+    "adjustDrcValues": "Adjust DRC values for this booking.",
+    "adjustMoisture": "Adjust moisture percentage.",
     "avgCp": "AVG %CP",
     "grossWeight": "Gross Weight",
     "netWeight": "Net Weight",
@@ -1100,6 +1110,9 @@
     "afterPress": "After Press",
     "percentCp": "%CP",
     "beforeBaking": "Before Baking",
+    "beforeBaking1": "Before Baking 1",
+    "beforeBaking2": "Before Baking 2",
+    "beforeBaking3": "Before Baking 3",
     "action": "Action",
     "saveRecord": "Save Record",
     "addFirstSample": "Add First Sample",

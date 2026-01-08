@@ -31,6 +31,8 @@ function createWindow() {
 
   win = new BrowserWindow({
     icon: path.join(process.env.VITE_PUBLIC, 'electron-vite.svg'),
+    frame: false,
+    titleBarStyle: 'hidden',
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
     },
@@ -99,6 +101,23 @@ ipcMain.on('electron-store-set', async (_event, key, val) => {
 
 ipcMain.on('electron-store-delete', async (_event, key) => {
   store.delete(key);
+});
+
+// Window Controls
+ipcMain.on('window-minimize', () => {
+  win?.minimize();
+});
+
+ipcMain.on('window-maximize', () => {
+  if (win?.isMaximized()) {
+    win?.unmaximize();
+  } else {
+    win?.maximize();
+  }
+});
+
+ipcMain.on('window-close', () => {
+  win?.close();
 });
 
 app.whenReady().then(createWindow)

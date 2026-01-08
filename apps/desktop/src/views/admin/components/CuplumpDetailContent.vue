@@ -55,17 +55,27 @@ const moistureForm = ref('');
 
 watch(isMoistureOpen, (newVal) => {
   if (newVal && booking.value) {
-    moistureForm.value = booking.value.moisture;
+    moistureForm.value = props.isTrailer
+      ? booking.value.trailerMoisture || ''
+      : booking.value.moisture || '';
   }
 });
 
 watch(isDrcOpen, (newVal) => {
   if (newVal && booking.value) {
-    drcForm.value = {
-      drcEst: booking.value.drcEst,
-      drcRequested: booking.value.drcRequested,
-      drcActual: booking.value.drcActual,
-    };
+    if (props.isTrailer) {
+      drcForm.value = {
+        drcEst: booking.value.trailerDrcEst || '',
+        drcRequested: booking.value.trailerDrcRequested || '',
+        drcActual: booking.value.trailerDrcActual || '',
+      };
+    } else {
+      drcForm.value = {
+        drcEst: booking.value.drcEst || '',
+        drcRequested: booking.value.drcRequested || '',
+        drcActual: booking.value.drcActual || '',
+      };
+    }
   }
 });
 
@@ -86,6 +96,57 @@ const addNewSampleRow = () => {
   });
 };
 
+// Focus next input on Enter
+const focusNextInput = (event: KeyboardEvent) => {
+  const target = event.target as HTMLElement;
+  // Get all focusable inputs that are not readonly or disabled
+  const inputs = Array.from(
+    document.querySelectorAll(
+      'input:not([readonly]):not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([readonly]):not([disabled])'
+    )
+  ) as HTMLElement[];
+  const currentIndex = inputs.indexOf(target);
+  if (currentIndex >= 0 && currentIndex < inputs.length - 1) {
+    event.preventDefault();
+    inputs[currentIndex + 1].focus();
+  }
+};
+
+// Calculate %CP automatically
+// Number validation and cleaning
+const handleNumericInput = (sample: any, field: string, value: string) => {
+  const cleaned = value.replace(/[^0-9.]/g, '');
+  if (cleaned !== value) {
+    toast.error(t('cuplump.numericOnly') || 'Please enter numbers only');
+  }
+  sample[field] = cleaned;
+  if (['beforePress', 'basket', 'afterPress'].includes(field)) {
+    calculatePercentCp(sample);
+  }
+};
+
+const calculatePercentCp = (sample: any) => {
+  const beforePress = parseFloat(sample.beforePress || '0');
+  const basket = parseFloat(sample.basket || '0');
+  const afterPress = parseFloat(sample.afterPress || '0');
+  const moisture = props.isTrailer
+    ? booking.value?.trailerMoisture
+      ? parseFloat(booking.value.trailerMoisture)
+      : 0
+    : booking.value?.moisture
+      ? parseFloat(booking.value.moisture)
+      : 0;
+
+  if (beforePress && basket && afterPress) {
+    const cuplump = beforePress - basket;
+    if (cuplump > 0) {
+      // Formula: %CP = (After Press / Cuplump) * (100 - Moisture)
+      const percentCp = (afterPress / cuplump) * (100 - moisture);
+      sample.percentCp = percentCp.toFixed(2);
+    }
+  }
+};
+
 const removeNewSampleRow = (index: number) => {
   newSamples.value.splice(index, 1);
 };
@@ -98,19 +159,22 @@ const displayRubberType = computed(() => {
   return type ? type.name : code;
 });
 
-const displayWeightIn = computed(() => {
-  if (!booking.value) return 0;
-  const w = props.isTrailer ? booking.value.trailerWeightIn : booking.value.weightIn;
-  return (w || 0).toLocaleString();
+// Weight display logic
+const displayGrossWeight = computed(() => {
+  if (!booking.value) return '-';
+  const inW = props.isTrailer ? booking.value.trailerWeightIn || 0 : booking.value.weightIn || 0;
+  const outW = props.isTrailer ? booking.value.trailerWeightOut || 0 : booking.value.weightOut || 0;
+
+  // If both are 0, it might mean the data isn't fully entered yet
+  if (inW === 0 && outW === 0) return '0';
+
+  const cargoWeight = Math.abs(inW - outW);
+  return cargoWeight.toLocaleString();
 });
 
-// Net Weight
+// Net Weight (Set to empty for future formula)
 const displayNetWeight = computed(() => {
-  if (!booking.value) return 0;
-  const inW = props.isTrailer ? booking.value.trailerWeightIn : booking.value.weightIn;
-  const outW = props.isTrailer ? booking.value.trailerWeightOut : booking.value.weightOut;
-  const net = (inW || 0) - (outW || 0);
-  return (net > 0 ? net : 0).toLocaleString();
+  return '-';
 });
 
 // Fetch Data
@@ -262,15 +326,39 @@ const handleSaveDrc = async () => {
   if (!booking.value) return;
 
   try {
-    await bookingsApi.update(props.bookingId, {
-      lotNo: booking.value.lotNo,
-      moisture: booking.value.moisture,
+    const drcData = {
       drcEst: parseFloat(drcForm.value.drcEst) || 0,
       drcRequested: parseFloat(drcForm.value.drcRequested) || 0,
       drcActual: parseFloat(drcForm.value.drcActual) || 0,
-    });
-    // Update local model on success
-    Object.assign(booking.value, drcForm.value);
+    };
+
+    const updateData: any = {
+      lotNo: booking.value.lotNo,
+    };
+
+    if (props.isTrailer) {
+      updateData.trailerDrcEst = drcData.drcEst;
+      updateData.trailerDrcRequested = drcData.drcRequested;
+      updateData.trailerDrcActual = drcData.drcActual;
+    } else {
+      updateData.drcEst = drcData.drcEst;
+      updateData.drcRequested = drcData.drcRequested;
+      updateData.drcActual = drcData.drcActual;
+    }
+
+    await bookingsApi.update(props.bookingId, updateData);
+
+    // Update local model
+    if (props.isTrailer) {
+      booking.value.trailerDrcEst = drcData.drcEst;
+      booking.value.trailerDrcRequested = drcData.drcRequested;
+      booking.value.trailerDrcActual = drcData.drcActual;
+    } else {
+      booking.value.drcEst = drcData.drcEst;
+      booking.value.drcRequested = drcData.drcRequested;
+      booking.value.drcActual = drcData.drcActual;
+    }
+
     toast.success(t('common.saved'));
     emit('update');
   } catch (error) {
@@ -284,15 +372,29 @@ const handleSaveMoisture = async () => {
   if (!booking.value) return;
 
   try {
-    await bookingsApi.update(props.bookingId, {
+    const moistureVal = parseFloat(moistureForm.value) || 0;
+    const updateData: any = {
       lotNo: booking.value.lotNo,
-      moisture: parseFloat(moistureForm.value) || 0,
-      drcEst: booking.value.drcEst,
-      drcRequested: booking.value.drcRequested,
-      drcActual: booking.value.drcActual,
-    });
-    // Update local model on success
-    booking.value.moisture = parseFloat(moistureForm.value) || 0;
+    };
+
+    if (props.isTrailer) {
+      updateData.trailerMoisture = moistureVal;
+    } else {
+      updateData.moisture = moistureVal;
+    }
+
+    await bookingsApi.update(props.bookingId, updateData);
+
+    // Update local model
+    if (props.isTrailer) {
+      booking.value.trailerMoisture = moistureVal;
+    } else {
+      booking.value.moisture = moistureVal;
+    }
+
+    // Recalculate %CP for all new samples
+    newSamples.value.forEach((s) => calculatePercentCp(s));
+
     toast.success(t('common.saved'));
     emit('update');
   } catch (error) {
@@ -337,28 +439,30 @@ onMounted(() => {
       <!-- Section 1: Identification Header -->
       <div class="flex items-center justify-between pb-4 border-b">
         <div class="min-w-0 flex-1">
-          <div class="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mb-1">
+          <div class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">
             {{ t('cuplump.supplier') }}
           </div>
-          <h1 class="text-xl font-bold tracking-tight truncate flex items-center gap-2">
+          <h1
+            class="text-xl font-black tracking-tight truncate flex items-center gap-2 text-slate-900 dark:text-slate-100"
+          >
             <span class="text-primary">{{ booking.supplierCode }}</span>
-            <span class="text-muted-foreground/30 font-light">|</span>
+            <span class="text-slate-300 dark:text-slate-700 font-light">|</span>
             <span class="truncate">{{ booking.supplierName }}</span>
           </h1>
         </div>
 
         <div class="flex flex-col items-end pr-6">
-          <div class="flex flex-col items-center min-w-[6rem]">
-            <div class="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mb-1">
+          <div class="flex flex-col items-center min-w-[8rem]">
+            <div class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">
               {{ t('cuplump.lotNo') }}
             </div>
             <Popover v-model:open="isLotNoOpen">
               <PopoverTrigger as-child>
                 <div
-                  class="cursor-pointer flex items-center justify-center font-bold tracking-tight hover:text-primary transition-colors min-w-full h-8"
+                  class="cursor-pointer flex items-center justify-center font-black tracking-tight hover:text-primary transition-colors min-w-full h-8 text-slate-900 dark:text-slate-100"
                   :class="[
                     booking.lotNo
-                      ? 'text-xl'
+                      ? 'text-2xl'
                       : 'text-xs text-muted-foreground bg-slate-100 dark:bg-slate-800 rounded-md px-3',
                     { 'text-destructive': lotNoError },
                   ]"
@@ -404,140 +508,79 @@ onMounted(() => {
 
       <div class="flex-1 overflow-y-auto pr-2 space-y-4 pt-4">
         <!-- Section 2: Key Metrics Dashboard (Final Results) -->
-        <div class="grid grid-cols-2 lg:grid-cols-7 gap-3">
+        <div class="grid grid-cols-12 gap-3">
+          <!-- Rubber Type -->
           <div
-            class="px-3 py-2.5 rounded-xl bg-slate-50/50 border border-slate-100 dark:bg-slate-900/20 dark:border-slate-800 flex flex-col justify-center min-h-[70px]"
+            class="col-span-2 px-4 py-3 rounded-xl bg-slate-50/50 border border-slate-100 dark:bg-slate-900/20 dark:border-slate-800 flex flex-col justify-center min-h-[5.5rem]"
           >
-            <div
-              class="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1.5"
-            >
+            <div class="text-[0.625rem] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
               {{ t('cuplump.rubberType') }}
             </div>
-            <div
-              class="text-xs font-bold text-slate-900 dark:text-slate-100 leading-tight truncate"
-            >
+            <div class="text-sm font-black text-slate-900 dark:text-slate-100 leading-tight">
               {{ displayRubberType }}
             </div>
           </div>
 
+          <!-- Gross Weight -->
           <div
-            class="hidden md:grid grid-cols-3 px-6 py-2.5 rounded-xl bg-gradient-to-br from-blue-50/50 to-green-50/50 border border-blue-100/50 dark:from-blue-900/10 dark:to-green-900/10 dark:border-blue-800 items-center justify-between min-h-[70px] relative overflow-hidden group divide-x divide-slate-200/50 dark:divide-slate-700/50"
-          >
-            <!-- Weight In (Left) -->
-            <div class="flex flex-col items-center">
-              <div
-                class="text-[9px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-0.5"
-              >
-                Weight In
-              </div>
-              <div
-                class="text-2xl font-black text-blue-900 dark:text-blue-100 leading-none tracking-tight"
-              >
-                {{ displayWeightIn }}
-                <span class="text-[10px] font-medium opacity-60 ml-0.5">Kg</span>
-              </div>
-            </div>
-
-            <!-- Gross Weight (Center) -->
-            <div class="flex flex-col items-center">
-              <div
-                class="text-[9px] font-bold text-green-600 dark:text-green-400 uppercase tracking-widest mb-0.5"
-              >
-                {{ t('cuplump.grossWeight') }}
-              </div>
-              <div
-                class="text-2xl font-black text-green-900 dark:text-green-100 leading-none tracking-tight"
-              >
-                {{ displayNetWeight }}
-                <span class="text-[10px] font-medium opacity-60 ml-0.5">Kg</span>
-              </div>
-            </div>
-
-            <!-- Net Weight (Right - New/Empty) -->
-            <div class="flex flex-col items-center">
-              <div
-                class="text-[9px] font-bold text-red-600 dark:text-red-400 uppercase tracking-widest mb-0.5"
-              >
-                {{ t('cuplump.netWeight') }}
-              </div>
-              <div
-                class="text-2xl font-black text-red-900 dark:text-red-100 leading-none tracking-tight"
-              >
-                -
-                <span class="text-[10px] font-medium opacity-60 ml-0.5">Kg</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Mobile Fallback (Separate Cards) -->
-          <div
-            class="md:hidden px-3 py-2.5 rounded-xl bg-blue-50/50 border border-blue-100 dark:bg-blue-900/20 dark:border-blue-800 flex flex-col justify-center min-h-[70px]"
+            class="col-span-2 p-2 rounded-xl bg-blue-50/50 border border-blue-100 dark:bg-blue-900/20 dark:border-blue-800 flex flex-col justify-center items-center text-center min-h-[5.5rem]"
           >
             <div
-              class="text-[9px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-0.5"
-            >
-              Weight In
-            </div>
-            <div class="text-xl font-black text-blue-900 dark:text-blue-100 leading-none">
-              {{ displayWeightIn }}
-              <span class="text-[10px] font-medium opacity-60 ml-0.5">Kg</span>
-            </div>
-          </div>
-
-          <div
-            class="md:hidden px-3 py-2.5 rounded-xl bg-green-50/50 border border-green-100 dark:bg-green-900/20 dark:border-green-800 flex flex-col justify-center min-h-[70px]"
-          >
-            <div
-              class="text-[9px] font-bold text-green-600 dark:text-green-400 uppercase tracking-widest mb-0.5"
+              class="text-[0.5625rem] font-bold text-blue-600 uppercase tracking-tighter mb-1.5 leading-none"
             >
               {{ t('cuplump.grossWeight') }}
             </div>
-            <div class="text-xl font-black text-green-900 dark:text-green-100 leading-none">
-              {{ displayNetWeight }}
-              <span class="text-[10px] font-medium opacity-60 ml-0.5">Kg</span>
+            <div class="text-2xl font-black text-blue-700 leading-none">
+              {{ displayGrossWeight }}
+              <span class="text-[0.5625rem] text-muted-foreground ml-0.5">Kg</span>
             </div>
           </div>
 
+          <!-- Net Weight -->
           <div
-            class="md:hidden px-3 py-2.5 rounded-xl bg-red-50/50 border border-red-100 dark:bg-red-900/20 dark:border-red-800 flex flex-col justify-center min-h-[70px]"
+            class="col-span-2 p-2 rounded-xl bg-green-50/50 border border-green-100 dark:bg-green-900/20 dark:border-green-800 flex flex-col justify-center items-center text-center min-h-[5.5rem]"
           >
             <div
-              class="text-[9px] font-bold text-red-600 dark:text-red-400 uppercase tracking-widest mb-0.5"
+              class="text-[0.5625rem] font-bold text-green-600 uppercase tracking-tighter mb-1.5 leading-none"
             >
               {{ t('cuplump.netWeight') }}
             </div>
-            <div class="text-xl font-black text-red-900 dark:text-red-100 leading-none">
-              -
-              <span class="text-[10px] font-medium opacity-60 ml-0.5">Kg</span>
+            <div class="text-2xl font-black text-green-700 leading-none">
+              {{ displayNetWeight }}
+              <span class="text-[0.5625rem] text-muted-foreground ml-0.5">Kg</span>
             </div>
           </div>
 
+          <!-- Ave. %CP -->
           <div
-            class="px-3 py-2.5 rounded-xl bg-indigo-50/50 border border-indigo-100 dark:bg-indigo-900/20 dark:border-indigo-800 flex flex-col justify-center items-center text-center min-h-[70px]"
+            class="col-span-1 p-2 rounded-xl bg-indigo-50/50 border border-indigo-100 dark:bg-indigo-900/20 dark:border-indigo-800 flex flex-col justify-center items-center text-center min-h-[5.5rem]"
           >
             <div
-              class="text-[9px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-0.5"
+              class="text-[0.5625rem] font-bold text-indigo-600 uppercase tracking-tighter mb-1.5"
             >
               {{ t('cuplump.avgCp') }}
             </div>
-            <div class="text-xl font-black text-indigo-900 dark:text-indigo-100 leading-none">
-              {{ averageCp }}%
-            </div>
+            <div class="text-2xl font-black text-indigo-700 leading-none">{{ averageCp }}%</div>
           </div>
 
+          <!-- Moisture -->
           <Popover v-model:open="isMoistureOpen">
             <PopoverTrigger as-child>
               <div
-                class="cursor-pointer px-3 py-2.5 rounded-xl bg-amber-50/50 border border-amber-100 dark:bg-amber-900/20 dark:border-amber-800 flex flex-col justify-center items-center text-center min-h-[70px] hover:bg-amber-100/50 transition-colors"
+                class="col-span-1 cursor-pointer p-2 rounded-xl bg-orange-50/50 border border-orange-100 dark:bg-orange-900/20 dark:border-orange-800 flex flex-col justify-center items-center text-center min-h-[5.5rem] hover:bg-orange-100/50 transition-colors"
               >
                 <div
-                  class="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest mb-1.5"
+                  class="text-[0.5625rem] font-bold text-orange-600 uppercase tracking-tighter mb-1.5"
                 >
                   {{ t('cuplump.moisture') }}
                 </div>
-                <div class="text-xl font-black text-amber-900 dark:text-amber-100 leading-none">
-                  {{ booking.moisture || '-' }}
-                  <span class="text-[10px] font-medium opacity-60 ml-0.5">%</span>
+                <div class="text-2xl font-black text-orange-700 leading-none">
+                  {{
+                    (props.isTrailer
+                      ? booking.trailerMoisture || 0
+                      : booking.moisture || 0
+                    ).toFixed(1)
+                  }}%
                 </div>
               </div>
             </PopoverTrigger>
@@ -545,13 +588,13 @@ onMounted(() => {
               <div class="grid gap-4">
                 <div class="space-y-2">
                   <h4 class="font-medium leading-none">{{ t('cuplump.moisture') }}</h4>
-                  <p class="text-xs text-muted-foreground">Adjust moisture percentage.</p>
+                  <p class="text-xs text-muted-foreground">{{ t('cuplump.adjustMoisture') }}</p>
                 </div>
                 <div class="flex gap-2 items-center">
                   <Input
                     v-model="moistureForm"
                     type="number"
-                    step="0.01"
+                    step="0.1"
                     class="h-8 font-bold text-center"
                     @keydown.enter="handleSaveMoisture"
                   />
@@ -566,49 +609,70 @@ onMounted(() => {
               </div>
             </PopoverContent>
           </Popover>
-
+          <!-- DRC Dashboard Group (Item 6) -->
           <Popover v-model:open="isDrcOpen">
             <PopoverTrigger as-child>
               <div
-                class="col-span-2 cursor-pointer px-1 py-1 rounded-xl bg-teal-50/50 border border-teal-100 dark:bg-teal-900/20 dark:border-teal-800 shadow-sm ring-1 ring-teal-500/10 flex flex-col justify-center items-center text-center min-h-[70px] transition-all hover:bg-teal-100/50"
+                class="col-span-4 cursor-pointer p-3 rounded-xl bg-teal-50/50 border border-teal-100 dark:bg-teal-900/20 dark:border-teal-800 flex flex-col min-h-[5.5rem] hover:bg-teal-100/50 transition-colors group relative"
               >
-                <div class="flex items-center justify-between h-full w-full px-1 gap-1">
-                  <!-- Est -->
-                  <div class="flex flex-col items-center flex-1">
-                    <div
-                      class="text-[7px] font-bold text-teal-600/70 dark:text-teal-400/70 uppercase tracking-wide mb-0.5"
+                <!-- Main Header -->
+                <div
+                  class="text-[0.625rem] font-bold text-teal-600 uppercase tracking-widest text-center absolute top-2 left-0 right-0"
+                >
+                  DRC %
+                </div>
+
+                <div class="flex flex-1 items-center justify-between mt-4 px-0.5">
+                  <!-- EST -->
+                  <div class="flex-1 flex flex-col items-center">
+                    <span
+                      class="text-[0.5625rem] font-bold text-teal-600/70 uppercase tracking-widest mb-1"
+                      >{{ t('cuplump.drcEstShort') }}</span
                     >
-                      Est.
-                    </div>
-                    <div class="text-sm font-bold text-teal-900 dark:text-teal-100 leading-none">
-                      {{ booking.drcEst || '-' }}%
-                    </div>
+                    <span class="text-2xl font-black text-teal-700">
+                      {{
+                        (props.isTrailer
+                          ? booking.trailerDrcEst || 0
+                          : booking.drcEst || 0
+                        ).toFixed(1)
+                      }}%
+                    </span>
                   </div>
-                  <!-- Divider -->
-                  <div class="w-px h-6 bg-teal-200/50 dark:bg-teal-700/50 flex-none"></div>
-                  <!-- Req -->
-                  <div class="flex flex-col items-center flex-1">
-                    <div
-                      class="text-[7px] font-bold text-teal-600/70 dark:text-teal-400/70 uppercase tracking-wide mb-0.5"
+
+                  <div class="w-px h-10 bg-teal-200/50 mx-1"></div>
+
+                  <!-- REQ -->
+                  <div class="flex-1 flex flex-col items-center">
+                    <span
+                      class="text-[0.5625rem] font-bold text-teal-600/70 uppercase tracking-widest mb-1"
+                      >{{ t('cuplump.drcReqShort') }}</span
                     >
-                      Req.
-                    </div>
-                    <div class="text-sm font-bold text-teal-900 dark:text-teal-100 leading-none">
-                      {{ booking.drcRequested || '-' }}%
-                    </div>
+                    <span class="text-2xl font-black text-teal-700">
+                      {{
+                        (props.isTrailer
+                          ? booking.trailerDrcRequested || 0
+                          : booking.drcRequested || 0
+                        ).toFixed(1)
+                      }}%
+                    </span>
                   </div>
-                  <!-- Divider -->
-                  <div class="w-px h-6 bg-teal-200/50 dark:bg-teal-700/50 flex-none"></div>
-                  <!-- Actual -->
-                  <div class="flex flex-col items-center flex-1">
-                    <div
-                      class="text-[7px] font-bold text-teal-600 dark:text-teal-400 uppercase tracking-wide mb-0.5"
+
+                  <div class="w-px h-10 bg-teal-200/50 mx-1"></div>
+
+                  <!-- ACTUAL -->
+                  <div class="flex-1 flex flex-col items-center">
+                    <span
+                      class="text-[0.5625rem] font-bold text-teal-600/70 uppercase tracking-widest mb-1"
+                      >{{ t('cuplump.drcActualShort') }}</span
                     >
-                      Actual
-                    </div>
-                    <div class="text-lg font-black text-teal-900 dark:text-teal-100 leading-none">
-                      {{ booking.drcActual || '-' }}%
-                    </div>
+                    <span class="text-2xl font-black text-teal-700">
+                      {{
+                        (props.isTrailer
+                          ? booking.trailerDrcActual || 0
+                          : booking.drcActual || 0
+                        ).toFixed(1)
+                      }}%
+                    </span>
                   </div>
                 </div>
               </div>
@@ -616,8 +680,8 @@ onMounted(() => {
             <PopoverContent class="w-80">
               <div class="grid gap-4">
                 <div class="space-y-2">
-                  <h4 class="font-medium leading-none">DRC Management</h4>
-                  <p class="text-sm text-muted-foreground">Adjust DRC values for this booking.</p>
+                  <h4 class="font-medium leading-none">{{ t('cuplump.drcManagement') }}</h4>
+                  <p class="text-sm text-muted-foreground">{{ t('cuplump.adjustDrcValues') }}</p>
                 </div>
                 <div class="grid gap-3">
                   <div class="grid grid-cols-3 items-center gap-4">
@@ -632,7 +696,7 @@ onMounted(() => {
                     />
                   </div>
                   <div class="grid grid-cols-3 items-center gap-4">
-                    <Label for="drcReq">DRC Req.</Label>
+                    <Label for="drcReq">{{ t('cuplump.drcReq') }}</Label>
                     <Input
                       id="drcReq"
                       v-model="drcForm.drcRequested"
@@ -643,7 +707,7 @@ onMounted(() => {
                     />
                   </div>
                   <div class="grid grid-cols-3 items-center gap-4">
-                    <Label for="drcActual">DRC Actual</Label>
+                    <Label for="drcActual">{{ t('cuplump.drcActual') }}</Label>
                     <Input
                       id="drcActual"
                       v-model="drcForm.drcActual"
@@ -722,15 +786,15 @@ onMounted(() => {
                   >
                   <TableHead
                     class="h-9 text-[9px] uppercase font-bold text-center text-muted-foreground"
-                    >Bake 1</TableHead
+                    >{{ t('cuplump.beforeBaking1') }}</TableHead
                   >
                   <TableHead
                     class="h-9 text-[9px] uppercase font-bold text-center text-muted-foreground"
-                    >Bake 2</TableHead
+                    >{{ t('cuplump.beforeBaking2') }}</TableHead
                   >
                   <TableHead
                     class="h-9 text-[9px] uppercase font-bold text-center text-muted-foreground"
-                    >Bake 3</TableHead
+                    >{{ t('cuplump.beforeBaking3') }}</TableHead
                   >
                   <TableHead class="w-[40px] h-9"></TableHead>
                 </TableRow>
@@ -748,14 +812,20 @@ onMounted(() => {
                   <TableCell class="py-1.5"
                     ><Input
                       v-model="sample.beforePress"
-                      type="number"
+                      type="text"
+                      placeholder="เช่น 12.23"
                       class="h-7 w-20 mx-auto p-1 text-center font-bold text-xs bg-white/80 dark:bg-slate-800/80 shadow-sm"
+                      @keydown.enter="focusNextInput"
+                      @input="handleNumericInput(sample, 'beforePress', sample.beforePress)"
                   /></TableCell>
                   <TableCell class="py-1.5"
                     ><Input
                       v-model="sample.basket"
-                      type="number"
-                      class="h-7 w-20 mx-auto p-1 text-center font-semibold text-xs bg-white/80 dark:bg-slate-800/80 shadow-sm"
+                      type="text"
+                      placeholder="1.4"
+                      class="h-7 w-12 mx-auto p-1 text-center font-semibold text-xs bg-white/80 dark:bg-slate-800/80 shadow-sm"
+                      @keydown.enter="focusNextInput"
+                      @input="handleNumericInput(sample, 'basket', sample.basket)"
                   /></TableCell>
                   <TableCell
                     class="text-center bg-blue-50/30 dark:bg-blue-900/5 p-1.5 font-black text-primary text-xs tracking-tight"
@@ -770,8 +840,11 @@ onMounted(() => {
                   <TableCell class="py-1.5"
                     ><Input
                       v-model="sample.afterPress"
-                      type="number"
+                      type="text"
+                      placeholder="เช่น 10.72"
                       class="h-7 w-20 mx-auto p-1 text-center font-semibold text-xs bg-white/80 dark:bg-slate-800/80 shadow-sm"
+                      @keydown.enter="focusNextInput"
+                      @input="handleNumericInput(sample, 'afterPress', sample.afterPress)"
                   /></TableCell>
                   <TableCell class="py-1.5"
                     ><Input
@@ -779,24 +852,35 @@ onMounted(() => {
                       type="number"
                       class="h-7 w-20 mx-auto p-1 text-center font-semibold text-xs bg-indigo-50/50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300"
                       placeholder="Auto"
+                      @keydown.enter="focusNextInput"
+                      readonly
                   /></TableCell>
                   <TableCell class="py-1.5"
                     ><Input
                       v-model="sample.beforeBaking1"
-                      type="number"
+                      type="text"
+                      placeholder="0.210"
                       class="h-7 w-16 mx-auto p-1 text-center text-xs"
+                      @keydown.enter="focusNextInput"
+                      @input="handleNumericInput(sample, 'beforeBaking1', sample.beforeBaking1)"
                   /></TableCell>
                   <TableCell class="py-1.5"
                     ><Input
                       v-model="sample.beforeBaking2"
-                      type="number"
+                      type="text"
+                      placeholder="0.220"
                       class="h-7 w-16 mx-auto p-1 text-center text-xs"
+                      @keydown.enter="focusNextInput"
+                      @input="handleNumericInput(sample, 'beforeBaking2', sample.beforeBaking2)"
                   /></TableCell>
                   <TableCell class="py-1.5"
                     ><Input
                       v-model="sample.beforeBaking3"
-                      type="number"
+                      type="text"
+                      placeholder="0.230"
                       class="h-7 w-16 mx-auto p-1 text-center text-xs"
+                      @keydown.enter="focusNextInput"
+                      @input="handleNumericInput(sample, 'beforeBaking3', sample.beforeBaking3)"
                   /></TableCell>
                   <TableCell class="text-center py-1.5">
                     <Button
@@ -822,28 +906,28 @@ onMounted(() => {
                   <TableCell class="text-center font-bold text-xs py-2">{{
                     item.beforePress?.toFixed(2)
                   }}</TableCell>
-                  <TableCell class="text-center text-xs text-muted-foreground py-2">{{
+                  <TableCell class="text-center text-xs py-2">{{
                     item.basketWeight?.toFixed(2)
                   }}</TableCell>
-                  <TableCell
-                    class="text-center bg-blue-50/30 dark:bg-blue-900/5 font-black text-primary text-xs py-2"
-                    >{{ item.cuplumpWeight?.toFixed(2) }}</TableCell
-                  >
-                  <TableCell class="text-center font-semibold text-xs py-2">{{
+                  <TableCell class="text-center font-black text-primary text-xs py-2">{{
+                    item.cuplumpWeight?.toFixed(2)
+                  }}</TableCell>
+                  <TableCell class="text-center font-bold text-xs py-2 font-mono">{{
                     item.afterPress?.toFixed(2)
                   }}</TableCell>
                   <TableCell
-                    class="text-center bg-indigo-50/30 dark:bg-indigo-900/5 font-bold text-indigo-600 dark:text-indigo-400 text-xs py-2"
-                    >{{ item.percentCp?.toFixed(2) }}%</TableCell
+                    class="text-center font-black text-indigo-600 text-xs py-2 bg-indigo-50/30"
                   >
-                  <TableCell class="text-center text-xs py-2 text-muted-foreground">{{
-                    item.beforeBaking1 || '-'
+                    {{ item.percentCp?.toFixed(2) }}%
+                  </TableCell>
+                  <TableCell class="text-center text-muted-foreground text-[11px] py-2">{{
+                    item.beforeBaking1?.toFixed(3)
                   }}</TableCell>
-                  <TableCell class="text-center text-xs py-2 text-muted-foreground">{{
-                    item.beforeBaking2 || '-'
+                  <TableCell class="text-center text-muted-foreground text-[11px] py-2">{{
+                    item.beforeBaking2?.toFixed(3)
                   }}</TableCell>
-                  <TableCell class="text-center text-xs py-2 text-muted-foreground">{{
-                    item.beforeBaking3 || '-'
+                  <TableCell class="text-center text-muted-foreground text-[11px] py-2">{{
+                    item.beforeBaking3?.toFixed(3)
                   }}</TableCell>
                   <TableCell class="text-center py-2">
                     <Button

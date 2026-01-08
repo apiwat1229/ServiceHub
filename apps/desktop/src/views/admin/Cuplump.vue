@@ -109,8 +109,8 @@ const processedBookings = computed(() => {
         partLabel: t('truckScale.mainTruck') || 'Main Truck',
         displayRubberType: getRubberTypeName(b.rubberType),
         displayRubberSource: b.rubberSource,
-        displayWeightIn: b.weightIn,
-        displayWeightOut: b.weightOut,
+        displayWeightIn: Math.abs((b.weightIn || 0) - (b.weightOut || 0)),
+        displayWeightOut: '-',
         moisture: b.moisture || '-',
         drcEst: b.drcEst || '-',
         drcRequested: b.drcRequested || '-',
@@ -121,7 +121,13 @@ const processedBookings = computed(() => {
     }
 
     // 2. Trailer Part
-    if (isTrailer && b.trailerWeightIn > 0 && isCuplumpType(b.trailerRubberType)) {
+    const hasTrailerData =
+      (b.trailerWeightIn && b.trailerWeightIn > 0) ||
+      (b.trailerGrossWeight && b.trailerGrossWeight > 0) ||
+      (b.trailerActualWeight && b.trailerActualWeight > 0) ||
+      (b.trailerEstimatedWeight && b.trailerEstimatedWeight > 0);
+
+    if (isTrailer && hasTrailerData && isCuplumpType(b.trailerRubberType)) {
       result.push({
         ...b,
         id: b.id + '-trailer',
@@ -130,8 +136,8 @@ const processedBookings = computed(() => {
         partLabel: t('truckScale.trailer') || 'Trailer',
         displayRubberType: getRubberTypeName(b.trailerRubberType),
         displayRubberSource: b.trailerRubberSource || '-',
-        displayWeightIn: b.trailerWeightIn || 0,
-        displayWeightOut: b.trailerWeightOut || 0,
+        displayWeightIn: Math.abs((b.trailerWeightIn || 0) - (b.trailerWeightOut || 0)),
+        displayWeightOut: '-',
         moisture: b.trailerMoisture || '-',
         drcEst: b.trailerDrcEst || '-',
         cpAvg: b.trailerCpAvg || '-',
@@ -326,10 +332,10 @@ onMounted(() => {
           </div>
           <div>
             <h1 class="text-2xl font-bold tracking-tight text-foreground">
-              {{ t('services.cuplump.name') }}
+              {{ t('cuplump.pageTitle') }}
             </h1>
             <p class="text-sm text-muted-foreground">
-              {{ t('services.cuplump.description') }}
+              {{ t('cuplump.pageDescription') }}
             </p>
           </div>
         </div>

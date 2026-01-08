@@ -25,6 +25,13 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
     delete: (key: string) => ipcRenderer.send('electron-store-delete', key),
   },
 
+  // Window Controls
+  window: {
+    minimize: () => ipcRenderer.send('window-minimize'),
+    maximize: () => ipcRenderer.send('window-maximize'),
+    close: () => ipcRenderer.send('window-close'),
+  },
+
   // You can expose other APTs you need here.
   // ...
 })
