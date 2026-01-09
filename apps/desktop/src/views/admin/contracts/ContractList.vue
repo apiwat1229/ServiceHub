@@ -225,7 +225,7 @@ const getStatusColor = (status: string) => {
 </script>
 
 <template>
-  <div class="p-6 space-y-6 bg-slate-50/50 min-h-screen">
+  <div class="p-6 space-y-6 bg-slate-50 min-h-screen">
     <!-- Header -->
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div>

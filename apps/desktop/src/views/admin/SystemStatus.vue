@@ -21,7 +21,9 @@
     <!-- Overall Status Banner -->
     <div
       class="rounded-xl border bg-white p-6 shadow-sm flex items-center gap-5 transition-all duration-300"
-      :class="status === 'ok' ? 'border-emerald-100' : 'border-rose-100'"
+      :class="
+        status === 'ok' ? 'border-emerald-100 bg-emerald-50/10' : 'border-rose-100 bg-rose-50/10'
+      "
     >
       <div
         class="flex h-16 w-16 items-center justify-center rounded-full shadow-sm"
@@ -60,7 +62,13 @@
         </CardHeader>
         <CardContent>
           <div class="text-2xl font-bold text-slate-900">
-            {{ uptime ? formatUptimeShort(uptime) : '-' }}
+            {{
+              typeof uptime === 'string'
+                ? uptime
+                : uptime
+                  ? formatUptimeShort(uptime as number)
+                  : '-'
+            }}
           </div>
           <p class="text-xs text-emerald-600 mt-1 font-medium">Updated just now</p>
         </CardContent>
@@ -134,13 +142,15 @@
               </div>
             </div>
 
-            <!-- Inferred Database -->
+            <!-- Database -->
             <div class="flex items-center justify-between p-4 rounded-lg border bg-slate-50/50">
               <div class="flex items-center gap-3">
                 <div
                   :class="[
                     'w-2.5 h-2.5 rounded-full',
-                    status === 'ok' ? 'bg-emerald-500' : 'bg-rose-500',
+                    details?.database?.status === 'up' || status === 'ok'
+                      ? 'bg-emerald-500'
+                      : 'bg-rose-500',
                   ]"
                 ></div>
                 <div class="font-medium text-slate-700">Database Connection</div>
@@ -148,20 +158,30 @@
               <div class="flex items-center gap-4">
                 <span
                   class="text-sm font-medium"
-                  :class="status === 'ok' ? 'text-emerald-600' : 'text-rose-600'"
+                  :class="
+                    details?.database?.status === 'up' || status === 'ok'
+                      ? 'text-emerald-600'
+                      : 'text-rose-600'
+                  "
                 >
-                  {{ status === 'ok' ? 'Operational' : 'Degraded' }}
+                  {{
+                    details?.database?.status === 'up' || status === 'ok'
+                      ? 'Operational'
+                      : 'Degraded'
+                  }}
                 </span>
               </div>
             </div>
 
-            <!-- External Services -->
+            <!-- Redis -->
             <div class="flex items-center justify-between p-4 rounded-lg border bg-slate-50/50">
               <div class="flex items-center gap-3">
                 <div
                   :class="[
                     'w-2.5 h-2.5 rounded-full',
-                    status === 'ok' ? 'bg-emerald-500' : 'bg-rose-500',
+                    details?.redis?.status === 'up' || status === 'ok'
+                      ? 'bg-emerald-500'
+                      : 'bg-rose-500',
                   ]"
                 ></div>
                 <div class="font-medium text-slate-700">Redis Cache</div>
@@ -169,9 +189,15 @@
               <div class="flex items-center gap-4">
                 <span
                   class="text-sm font-medium"
-                  :class="status === 'ok' ? 'text-emerald-600' : 'text-rose-600'"
+                  :class="
+                    details?.redis?.status === 'up' || status === 'ok'
+                      ? 'text-emerald-600'
+                      : 'text-rose-600'
+                  "
                 >
-                  {{ status === 'ok' ? 'Operational' : 'Degraded' }}
+                  {{
+                    details?.redis?.status === 'up' || status === 'ok' ? 'Operational' : 'Degraded'
+                  }}
                 </span>
               </div>
             </div>
@@ -265,11 +291,12 @@ interface HealthCheck {
 }
 
 const status = ref<'ok' | 'error' | null>(null);
-const uptime = ref<number | null>(null);
+const uptime = ref<number | string | null>(null);
 const lastChecked = ref<Date | null>(null);
 const responseTime = ref<number | null>(null);
 const loading = ref(false);
 const history = ref<HealthCheck[]>([]);
+const details = ref<any>(null);
 
 const pollInterval = 10000;
 let timer: ReturnType<typeof setInterval> | null = null;
@@ -287,9 +314,45 @@ const fetchStatus = async () => {
 
     if (res.ok) {
       const data = await res.json();
-      currentStatus = data.status === 'ok' ? 'ok' : 'error';
-      uptime.value = data.uptime;
+
+      // Support both NestJS Terminus style (lowercase) and Custom BE style (Capitalized)
+      const rawStatus = data.status || data.Status || '';
+      const isOk =
+        typeof rawStatus === 'string'
+          ? rawStatus === 'ok' ||
+            rawStatus.toLowerCase().includes('running') ||
+            rawStatus.includes('✅')
+          : false;
+
+      currentStatus = isOk ? 'ok' : 'error';
+      const rawUptime = data.uptime || data.Uptime || null;
+      if (typeof rawUptime === 'string') {
+        // Strip out seconds part if it exists (e.g., ": 39 Second" -> "")
+        uptime.value = rawUptime.replace(/ : \d+ Second/g, '').replace(/ : Minute/g, ' Minute');
+      } else {
+        uptime.value = rawUptime;
+      }
+
+      // Map details from standardized or custom fields
+      const redisRaw = data.redisStatus || data['Redis Status'] || '';
+      const isRedisOk =
+        typeof redisRaw === 'string' &&
+        (redisRaw.toLowerCase().includes('running') || redisRaw.toLowerCase().includes('up'));
+
+      details.value = data.details || {
+        database: { status: isOk ? 'up' : 'down' },
+        redis: { status: isRedisOk ? 'up' : 'down' },
+      };
+
       lastChecked.value = new Date();
+    } else {
+      // Even if not ok, might have partial data
+      try {
+        const data = await res.json();
+        details.value = data.details || null;
+      } catch (e) {
+        details.value = null;
+      }
     }
   } catch (error) {
     console.error('Failed to fetch status:', error);

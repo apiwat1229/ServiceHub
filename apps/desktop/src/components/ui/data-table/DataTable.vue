@@ -104,10 +104,14 @@ const { t } = useI18n();
 <template>
   <div class="space-y-4 relative">
     <!-- Table -->
-    <div class="relative rounded-[6px] border overflow-hidden">
-      <Table class="w-full">
-        <TableHeader>
-          <TableRow v-for="headerGroup in table.getHeaderGroups()" :key="headerGroup.id">
+    <div class="relative rounded-[6px] border overflow-auto flex-1 min-h-0">
+      <Table class="w-full relative">
+        <TableHeader class="sticky top-0 bg-white z-10 shadow-sm whitespace-nowrap">
+          <TableRow
+            v-for="headerGroup in table.getHeaderGroups()"
+            :key="headerGroup.id"
+            class="bg-slate-50/80 backdrop-blur-sm"
+          >
             <TableHead v-for="header in headerGroup.headers" :key="header.id">
               <FlexRender
                 v-if="!header.isPlaceholder"

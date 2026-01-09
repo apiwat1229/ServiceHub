@@ -29,6 +29,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { usePermissions } from '@/composables/usePermissions';
+import approvalsApi from '@/services/approvals';
 import { bookingsApi } from '@/services/bookings';
 import { notificationsApi } from '@/services/notifications';
 import { socketService } from '@/services/socket';
@@ -39,6 +40,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Bell,
+  CheckCircle2,
   Home,
   LayoutDashboard,
   LogOut,
@@ -61,7 +63,7 @@ const isErrorDialogOpen = ref(false);
 const errorDialogMessage = ref('');
 const isCloseConfirmOpen = ref(false);
 
-const { isAdmin } = usePermissions();
+const { isAdmin, hasPermission } = usePermissions();
 
 const props = defineProps<{
   showBrand?: boolean;
@@ -84,12 +86,28 @@ const pageTitle = computed(() => {
   return name;
 });
 
-const { locale } = useI18n();
+const { t } = useI18n();
 
 // --- Notifications Logic ---
 const unreadNotifications = ref<NotificationDto[]>([]);
 const unreadCount = computed(() => unreadNotifications.value.length);
+
+const pendingApprovalCount = ref(0);
 // let pollingInterval: NodeJS.Timeout;
+
+const fetchPendingApprovals = async () => {
+  if (!authStore.isAuthenticated) return;
+  try {
+    // Check if user has permission first to avoid unnecessary calls
+    if (isAdmin.value || hasPermission('approvals:approve')) {
+      const res = await approvalsApi.getAll({ status: 'PENDING' });
+      // Assuming res.data is the array
+      pendingApprovalCount.value = res.data?.length || 0;
+    }
+  } catch (error) {
+    console.error('Failed to fetch pending approvals', error);
+  }
+};
 
 const fetchUnreadNotifications = async () => {
   if (!authStore.isAuthenticated) return;
@@ -207,6 +225,7 @@ const handleNotificationClick = async (notification: NotificationDto) => {
 
 onMounted(() => {
   fetchUnreadNotifications();
+  fetchPendingApprovals();
   socketService.connect();
 
   // Ensure we join the room if user data loads late
@@ -300,6 +319,14 @@ onMounted(() => {
           toast.info(newNotification.title, toastOptions);
           break;
       }
+    }
+
+    // Refresh pending approvals if notification relates to approvals
+    if (
+      newNotification.type === 'REQUEST' ||
+      newNotification.title.toLowerCase().includes('approval')
+    ) {
+      fetchPendingApprovals();
     }
   });
 });
@@ -443,9 +470,26 @@ onUnmounted(() => {
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
 
+          <DropdownMenuItem
+            v-if="isAdmin || hasPermission('approvals:approve')"
+            @click="router.push('/approvals')"
+            class="justify-between"
+          >
+            <div class="flex items-center">
+              <CheckCircle2 class="mr-2 h-4 w-4" />
+              <span>{{ t('navbar.approvals') }}</span>
+            </div>
+            <span
+              v-if="pendingApprovalCount > 0"
+              class="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-100 px-1 text-xs font-bold text-red-600"
+            >
+              {{ pendingApprovalCount > 99 ? '99+' : pendingApprovalCount }}
+            </span>
+          </DropdownMenuItem>
+
           <DropdownMenuItem v-if="isAdmin" @click="router.push('/admin')">
             <LayoutDashboard class="mr-2 h-4 w-4" />
-            <span>Admin Panel</span>
+            <span>{{ t('navbar.adminPanel') }}</span>
           </DropdownMenuItem>
 
           <DropdownMenuItem @click="router.push('/profile')">

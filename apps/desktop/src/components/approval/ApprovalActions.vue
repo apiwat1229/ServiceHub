@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button';
+import { usePermissions } from '@/composables/usePermissions';
 import { ArrowLeft, Ban, CheckCircle2, Edit, Slash, XCircle } from 'lucide-vue-next';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -7,7 +8,7 @@ import { useI18n } from 'vue-i18n';
 const props = defineProps<{
   request: any;
   currentUserId: string;
-  currentUserRole: string;
+  currentUserRole: string; // Kept for backward compat, but we prefer usePermissions
 }>();
 
 const emit = defineEmits<{
@@ -20,13 +21,20 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const { isAdmin, hasPermission } = usePermissions();
 
 // Check if user is the requester
 const isRequester = computed(() => props.request.requesterId === props.currentUserId);
 
-// Check if user is admin/manager
+// Check if user is admin/manager (Can approve)
 const isApprover = computed(() => {
-  return ['ADMIN', 'admin', 'MANAGER', 'manager'].includes(props.currentUserRole);
+  // Allow if admin or has specific approve permission
+  // Also keep legacy role check for safety
+  return (
+    isAdmin.value ||
+    hasPermission('approvals:approve') ||
+    ['ADMIN', 'admin', 'MANAGER', 'manager'].includes(props.currentUserRole)
+  );
 });
 
 // Show approve/reject/return buttons (for approvers on pending requests)
@@ -41,7 +49,7 @@ const canCancel = computed(() => {
 
 // Show void button (for admins on approved requests)
 const canVoid = computed(() => {
-  return props.request.status === 'APPROVED' && ['ADMIN', 'admin'].includes(props.currentUserRole);
+  return props.request.status === 'APPROVED' && isAdmin.value;
 });
 
 // Show edit button (for requesters on returned requests)

@@ -7,12 +7,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import approvalsApi from '@/services/approvals';
 import { handleApiError } from '@/utils/errorHandler';
-import { ArrowLeft, Loader2 } from 'lucide-vue-next';
-import { computed, ref } from 'vue';
+import { ArrowLeft, CheckCircle2, Loader2 } from 'lucide-vue-next';
+import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
 
@@ -30,20 +28,16 @@ const remark = ref('');
 const isLoading = ref(false);
 const error = ref('');
 
-const isFormValid = computed(() => remark.value.trim().length > 0);
-
 const handleReturn = async () => {
-  if (!isFormValid.value) {
-    error.value = t('approval.dialogs.return.reasonRequired');
-    return;
-  }
-
   try {
     isLoading.value = true;
     error.value = '';
 
+    // Use default remark if none provided (simplified flow)
+    const finalRemark = remark.value.trim() || t('approval.dialogs.return.defaultRemark');
+
     await approvalsApi.return(props.requestId, {
-      remark: remark.value,
+      remark: finalRemark,
     });
 
     toast.success(t('approval.dialogs.return.success'));
@@ -61,37 +55,32 @@ const handleReturn = async () => {
 
 <template>
   <Dialog v-model:open="isOpen">
-    <DialogContent>
+    <DialogContent class="sm:max-w-[425px]">
       <DialogHeader>
-        <DialogTitle>{{ t('approval.dialogs.return.title') }}</DialogTitle>
+        <DialogTitle class="flex items-center gap-2 text-blue-600">
+          <ArrowLeft class="w-5 h-5" />
+          {{ t('approval.dialogs.return.title') }}
+        </DialogTitle>
       </DialogHeader>
 
-      <div class="space-y-4">
-        <div>
-          <Label>{{ t('approval.dialogs.return.reasonLabel') }}</Label>
-          <Textarea
-            v-model="remark"
-            :placeholder="t('approval.dialogs.return.reasonPlaceholder')"
-            :disabled="isLoading"
-            required
-          />
-          <p v-if="error" class="text-sm text-red-600 mt-1">{{ error }}</p>
-        </div>
+      <div class="py-4">
+        <p class="text-sm text-muted-foreground leading-relaxed">
+          {{ t('approval.dialogs.return.confirmMessage') }}
+        </p>
       </div>
 
-      <DialogFooter>
-        <Button variant="outline" @click="isOpen = false" :disabled="isLoading">{{
+      <DialogFooter class="gap-2 sm:gap-0">
+        <Button variant="ghost" @click="isOpen = false" :disabled="isLoading">{{
           t('common.cancel')
         }}</Button>
         <Button
-          class="border-blue-500 text-blue-600 hover:bg-blue-50"
-          variant="outline"
+          class="bg-blue-600 hover:bg-blue-700 text-white"
           @click="handleReturn"
-          :disabled="!isFormValid || isLoading"
+          :disabled="isLoading"
         >
           <Loader2 v-if="isLoading" class="w-4 h-4 mr-2 animate-spin" />
-          <ArrowLeft v-else class="w-4 h-4 mr-2" />
-          {{ isLoading ? t('approval.dialogs.return.processing') : t('approval.actions.return') }}
+          <CheckCircle2 v-else class="w-4 h-4 mr-2" />
+          {{ isLoading ? t('approval.dialogs.return.processing') : t('common.confirm') }}
         </Button>
       </DialogFooter>
     </DialogContent>

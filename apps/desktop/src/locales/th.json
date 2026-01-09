@@ -15,6 +15,7 @@
     "approved": "อนุมัติแล้ว",
     "close": "ปิด",
     "search": "ค้นหา",
+    "bookingCode": "รหัสการจอง",
     "searchModules": "ค้นหาโมดูล...",
     "filter": "ตัวกรอง",
     "export": "ส่งออก",
@@ -56,7 +57,10 @@
       "selectedRows": "เลือกแล้ว {selected} จาก {total} แถว",
       "deleteSelected": "ลบที่เลือก ({count})",
       "pageOf": "หน้า {current} จาก {total}"
-    }
+    },
+    "date": "วันที่",
+    "slot": "ช่วงเวลา",
+    "supplier": "ผู้ส่ง/ร้านค้า"
   },
   "validation": {
     "required": "กรุณากรอกข้อมูล",
@@ -71,7 +75,9 @@
     "settings": "การตั้งค่า",
     "profile": "โปรไฟล์",
     "logout": "ออกจากระบบ",
-    "viewProfile": "ดูโปรไฟล์"
+    "viewProfile": "ดูโปรไฟล์",
+    "approvals": "คำขออนุมัติ",
+    "adminPanel": "แผงควบคุมดูแล"
   },
   "services": {
     "title": "บริการและโมดูล",
@@ -99,6 +105,10 @@
     "maintenance": {
       "name": "การบำรุงรักษา",
       "description": "การบำรุงรักษาอุปกรณ์และจัดการใบสั่งงาน"
+    },
+    "myMachine": {
+      "name": "My Machine",
+      "description": "โปรแกรมบันทึกการซ่อมบำรุงเครื่องจักร"
     },
     "itHelp": {
       "name": "IT Help Desk",
@@ -685,7 +695,7 @@
       "deleteGroupMessage": "คุณแน่ใจหรือไม่ว่าต้องการลบกลุ่มนี้? ไม่สามารถย้อนกลับได้",
       "noDescription": "ไม่มีคำอธิบาย",
       "noMembers": "ไม่มีสมาชิก",
-      "totalBroadcasts": "ประกาศทั้งหมด",
+      "totalBroadcasts": "การประกาศทั้งหมด",
       "activeGroups": "กลุ่มที่ใช้งาน",
       "configuredApps": "แอปที่กำหนดค่า"
     },
@@ -806,6 +816,9 @@
       "unreadAlertsDesc": "การแจ้งเตือนระบบ",
       "totalUsers": "ผู้ใช้ทั้งหมด",
       "totalUsersDesc": "บัญชีที่ใช้งานอยู่",
+      "onlineUsers": "ผู้ใช้งานออนไลน์",
+      "activeNow": "กำลังใช้งานในระบบ",
+      "onlineUsersDesc": "รายชื่อผู้ใช้งานที่กำลังใช้งานอยู่ในระบบ",
       "recentActivity": "กิจกรรมล่าสุด",
       "recentActivityDesc": "คำขออนุมัติล่าสุดและการดำเนินการของระบบ",
       "table": {
@@ -911,7 +924,8 @@
           "province": "จังหวัด"
         },
         "placeholders": {
-          "searchProvince": "ค้นหาจังหวัด..."
+          "searchProvince": "ค้นหาจังหวัด...",
+          "province": "เลือกจังหวัด"
         },
         "errors": {
           "provinceNotFound": "ไม่พบจังหวัด"
@@ -1145,6 +1159,7 @@
     "drainFirst": "ต้องปล่อยน้ำก่อน",
     "weightInAction": "บันทึกชั่งเข้า",
     "date": "วันที่",
+    "bookingCode": "รหัสการจอง",
     "type": "ประเภท",
     "status": "สถานะ",
     "inProgress": "กำลังดำเนินการ",
@@ -1327,33 +1342,64 @@
   "approval": {
     "title": "คำขออนุมัติ",
     "manageAll": "จัดการคำขออนุมัติทั้งหมด",
-    "backToList": "กลับไปรายการ",
-    "requestDetails": "รายละเอียดคำขอ",
-    "management": "การจัดการ",
+    "noHistory": "ไม่มีประวัติการอนุมัติ",
+    "noActions": "ไม่มีการดำเนินการ",
+    "list": {
+      "title": "คำขออนุมัติ",
+      "description": "จัดการคำขอที่รอการอนุมัติ",
+      "filterDescription": "กรองตามสถานะ",
+      "allStatuses": "ทุกสถานะ",
+      "showDeleted": "แสดงรายการที่ลบ",
+      "type": "ประเภทคำขอ",
+      "requester": "ผู้ขอ",
+      "status": "สถานะ",
+      "submittedDate": "วันที่ส่ง",
+      "actions": "การดำเนินการ",
+      "confirmDeleteTitle": "ยืนยันการลบ",
+      "confirmDelete": "คุณแน่ใจหรือไม่ที่จะลบคำขออนุมัตินี้?",
+      "deleteError": "ไม่สามารถลบคำขออนุมัติได้",
+      "viewDetails": "ดูรายละเอียด",
+      "filters": "ตัวกรอง",
+      "bookingCode": "รหัสการจอง",
+      "reason": "สาเหตุ"
+    },
+    "detail": {
+      "bookingSummary": "สรุปข้อมูลการจอง",
+      "rubberAndTruck": "ยางและรถขนส่ง",
+      "field": "ข้อมูล",
+      "backToList": "กลับไปรายการ",
+      "requestDetails": "รายละเอียดคำขอ",
+      "voidBadge": "ยกเลิกแล้ว",
+      "requestType": "ประเภทคำขอ",
+      "entityType": "ประเภทข้อมูล",
+      "requester": "ผู้ขอ",
+      "submittedDate": "วันที่ส่ง",
+      "approver": "ผู้อนุมัติ",
+      "actedDate": "วันที่อนุมัติ",
+      "priority": "ความสำคัญ",
+      "expiresAt": "วันหมดอายุ",
+      "reason": "เหตุผล",
+      "remark": "หมายเหตุ",
+      "currentData": "ข้อมูลปัจจุบัน",
+      "noChanges": "ไม่มีการเปลี่ยนแปลงข้อมูล",
+      "noActions": "ไม่มีการดำเนินการที่สามารถทำได้",
+      "proposedChanges": "ข้อมูลที่เสนอขอแก้ไข",
+      "management": "การจัดการ",
+      "history": "ประวัติการดำเนินการ",
+      "loadError": "ไม่สามารถโหลดรายละเอียดคำขอได้"
+    },
     "transactionHistory": "ประวัติการทำรายการ",
     "loading": "กำลังโหลด...",
     "voidCannotUse": "โมฆะ - ไม่สามารถใช้งานได้",
-    "requestType": "ประเภทคำขอ",
     "dataType": "ประเภทข้อมูล",
-    "requester": "ผู้ขอ",
-    "submittedDate": "วันที่ส่ง",
-    "approver": "ผู้อนุมัติ",
     "reviewDate": "วันที่พิจารณา",
-    "priority": "ลำดับความสำคัญ",
-    "expiresAt": "หมดอายุ",
-    "reason": "เหตุผล",
     "note": "หมายเหตุ",
-    "currentData": "ข้อมูลปัจจุบัน",
-    "proposedChanges": "การเปลี่ยนแปลงที่เสนอ",
-    "filters": "ตัวกรอง",
     "filterRequests": "กรองรายการคำขออนุมัติ",
-    "allStatuses": "ทุกสถานะ",
     "showDeletedItems": "แสดงรายการที่ถูกลบ",
-    "viewDetails": "ดูรายละเอียด",
     "actions": {
       "approve": "อนุมัติ",
       "reject": "ปฏิเสธ",
-      "return": "ส่งคืนแก้ไข",
+      "return": "ขอข้อมูลเพิ่มเติม",
       "cancel": "ยกเลิกคำขอ",
       "void": "ทำเป็นโมฆะ",
       "edit": "แก้ไขคำขอ",
@@ -1382,7 +1428,8 @@
       "note": "หมายเหตุ",
       "changes": "การเปลี่ยนแปลง",
       "before": "ก่อน",
-      "after": "หลัง"
+      "after": "หลัง",
+      "bookingCode": "รหัสการจอง"
     },
     "dialogs": {
       "approve": {
@@ -1404,13 +1451,12 @@
         "error": "ไม่สามารถปฏิเสธคำขอได้"
       },
       "return": {
-        "title": "ส่งคืนคำขอเพื่อแก้ไข",
-        "reasonLabel": "เหตุผลในการส่งคืน *",
-        "reasonPlaceholder": "กรุณาระบุเหตุผล เช่น: กรุณาเพิ่มรายละเอียด...",
-        "reasonRequired": "กรุณาระบุเหตุผลในการส่งคืน",
+        "title": "ขอข้อมูลเพิ่มเติม",
+        "confirmMessage": "คุณต้องการส่งคำขอเพื่อขอข้อมูลเพิ่มเติมสำหรับรายการนี้หรือไม่?",
+        "defaultRemark": "กรุณากรอกข้อมูลและรายละเอียดเพิ่มเติม",
         "processing": "กำลังดำเนินการ...",
-        "success": "ส่งคืนคำขอเรียบร้อยแล้ว",
-        "error": "ไม่สามารถส่งคืนคำขอได้"
+        "success": "ส่งคำขอเรียบร้อยแล้ว",
+        "error": "ไม่สามารถส่งคำขอได้"
       },
       "void": {
         "title": "ทำรายการเป็นโมฆะ",

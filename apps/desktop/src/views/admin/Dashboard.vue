@@ -13,10 +13,11 @@ import {
 import { approvalsApi } from '@/services/approvals';
 import { bookingsApi } from '@/services/bookings';
 import { notificationsApi } from '@/services/notifications';
+import { socketService } from '@/services/socket';
 import { usersApi } from '@/services/users';
 import { format } from 'date-fns';
-import { Activity, AlertCircle, Bell, Calendar, CheckCircle, Clock, Users } from 'lucide-vue-next';
-import { onMounted, ref } from 'vue';
+import { Activity, AlertCircle, Bell, CheckCircle, Clock, Users } from 'lucide-vue-next';
+import { onMounted, onUnmounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 
@@ -32,6 +33,9 @@ const stats = ref({
 });
 
 const recentApprovals = ref<any[]>([]);
+const onlineUsers = ref<any[]>([]);
+const onlineCount = ref(0);
+const showOnlineUsersList = ref(false);
 const systemHealth = ref('Healthy');
 const isLoading = ref(true);
 
@@ -89,12 +93,23 @@ const fetchDashboardData = async () => {
 // Actually BookingsService uses `new Date(date)` so string ISO works.
 const titleDate = (date: Date) => date.toISOString().split('T')[0];
 
-const formatTime = (dateStr: string) => format(new Date(dateStr), 'dd MMM, HH:mm');
+const formatTime = (dateStr: string) => format(new Date(dateStr), 'dd-MMM-yyyy, HH:mm');
 
 onMounted(() => {
   fetchDashboardData();
 
-  // Real-time refresh could be added here via socketService
+  // Socket Listeners for Online Users
+  socketService.on('presence:update', (data: any) => {
+    onlineUsers.value = data.users || [];
+    onlineCount.value = data.count || 0;
+  });
+
+  // Request initial presence data
+  socketService.connect();
+});
+
+onUnmounted(() => {
+  socketService.off('presence:update');
 });
 </script>
 
@@ -122,26 +137,10 @@ onMounted(() => {
     <!-- Stats Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       <!-- Bookings Card -->
-      <Card
-        class="hover:shadow-md transition-shadow cursor-pointer"
-        @click="router.push('/admin/bookings')"
-      >
-        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle class="text-sm font-medium">{{
-            t('admin.dashboard.bookingsToday')
-          }}</CardTitle>
-          <Calendar class="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div class="text-2xl font-bold">{{ stats.bookingsToday }}</div>
-          <p class="text-xs text-muted-foreground">{{ t('admin.dashboard.bookingsTodayDesc') }}</p>
-        </CardContent>
-      </Card>
-
       <!-- Approvals Card -->
       <Card
         class="hover:shadow-md transition-shadow cursor-pointer"
-        @click="router.push('/admin/approvals')"
+        @click="router.push('/approvals')"
       >
         <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle class="text-sm font-medium">{{
@@ -172,21 +171,75 @@ onMounted(() => {
         </CardContent>
       </Card>
 
-      <!-- Users Card -->
+      <!-- Online Users Card -->
       <Card
-        class="hover:shadow-md transition-shadow cursor-pointer"
-        @click="router.push('/admin/users')"
+        class="hover:shadow-md transition-shadow cursor-pointer bg-emerald-50/30 border-emerald-100"
+        @click="showOnlineUsersList = true"
       >
         <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle class="text-sm font-medium">{{ t('admin.dashboard.totalUsers') }}</CardTitle>
-          <Users class="h-4 w-4 text-purple-500" />
+          <CardTitle class="text-sm font-medium text-emerald-900">{{
+            t('admin.dashboard.onlineUsers') || 'Online Users'
+          }}</CardTitle>
+          <div class="relative">
+            <Users class="h-4 w-4 text-emerald-500" />
+            <span class="absolute -top-1 -right-1 flex h-2 w-2">
+              <span
+                class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"
+              ></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+          </div>
         </CardHeader>
         <CardContent>
-          <div class="text-2xl font-bold">{{ stats.totalUsers }}</div>
-          <p class="text-xs text-muted-foreground">{{ t('admin.dashboard.totalUsersDesc') }}</p>
+          <div class="text-2xl font-bold text-emerald-600">{{ onlineCount }}</div>
+          <p class="text-xs text-emerald-600/70">
+            {{ t('admin.dashboard.activeNow') || 'Active now in system' }}
+          </p>
         </CardContent>
       </Card>
     </div>
+
+    <!-- Online Users List Dialog -->
+    <Dialog v-model:open="showOnlineUsersList">
+      <DialogContent class="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>{{ t('admin.dashboard.onlineUsers') || 'Online Users' }}</DialogTitle>
+          <DialogDescription>
+            {{
+              t('admin.dashboard.onlineUsersDesc') || 'List of users currently active in the system'
+            }}
+          </DialogDescription>
+        </DialogHeader>
+        <div class="py-4">
+          <div v-if="onlineUsers.length === 0" class="text-center py-8 text-muted-foreground">
+            No users online
+          </div>
+          <div class="space-y-4 max-h-[300px] overflow-y-auto pr-2">
+            <div
+              v-for="user in onlineUsers"
+              :key="user.id"
+              class="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors"
+            >
+              <div
+                class="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-xs"
+              >
+                {{ user.displayName?.charAt(0) || 'U' }}
+              </div>
+              <div class="flex flex-col">
+                <span class="text-sm font-medium">{{ user.displayName }}</span>
+                <span class="text-xs text-muted-foreground">{{ user.email }}</span>
+              </div>
+              <Badge
+                variant="outline"
+                class="ml-auto text-[10px] h-5 bg-emerald-50 text-emerald-600 border-emerald-200"
+              >
+                Online
+              </Badge>
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
 
     <!-- Recent Activity & System Status -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">

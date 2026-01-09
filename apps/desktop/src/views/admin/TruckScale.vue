@@ -25,6 +25,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Stepper,
+  StepperDescription,
+  StepperItem,
+  StepperTitle,
+  StepperTrigger,
+} from '@/components/ui/stepper';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { usePermissions } from '@/composables/usePermissions';
@@ -41,20 +48,19 @@ import { format } from 'date-fns';
 import {
   AlertCircle,
   ArrowUpDown,
-  ArrowUpFromLine,
-  Calculator,
   Calendar as CalendarIcon,
-  Check,
   CheckCircle,
   Circle,
   ClipboardList,
   Clock,
   Play,
+  Scale,
   Search,
   Settings,
   Square,
   Timer,
   Truck,
+  Upload,
   Weight,
 } from 'lucide-vue-next';
 import { computed, h, onMounted, onUnmounted, ref, watch } from 'vue';
@@ -311,6 +317,32 @@ const weightOutData = ref<{ weightOut: number | null; trailerWeightOut: number |
   trailerWeightOut: 0,
 });
 
+const formattedWeightOut = computed({
+  get: () => {
+    if (!weightOutData.value.weightOut) return '';
+    return weightOutData.value.weightOut.toLocaleString();
+  },
+  set: (val) => {
+    const num = Number(val.replace(/,/g, ''));
+    if (!isNaN(num)) {
+      weightOutData.value.weightOut = num;
+    }
+  },
+});
+
+const formattedTrailerWeightOut = computed({
+  get: () => {
+    if (!weightOutData.value.trailerWeightOut) return '';
+    return weightOutData.value.trailerWeightOut.toLocaleString();
+  },
+  set: (val) => {
+    const num = Number(val.replace(/,/g, ''));
+    if (!isNaN(num)) {
+      weightOutData.value.trailerWeightOut = num;
+    }
+  },
+});
+
 const openWeightOut = (booking: any) => {
   selectedDrainBooking.value = booking;
   weightOutData.value = { weightOut: 0, trailerWeightOut: 0 };
@@ -373,12 +405,31 @@ const dashboardStats = computed(() => {
 // Scale In Logic
 const startDrainDialogOpen = ref(false);
 const requestEditDialogOpen = ref(false);
+const requestEditData = ref({
+  weightIn: 0,
+  trailerWeightIn: 0,
+  rubberSource: '',
+  rubberType: '',
+  trailerRubberSource: '',
+  trailerRubberType: '',
+});
 const selectedRequestEditBooking = ref<any>(null);
 const requestEditReason = ref('');
 
 const openRequestEdit = (booking: any) => {
   selectedRequestEditBooking.value = booking;
   requestEditReason.value = '';
+
+  // Prefill with current values
+  requestEditData.value = {
+    weightIn: booking.weightIn || 0,
+    trailerWeightIn: booking.trailerWeightIn || 0,
+    rubberSource: booking.rubberSource || '',
+    rubberType: booking.rubberType || '',
+    trailerRubberSource: booking.trailerRubberSource || '',
+    trailerRubberType: booking.trailerRubberType || '',
+  };
+
   requestEditDialogOpen.value = true;
 };
 
@@ -389,6 +440,26 @@ const confirmRequestEdit = async () => {
     return;
   }
   try {
+    const currentData = {
+      weightIn: selectedRequestEditBooking.value.weightIn,
+      trailerWeightIn: selectedRequestEditBooking.value.trailerWeightIn,
+      rubberSource: selectedRequestEditBooking.value.rubberSource,
+      rubberType: selectedRequestEditBooking.value.rubberType,
+      trailerRubberSource: selectedRequestEditBooking.value.trailerRubberSource,
+      trailerRubberType: selectedRequestEditBooking.value.trailerRubberType,
+      // Include metadata for Approval Summary
+      bookingCode: selectedRequestEditBooking.value.bookingCode,
+      date: selectedRequestEditBooking.value.date,
+      slot: selectedRequestEditBooking.value.slot,
+      supplierCode: selectedRequestEditBooking.value.supplierCode,
+      supplierName: selectedRequestEditBooking.value.supplierName,
+      truckType: selectedRequestEditBooking.value.truckType,
+      truckRegister: selectedRequestEditBooking.value.truckRegister,
+      queueNo: selectedRequestEditBooking.value.queueNo,
+    };
+
+    const proposedData = { ...requestEditData.value };
+
     await approvalsApi.create({
       requestType: 'EDIT',
       entityType: 'BOOKING',
@@ -396,7 +467,8 @@ const confirmRequestEdit = async () => {
       sourceApp: 'DESKTOP',
       actionType: 'EDIT_WEIGHT_IN',
       reason: requestEditReason.value,
-      currentData: { weightIn: selectedRequestEditBooking.value.weightIn },
+      currentData,
+      proposedData,
     });
     toast.success(t('truckScale.toast.editRequestSent'));
     requestEditDialogOpen.value = false;
@@ -489,6 +561,32 @@ const formattedTrailerWeightIn = computed({
     const num = Number(val.replace(/,/g, ''));
     if (!isNaN(num)) {
       weightInData.value.trailerWeightIn = num;
+    }
+  },
+});
+
+const formattedRequestEditWeightIn = computed({
+  get: () => {
+    if (!requestEditData.value.weightIn) return '';
+    return requestEditData.value.weightIn.toLocaleString();
+  },
+  set: (val) => {
+    const num = Number(val.replace(/,/g, ''));
+    if (!isNaN(num)) {
+      requestEditData.value.weightIn = num;
+    }
+  },
+});
+
+const formattedRequestEditTrailerWeightIn = computed({
+  get: () => {
+    if (!requestEditData.value.trailerWeightIn) return '';
+    return requestEditData.value.trailerWeightIn.toLocaleString();
+  },
+  set: (val) => {
+    const num = Number(val.replace(/,/g, ''));
+    if (!isNaN(num)) {
+      requestEditData.value.trailerWeightIn = num;
     }
   },
 });
@@ -793,7 +891,7 @@ const scaleInColumns: ColumnDef<any>[] = [
   },
   {
     accessorKey: 'queueNo',
-    header: ({ column }) => h('div', { class: 'text-center' }, t('truckScale.queue') || 'Queue'),
+    header: () => h('div', { class: 'text-center' }, t('truckScale.queue') || 'Queue'),
     cell: ({ row }) =>
       h('div', { class: 'flex flex-col items-center' }, [
         h('span', { class: 'font-bold' }, row.original.queueNo),
@@ -2534,16 +2632,7 @@ onUnmounted(() => {
             <div class="grid gap-2">
               <Label>{{ t('truckScale.weight') }} (kg)</Label>
               <Input
-                :model-value="
-                  weightOutData.weightOut ? Number(weightOutData.weightOut).toLocaleString() : ''
-                "
-                @input="
-                  (e: any) => {
-                    const value = e.target.value.replace(/[^0-9]/g, '');
-                    weightOutData.weightOut = value ? Number(value) : null;
-                    e.target.value = value ? Number(value).toLocaleString() : '';
-                  }
-                "
+                v-model="formattedWeightOut"
                 @keydown="handleWeightOutInputKeydown"
                 type="text"
                 class="text-xl h-12"
@@ -2569,18 +2658,7 @@ onUnmounted(() => {
             <div class="grid gap-2">
               <Label>{{ t('truckScale.weight') }} (kg)</Label>
               <Input
-                :model-value="
-                  weightOutData.trailerWeightOut
-                    ? Number(weightOutData.trailerWeightOut).toLocaleString()
-                    : ''
-                "
-                @input="
-                  (e: any) => {
-                    const value = e.target.value.replace(/[^0-9]/g, '');
-                    weightOutData.trailerWeightOut = value ? Number(value) : null;
-                    e.target.value = value ? Number(value).toLocaleString() : '';
-                  }
-                "
+                v-model="formattedTrailerWeightOut"
                 @keydown="handleWeightOutInputKeydown"
                 type="text"
                 class="text-xl h-12"
@@ -2721,7 +2799,7 @@ onUnmounted(() => {
 
     <!-- Request Edit Dialog -->
     <Dialog v-model:open="requestEditDialogOpen">
-      <DialogContent class="sm:max-w-[425px]">
+      <DialogContent class="max-w-xl">
         <DialogHeader>
           <DialogTitle>{{ t('truckScale.requestEditTitle') }}</DialogTitle>
           <DialogDescription>
@@ -2729,13 +2807,71 @@ onUnmounted(() => {
           </DialogDescription>
         </DialogHeader>
 
-        <div class="grid gap-4 py-4">
-          <div class="grid gap-2">
-            <Label>{{ t('truckScale.reasonForEdit') }}</Label>
+        <div class="grid gap-6 py-4 max-h-[60vh] overflow-y-auto pr-2">
+          <!-- Data Inputs -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="space-y-4 border-r pr-4">
+              <h4 class="font-bold text-sm text-primary flex items-center gap-2">
+                <Truck class="w-4 h-4" /> {{ t('truckScale.mainTruck') }}
+              </h4>
+              <div class="grid gap-2">
+                <Label>{{ t('truckScale.weightIn') }} (kg)</Label>
+                <Input
+                  v-model="formattedRequestEditWeightIn"
+                  class="text-lg font-medium"
+                  placeholder="0"
+                />
+              </div>
+              <div class="grid gap-2">
+                <Label>{{ t('truckScale.rubberSource') }}</Label>
+                <Combobox
+                  :options="provinceOptions"
+                  v-model="requestEditData.rubberSource"
+                  :placeholder="t('admin.suppliers.dialog.placeholders.province')"
+                />
+              </div>
+            </div>
+
+            <div class="space-y-4">
+              <h4 class="font-bold text-sm text-orange-600 flex items-center gap-2">
+                <Truck class="w-4 h-4" /> {{ t('truckScale.trailer') }}
+              </h4>
+              <div class="grid gap-2">
+                <Label>{{ t('truckScale.weightIn') }} (kg)</Label>
+                <Input
+                  v-model="formattedRequestEditTrailerWeightIn"
+                  class="text-lg font-medium"
+                  placeholder="0"
+                />
+              </div>
+              <div class="grid gap-2">
+                <Label>{{ t('truckScale.rubberSource') }}</Label>
+                <Combobox
+                  :options="provinceOptions"
+                  v-model="requestEditData.trailerRubberSource"
+                  :placeholder="t('admin.suppliers.dialog.placeholders.province')"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Rubber Type (Unified or Separate based on selection) -->
+          <div class="grid gap-2 pt-4 border-t">
+            <Label>{{ t('truckScale.rubberType') }}</Label>
+            <Combobox
+              :options="rubberTypeOptions"
+              v-model="requestEditData.rubberType"
+              :placeholder="t('truckScale.rubberType')"
+            />
+          </div>
+
+          <!-- Reason -->
+          <div class="grid gap-2 pt-4 border-t">
+            <Label class="text-red-600 font-bold">{{ t('truckScale.reasonForEdit') }} *</Label>
             <Textarea
               v-model="requestEditReason"
               :placeholder="t('truckScale.requestEditPlaceholder')"
-              class="min-h-[100px]"
+              class="min-h-[80px] border-red-200 focus-visible:ring-red-500"
             />
           </div>
         </div>
@@ -2881,7 +3017,7 @@ onUnmounted(() => {
     <!-- Time Log Dialog -->
     <Dialog v-model:open="timeLogDialogOpen">
       <DialogContent
-        class="sm:max-w-md max-h-[90vh] overflow-hidden flex flex-col [&>button]:hidden"
+        class="sm:max-w-5xl max-h-[90vh] overflow-hidden flex flex-col [&>button]:hidden"
       >
         <DialogHeader>
           <DialogTitle class="flex items-center justify-between">
@@ -2912,230 +3048,264 @@ onUnmounted(() => {
             </div>
           </div>
 
-          <Timeline class="space-y-8 max-w-md mx-auto">
+          <Stepper orientation="horizontal" class="flex w-full items-start gap-2">
             <!-- Check-in -->
-            <TimelineItem dot-color="bg-blue-500">
-              <template #dot>
-                <ClipboardList class="w-3.5 h-3.5" />
-              </template>
-              <div class="grid grid-cols-[140px_1fr] items-start">
-                <div class="flex flex-col">
-                  <span class="text-sm font-medium text-muted-foreground">{{
-                    t('truckScale.checkIn') || 'Check-in'
-                  }}</span>
-                  <span class="text-xs text-muted-foreground mt-0.5">
-                    By {{ selectedDetailBooking?.checkedInBy || '-' }}
-                  </span>
-                </div>
-                <span class="text-base font-bold text-foreground">{{
-                  selectedDetailBooking?.checkinAt
-                    ? format(new Date(selectedDetailBooking.checkinAt), 'HH:mm')
-                    : '-'
-                }}</span>
+            <StepperItem
+              :step="1"
+              class="relative flex flex-col items-center w-full group"
+              :completed="!!selectedDetailBooking?.checkinAt"
+            >
+              <StepperTrigger
+                class="w-10 h-10 flex items-center justify-center rounded-full bg-muted group-data-[state=active]:bg-primary group-data-[state=completed]:bg-primary transition-colors"
+              >
+                <ClipboardList
+                  class="w-5 h-5 text-muted-foreground group-data-[state=active]:text-primary-foreground group-data-[state=completed]:text-primary-foreground"
+                />
+              </StepperTrigger>
+              <div class="mt-2 flex flex-col items-center text-center">
+                <StepperTitle class="text-sm font-semibold">Check-in</StepperTitle>
+                <StepperDescription class="text-xs text-muted-foreground">
+                  <div v-if="selectedDetailBooking?.checkinAt">
+                    {{ format(new Date(selectedDetailBooking.checkinAt), 'HH:mm') }}
+                  </div>
+                  <div v-else>-</div>
+                </StepperDescription>
               </div>
-            </TimelineItem>
+            </StepperItem>
+
+            <div class="w-full h-[2px] mt-5 bg-border group-data-[state=completed]:bg-primary" />
 
             <!-- Weight In -->
-            <TimelineItem dot-color="bg-green-500">
-              <template #dot>
-                <Weight class="w-3.5 h-3.5" />
-              </template>
-              <div class="grid grid-cols-[140px_1fr] items-start">
-                <div class="flex flex-col">
-                  <span class="text-sm font-medium text-muted-foreground">{{
-                    t('truckScale.weightIn') || 'Weight In'
-                  }}</span>
-                  <span class="text-xs text-muted-foreground mt-0.5">
-                    By {{ selectedDetailBooking?.weightInBy || '-' }}
-                  </span>
-                </div>
-                <div class="flex flex-col">
-                  <span class="text-base font-bold text-green-600">
-                    {{
-                      (
-                        (selectedDetailBooking?.weightIn || 0) +
-                        (selectedDetailBooking?.trailerWeightIn || 0)
-                      ).toLocaleString()
-                    }}
-                    Kg.
-                  </span>
-                  <span class="text-xs text-muted-foreground mt-0.5">
-                    (Main: {{ (selectedDetailBooking?.weightIn || 0).toLocaleString() }} | Trailer:
-                    {{ (selectedDetailBooking?.trailerWeightIn || 0).toLocaleString() }})
-                  </span>
-                </div>
+            <StepperItem
+              :step="2"
+              class="relative flex flex-col items-center w-full group"
+              :completed="!!selectedDetailBooking?.weightIn"
+            >
+              <StepperTrigger
+                class="w-10 h-10 flex items-center justify-center rounded-full bg-muted group-data-[state=active]:bg-primary group-data-[state=completed]:bg-primary transition-colors"
+              >
+                <Weight
+                  class="w-5 h-5 text-muted-foreground group-data-[state=active]:text-primary-foreground group-data-[state=completed]:text-primary-foreground"
+                />
+              </StepperTrigger>
+              <div class="mt-2 flex flex-col items-center text-center">
+                <StepperTitle class="text-sm font-semibold">Weight In</StepperTitle>
+                <StepperDescription class="text-xs text-muted-foreground">
+                  <div v-if="selectedDetailBooking?.weightIn" class="flex flex-col items-center">
+                    <span class="font-bold text-green-600"
+                      >{{ selectedDetailBooking.weightIn.toLocaleString() }} Kg.</span
+                    >
+                  </div>
+                  <div v-else>-</div>
+                </StepperDescription>
               </div>
-            </TimelineItem>
+            </StepperItem>
+
+            <div class="w-full h-[2px] mt-5 bg-border group-data-[state=completed]:bg-primary" />
 
             <!-- Start Drain -->
-            <TimelineItem dot-color="bg-yellow-500">
-              <template #dot>
-                <Play class="w-3.5 h-3.5" />
-              </template>
-              <div class="grid grid-cols-[140px_1fr] items-start">
-                <div class="flex flex-col">
-                  <span class="text-sm font-medium text-muted-foreground">{{
-                    t('truckScale.startDrain') || 'Start Drain'
-                  }}</span>
-                  <span class="text-xs text-muted-foreground mt-0.5">
-                    By {{ selectedDetailBooking?.startDrainBy || '-' }}
-                  </span>
-                </div>
-                <span class="text-base font-bold text-foreground">{{
-                  selectedDetailBooking?.startDrainAt
-                    ? format(new Date(selectedDetailBooking.startDrainAt), 'HH:mm')
-                    : '-'
-                }}</span>
+            <StepperItem
+              :step="3"
+              class="relative flex flex-col items-center w-full group"
+              :completed="!!selectedDetailBooking?.startDrainAt"
+            >
+              <StepperTrigger
+                class="w-10 h-10 flex items-center justify-center rounded-full bg-muted group-data-[state=active]:bg-primary group-data-[state=completed]:bg-primary transition-colors"
+              >
+                <Play
+                  class="w-5 h-5 text-muted-foreground group-data-[state=active]:text-primary-foreground group-data-[state=completed]:text-primary-foreground"
+                />
+              </StepperTrigger>
+              <div class="mt-2 flex flex-col items-center text-center">
+                <StepperTitle class="text-sm font-semibold">Start Drain</StepperTitle>
+                <StepperDescription class="text-xs text-muted-foreground">
+                  <div v-if="selectedDetailBooking?.startDrainAt">
+                    {{ format(new Date(selectedDetailBooking.startDrainAt), 'HH:mm') }}
+                  </div>
+                  <div v-else>-</div>
+                </StepperDescription>
               </div>
-            </TimelineItem>
+            </StepperItem>
+
+            <div class="w-full h-[2px] mt-5 bg-border group-data-[state=completed]:bg-primary" />
 
             <!-- Stop Drain -->
-            <TimelineItem dot-color="bg-orange-500">
-              <template #dot>
-                <Square class="w-3.5 h-3.5" />
-              </template>
-              <div class="grid grid-cols-[140px_1fr] items-start">
-                <div class="flex flex-col">
-                  <span class="text-sm font-medium text-muted-foreground">{{
-                    t('truckScale.stopDrain') || 'Stop Drain'
-                  }}</span>
-                  <span class="text-xs text-muted-foreground mt-0.5">
-                    By {{ selectedDetailBooking?.stopDrainBy || '-' }}
-                  </span>
-                </div>
-                <span class="text-base font-bold text-foreground">{{
-                  selectedDetailBooking?.stopDrainAt
-                    ? format(new Date(selectedDetailBooking.stopDrainAt), 'HH:mm')
-                    : '-'
-                }}</span>
+            <StepperItem
+              :step="4"
+              class="relative flex flex-col items-center w-full group"
+              :completed="!!selectedDetailBooking?.stopDrainAt"
+            >
+              <StepperTrigger
+                class="w-10 h-10 flex items-center justify-center rounded-full bg-muted group-data-[state=active]:bg-primary group-data-[state=completed]:bg-primary transition-colors"
+              >
+                <Square
+                  class="w-5 h-5 text-muted-foreground group-data-[state=active]:text-primary-foreground group-data-[state=completed]:text-primary-foreground"
+                />
+              </StepperTrigger>
+              <div class="mt-2 flex flex-col items-center text-center">
+                <StepperTitle class="text-sm font-semibold">Stop Drain</StepperTitle>
+                <StepperDescription class="text-xs text-muted-foreground">
+                  <div v-if="selectedDetailBooking?.stopDrainAt">
+                    {{ format(new Date(selectedDetailBooking.stopDrainAt), 'HH:mm') }}
+                  </div>
+                  <div v-else>-</div>
+                </StepperDescription>
               </div>
-            </TimelineItem>
+            </StepperItem>
+
+            <div class="w-full h-[2px] mt-5 bg-border group-data-[state=completed]:bg-primary" />
 
             <!-- Total Drain -->
-            <TimelineItem
+            <StepperItem
               v-if="selectedDetailBooking?.startDrainAt && selectedDetailBooking?.stopDrainAt"
-              dot-color="bg-orange-500"
+              :step="5"
+              class="relative flex flex-col items-center w-full group"
+              :completed="true"
             >
-              <template #dot>
-                <Timer class="w-3.5 h-3.5" />
-              </template>
-              <div class="grid grid-cols-[140px_1fr] items-baseline">
-                <span class="text-sm font-medium text-muted-foreground">{{
-                  t('truckScale.totalDrain') || 'Total Drain'
-                }}</span>
-                <span class="text-base font-bold text-orange-600">
+              <StepperTrigger
+                class="w-10 h-10 flex items-center justify-center rounded-full bg-muted group-data-[state=active]:bg-primary group-data-[state=completed]:bg-primary transition-colors"
+              >
+                <Timer
+                  class="w-5 h-5 text-muted-foreground group-data-[state=active]:text-primary-foreground group-data-[state=completed]:text-primary-foreground"
+                />
+              </StepperTrigger>
+              <div class="mt-2 flex flex-col items-center text-center">
+                <StepperTitle class="text-sm font-semibold">Total Drain</StepperTitle>
+                <StepperDescription class="text-xs font-bold text-orange-500">
                   {{
-                    Math.floor(
-                      (new Date(selectedDetailBooking.stopDrainAt).getTime() -
-                        new Date(selectedDetailBooking.startDrainAt).getTime()) /
-                        60000
+                    calculateDuration(
+                      selectedDetailBooking.startDrainAt,
+                      selectedDetailBooking.stopDrainAt
                     )
                   }}
-                  {{ t('liveDuration.min') || 'Min' }}
-                </span>
+                </StepperDescription>
               </div>
-            </TimelineItem>
+            </StepperItem>
+
+            <div
+              v-if="selectedDetailBooking?.startDrainAt && selectedDetailBooking?.stopDrainAt"
+              class="w-full h-[2px] mt-5 bg-border group-data-[state=completed]:bg-primary"
+            />
 
             <!-- Weight Out -->
-            <TimelineItem dot-color="bg-red-500">
-              <template #dot>
-                <ArrowUpFromLine class="w-3.5 h-3.5" />
-              </template>
-              <div class="grid grid-cols-[140px_1fr] items-start">
-                <div class="flex flex-col">
-                  <span class="text-sm font-medium text-muted-foreground">{{
-                    t('truckScale.weightOut') || 'Weight Out'
-                  }}</span>
-                  <span class="text-xs text-muted-foreground mt-0.5">
-                    By {{ selectedDetailBooking?.weightOutBy || '-' }}
-                  </span>
-                </div>
-                <div class="flex flex-col">
-                  <span class="text-base font-bold text-red-600">
+            <StepperItem
+              :step="6"
+              class="relative flex flex-col items-center w-full group"
+              :completed="!!selectedDetailBooking?.weightOut"
+            >
+              <StepperTrigger
+                class="w-10 h-10 flex items-center justify-center rounded-full bg-muted group-data-[state=active]:bg-primary group-data-[state=completed]:bg-primary transition-colors"
+              >
+                <Upload
+                  class="w-5 h-5 text-muted-foreground group-data-[state=active]:text-primary-foreground group-data-[state=completed]:text-primary-foreground"
+                />
+              </StepperTrigger>
+              <div class="mt-2 flex flex-col items-center text-center">
+                <StepperTitle class="text-sm font-semibold">Weight Out</StepperTitle>
+                <StepperDescription class="text-xs text-muted-foreground">
+                  <div v-if="selectedDetailBooking?.weightOut" class="flex flex-col items-center">
+                    <span class="font-bold text-red-600"
+                      >{{ selectedDetailBooking.weightOut.toLocaleString() }} Kg.</span
+                    >
+                  </div>
+                  <div v-else>-</div>
+                </StepperDescription>
+              </div>
+            </StepperItem>
+
+            <div class="w-full h-[2px] mt-5 bg-border group-data-[state=completed]:bg-primary" />
+
+            <!-- Gross Weight -->
+            <StepperItem
+              v-if="selectedDetailBooking?.weightIn && selectedDetailBooking?.weightOut"
+              :step="7"
+              class="relative flex flex-col items-center w-full group"
+              :completed="true"
+            >
+              <StepperTrigger
+                class="w-10 h-10 flex items-center justify-center rounded-full bg-muted group-data-[state=active]:bg-primary group-data-[state=completed]:bg-primary transition-colors"
+              >
+                <Scale
+                  class="w-5 h-5 text-muted-foreground group-data-[state=active]:text-primary-foreground group-data-[state=completed]:text-primary-foreground"
+                />
+              </StepperTrigger>
+              <div class="mt-2 flex flex-col items-center text-center">
+                <StepperTitle class="text-sm font-semibold">Gross Weight</StepperTitle>
+                <StepperDescription class="text-xs text-muted-foreground">
+                  <div class="font-bold text-blue-600">
                     {{
-                      (
-                        (selectedDetailBooking?.weightOut || 0) +
-                        (selectedDetailBooking?.trailerWeightOut || 0)
+                      Math.abs(
+                        selectedDetailBooking.weightIn +
+                          (selectedDetailBooking.trailerWeightIn || 0) -
+                          (selectedDetailBooking.weightOut +
+                            (selectedDetailBooking.trailerWeightOut || 0))
                       ).toLocaleString()
                     }}
                     Kg.
-                  </span>
-                  <span class="text-xs text-muted-foreground mt-0.5">
-                    (Main: {{ (selectedDetailBooking?.weightOut || 0).toLocaleString() }} | Trailer:
-                    {{ (selectedDetailBooking?.trailerWeightOut || 0).toLocaleString() }})
-                  </span>
-                </div>
+                  </div>
+                </StepperDescription>
               </div>
-            </TimelineItem>
+            </StepperItem>
+
+            <div
+              v-if="selectedDetailBooking?.weightIn && selectedDetailBooking?.weightOut"
+              class="w-full h-[2px] mt-5 bg-border group-data-[state=completed]:bg-primary"
+            />
 
             <!-- Net Weight -->
-            <TimelineItem
+            <StepperItem
               v-if="selectedDetailBooking?.weightIn && selectedDetailBooking?.weightOut"
-              dot-color="bg-purple-600"
-              class="pt-4 border-t border-dashed"
+              :step="8"
+              class="relative flex flex-col items-center w-full group"
+              :completed="true"
             >
-              <template #dot>
-                <Calculator class="w-3.5 h-3.5" />
-              </template>
-              <div class="grid grid-cols-[140px_1fr] items-baseline">
-                <span class="text-sm font-medium text-muted-foreground">{{
-                  t('truckScale.netWeight') || 'Net Weight'
-                }}</span>
-                <span class="text-xl font-bold text-purple-600">
-                  {{
-                    Math.abs(
-                      selectedDetailBooking.weightIn +
-                        (selectedDetailBooking.trailerWeightIn || 0) -
-                        (selectedDetailBooking.weightOut +
-                          (selectedDetailBooking.trailerWeightOut || 0))
-                    ).toLocaleString()
-                  }}
-                  Kg.
-                </span>
+              <StepperTrigger
+                class="w-10 h-10 flex items-center justify-center rounded-full bg-muted group-data-[state=active]:bg-primary group-data-[state=completed]:bg-primary transition-colors"
+              >
+                <Scale
+                  class="w-5 h-5 text-muted-foreground group-data-[state=active]:text-primary-foreground group-data-[state=completed]:text-primary-foreground"
+                />
+              </StepperTrigger>
+              <div class="mt-2 flex flex-col items-center text-center">
+                <StepperTitle class="text-sm font-semibold">Net Weight</StepperTitle>
+                <StepperDescription class="text-xs text-muted-foreground">
+                  <div class="font-bold text-blue-600">-</div>
+                </StepperDescription>
               </div>
-            </TimelineItem>
+            </StepperItem>
+
+            <div
+              v-if="selectedDetailBooking?.weightIn && selectedDetailBooking?.weightOut"
+              class="w-full h-[2px] mt-5 bg-border group-data-[state=completed]:bg-primary"
+            />
 
             <!-- Approved -->
-            <TimelineItem
+            <StepperItem
               v-if="selectedDetailBooking?.status === 'APPROVED'"
-              dot-color="bg-blue-600"
+              :step="9"
+              class="relative flex flex-col items-center w-full group"
+              :completed="true"
             >
-              <template #dot>
-                <Check class="w-3.5 h-3.5 text-white" />
-              </template>
-              <div class="grid grid-cols-[140px_1fr] items-start">
-                <div class="flex flex-col">
-                  <span class="text-sm font-medium text-blue-600">{{
-                    t('common.approved') || 'Approved'
-                  }}</span>
-                  <span class="text-xs text-muted-foreground mt-0.5">
-                    By {{ selectedDetailBooking?.approvedBy || 'Unknown' }}
-                  </span>
-                </div>
-                <div class="flex flex-col">
-                  <span class="text-base font-bold text-blue-700">
-                    {{
-                      selectedDetailBooking?.approvedAt
-                        ? format(new Date(selectedDetailBooking.approvedAt), 'HH:mm')
-                        : '-'
-                    }}
-                  </span>
-                  <span class="text-xs text-muted-foreground">
-                    {{
-                      selectedDetailBooking?.approvedAt
-                        ? format(new Date(selectedDetailBooking.approvedAt), 'dd-MMM-yyyy')
-                        : ''
-                    }}
-                  </span>
-                </div>
+              <StepperTrigger
+                class="w-10 h-10 flex items-center justify-center rounded-full bg-muted group-data-[state=active]:bg-primary group-data-[state=completed]:bg-primary transition-colors"
+              >
+                <CheckCircle
+                  class="w-5 h-5 text-muted-foreground group-data-[state=active]:text-primary-foreground group-data-[state=completed]:text-primary-foreground"
+                />
+              </StepperTrigger>
+              <div class="mt-2 flex flex-col items-center text-center">
+                <StepperTitle class="text-sm font-semibold">Approved</StepperTitle>
+                <StepperDescription class="text-green-600 font-medium"
+                  >Completed</StepperDescription
+                >
               </div>
-            </TimelineItem>
-          </Timeline>
+            </StepperItem>
+          </Stepper>
         </div>
 
         <DialogFooter class="mt-6">
           <Button
-            class="w-full bg-background border hover:bg-muted text-foreground"
+            class="w-full h-8 text-xs bg-background border hover:bg-muted text-foreground"
             variant="outline"
             @click="timeLogDialogOpen = false"
             >{{ t('common.close') }}</Button

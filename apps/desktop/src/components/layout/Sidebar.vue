@@ -2,9 +2,7 @@
 import { usePermissions } from '@/composables/usePermissions';
 import { cn } from '@/lib/utils';
 import {
-  Activity,
   Bell,
-  Calendar,
   ClipboardCheck,
   Layers,
   LayoutDashboard,
@@ -57,25 +55,15 @@ const allMenuGroups = computed(() => [
         icon: Bell,
         permission: 'notifications:read',
       },
-      {
-        name: t('admin.sidebar.bookingQueue'),
-        path: '/bookings',
-        icon: Calendar,
-        permission: 'bookings:read',
-      },
-      {
-        name: t('admin.sidebar.truckScale'),
-        path: '/scale',
-        icon: Truck,
-        permission: 'bookings:read',
-      },
-      { name: t('admin.sidebar.approvals'), path: '/admin/approvals', icon: ClipboardCheck }, // Pending permission module
+      // { name: t('admin.sidebar.bookingQueue'), path: '/bookings', icon: Calendar, permission: 'bookings:read' },
+      // { name: t('admin.sidebar.truckScale'), path: '/scale', icon: Truck, permission: 'bookings:read' },
+      { name: t('admin.sidebar.approvals'), path: '/approvals', icon: ClipboardCheck }, // Pending permission module
     ],
   },
   {
     title: t('admin.sidebar.system'),
     items: [
-      { name: t('admin.sidebar.analytics'), path: '/admin/analytics', icon: Activity },
+      // { name: t('admin.sidebar.analytics'), path: '/admin/analytics', icon: Activity },
       { name: t('admin.systemStatus.title'), path: '/admin/system-status', icon: Server },
     ],
   },

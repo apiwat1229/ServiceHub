@@ -18,6 +18,7 @@
     "approved": "Approved",
     "close": "Close",
     "search": "Search",
+    "bookingCode": "Booking Code",
     "searchModules": "Search modules...",
     "filter": "Filter",
     "export": "Export",
@@ -63,7 +64,10 @@
       "selectedRows": "{selected} of {total} row(s) selected.",
       "deleteSelected": "Delete Selected ({count})",
       "pageOf": "Page {current} of {total}"
-    }
+    },
+    "date": "Date",
+    "slot": "Slot",
+    "supplier": "Supplier"
   },
   "validation": {
     "required": "This field is required",
@@ -78,7 +82,9 @@
     "settings": "Settings",
     "profile": "Profile",
     "logout": "Logout",
-    "viewProfile": "View Profile"
+    "viewProfile": "View Profile",
+    "approvals": "Approval Requests",
+    "adminPanel": "Admin Panel"
   },
   "services": {
     "title": "Services & Modules",
@@ -106,6 +112,10 @@
     "maintenance": {
       "name": "Maintenance",
       "description": "Equipment Maintenance and Work Order management."
+    },
+    "myMachine": {
+      "name": "My Machine",
+      "description": "Machine maintenance recording program"
     },
     "itHelp": {
       "name": "IT Help Desk",
@@ -453,6 +463,9 @@
           "value": "Value",
           "status": "Status",
           "actions": "Actions",
+          "confirmDeleteTitle": "Confirm Deletion",
+          "confirmDelete": "Are you sure you want to delete this approval request?",
+          "deleteError": "Failed to delete approval request",
           "allContracts": "All Contracts",
           "total": "Total: {count} contracts",
           "today": "Today",
@@ -677,40 +690,9 @@
       "noDescription": "No description",
       "noMembers": "No members",
       "totalGroups": "Total Groups",
-      "totalMembers": "Total Members",
       "totalBroadcasts": "Total Broadcasts",
       "activeGroups": "Active Groups",
       "configuredApps": "Configured Apps"
-    },
-    "approvals": {
-      "title": "Approval Center",
-      "subtitle": "Manage pending requests and workflows.",
-      "approveSuccess": "Request approved successfully",
-      "rejectSuccess": "Request rejected successfully",
-      "list": {
-        "title": "Requests",
-        "description": "View and manage approval requests.",
-        "filters": "Filters",
-        "filterDescription": "Filter requests by status or show deleted items.",
-        "status": "Status",
-        "allStatuses": "All Statuses",
-        "showDeleted": "Show Deleted",
-        "type": "Request Type",
-        "requester": "Requester",
-        "submittedDate": "Submitted Date",
-        "actions": "Actions",
-        "viewDetails": "View Details",
-        "loadError": "Failed to load approval requests"
-      },
-      "status": {
-        "pending": "Pending",
-        "approved": "Approved",
-        "rejected": "Rejected",
-        "returned": "Returned",
-        "cancelled": "Cancelled",
-        "void": "Void",
-        "expired": "Expired"
-      }
     },
     "apps": {
       "title": "App Permission Management",
@@ -799,6 +781,9 @@
       "unreadAlertsDesc": "System notifications",
       "totalUsers": "Total Users",
       "totalUsersDesc": "Active accounts",
+      "onlineUsers": "Online Users",
+      "activeNow": "Active now in system",
+      "onlineUsersDesc": "List of users currently active in the system",
       "recentActivity": "Recent Activity",
       "recentActivityDesc": "Latest approval requests and system actions.",
       "table": {
@@ -904,7 +889,8 @@
           "province": "Province"
         },
         "placeholders": {
-          "searchProvince": "Search province..."
+          "searchProvince": "Search province...",
+          "province": "Select province"
         },
         "errors": {
           "provinceNotFound": "Province not found"
@@ -1213,6 +1199,7 @@
     "time": "Time",
     "supplier": "Supplier",
     "truck": "Truck",
+    "bookingCode": "Booking Code",
     "totalExpected": "Total Expected",
     "startDrain": "Start Drain",
     "stopDrain": "Stop Drain",
@@ -1352,25 +1339,51 @@
   },
   "approval": {
     "title": "Approval Requests",
-    "manageAll": "Manage all approval requests",
-    "backToList": "Back to List",
-    "requestDetails": "Request Details",
-    "management": "Management",
-    "transactionHistory": "Transaction History",
-    "loading": "Loading...",
-    "voidCannotUse": "VOID - Cannot be used",
-    "requestType": "Request Type",
-    "dataType": "Data Type",
-    "requester": "Requester",
-    "submittedDate": "Submitted Date",
-    "approver": "Approver",
-    "reviewDate": "Review Date",
-    "priority": "Priority",
-    "expiresAt": "Expires",
-    "reason": "Reason",
-    "note": "Note",
-    "currentData": "Current Data",
-    "proposedChanges": "Proposed Changes",
+    "manageAll": "Manage All Approval Requests",
+    "noHistory": "No history available",
+    "noActions": "No actions available",
+    "list": {
+      "title": "Approval Requests",
+      "description": "Manage user requests requiring approval.",
+      "filterDescription": "Filter by status",
+      "allStatuses": "All Statuses",
+      "showDeleted": "Show Deleted Items",
+      "type": "Request Type",
+      "requester": "Requester",
+      "status": "Status",
+      "submittedDate": "Submitted Date",
+      "actions": "Actions",
+      "viewDetails": "View Details",
+      "filters": "Filters",
+      "bookingCode": "Booking Code",
+      "reason": "Reason"
+    },
+    "detail": {
+      "bookingSummary": "Booking Summary",
+      "rubberAndTruck": "Rubber & Truck",
+      "field": "Field",
+      "backToList": "Back to List",
+      "requestDetails": "Request Details",
+      "voidBadge": "VOIDED",
+      "requestType": "Request Type",
+      "entityType": "Entity Type",
+      "requester": "Requester",
+      "submittedDate": "Submitted Date",
+      "approver": "Approver",
+      "actedDate": "Acted Date",
+      "priority": "Priority",
+      "expiresAt": "Expires At",
+      "reason": "Reason",
+      "remark": "Remark",
+      "currentData": "Current Data",
+      "proposedChanges": "Proposed Changes",
+      "noChanges": "No changes detected",
+      "noActions": "No actions available",
+      "management": "Management",
+      "history": "History",
+      "loadError": "Failed to load request details"
+    },
+
     "filters": "Filters",
     "filterRequests": "Filter approval requests",
     "allStatuses": "All Statuses",
@@ -1379,7 +1392,7 @@
     "actions": {
       "approve": "Approve",
       "reject": "Reject",
-      "return": "Return for Edit",
+      "return": "Request More Info",
       "cancel": "Cancel Request",
       "void": "Void",
       "edit": "Edit Request",
@@ -1430,13 +1443,12 @@
         "error": "Failed to reject request"
       },
       "return": {
-        "title": "Return Request for Edit",
-        "reasonLabel": "Reason for Return *",
-        "reasonPlaceholder": "Please provide a reason, e.g.: Please add more details...",
-        "reasonRequired": "Please provide a reason for return",
+        "title": "Request More Information",
+        "confirmMessage": "Do you want to request more information for this request?",
+        "defaultRemark": "Please provide more information and details.",
         "processing": "Processing...",
-        "success": "Request returned successfully",
-        "error": "Failed to return request"
+        "success": "Request sent successfully",
+        "error": "Failed to send request"
       },
       "void": {
         "title": "Void Request",

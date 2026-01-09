@@ -152,16 +152,6 @@ const routes = [
                 redirect: '/bookings',
             },
             {
-                path: 'approvals',
-                name: 'Approvals',
-                component: () => import('../views/approvals/ApprovalsList.vue'),
-            },
-            {
-                path: 'approvals/:id',
-                name: 'ApprovalDetail',
-                component: () => import('../views/approvals/ApprovalDetail.vue'),
-            },
-            {
                 path: 'analytics',
                 name: 'Analytics',
                 component: () => import('../views/Placeholder.vue'),
@@ -170,6 +160,23 @@ const routes = [
                 path: 'helpdesk',
                 name: 'HelpDesk',
                 component: () => import('../views/admin/HelpDesk.vue'),
+            },
+        ]
+    },
+    {
+        path: '/approvals',
+        component: () => import('@/components/layout/NavbarOnlyLayout.vue'),
+        meta: { requiresAuth: true },
+        children: [
+            {
+                path: '',
+                name: 'Approvals',
+                component: () => import('@/views/approvals/ApprovalsList.vue'),
+            },
+            {
+                path: ':id',
+                name: 'Approval Detail',
+                component: () => import('@/views/approvals/ApprovalDetail.vue'),
             },
         ]
     },
@@ -193,6 +200,18 @@ const routes = [
                 path: '',
                 name: 'TruckScale',
                 component: () => import('../views/admin/TruckScale.vue'),
+            }
+        ]
+    },
+    {
+        path: '/my-machine',
+        component: () => import('@/components/layout/MainLayout.vue'),
+        meta: { requiresAuth: true },
+        children: [
+            {
+                path: '',
+                name: 'MyMachine',
+                component: () => import('../views/admin/MyMachine.vue'),
             }
         ]
     },
