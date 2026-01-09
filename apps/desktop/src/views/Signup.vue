@@ -1,7 +1,6 @@
-<script setup lang="ts">
 import SignupForm from '@/components/SignupForm.vue';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import axios from 'axios';
+import api from '@/services/api';
 import { AlertCircle, CheckCircle } from 'lucide-vue-next';
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
@@ -20,7 +19,7 @@ async function handleSignup({ email, username, password, firstName, lastName }: 
   signupSuccess.value = false;
 
   try {
-    await axios.post(`${import.meta.env.VITE_API_URL}/auth/signup`, {
+    await api.post('/auth/signup', {
       email,
       username,
       password,
