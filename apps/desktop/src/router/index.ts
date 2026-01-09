@@ -187,6 +187,11 @@ const routes = [
     },
 
     {
+        path: '/public/log/:id',
+        name: 'PublicRepairLog',
+        component: () => import('../views/public/PublicRepairView.vue'),
+    },
+    {
         path: '/error',
         name: 'Error',
         component: () => import('../views/Error.vue'),

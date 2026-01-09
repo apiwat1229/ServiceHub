@@ -17,8 +17,8 @@ const props = defineProps<{
 
 const emit = defineEmits(['close']);
 
-// Simulated public URL for the specific repair log
-const publicUrl = `https://ytre.co.th/log/${props.repair.id}`;
+// Public URL for the specific repair log (Production domain)
+const publicUrl = `https://app.ytrc.co.th/#/public/log/${props.repair.id}`;
 
 const copyLink = () => {
   navigator.clipboard.writeText(publicUrl);

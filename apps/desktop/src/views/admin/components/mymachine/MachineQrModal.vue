@@ -12,7 +12,7 @@ const props = defineProps<{
 
 const emit = defineEmits(['close']);
 
-const publicUrl = ref(`https://ytre.co.th/asset/${props.machine.id}`);
+const publicUrl = ref(`https://app.ytrc.co.th/#/public/machine/${props.machine.id}`);
 
 const copyToClipboard = () => {
   navigator.clipboard.writeText(publicUrl.value);

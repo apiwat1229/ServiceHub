@@ -709,3 +709,39 @@ model TicketComment {
   @@index([userId])
   @@map("ticket_comments")
 }
+
+// ==========================================
+// My Machine & Maintenance System
+// ==========================================
+
+model Machine {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  model     String?
+  location  String?
+  status    String   @default("Active")
+  
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  repairs   RepairLog[]
+
+  @@map("machines")
+}
+
+model RepairLog {
+  id          String   @id @default(uuid())
+  machineId   String   @map("machine_id")
+  machine     Machine  @relation(fields: [machineId], references: [id], onDelete: Cascade)
+  machineName String   @map("machine_name")
+  date        DateTime @default(now())
+  issue       String
+  technician  String
+  parts       Json?    @default("[]")
+  totalCost   Float    @default(0) @map("total_cost")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("repair_logs")
+}

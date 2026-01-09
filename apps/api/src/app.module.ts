@@ -11,6 +11,7 @@ import { ITAssetsModule } from './it-assets/it-assets.module';
 import { ITTicketsModule } from './it-tickets/it-tickets.module';
 import { KnowledgeBooksModule } from './knowledge-books/knowledge-books.module';
 import { MasterModule } from './master/master.module';
+import { MyMachineModule } from './mymachine/mymachine.module';
 import { NotificationGroupsModule } from './notification-groups/notification-groups.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PostsModule } from './posts/posts.module';
@@ -45,6 +46,7 @@ import { UsersModule } from './users/users.module';
         ITTicketsModule,
         KnowledgeBooksModule,
         ITAssetsModule,
+        MyMachineModule,
         // ServeStaticModule.forRoot({
         //     rootPath: join(process.cwd(), 'uploads'),
         //     serveRoot: '/uploads',
