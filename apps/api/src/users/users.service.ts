@@ -55,7 +55,7 @@ export class UsersService {
                 lastName: data.lastName,
                 password: data.password,
                 status: 'PENDING',
-                role: null, // No role assigned yet
+                // role field will use default value, roleId will be null by default
                 forceChangePassword: false,
             },
         });
