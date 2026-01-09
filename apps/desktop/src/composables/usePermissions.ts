@@ -38,7 +38,12 @@ export function usePermissions() {
         // Special access for apiwat.s@ytrc.co.th as requested
         if (user?.email === 'apiwat.s@ytrc.co.th') return true;
 
-        return role === 'ADMIN' || role === 'admin' || role === 'Administrator';
+        if (role === 'ADMIN' || role === 'admin' || role === 'Administrator') return true;
+
+        // Check for specific admin permissions as proxy for Admin role
+        // This handles cases where role is a UUID or custom name
+        const permissions = authStore.userPermissions;
+        return permissions.includes('users:read') || permissions.includes('roles:read');
     });
 
     /**

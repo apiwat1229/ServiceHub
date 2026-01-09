@@ -134,7 +134,7 @@ const userColumns: ColumnDef<User>[] = [
       return h('div', { class: 'flex items-center gap-3' }, [
         h(Avatar, { class: 'w-9 h-9 border' }, () => [
           h(AvatarImage, { src: user.avatar || '' }),
-          h(AvatarFallback, {}, user.firstName?.charAt(0) || 'U'),
+          h(AvatarFallback, {}, () => user.firstName?.charAt(0) || 'U'),
         ]),
         h('div', { class: 'flex flex-col' }, [
           h(

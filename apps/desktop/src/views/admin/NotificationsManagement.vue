@@ -553,7 +553,7 @@ const groupMemberColumns = computed<ColumnDef<UserDto>[]>(() => [
       return h('div', { class: 'flex items-center gap-3' }, [
         h(Avatar, { class: 'w-9 h-9 border' }, () => [
           h(AvatarImage, { src: user.avatar || '' }),
-          h(AvatarFallback, {}, user.displayName?.charAt(0) || 'U'),
+          h(AvatarFallback, {}, () => user.displayName?.charAt(0) || 'U'),
         ]),
         h('div', { class: 'flex flex-col' }, [
           h('span', { class: 'font-medium text-sm' }, user.displayName || user.username || ''),

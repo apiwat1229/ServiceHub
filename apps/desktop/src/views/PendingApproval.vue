@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import LanguageSwitcher from '@/components/LanguageSwitcher.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuthStore } from '@/stores/auth';
@@ -15,7 +16,10 @@ const handleLogout = () => {
 </script>
 
 <template>
-  <div class="flex min-h-svh w-full items-center justify-center p-6">
+  <div class="flex min-h-svh w-full items-center justify-center p-6 relative">
+    <div class="absolute top-4 right-4">
+      <LanguageSwitcher />
+    </div>
     <Card class="mx-auto max-w-md">
       <CardHeader class="text-center">
         <div

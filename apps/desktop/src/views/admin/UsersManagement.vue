@@ -34,7 +34,16 @@ import { rolesApi } from '@/services/roles';
 import { usersApi, type User } from '@/services/users';
 import type { RoleDto } from '@my-app/types';
 import type { ColumnDef } from '@tanstack/vue-table';
-import { ArrowUpDown, Edit, Plus, Search, Trash2, Unlock, Users } from 'lucide-vue-next';
+import {
+  ArrowUpDown,
+  CheckCircle,
+  Edit,
+  Plus,
+  Search,
+  Trash2,
+  Unlock,
+  Users,
+} from 'lucide-vue-next';
 import { computed, h, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
@@ -213,6 +222,7 @@ const formData = ref<Partial<User>>({
 const stats = computed(() => ({
   total: users.value.length,
   active: users.value.filter((u) => u.status === 'ACTIVE').length,
+  pending: users.value.filter((u) => u.status === 'PENDING').length,
   inactive: users.value.filter((u) => u.status === 'INACTIVE').length,
   suspended: users.value.filter((u) => u.status === 'SUSPENDED').length,
 }));
@@ -370,6 +380,18 @@ const handleUnlock = async (userId: string) => {
   }
 };
 
+const handleApprove = async (user: User) => {
+  try {
+    const payload = { status: 'ACTIVE' };
+    await usersApi.update(user.id, payload as Partial<User>);
+    toast.success(t('admin.users.approveSuccess') || 'User approved successfully');
+    await fetchData();
+  } catch (error) {
+    console.error('Failed to approve user:', error);
+    toast.error('Failed to approve user');
+  }
+};
+
 const handleBulkDelete = async (selectedRows: User[]) => {
   if (selectedRows.length === 0) return;
 
@@ -484,7 +506,9 @@ const columns: ColumnDef<User>[] = [
           ? 'bg-emerald-500/10 text-emerald-500'
           : status === 'SUSPENDED'
             ? 'bg-orange-500/10 text-orange-500'
-            : 'bg-muted text-muted-foreground';
+            : status === 'PENDING'
+              ? 'bg-blue-500/10 text-blue-500'
+              : 'bg-muted text-muted-foreground';
 
       return h('div', { class: 'flex justify-center' }, [
         h(
@@ -504,6 +528,19 @@ const columns: ColumnDef<User>[] = [
     cell: ({ row }) => {
       const item = row.original;
       return h('div', { class: 'flex items-center justify-end gap-2' }, [
+        // Approve Button for Pending Users
+        item.status === 'PENDING'
+          ? h(
+              Button,
+              {
+                variant: 'ghost',
+                size: 'sm',
+                class: 'h-8 px-2 text-blue-500 hover:text-blue-600 hover:bg-blue-50',
+                onClick: () => handleApprove(item),
+              },
+              () => [h(CheckCircle, { class: 'h-4 w-4 mr-1' }), t('common.approve')]
+            )
+          : null,
         h(
           Button,
           {
@@ -589,6 +626,12 @@ onMounted(() => {
             <div class="text-3xl font-bold text-emerald-500">{{ stats.active }}</div>
           </div>
           <div class="text-center">
+            <div class="text-xs font-bold text-blue-500 uppercase tracking-wider mb-1">
+              {{ t('admin.status.pending') }}
+            </div>
+            <div class="text-3xl font-bold text-blue-500">{{ stats.pending }}</div>
+          </div>
+          <div class="text-center">
             <div class="text-xs font-bold text-orange-500 uppercase tracking-wider mb-1">
               {{ t('admin.status.suspended') }}
             </div>
@@ -646,6 +689,7 @@ onMounted(() => {
           <SelectContent>
             <SelectItem value="all">{{ t('admin.users.allStatus') }}</SelectItem>
             <SelectItem value="ACTIVE">{{ t('admin.status.active') }}</SelectItem>
+            <SelectItem value="PENDING">{{ t('admin.status.pending') }}</SelectItem>
             <SelectItem value="INACTIVE">{{ t('admin.status.inactive') }}</SelectItem>
             <SelectItem value="SUSPENDED">{{ t('admin.status.suspended') }}</SelectItem>
           </SelectContent>

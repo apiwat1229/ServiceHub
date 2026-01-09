@@ -26,7 +26,7 @@ export interface User {
     role: UserRole;
     department?: string;
     position?: string;
-    status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+    status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'PENDING';
     avatar?: string;
     createdAt?: string;
     updatedAt?: string;
