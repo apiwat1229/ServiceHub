@@ -68,7 +68,6 @@ import {
   Lock,
   MoreHorizontal,
   Plus,
-  Send,
   Settings,
   Shield,
   Trash2,
@@ -148,9 +147,6 @@ const getUserAvatar = (userId: string) => {
 };
 
 // --- Computed ---
-const totalGroupMembers = computed(() => {
-  return groups.value.reduce((acc, group) => acc + (group.memberIds?.length || 0), 0);
-});
 
 const headerIcon = computed(() => {
   if (activeTab.value === 'broadcast') return Bell;
@@ -195,6 +191,12 @@ const settingDefinitions = [
   { sourceApp: 'IT_HELP_DESK', actionType: 'TICKET_UPDATED', label: 'Ticket Status Updated' },
   { sourceApp: 'IT_HELP_DESK', actionType: 'TICKET_ASSIGNED', label: 'Ticket Assigned' },
   { sourceApp: 'IT_HELP_DESK', actionType: 'NEW_COMMENT', label: 'New Comment Added' },
+  // Approval System
+  { sourceApp: 'Approval', actionType: 'NEW_REQUEST', label: 'New Request Submitted' },
+  { sourceApp: 'Approval', actionType: 'APPROVED', label: 'Request Approved' },
+  { sourceApp: 'Approval', actionType: 'REJECTED', label: 'Request Rejected' },
+  { sourceApp: 'Approval', actionType: 'RETURNED', label: 'Request Returned' },
+  { sourceApp: 'Approval', actionType: 'CANCELLED', label: 'Request Cancelled' },
 ];
 
 const selectedCategory = ref<string | null>(null);
@@ -215,6 +217,8 @@ const getCategoryIcon = (category: string) => {
       return Briefcase;
     case 'IT_HELP_DESK':
       return Bell;
+    case 'Approval':
+      return CheckCircle2;
     default:
       return Settings;
   }
@@ -222,6 +226,7 @@ const getCategoryIcon = (category: string) => {
 
 const categoryToLabel = (category: string) => {
   if (category === 'IT_HELP_DESK') return 'IT Help Desk';
+  if (category === 'Approval') return 'Approval';
   return category;
 };
 
@@ -790,73 +795,56 @@ onMounted(() => {
 
 <template>
   <div class="space-y-6">
-    <!-- Dynamic Header Card -->
+    <!-- Stats Header Bar -->
     <div
-      class="rounded-xl border border-border/60 bg-card/40 backdrop-blur-xl p-6 relative overflow-hidden shadow-sm z-0"
+      class="rounded-xl border bg-white shadow-sm p-4 px-6 flex flex-col md:flex-row items-center justify-between gap-4"
     >
-      <div class="absolute top-1/2 right-12 -translate-y-1/2 pointer-events-none opacity-[0.03]">
-        <component :is="headerIcon" class="w-64 h-64 rotate-12" />
+      <div class="flex items-center gap-4">
+        <div class="h-12 w-12 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+          <component :is="headerIcon" class="h-6 w-6" />
+        </div>
+        <div>
+          <h1 class="text-lg font-bold text-gray-900">{{ headerTitle }}</h1>
+          <p class="text-sm text-gray-500">{{ headerSubtitle }}</p>
+        </div>
       </div>
 
-      <div class="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
-        <div class="flex items-center gap-4 w-full md:w-auto">
-          <div
-            class="h-12 w-12 flex items-center justify-center bg-blue-100/50 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400 shadow-sm backdrop-blur-sm"
-          >
-            <component :is="headerIcon" class="h-6 w-6" />
-          </div>
-          <div>
-            <h1 class="text-xl font-bold tracking-tight text-foreground">
-              {{ headerTitle }}
-            </h1>
-            <p class="text-sm text-muted-foreground mt-0.5">
-              {{ headerSubtitle }}
-            </p>
-          </div>
+      <div class="flex items-center gap-8 border-l pl-8 ml-4">
+        <div class="text-center">
+          <span class="block text-xs font-bold text-gray-400 uppercase">{{
+            t('admin.notifications.totalBroadcasts')
+          }}</span>
+          <span class="text-2xl font-bold text-gray-900">{{ broadcasts.length }}</span>
         </div>
-
-        <!-- Dynamic Actions/Stats based on Tab -->
-        <div class="flex flex-1 items-center justify-end gap-8 md:gap-12 text-center">
-          <!-- Broadcast Stats -->
-          <div v-if="activeTab === 'broadcast'">
-            <p class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">
-              Total Broadcasts
-            </p>
-            <p class="text-2xl font-bold text-foreground">{{ broadcasts.length }}</p>
-          </div>
-
-          <!-- Groups Stats -->
-          <template v-if="activeTab === 'groups'">
-            <div>
-              <p class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">
-                {{ t('admin.notifications.totalGroups') }}
-              </p>
-              <p class="text-2xl font-bold text-foreground">{{ groups.length }}</p>
-            </div>
-            <div>
-              <p class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">
-                {{ t('admin.notifications.totalMembers') }}
-              </p>
-              <p class="text-2xl font-bold text-emerald-600">{{ totalGroupMembers }}</p>
-            </div>
-          </template>
-
-          <div class="flex items-center gap-2">
-            <Button
-              v-if="activeTab === 'broadcast'"
-              @click="handleOpenBroadcastDialog"
-              class="gap-2"
-            >
-              <Send class="w-4 h-4" />
-              {{ t('admin.notifications.sendManualBroadcast') }}
-            </Button>
-
-            <Button v-if="activeTab === 'groups'" @click="handleCreateGroup" class="gap-2">
-              <Plus class="w-4 h-4" />
-              {{ t('admin.notifications.newGroup') }}
-            </Button>
-          </div>
+        <div class="text-center">
+          <span class="block text-xs font-bold text-green-500 uppercase">{{
+            t('admin.notifications.activeGroups')
+          }}</span>
+          <span class="text-2xl font-bold text-green-600">{{ groups.length }}</span>
         </div>
+        <div class="text-center">
+          <span class="block text-xs font-bold text-orange-500 uppercase">{{
+            t('admin.notifications.configuredApps')
+          }}</span>
+          <span class="text-2xl font-bold text-orange-600">{{ categories.length }}</span>
+        </div>
+      </div>
+
+      <div class="ml-auto flex items-center gap-3">
+        <Button
+          v-if="activeTab === 'broadcast'"
+          @click="handleOpenBroadcastDialog"
+          class="bg-blue-600 hover:bg-blue-700 text-white gap-2 shadow-blue-200 shadow-lg"
+        >
+          <Plus class="w-4 h-4" /> {{ t('admin.notifications.createNew') }}
+        </Button>
+        <Button
+          v-if="activeTab === 'groups'"
+          @click="handleCreateGroup"
+          class="bg-blue-600 hover:bg-blue-700 text-white gap-2 shadow-blue-200 shadow-lg"
+        >
+          <Plus class="w-4 h-4" /> {{ t('admin.notifications.newGroup') }}
+        </Button>
       </div>
     </div>
 

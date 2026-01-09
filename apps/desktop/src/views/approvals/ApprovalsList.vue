@@ -89,7 +89,8 @@ const fetchApprovals = async () => {
   try {
     isLoading.value = true;
     const response = await approvalsApi.getAll({
-      status: filters.value.status || undefined,
+      status:
+        filters.value.status && filters.value.status !== 'ALL' ? filters.value.status : undefined,
       includeDeleted: filters.value.showDeleted,
     });
     approvals.value = response.data;
@@ -130,7 +131,7 @@ onMounted(() => {
                 <SelectValue :placeholder="t('approval.list.allStatuses')" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">{{ t('approval.list.allStatuses') }}</SelectItem>
+                <SelectItem value="ALL">{{ t('approval.list.allStatuses') }}</SelectItem>
                 <SelectItem value="PENDING">{{ t('approval.status.pending') }}</SelectItem>
                 <SelectItem value="APPROVED">{{ t('approval.status.approved') }}</SelectItem>
                 <SelectItem value="REJECTED">{{ t('approval.status.rejected') }}</SelectItem>

@@ -677,13 +677,40 @@
       "noDescription": "No description",
       "noMembers": "No members",
       "totalGroups": "Total Groups",
-      "totalMembers": "Total Members"
+      "totalMembers": "Total Members",
+      "totalBroadcasts": "Total Broadcasts",
+      "activeGroups": "Active Groups",
+      "configuredApps": "Configured Apps"
     },
     "approvals": {
       "title": "Approval Center",
       "subtitle": "Manage pending requests and workflows.",
       "approveSuccess": "Request approved successfully",
-      "rejectSuccess": "Request rejected successfully"
+      "rejectSuccess": "Request rejected successfully",
+      "list": {
+        "title": "Requests",
+        "description": "View and manage approval requests.",
+        "filters": "Filters",
+        "filterDescription": "Filter requests by status or show deleted items.",
+        "status": "Status",
+        "allStatuses": "All Statuses",
+        "showDeleted": "Show Deleted",
+        "type": "Request Type",
+        "requester": "Requester",
+        "submittedDate": "Submitted Date",
+        "actions": "Actions",
+        "viewDetails": "View Details",
+        "loadError": "Failed to load approval requests"
+      },
+      "status": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "returned": "Returned",
+        "cancelled": "Cancelled",
+        "void": "Void",
+        "expired": "Expired"
+      }
     },
     "apps": {
       "title": "App Permission Management",

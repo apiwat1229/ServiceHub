@@ -684,13 +684,40 @@
       "deleteGroup": "ลบกลุ่ม?",
       "deleteGroupMessage": "คุณแน่ใจหรือไม่ว่าต้องการลบกลุ่มนี้? ไม่สามารถย้อนกลับได้",
       "noDescription": "ไม่มีคำอธิบาย",
-      "noMembers": "ไม่มีสมาชิก"
+      "noMembers": "ไม่มีสมาชิก",
+      "totalBroadcasts": "ประกาศทั้งหมด",
+      "activeGroups": "กลุ่มที่ใช้งาน",
+      "configuredApps": "แอปที่กำหนดค่า"
     },
     "approvals": {
       "title": "ศูนย์การอนุมัติ",
       "subtitle": "จัดการคำขอและเวิร์กโฟลว์ที่รอดำเนินการ",
       "approveSuccess": "อนุมัติคำขอสำเร็จ",
-      "rejectSuccess": "ปฏิเสธคำขอสำเร็จ"
+      "rejectSuccess": "ปฏิเสธคำขอสำเร็จ",
+      "list": {
+        "title": "รายการคำขอ",
+        "description": "ดูและจัดการคำขออนุมัติ",
+        "filters": "ตัวกรอง",
+        "filterDescription": "กรองคำขอตามสถานะหรือแสดงรายการที่ถูกลบ",
+        "status": "สถานะ",
+        "allStatuses": "ทุกสถานะ",
+        "showDeleted": "แสดงที่ลบ",
+        "type": "ประเภทคำขอ",
+        "requester": "ผู้ร้องขอ",
+        "submittedDate": "วันที่ส่ง",
+        "actions": "การกระทำ",
+        "viewDetails": "ดูรายละเอียด",
+        "loadError": "โหลดรายการคำขอไม่สำเร็จ"
+      },
+      "status": {
+        "pending": "รอดำเนินการ",
+        "approved": "อนุมัติแล้ว",
+        "rejected": "ปฏิเสธ",
+        "returned": "ส่งคืนแก้ไข",
+        "cancelled": "ยกเลิก",
+        "void": "โมฆะ",
+        "expired": "หมดอายุ"
+      }
     },
     "apps": {
       "title": "การจัดการสิทธิ์แอป",
