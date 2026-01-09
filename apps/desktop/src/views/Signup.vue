@@ -60,8 +60,8 @@ async function handleSignup({ email, username, password, firstName, lastName }: 
 </script>
 
 <template>
-  <div class="flex min-h-screen w-full justify-center p-6 md:p-10">
-    <div class="w-full max-w-sm my-auto">
+  <div class="flex min-h-screen flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div class="sm:mx-auto sm:w-full sm:max-w-md">
       <!-- Success Alert -->
       <Alert v-if="signupSuccess" class="mb-4 border-green-500">
         <CheckCircle class="h-4 w-4 text-green-500" />

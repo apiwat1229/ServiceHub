@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import LanguageSwitcher from '@/components/LanguageSwitcher.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -52,7 +53,10 @@ defineExpose({
 <template>
   <Card class="mx-auto max-w-sm">
     <CardHeader>
-      <CardTitle class="text-2xl">{{ t('auth.login') }}</CardTitle>
+      <div class="flex items-center justify-between">
+        <CardTitle class="text-2xl">{{ t('auth.login') }}</CardTitle>
+        <LanguageSwitcher />
+      </div>
       <CardDescription> {{ t('auth.loginDescription') }} </CardDescription>
     </CardHeader>
     <CardContent>

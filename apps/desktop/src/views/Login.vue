@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import ChangePasswordDialog from '@/components/auth/ChangePasswordDialog.vue';
-import LanguageSwitcher from '@/components/LanguageSwitcher.vue';
 import LoginForm from '@/components/LoginForm.vue';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-vue-next';
@@ -99,9 +98,6 @@ function handlePasswordChangeSuccess() {
 
 <template>
   <div class="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
-    <div class="absolute right-4 top-4">
-      <LanguageSwitcher />
-    </div>
     <div class="w-full max-w-sm">
       <!-- Error Alert -->
       <Alert v-if="loginError" variant="destructive" class="mb-4">
