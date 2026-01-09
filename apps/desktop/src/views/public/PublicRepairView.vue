@@ -14,17 +14,29 @@ const error = ref<string | null>(null);
 const fetchRepairData = async () => {
   try {
     loading.value = true;
+    console.log('[API] Fetching repair log for ID:', route.params.id);
 
     // Get Base API URL and ensure it has /api prefix
     let apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:2530';
     if (apiUrl.endsWith('/')) apiUrl = apiUrl.slice(0, -1);
     if (!apiUrl.endsWith('/api')) apiUrl += '/api';
 
+    console.log('[API] Using URL:', `${apiUrl}/mymachine/public/repairs/${route.params.id}`);
+
     const response = await axios.get(`${apiUrl}/mymachine/public/repairs/${route.params.id}`);
+    console.log('[API] Response Received:', response.data);
     repair.value = response.data;
   } catch (e: any) {
-    console.error('Failed to fetch repair data', e);
-    error.value = 'Maintenance record not found or link has expired.';
+    console.error('[API] Failed to fetch repair data:', e);
+    const status = e.response?.status;
+    if (status === 404) {
+      error.value = `Maintenance record "${route.params.id}" was not found in the production database. Please ensure the record has been saved to the server.`;
+    } else if (status === 403 || status === 401) {
+      error.value = 'Access denied. This record is not public or your link is invalid.';
+    } else {
+      error.value =
+        'A communication error occurred with the secure server. Please try again later.';
+    }
   } finally {
     loading.value = false;
   }

@@ -5,6 +5,11 @@ import Login from '../views/Login.vue';
 
 const routes = [
     {
+        path: '/public/log/:id',
+        name: 'PublicRepairLog',
+        component: () => import('../views/public/PublicRepairView.vue'),
+    },
+    {
         path: '/',
         component: () => import('@/components/layout/MainLayout.vue'),
         meta: { requiresAuth: true },
@@ -185,12 +190,6 @@ const routes = [
         name: 'ChangePassword',
         component: () => import('../views/ChangePassword.vue'),
     },
-
-    {
-        path: '/public/log/:id',
-        name: 'PublicRepairLog',
-        component: () => import('../views/public/PublicRepairView.vue'),
-    },
     {
         path: '/error',
         name: 'Error',
@@ -221,11 +220,6 @@ const routes = [
         ]
     },
     {
-        path: '/:pathMatch(.*)*',
-        name: 'NotFound',
-        component: () => import('../views/NotFound.vue'),
-    },
-    {
         path: '/admin/contracts',
         component: () => import('@/components/layout/NavbarOnlyLayout.vue'),
         meta: { requiresAuth: true },
@@ -246,7 +240,12 @@ const routes = [
                 component: () => import('../views/admin/contracts/ContractForm.vue'),
             },
         ]
-    }
+    },
+    {
+        path: '/:pathMatch(.*)*',
+        name: 'NotFound',
+        component: () => import('../views/NotFound.vue'),
+    },
 ];
 
 const router = createRouter({
