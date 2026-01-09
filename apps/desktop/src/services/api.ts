@@ -2,10 +2,24 @@ import axios from 'axios';
 import router from '../router';
 import { storage } from '../services/storage';
 
+const getBaseUrl = () => {
+    let url = import.meta.env.VITE_API_URL || 'http://localhost:2530';
+    // Remove trailing slash if present
+    if (url.endsWith('/')) {
+        url = url.slice(0, -1);
+    }
+    // Append /api if not already present
+    if (!url.endsWith('/api')) {
+        url += '/api';
+    }
+    return url;
+};
+
+const baseURL = getBaseUrl();
+console.log('[API] Initialized with Base URL:', baseURL);
+
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL
-        ? `${import.meta.env.VITE_API_URL}/api`
-        : 'http://localhost:2530/api',
+    baseURL,
     headers: {
         'Content-Type': 'application/json',
     },

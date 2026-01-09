@@ -1,3 +1,4 @@
+<script setup lang="ts">
 import SignupForm from '@/components/SignupForm.vue';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import api from '@/services/api';
@@ -36,7 +37,19 @@ async function handleSignup({ email, username, password, firstName, lastName }: 
     }, 2000);
   } catch (err: any) {
     console.error('Signup failed:', err);
-    signupError.value = err.response?.data?.message || 'Signup failed';
+    console.log('Error Config:', {
+      baseURL: err.config?.baseURL,
+      url: err.config?.url,
+      method: err.config?.method,
+    });
+
+    // Construct a more helpful error message
+    const failedUrl = err.config?.url
+      ? ` (${err.config.method?.toUpperCase()} ${err.config.url})`
+      : '';
+    const errorMsg = err.response?.data?.message || err.message || 'Signup failed';
+
+    signupError.value = `${errorMsg}${failedUrl}`;
     toast.error(signupError.value);
   } finally {
     if (signupFormRef.value) {
