@@ -22,7 +22,8 @@ jobs:
           # Build API
           echo "Building API..."
           npm run generate --workspace=packages/database
-          npm run migrate:deploy --workspace=packages/database
+          # Use db push to sync schema directly because migration history is messy on server
+          npx prisma db push --schema=packages/database/prisma/schema.prisma --accept-data-loss
           npm run build:api
           pm2 restart nestjs-api
 

@@ -49,7 +49,7 @@ apps/desktop/renderer/out/
 apps/desktop/dist/
 
 # Prisma
-packages/database/prisma/migrations/*
+# packages/database/prisma/migrations/*
 !packages/database/prisma/migrations/.gitkeep
 
 # Docker
