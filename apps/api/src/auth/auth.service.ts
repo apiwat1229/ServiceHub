@@ -1,5 +1,5 @@
 import { AuthResponse, LoginDto, RegisterDto } from '@my-app/types';
-import { ForbiddenException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -143,13 +143,13 @@ export class AuthService {
         // Check if email already exists
         const existingEmail = await this.usersService.findByEmailOrUsername(signupDto.email);
         if (existingEmail) {
-            throw new ForbiddenException('Email already registered');
+            throw new ConflictException('Email already registered');
         }
 
         // Check if username already exists
         const existingUsername = await this.usersService.findByEmailOrUsername(signupDto.username);
         if (existingUsername) {
-            throw new ForbiddenException('Username already taken');
+            throw new ConflictException('Username already taken');
         }
 
         // Hash password
