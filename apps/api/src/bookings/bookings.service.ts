@@ -339,12 +339,7 @@ export class BookingsService {
             };
         }
 
-        const safeParseFloat = (val: any) => {
-            if (val === undefined) return undefined;
-            if (val === null || val === '') return null;
-            const parsed = parseFloat(val);
-            return isNaN(parsed) ? null : parsed;
-        };
+        const safeFloat = (val: any) => this.safeParseFloat(val);
 
         const updateData: any = {
             supplierId: data.supplierId,
@@ -353,18 +348,18 @@ export class BookingsService {
             truckType: data.truckType,
             truckRegister: data.truckRegister,
             rubberType: data.rubberType,
-            estimatedWeight: safeParseFloat(data.estimatedWeight),
+            estimatedWeight: safeFloat(data.estimatedWeight),
             recorder: data.recorder,
             lotNo: data.lotNo,
             trailerLotNo: data.trailerLotNo,
-            moisture: safeParseFloat(data.moisture),
-            drcEst: safeParseFloat(data.drcEst),
-            drcRequested: safeParseFloat(data.drcRequested),
-            drcActual: safeParseFloat(data.drcActual),
-            trailerMoisture: safeParseFloat(data.trailerMoisture),
-            trailerDrcEst: safeParseFloat(data.trailerDrcEst),
-            trailerDrcRequested: safeParseFloat(data.trailerDrcRequested),
-            trailerDrcActual: safeParseFloat(data.trailerDrcActual),
+            moisture: safeFloat(data.moisture),
+            drcEst: safeFloat(data.drcEst),
+            drcRequested: safeFloat(data.drcRequested),
+            drcActual: safeFloat(data.drcActual),
+            trailerMoisture: safeFloat(data.trailerMoisture),
+            trailerDrcEst: safeFloat(data.trailerDrcEst),
+            trailerDrcRequested: safeFloat(data.trailerDrcRequested),
+            trailerDrcActual: safeFloat(data.trailerDrcActual),
         };
 
         if (data.status === 'APPROVED') {
@@ -598,22 +593,30 @@ export class BookingsService {
                 bookingId,
                 sampleNo,
                 isTrailer: data.isTrailer || false,
-                beforePress: data.beforePress ? parseFloat(data.beforePress) : null,
-                basketWeight: data.basketWeight ? parseFloat(data.basketWeight) : null,
-                cuplumpWeight: data.cuplumpWeight ? parseFloat(data.cuplumpWeight) : null,
-                afterPress: data.afterPress ? parseFloat(data.afterPress) : null,
-                percentCp: data.percentCp ? parseFloat(data.percentCp) : null,
-                beforeBaking1: data.beforeBaking1 ? parseFloat(data.beforeBaking1) : null,
-                beforeBaking2: data.beforeBaking2 ? parseFloat(data.beforeBaking2) : null,
-                beforeBaking3: data.beforeBaking3 ? parseFloat(data.beforeBaking3) : null,
+                beforePress: this.safeParseFloat(data.beforePress),
+                basketWeight: this.safeParseFloat(data.basketWeight),
+                cuplumpWeight: this.safeParseFloat(data.cuplumpWeight),
+                afterPress: this.safeParseFloat(data.afterPress),
+                percentCp: this.safeParseFloat(data.percentCp),
+                beforeBaking1: this.safeParseFloat(data.beforeBaking1),
+                beforeBaking2: this.safeParseFloat(data.beforeBaking2),
+                beforeBaking3: this.safeParseFloat(data.beforeBaking3),
             }
+        }
         });
-    }
+}
 
     async deleteSample(bookingId: string, sampleId: string) {
-        // Verify ownership?
-        return this.prisma.bookingLabSample.delete({
-            where: { id: sampleId }
-        });
-    }
+    // Verify ownership?
+    return this.prisma.bookingLabSample.delete({
+        where: { id: sampleId }
+    });
+}
+}
+    private safeParseFloat(val: any): number | null | undefined {
+    if (val === undefined) return undefined;
+    if (val === null || val === '') return null;
+    const parsed = parseFloat(val);
+    return isNaN(parsed) ? null : parsed;
+}
 }
