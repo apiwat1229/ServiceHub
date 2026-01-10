@@ -339,7 +339,7 @@ export class BookingsService {
             };
         }
 
-        const safeFloat = (val: any) => this.safeParseFloat(val);
+        const safeFloat = (val: any) => safeParseFloat(val);
 
         const updateData: any = {
             supplierId: data.supplierId,
@@ -576,32 +576,37 @@ export class BookingsService {
                 }
             });
         }
+        console.log(`[BookingsService] saveSample input for booking ${bookingId}:`, JSON.stringify(data, null, 2));
 
         try {
+            // Ensure isTrailer is boolean
+            const isTrailer = data.isTrailer === true || data.isTrailer === 'true';
+            console.log(`[BookingsService] Interpreted isTrailer: ${isTrailer} (raw: ${data.isTrailer})`);
+
             // Auto-assign sampleNo if not provided
             let sampleNo = data.sampleNo;
             if (!sampleNo) {
                 const last = await this.prisma.bookingLabSample.findFirst({
-                    where: { bookingId, isTrailer: data.isTrailer || false },
+                    where: { bookingId, isTrailer },
                     orderBy: { sampleNo: 'desc' }
                 });
                 sampleNo = (last?.sampleNo || 0) + 1;
             }
-            console.log(`[BookingsService] Assigned sampleNo: ${sampleNo}, isTrailer: ${data.isTrailer}`);
+            console.log(`[BookingsService] Assigned sampleNo: ${sampleNo}`);
 
             const result = await this.prisma.bookingLabSample.create({
                 data: {
                     bookingId,
                     sampleNo,
-                    isTrailer: data.isTrailer || false,
-                    beforePress: this.safeParseFloat(data.beforePress),
-                    basketWeight: this.safeParseFloat(data.basketWeight),
-                    cuplumpWeight: this.safeParseFloat(data.cuplumpWeight),
-                    afterPress: this.safeParseFloat(data.afterPress),
-                    percentCp: this.safeParseFloat(data.percentCp),
-                    beforeBaking1: this.safeParseFloat(data.beforeBaking1),
-                    beforeBaking2: this.safeParseFloat(data.beforeBaking2),
-                    beforeBaking3: this.safeParseFloat(data.beforeBaking3),
+                    isTrailer,
+                    beforePress: safeParseFloat(data.beforePress),
+                    basketWeight: safeParseFloat(data.basketWeight),
+                    cuplumpWeight: safeParseFloat(data.cuplumpWeight),
+                    afterPress: safeParseFloat(data.afterPress),
+                    percentCp: safeParseFloat(data.percentCp),
+                    beforeBaking1: safeParseFloat(data.beforeBaking1),
+                    beforeBaking2: safeParseFloat(data.beforeBaking2),
+                    beforeBaking3: safeParseFloat(data.beforeBaking3),
                 }
             });
             console.log(`[BookingsService] Sample saved successfully: ${result.id}`);
@@ -618,11 +623,11 @@ export class BookingsService {
             where: { id: sampleId }
         });
     }
-
-    private safeParseFloat(val: any): number | null | undefined {
-        if (val === undefined) return undefined;
-        if (val === null || val === '') return null;
-        const parsed = parseFloat(val);
-        return isNaN(parsed) ? null : parsed;
-    }
 }
+
+const safeParseFloat = (val: any): number | null | undefined => {
+    if (val === undefined) return undefined;
+    if (val === null || val === '') return null;
+    const parsed = parseFloat(val);
+    return isNaN(parsed) ? null : parsed;
+};
