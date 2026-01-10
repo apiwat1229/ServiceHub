@@ -35,7 +35,13 @@ export class BookingsController {
 
     @Post(':id/samples')
     @Permissions('bookings:create')
-    saveSample(@Param('id') id: string, @Body() body: any) {
+    saveSample(@Param('id') id: string, @Body() body: any, @Request() req: any) {
+        console.log(`\n--- [BookingsController] Request to saveSample ---`);
+        console.log(`Booking ID: ${id}`);
+        console.log(`User: ${req.user?.username || req.user?.id || 'Unknown'}`);
+        console.log(`Content-Type: ${req.headers['content-type']}`);
+        console.log(`Payload Body:`, JSON.stringify(body, null, 2));
+        console.log(`------------------------------------------------\n`);
         return this.bookingsService.saveSample(id, body);
     }
 

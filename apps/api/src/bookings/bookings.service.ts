@@ -579,7 +579,6 @@ export class BookingsService {
         console.log(`[BookingsService] saveSample input for booking ${bookingId}:`, JSON.stringify(data, null, 2));
 
         try {
-            // Ensure isTrailer is boolean
             const isTrailer = data.isTrailer === true || data.isTrailer === 'true';
             console.log(`[BookingsService] Interpreted isTrailer: ${isTrailer} (raw: ${data.isTrailer})`);
 
@@ -594,20 +593,23 @@ export class BookingsService {
             }
             console.log(`[BookingsService] Assigned sampleNo: ${sampleNo}`);
 
+            const payloadData = {
+                bookingId,
+                sampleNo,
+                isTrailer,
+                beforePress: safeParseFloat(data.beforePress),
+                basketWeight: safeParseFloat(data.basketWeight),
+                cuplumpWeight: safeParseFloat(data.cuplumpWeight),
+                afterPress: safeParseFloat(data.afterPress),
+                percentCp: safeParseFloat(data.percentCp),
+                beforeBaking1: safeParseFloat(data.beforeBaking1),
+                beforeBaking2: safeParseFloat(data.beforeBaking2),
+                beforeBaking3: safeParseFloat(data.beforeBaking3),
+            };
+            console.log(`[BookingsService] Prepared Prisma Payload:`, JSON.stringify(payloadData, null, 2));
+
             const result = await this.prisma.bookingLabSample.create({
-                data: {
-                    bookingId,
-                    sampleNo,
-                    isTrailer,
-                    beforePress: safeParseFloat(data.beforePress),
-                    basketWeight: safeParseFloat(data.basketWeight),
-                    cuplumpWeight: safeParseFloat(data.cuplumpWeight),
-                    afterPress: safeParseFloat(data.afterPress),
-                    percentCp: safeParseFloat(data.percentCp),
-                    beforeBaking1: safeParseFloat(data.beforeBaking1),
-                    beforeBaking2: safeParseFloat(data.beforeBaking2),
-                    beforeBaking3: safeParseFloat(data.beforeBaking3),
-                }
+                data: payloadData
             });
             console.log(`[BookingsService] Sample saved successfully: ${result.id}`);
             return result;
