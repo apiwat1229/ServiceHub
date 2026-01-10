@@ -197,7 +197,7 @@ const columns: ColumnDef<any>[] = [
     header: () => t('cuplump.lotNo'),
     cell: ({ row }) =>
       h('div', { class: 'flex flex-col' }, [
-        h('span', { class: 'font-bold text-blue-600' }, row.original.lotNo),
+        h('span', { class: 'font-bold text-foreground' }, row.original.lotNo),
         h(
           'span',
           { class: 'text-xs text-muted-foreground' },

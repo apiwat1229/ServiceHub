@@ -52,16 +52,16 @@ const moistureForm = ref('');
 
 watch(isMoistureOpen, (newVal) => {
   if (newVal && booking.value) {
-    moistureForm.value = booking.value.moisture;
+    moistureForm.value = booking.value.moisture || '';
   }
 });
 
 watch(isDrcOpen, (newVal) => {
   if (newVal && booking.value) {
     drcForm.value = {
-      drcEst: booking.value.drcEst,
-      drcRequested: booking.value.drcRequested,
-      drcActual: booking.value.drcActual,
+      drcEst: booking.value.drcEst || '',
+      drcRequested: booking.value.drcRequested || '',
+      drcActual: booking.value.drcActual || '',
     };
   }
 });
@@ -86,6 +86,59 @@ const removeNewSampleRow = (index: number) => {
   newSamples.value.splice(index, 1);
 };
 
+// Focus next input on Enter
+const focusNextInput = (event: KeyboardEvent) => {
+  const target = event.target as HTMLElement;
+  const inputs = Array.from(
+    document.querySelectorAll(
+      'input:not([readonly]):not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([readonly]):not([disabled])'
+    )
+  ) as HTMLElement[];
+  const currentIndex = inputs.indexOf(target);
+
+  if (currentIndex >= 0) {
+    let nextIndex = currentIndex + 1;
+
+    // Logic to skip specific fields if requested (e.g., data-skip-enter="true")
+    while (
+      nextIndex < inputs.length &&
+      inputs[nextIndex].getAttribute('data-skip-enter') === 'true'
+    ) {
+      nextIndex++;
+    }
+
+    if (nextIndex < inputs.length) {
+      event.preventDefault();
+      inputs[nextIndex].focus();
+    } else {
+      // If we are at the last field of the samples table, add a new row
+      const table = target.closest('table');
+      if (table) {
+        event.preventDefault();
+        addNewSampleRow();
+        // Wait for nextTick/DOM update to focus the first input of the new row
+        setTimeout(() => {
+          const freshInputs = Array.from(
+            document.querySelectorAll(
+              'input:not([readonly]):not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([readonly]):not([disabled])'
+            )
+          ) as HTMLElement[];
+          let finalIndex = currentIndex + 1;
+          while (
+            finalIndex < freshInputs.length &&
+            freshInputs[finalIndex].getAttribute('data-skip-enter') === 'true'
+          ) {
+            finalIndex++;
+          }
+          if (freshInputs[finalIndex]) {
+            freshInputs[finalIndex].focus();
+          }
+        }, 50);
+      }
+    }
+  }
+};
+
 // Computed Fields for Form
 const displayRubberType = computed(() => {
   if (!booking.value) return '-';
@@ -100,6 +153,21 @@ const displayWeightIn = computed(() => {
   return (w || 0).toLocaleString();
 });
 
+// Lot Number Display Logic
+const displayLotNo = computed(() => {
+  if (!booking.value) return '-';
+  const lot = props.isTrailer
+    ? booking.value.trailerLotNo || booking.value.lotNo
+    : booking.value.lotNo;
+  if (lot) return lot;
+
+  // Fallback for trailer as seen in Uss.vue
+  if (props.isTrailer) {
+    return '1251226-' + (booking.value.queueNo || '0') + '/2';
+  }
+  return '-';
+});
+
 // Net Weight
 const displayNetWeight = computed(() => {
   if (!booking.value) return 0;
@@ -108,6 +176,62 @@ const displayNetWeight = computed(() => {
   const net = (inW || 0) - (outW || 0);
   return (net > 0 ? net : 0).toLocaleString();
 });
+
+// Number validation and cleaning
+const handleNumericInput = (sample: any, field: string, value: string) => {
+  // Allow only numbers and one decimal point
+  let cleaned = value.replace(/[^0-9.]/g, '');
+
+  // Ensure only one decimal point
+  const parts = cleaned.split('.');
+  if (parts.length > 2) {
+    cleaned = parts[0] + '.' + parts.slice(1).join('');
+  }
+
+  // Handle decimal precision
+  if (parts.length === 2) {
+    const isBakingField = field.startsWith('beforeBaking');
+    const maxDecimals = isBakingField ? 3 : 2;
+    if (parts[1].length > maxDecimals) {
+      cleaned = parts[0] + '.' + parts[1].substring(0, maxDecimals);
+      toast.error(
+        t('common.decimalLimit', { n: maxDecimals }) || `Maximum ${maxDecimals} decimal places`
+      );
+    }
+  }
+
+  if (cleaned !== value) {
+    sample[field] = cleaned;
+  } else {
+    sample[field] = value;
+  }
+
+  if (['beforePress', 'basket', 'afterPress'].includes(field)) {
+    calculatePercentCp(sample);
+  }
+};
+
+const calculatePercentCp = (sample: any) => {
+  const beforePress = parseFloat(sample.beforePress || '0');
+  const basket = parseFloat(sample.basket || '0');
+  const afterPress = parseFloat(sample.afterPress || '0');
+  const moisture = props.isTrailer
+    ? booking.value?.trailerMoisture
+      ? parseFloat(booking.value.trailerMoisture)
+      : 0
+    : booking.value?.moisture
+      ? parseFloat(booking.value.moisture)
+      : 0;
+
+  if (beforePress && basket && afterPress) {
+    const uss = beforePress - basket;
+    if (uss > 0) {
+      // Formula: %CP = (After Press / USS) * (100 - Moisture)
+      const percentCp = (afterPress / uss) * (100 - moisture);
+      sample.percentCp = percentCp.toFixed(2);
+    }
+  }
+};
 
 // Fetch Data
 const fetchData = async () => {
@@ -121,8 +245,17 @@ const fetchData = async () => {
       rubberTypesApi.getAll(),
     ]);
 
-    booking.value = bookingData;
-    originalLotNo.value = bookingData.lotNo || ''; // Initialize original value
+    booking.value = {
+      ...bookingData,
+      lotNo: props.isTrailer ? bookingData.trailerLotNo || '' : bookingData.lotNo || '',
+      moisture: props.isTrailer ? bookingData.trailerMoisture || 0 : bookingData.moisture || 0,
+      drcEst: props.isTrailer ? bookingData.trailerDrcEst || 0 : bookingData.drcEst || 0,
+      drcRequested: props.isTrailer
+        ? bookingData.trailerDrcRequested || 0
+        : bookingData.drcRequested || 0,
+      drcActual: props.isTrailer ? bookingData.trailerDrcActual || 0 : bookingData.drcActual || 0,
+    };
+    originalLotNo.value = booking.value.lotNo;
     samples.value = samplesData.filter((s: any) => s.isTrailer === props.isTrailer);
     rubberTypes.value = typesData;
   } catch (error) {
@@ -162,7 +295,26 @@ const handleSaveAllSamples = async () => {
     });
 
     await Promise.all(promises);
-    toast.success(t('uss.sampleSaved')); // Changed locale key
+
+    // ALSO save the main booking info in case anything was changed in the popovers
+    const updateData: any = {};
+    if (props.isTrailer) {
+      updateData.trailerLotNo = booking.value.lotNo;
+      updateData.trailerMoisture = booking.value.moisture;
+      updateData.trailerDrcEst = booking.value.drcEst;
+      updateData.trailerDrcRequested = booking.value.drcRequested;
+      updateData.trailerDrcActual = booking.value.drcActual;
+    } else {
+      updateData.lotNo = booking.value.lotNo;
+      updateData.moisture = booking.value.moisture;
+      updateData.drcEst = booking.value.drcEst;
+      updateData.drcRequested = booking.value.drcRequested;
+      updateData.drcActual = booking.value.drcActual;
+    }
+
+    await bookingsApi.update(props.bookingId, updateData);
+
+    toast.success(t('uss.sampleSaved'));
     emit('update');
 
     // Reset and Reload
@@ -205,13 +357,22 @@ const validateLotInput = (event: Event) => {
 
 const saveBookingInfo = async () => {
   try {
-    await bookingsApi.update(props.bookingId, {
-      lotNo: booking.value.lotNo,
-      moisture: booking.value.moisture,
-      drcEst: booking.value.drcEst,
-      drcRequested: booking.value.drcRequested,
-      drcActual: booking.value.drcActual,
-    });
+    const updateData: any = {};
+    if (props.isTrailer) {
+      updateData.trailerLotNo = booking.value.lotNo;
+      updateData.trailerMoisture = booking.value.moisture;
+      updateData.trailerDrcEst = booking.value.drcEst;
+      updateData.trailerDrcRequested = booking.value.drcRequested;
+      updateData.trailerDrcActual = booking.value.drcActual;
+    } else {
+      updateData.lotNo = booking.value.lotNo;
+      updateData.moisture = booking.value.moisture;
+      updateData.drcEst = booking.value.drcEst;
+      updateData.drcRequested = booking.value.drcRequested;
+      updateData.drcActual = booking.value.drcActual;
+    }
+
+    await bookingsApi.update(props.bookingId, updateData);
     originalLotNo.value = booking.value.lotNo;
     toast.success(t('common.saved'));
     emit('update');
@@ -245,14 +406,39 @@ const handleSaveDrc = async () => {
   if (!booking.value) return;
 
   try {
-    await bookingsApi.update(props.bookingId, {
-      lotNo: booking.value.lotNo,
-      moisture: booking.value.moisture,
+    const drcData = {
       drcEst: parseFloat(drcForm.value.drcEst) || 0,
       drcRequested: parseFloat(drcForm.value.drcRequested) || 0,
       drcActual: parseFloat(drcForm.value.drcActual) || 0,
-    });
-    Object.assign(booking.value, drcForm.value);
+    };
+
+    const updateData: any = {
+      lotNo: booking.value.lotNo,
+    };
+
+    if (props.isTrailer) {
+      updateData.trailerDrcEst = drcData.drcEst;
+      updateData.trailerDrcRequested = drcData.drcRequested;
+      updateData.trailerDrcActual = drcData.drcActual;
+    } else {
+      updateData.drcEst = drcData.drcEst;
+      updateData.drcRequested = drcData.drcRequested;
+      updateData.drcActual = drcData.drcActual;
+    }
+
+    await bookingsApi.update(props.bookingId, updateData);
+
+    // Update local model
+    if (props.isTrailer) {
+      booking.value.trailerDrcEst = drcData.drcEst;
+      booking.value.trailerDrcRequested = drcData.drcRequested;
+      booking.value.trailerDrcActual = drcData.drcActual;
+    } else {
+      booking.value.drcEst = drcData.drcEst;
+      booking.value.drcRequested = drcData.drcRequested;
+      booking.value.drcActual = drcData.drcActual;
+    }
+
     toast.success(t('common.saved'));
     emit('update');
   } catch (error) {
@@ -266,14 +452,25 @@ const handleSaveMoisture = async () => {
   if (!booking.value) return;
 
   try {
-    await bookingsApi.update(props.bookingId, {
+    const moistureVal = parseFloat(moistureForm.value) || 0;
+    const updateData: any = {
       lotNo: booking.value.lotNo,
-      moisture: parseFloat(moistureForm.value) || 0,
-      drcEst: booking.value.drcEst,
-      drcRequested: booking.value.drcRequested,
-      drcActual: booking.value.drcActual,
-    });
-    booking.value.moisture = parseFloat(moistureForm.value) || 0;
+    };
+
+    if (props.isTrailer) {
+      updateData.trailerMoisture = moistureVal;
+    } else {
+      updateData.moisture = moistureVal;
+    }
+
+    await bookingsApi.update(props.bookingId, updateData);
+
+    if (props.isTrailer) {
+      booking.value.trailerMoisture = moistureVal;
+    } else {
+      booking.value.moisture = moistureVal;
+    }
+
     toast.success(t('common.saved'));
     emit('update');
   } catch (error) {
@@ -297,8 +494,19 @@ watch(
   }
 );
 
-onMounted(() => {
-  fetchData();
+onMounted(async () => {
+  await fetchData();
+  // Auto-initialize first row if nothing exists
+  if (samples.value.length === 0 && newSamples.value.length === 0) {
+    addNewSampleRow();
+    // Focus the first input of the newly added row
+    setTimeout(() => {
+      const firstInput = document.querySelector(
+        'input:not([readonly]):not([disabled])'
+      ) as HTMLElement;
+      if (firstInput) firstInput.focus();
+    }, 100);
+  }
 });
 </script>
 
@@ -337,14 +545,16 @@ onMounted(() => {
                 <div
                   class="cursor-pointer flex items-center justify-center font-bold tracking-tight hover:text-primary transition-colors min-w-full h-8"
                   :class="[
-                    booking.lotNo
-                      ? 'text-xl'
+                    displayLotNo !== '-'
+                      ? displayLotNo.length > 10
+                        ? 'text-lg'
+                        : 'text-xl'
                       : 'text-xs text-muted-foreground bg-slate-100 dark:bg-slate-800 rounded-md px-3',
                     { 'text-destructive': lotNoError },
                   ]"
                 >
-                  <template v-if="booking.lotNo">
-                    {{ booking.lotNo }}
+                  <template v-if="displayLotNo !== '-'">
+                    {{ displayLotNo }}
                   </template>
                   <template v-else>
                     <div class="flex items-center gap-1.5 opacity-70 group-hover:opacity-100">
@@ -515,9 +725,8 @@ onMounted(() => {
                 >
                   {{ t('uss.moisture') }}
                 </div>
-                <div class="text-xl font-black text-amber-900 dark:text-amber-100 leading-none">
-                  {{ booking.moisture || '-' }}
-                  <span class="text-[10px] font-medium opacity-60 ml-0.5">%</span>
+                <div class="text-2xl font-black text-orange-700 leading-none">
+                  {{ (booking.moisture || 0).toFixed(1) }}%
                 </div>
               </div>
             </PopoverTrigger>
@@ -586,9 +795,9 @@ onMounted(() => {
                     >
                       Actual
                     </div>
-                    <div class="text-lg font-black text-teal-900 dark:text-teal-100 leading-none">
-                      {{ booking.drcActual || '-' }}%
-                    </div>
+                    <span class="text-2xl font-black text-teal-700">
+                      {{ (booking.drcActual || 0).toFixed(1) }}%
+                    </span>
                   </div>
                 </div>
               </div>
@@ -728,14 +937,21 @@ onMounted(() => {
                   <TableCell class="py-1.5"
                     ><Input
                       v-model="sample.beforePress"
-                      type="number"
-                      class="h-7 w-20 mx-auto p-1 text-center font-bold text-xs bg-white/80 dark:bg-slate-800/80 shadow-sm"
+                      type="text"
+                      placeholder="เช่น 12.23"
+                      class="h-7 w-32 mx-auto p-1 text-center font-bold text-xs bg-white/80 dark:bg-slate-800/80 shadow-sm"
+                      @keydown.enter="focusNextInput"
+                      @input="handleNumericInput(sample, 'beforePress', sample.beforePress)"
                   /></TableCell>
                   <TableCell class="py-1.5"
                     ><Input
                       v-model="sample.basket"
-                      type="number"
-                      class="h-7 w-20 mx-auto p-1 text-center font-semibold text-xs bg-white/80 dark:bg-slate-800/80 shadow-sm"
+                      type="text"
+                      placeholder="1.4"
+                      class="h-7 w-24 mx-auto p-1 text-center font-semibold text-xs bg-white/80 dark:bg-slate-800/80 shadow-sm"
+                      data-skip-enter="true"
+                      @keydown.enter="focusNextInput"
+                      @input="handleNumericInput(sample, 'basket', sample.basket)"
                   /></TableCell>
                   <TableCell
                     class="text-center bg-blue-50/30 dark:bg-blue-900/5 p-1.5 font-black text-primary text-xs tracking-tight"
@@ -750,33 +966,46 @@ onMounted(() => {
                   <TableCell class="py-1.5"
                     ><Input
                       v-model="sample.afterPress"
-                      type="number"
-                      class="h-7 w-20 mx-auto p-1 text-center font-semibold text-xs bg-white/80 dark:bg-slate-800/80 shadow-sm"
+                      type="text"
+                      placeholder="เช่น 10.72"
+                      class="h-7 w-32 mx-auto p-1 text-center font-semibold text-xs bg-white/80 dark:bg-slate-800/80 shadow-sm"
+                      @keydown.enter="focusNextInput"
+                      @input="handleNumericInput(sample, 'afterPress', sample.afterPress)"
                   /></TableCell>
                   <TableCell class="py-1.5"
                     ><Input
                       v-model="sample.percentCp"
                       type="number"
-                      class="h-7 w-20 mx-auto p-1 text-center font-semibold text-xs bg-indigo-50/50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300"
+                      class="h-7 w-28 mx-auto p-1 text-center font-semibold text-xs bg-indigo-50/50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300"
                       placeholder="Auto"
+                      readonly
                   /></TableCell>
                   <TableCell class="py-1.5"
                     ><Input
                       v-model="sample.beforeBaking1"
-                      type="number"
-                      class="h-7 w-16 mx-auto p-1 text-center text-xs"
+                      type="text"
+                      placeholder="0.210"
+                      class="h-7 w-28 mx-auto p-1 text-center text-xs"
+                      @keydown.enter="focusNextInput"
+                      @input="handleNumericInput(sample, 'beforeBaking1', sample.beforeBaking1)"
                   /></TableCell>
                   <TableCell class="py-1.5"
                     ><Input
                       v-model="sample.beforeBaking2"
-                      type="number"
-                      class="h-7 w-16 mx-auto p-1 text-center text-xs"
+                      type="text"
+                      placeholder="0.220"
+                      class="h-7 w-28 mx-auto p-1 text-center text-xs"
+                      @keydown.enter="focusNextInput"
+                      @input="handleNumericInput(sample, 'beforeBaking2', sample.beforeBaking2)"
                   /></TableCell>
                   <TableCell class="py-1.5"
                     ><Input
                       v-model="sample.beforeBaking3"
-                      type="number"
-                      class="h-7 w-16 mx-auto p-1 text-center text-xs"
+                      type="text"
+                      placeholder="0.230"
+                      class="h-7 w-28 mx-auto p-1 text-center text-xs"
+                      @keydown.enter="focusNextInput"
+                      @input="handleNumericInput(sample, 'beforeBaking3', sample.beforeBaking3)"
                   /></TableCell>
                   <TableCell class="py-1.5 text-center">
                     <Button
@@ -799,29 +1028,29 @@ onMounted(() => {
                   <TableCell class="text-center font-medium text-muted-foreground text-xs">{{
                     index + 1
                   }}</TableCell>
-                  <TableCell class="text-center font-bold text-xs">{{
+                  <TableCell class="text-center font-bold text-xs w-32">{{
                     sample.beforePress || '-'
                   }}</TableCell>
-                  <TableCell class="text-center text-xs text-muted-foreground font-medium">{{
+                  <TableCell class="text-center text-xs text-muted-foreground font-medium w-24">{{
                     sample.basketWeight || '-'
                   }}</TableCell>
                   <TableCell class="text-center font-bold text-primary text-xs">{{
                     sample.cuplumpWeight || '-'
                   }}</TableCell>
-                  <TableCell class="text-center text-xs text-muted-foreground">{{
+                  <TableCell class="text-center text-xs text-muted-foreground w-32">{{
                     sample.afterPress || '-'
                   }}</TableCell>
                   <TableCell
-                    class="text-center font-bold text-indigo-600 dark:text-indigo-400 text-xs"
+                    class="text-center font-bold text-indigo-600 dark:text-indigo-400 text-xs w-28"
                     >{{ sample.percentCp || '-' }}%</TableCell
                   >
-                  <TableCell class="text-center text-xs text-muted-foreground">{{
+                  <TableCell class="text-center text-xs text-muted-foreground w-28">{{
                     sample.beforeBaking1 || '-'
                   }}</TableCell>
-                  <TableCell class="text-center text-xs text-muted-foreground">{{
+                  <TableCell class="text-center text-xs text-muted-foreground w-28">{{
                     sample.beforeBaking2 || '-'
                   }}</TableCell>
-                  <TableCell class="text-center text-xs text-muted-foreground">{{
+                  <TableCell class="text-center text-xs text-muted-foreground w-28">{{
                     sample.beforeBaking3 || '-'
                   }}</TableCell>
                   <TableCell class="py-1.5 text-center">

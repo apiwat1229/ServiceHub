@@ -274,13 +274,13 @@ onMounted(() => {
                             <p
                               class="text-[9px] font-bold text-slate-400 uppercase tracking-widest"
                             >
-                              {{ part.code || 'N/A' }}
+                              {{ (part as any).code || 'N/A' }}
                             </p>
                           </div>
                         </div>
                         <div class="text-right">
                           <p class="text-[11px] font-black text-slate-900 leading-none mb-1">
-                            {{ part.qty }} {{ part.unit || 'Units' }}
+                            {{ part.qty }} {{ (part as any).unit || 'Units' }}
                           </p>
                           <p class="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
                             @ {{ formatCurrency(part.price) }}

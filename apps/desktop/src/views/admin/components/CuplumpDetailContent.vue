@@ -55,27 +55,17 @@ const moistureForm = ref('');
 
 watch(isMoistureOpen, (newVal) => {
   if (newVal && booking.value) {
-    moistureForm.value = props.isTrailer
-      ? booking.value.trailerMoisture || ''
-      : booking.value.moisture || '';
+    moistureForm.value = booking.value.moisture || '';
   }
 });
 
 watch(isDrcOpen, (newVal) => {
   if (newVal && booking.value) {
-    if (props.isTrailer) {
-      drcForm.value = {
-        drcEst: booking.value.trailerDrcEst || '',
-        drcRequested: booking.value.trailerDrcRequested || '',
-        drcActual: booking.value.trailerDrcActual || '',
-      };
-    } else {
-      drcForm.value = {
-        drcEst: booking.value.drcEst || '',
-        drcRequested: booking.value.drcRequested || '',
-        drcActual: booking.value.drcActual || '',
-      };
-    }
+    drcForm.value = {
+      drcEst: booking.value.drcEst || '',
+      drcRequested: booking.value.drcRequested || '',
+      drcActual: booking.value.drcActual || '',
+    };
   }
 });
 
@@ -97,29 +87,94 @@ const addNewSampleRow = () => {
 };
 
 // Focus next input on Enter
+// Focus next input on Enter
 const focusNextInput = (event: KeyboardEvent) => {
   const target = event.target as HTMLElement;
-  // Get all focusable inputs that are not readonly or disabled
   const inputs = Array.from(
     document.querySelectorAll(
       'input:not([readonly]):not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([readonly]):not([disabled])'
     )
   ) as HTMLElement[];
   const currentIndex = inputs.indexOf(target);
-  if (currentIndex >= 0 && currentIndex < inputs.length - 1) {
-    event.preventDefault();
-    inputs[currentIndex + 1].focus();
+
+  if (currentIndex >= 0) {
+    let nextIndex = currentIndex + 1;
+
+    // Logic to skip specific fields if requested (e.g., data-skip-enter="true")
+    // We search for the next input that doesn't have data-skip-enter,
+    // UNLESS the current target ITSELF is a skip field (to allow moving out of it).
+    while (
+      nextIndex < inputs.length &&
+      inputs[nextIndex].getAttribute('data-skip-enter') === 'true'
+    ) {
+      nextIndex++;
+    }
+
+    if (nextIndex < inputs.length) {
+      event.preventDefault();
+      inputs[nextIndex].focus();
+    } else {
+      // If we are at the last field of the samples table, add a new row
+      const table = target.closest('table');
+      if (table) {
+        event.preventDefault();
+        addNewSampleRow();
+        // Wait for nextTick/DOM update to focus the first input of the new row
+        setTimeout(() => {
+          const freshInputs = Array.from(
+            document.querySelectorAll(
+              'input:not([readonly]):not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([readonly]):not([disabled])'
+            )
+          ) as HTMLElement[];
+          // If we added a row, the "next" logical input is at currentIndex + 1
+          // but we might need to skip the basket in the new row too
+          let finalIndex = currentIndex + 1;
+          while (
+            finalIndex < freshInputs.length &&
+            freshInputs[finalIndex].getAttribute('data-skip-enter') === 'true'
+          ) {
+            finalIndex++;
+          }
+          if (freshInputs[finalIndex]) {
+            freshInputs[finalIndex].focus();
+          }
+        }, 50);
+      }
+    }
   }
 };
 
 // Calculate %CP automatically
 // Number validation and cleaning
 const handleNumericInput = (sample: any, field: string, value: string) => {
-  const cleaned = value.replace(/[^0-9.]/g, '');
-  if (cleaned !== value) {
-    toast.error(t('cuplump.numericOnly') || 'Please enter numbers only');
+  // Allow only numbers and one decimal point
+  let cleaned = value.replace(/[^0-9.]/g, '');
+
+  // Ensure only one decimal point
+  const parts = cleaned.split('.');
+  if (parts.length > 2) {
+    cleaned = parts[0] + '.' + parts.slice(1).join('');
   }
-  sample[field] = cleaned;
+
+  // Handle decimal precision
+  if (parts.length === 2) {
+    const isBakingField = field.startsWith('beforeBaking');
+    const maxDecimals = isBakingField ? 3 : 2;
+    if (parts[1].length > maxDecimals) {
+      cleaned = parts[0] + '.' + parts[1].substring(0, maxDecimals);
+      toast.error(
+        t('common.decimalLimit', { n: maxDecimals }) || `Maximum ${maxDecimals} decimal places`
+      );
+    }
+  }
+
+  if (cleaned !== value) {
+    // Only update if it actually changed to avoid cursor jumping
+    sample[field] = cleaned;
+  } else {
+    sample[field] = value;
+  }
+
   if (['beforePress', 'basket', 'afterPress'].includes(field)) {
     calculatePercentCp(sample);
   }
@@ -172,9 +227,29 @@ const displayGrossWeight = computed(() => {
   return cargoWeight.toLocaleString();
 });
 
-// Net Weight (Set to empty for future formula)
-const displayNetWeight = computed(() => {
+// Lot Number Display Logic
+const displayLotNo = computed(() => {
+  if (!booking.value) return '-';
+  // If we have a lotNo on the object (either from DB or unsaved edit)
+  const lot = props.isTrailer
+    ? booking.value.trailerLotNo || booking.value.lotNo
+    : booking.value.lotNo;
+  if (lot) return lot;
+
+  // Fallback for trailer as seen in Cuplump.vue
+  if (props.isTrailer) {
+    return '1251226-' + (booking.value.queueNo || '0') + '/2';
+  }
   return '-';
+});
+
+// Net Weight calculation
+const displayNetWeight = computed(() => {
+  if (!booking.value) return '0';
+  const inW = props.isTrailer ? booking.value.trailerWeightIn || 0 : booking.value.weightIn || 0;
+  const outW = props.isTrailer ? booking.value.trailerWeightOut || 0 : booking.value.weightOut || 0;
+  const net = Math.max(0, inW - outW);
+  return net.toLocaleString();
 });
 
 // Fetch Data
@@ -189,8 +264,17 @@ const fetchData = async () => {
       rubberTypesApi.getAll(),
     ]);
 
-    booking.value = bookingData;
-    originalLotNo.value = bookingData.lotNo || ''; // Initialize original value
+    booking.value = {
+      ...bookingData,
+      lotNo: props.isTrailer ? bookingData.trailerLotNo || '' : bookingData.lotNo || '',
+      moisture: props.isTrailer ? bookingData.trailerMoisture || 0 : bookingData.moisture || 0,
+      drcEst: props.isTrailer ? bookingData.trailerDrcEst || 0 : bookingData.drcEst || 0,
+      drcRequested: props.isTrailer
+        ? bookingData.trailerDrcRequested || 0
+        : bookingData.drcRequested || 0,
+      drcActual: props.isTrailer ? bookingData.trailerDrcActual || 0 : bookingData.drcActual || 0,
+    };
+    originalLotNo.value = booking.value.lotNo;
     samples.value = samplesData.filter((s: any) => s.isTrailer === props.isTrailer);
     rubberTypes.value = typesData;
   } catch (error) {
@@ -230,6 +314,25 @@ const handleSaveAllSamples = async () => {
     });
 
     await Promise.all(promises);
+
+    // ALSO save the main booking info in case anything was changed in the popovers
+    const updateData: any = {};
+    if (props.isTrailer) {
+      updateData.trailerLotNo = booking.value.lotNo;
+      updateData.trailerMoisture = booking.value.moisture;
+      updateData.trailerDrcEst = booking.value.drcEst;
+      updateData.trailerDrcRequested = booking.value.drcRequested;
+      updateData.trailerDrcActual = booking.value.drcActual;
+    } else {
+      updateData.lotNo = booking.value.lotNo;
+      updateData.moisture = booking.value.moisture;
+      updateData.drcEst = booking.value.drcEst;
+      updateData.drcRequested = booking.value.drcRequested;
+      updateData.drcActual = booking.value.drcActual;
+    }
+
+    await bookingsApi.update(props.bookingId, updateData);
+
     toast.success(t('cuplump.sampleSaved'));
     emit('update'); // Notify parent to refresh
 
@@ -282,13 +385,22 @@ const validateLotInput = (event: Event) => {
 
 const saveBookingInfo = async () => {
   try {
-    await bookingsApi.update(props.bookingId, {
-      lotNo: booking.value.lotNo,
-      moisture: booking.value.moisture,
-      drcEst: booking.value.drcEst,
-      drcRequested: booking.value.drcRequested,
-      drcActual: booking.value.drcActual,
-    });
+    const updateData: any = {};
+    if (props.isTrailer) {
+      updateData.trailerLotNo = booking.value.lotNo;
+      updateData.trailerMoisture = booking.value.moisture;
+      updateData.trailerDrcEst = booking.value.drcEst;
+      updateData.trailerDrcRequested = booking.value.drcRequested;
+      updateData.trailerDrcActual = booking.value.drcActual;
+    } else {
+      updateData.lotNo = booking.value.lotNo;
+      updateData.moisture = booking.value.moisture;
+      updateData.drcEst = booking.value.drcEst;
+      updateData.drcRequested = booking.value.drcRequested;
+      updateData.drcActual = booking.value.drcActual;
+    }
+
+    await bookingsApi.update(props.bookingId, updateData);
     originalLotNo.value = booking.value.lotNo; // Update original value on success
     toast.success(t('common.saved'));
     emit('update');
@@ -332,15 +444,14 @@ const handleSaveDrc = async () => {
       drcActual: parseFloat(drcForm.value.drcActual) || 0,
     };
 
-    const updateData: any = {
-      lotNo: booking.value.lotNo,
-    };
-
+    const updateData: any = {};
     if (props.isTrailer) {
+      updateData.trailerLotNo = booking.value.lotNo;
       updateData.trailerDrcEst = drcData.drcEst;
       updateData.trailerDrcRequested = drcData.drcRequested;
       updateData.trailerDrcActual = drcData.drcActual;
     } else {
+      updateData.lotNo = booking.value.lotNo;
       updateData.drcEst = drcData.drcEst;
       updateData.drcRequested = drcData.drcRequested;
       updateData.drcActual = drcData.drcActual;
@@ -373,13 +484,12 @@ const handleSaveMoisture = async () => {
 
   try {
     const moistureVal = parseFloat(moistureForm.value) || 0;
-    const updateData: any = {
-      lotNo: booking.value.lotNo,
-    };
-
+    const updateData: any = {};
     if (props.isTrailer) {
+      updateData.trailerLotNo = booking.value.lotNo;
       updateData.trailerMoisture = moistureVal;
     } else {
+      updateData.lotNo = booking.value.lotNo;
       updateData.moisture = moistureVal;
     }
 
@@ -419,8 +529,19 @@ watch(
   }
 );
 
-onMounted(() => {
-  fetchData();
+onMounted(async () => {
+  await fetchData();
+  // Auto-initialize first row if nothing exists
+  if (samples.value.length === 0 && newSamples.value.length === 0) {
+    addNewSampleRow();
+    // Focus the first input of the newly added row
+    setTimeout(() => {
+      const firstInput = document.querySelector(
+        'input:not([readonly]):not([disabled])'
+      ) as HTMLElement;
+      if (firstInput) firstInput.focus();
+    }, 100);
+  }
 });
 </script>
 
@@ -461,14 +582,16 @@ onMounted(() => {
                 <div
                   class="cursor-pointer flex items-center justify-center font-black tracking-tight hover:text-primary transition-colors min-w-full h-8 text-slate-900 dark:text-slate-100"
                   :class="[
-                    booking.lotNo
-                      ? 'text-2xl'
+                    displayLotNo !== '-'
+                      ? displayLotNo.length > 10
+                        ? 'text-lg'
+                        : 'text-2xl'
                       : 'text-xs text-muted-foreground bg-slate-100 dark:bg-slate-800 rounded-md px-3',
                     { 'text-destructive': lotNoError },
                   ]"
                 >
-                  <template v-if="booking.lotNo">
-                    {{ booking.lotNo }}
+                  <template v-if="displayLotNo !== '-'">
+                    {{ displayLotNo }}
                   </template>
                   <template v-else>
                     <div class="flex items-center gap-1.5 opacity-70 group-hover:opacity-100">
@@ -575,12 +698,7 @@ onMounted(() => {
                   {{ t('cuplump.moisture') }}
                 </div>
                 <div class="text-2xl font-black text-orange-700 leading-none">
-                  {{
-                    (props.isTrailer
-                      ? booking.trailerMoisture || 0
-                      : booking.moisture || 0
-                    ).toFixed(1)
-                  }}%
+                  {{ (booking.moisture || 0).toFixed(1) }}%
                 </div>
               </div>
             </PopoverTrigger>
@@ -630,12 +748,7 @@ onMounted(() => {
                       >{{ t('cuplump.drcEstShort') }}</span
                     >
                     <span class="text-2xl font-black text-teal-700">
-                      {{
-                        (props.isTrailer
-                          ? booking.trailerDrcEst || 0
-                          : booking.drcEst || 0
-                        ).toFixed(1)
-                      }}%
+                      {{ (booking.drcEst || 0).toFixed(1) }}%
                     </span>
                   </div>
 
@@ -648,12 +761,7 @@ onMounted(() => {
                       >{{ t('cuplump.drcReqShort') }}</span
                     >
                     <span class="text-2xl font-black text-teal-700">
-                      {{
-                        (props.isTrailer
-                          ? booking.trailerDrcRequested || 0
-                          : booking.drcRequested || 0
-                        ).toFixed(1)
-                      }}%
+                      {{ (booking.drcRequested || 0).toFixed(1) }}%
                     </span>
                   </div>
 
@@ -666,12 +774,7 @@ onMounted(() => {
                       >{{ t('cuplump.drcActualShort') }}</span
                     >
                     <span class="text-2xl font-black text-teal-700">
-                      {{
-                        (props.isTrailer
-                          ? booking.trailerDrcActual || 0
-                          : booking.drcActual || 0
-                        ).toFixed(1)
-                      }}%
+                      {{ (booking.drcActual || 0).toFixed(1) }}%
                     </span>
                   </div>
                 </div>
@@ -814,7 +917,7 @@ onMounted(() => {
                       v-model="sample.beforePress"
                       type="text"
                       placeholder="เช่น 12.23"
-                      class="h-7 w-20 mx-auto p-1 text-center font-bold text-xs bg-white/80 dark:bg-slate-800/80 shadow-sm"
+                      class="h-7 w-32 mx-auto p-1 text-center font-bold text-xs bg-white/80 dark:bg-slate-800/80 shadow-sm"
                       @keydown.enter="focusNextInput"
                       @input="handleNumericInput(sample, 'beforePress', sample.beforePress)"
                   /></TableCell>
@@ -823,7 +926,8 @@ onMounted(() => {
                       v-model="sample.basket"
                       type="text"
                       placeholder="1.4"
-                      class="h-7 w-12 mx-auto p-1 text-center font-semibold text-xs bg-white/80 dark:bg-slate-800/80 shadow-sm"
+                      class="h-7 w-24 mx-auto p-1 text-center font-semibold text-xs bg-white/80 dark:bg-slate-800/80 shadow-sm"
+                      data-skip-enter="true"
                       @keydown.enter="focusNextInput"
                       @input="handleNumericInput(sample, 'basket', sample.basket)"
                   /></TableCell>
@@ -842,7 +946,7 @@ onMounted(() => {
                       v-model="sample.afterPress"
                       type="text"
                       placeholder="เช่น 10.72"
-                      class="h-7 w-20 mx-auto p-1 text-center font-semibold text-xs bg-white/80 dark:bg-slate-800/80 shadow-sm"
+                      class="h-7 w-32 mx-auto p-1 text-center font-semibold text-xs bg-white/80 dark:bg-slate-800/80 shadow-sm"
                       @keydown.enter="focusNextInput"
                       @input="handleNumericInput(sample, 'afterPress', sample.afterPress)"
                   /></TableCell>
@@ -850,7 +954,7 @@ onMounted(() => {
                     ><Input
                       v-model="sample.percentCp"
                       type="number"
-                      class="h-7 w-20 mx-auto p-1 text-center font-semibold text-xs bg-indigo-50/50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300"
+                      class="h-7 w-28 mx-auto p-1 text-center font-semibold text-xs bg-indigo-50/50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300"
                       placeholder="Auto"
                       @keydown.enter="focusNextInput"
                       readonly
@@ -860,7 +964,7 @@ onMounted(() => {
                       v-model="sample.beforeBaking1"
                       type="text"
                       placeholder="0.210"
-                      class="h-7 w-16 mx-auto p-1 text-center text-xs"
+                      class="h-7 w-28 mx-auto p-1 text-center text-xs"
                       @keydown.enter="focusNextInput"
                       @input="handleNumericInput(sample, 'beforeBaking1', sample.beforeBaking1)"
                   /></TableCell>
@@ -869,7 +973,7 @@ onMounted(() => {
                       v-model="sample.beforeBaking2"
                       type="text"
                       placeholder="0.220"
-                      class="h-7 w-16 mx-auto p-1 text-center text-xs"
+                      class="h-7 w-28 mx-auto p-1 text-center text-xs"
                       @keydown.enter="focusNextInput"
                       @input="handleNumericInput(sample, 'beforeBaking2', sample.beforeBaking2)"
                   /></TableCell>
@@ -878,7 +982,7 @@ onMounted(() => {
                       v-model="sample.beforeBaking3"
                       type="text"
                       placeholder="0.230"
-                      class="h-7 w-16 mx-auto p-1 text-center text-xs"
+                      class="h-7 w-28 mx-auto p-1 text-center text-xs"
                       @keydown.enter="focusNextInput"
                       @input="handleNumericInput(sample, 'beforeBaking3', sample.beforeBaking3)"
                   /></TableCell>
@@ -903,30 +1007,30 @@ onMounted(() => {
                   <TableCell class="text-center font-medium text-xs text-muted-foreground py-2">{{
                     item.sampleNo
                   }}</TableCell>
-                  <TableCell class="text-center font-bold text-xs py-2">{{
+                  <TableCell class="text-center font-bold text-xs py-2 w-32">{{
                     item.beforePress?.toFixed(2)
                   }}</TableCell>
-                  <TableCell class="text-center text-xs py-2">{{
+                  <TableCell class="text-center text-xs py-2 w-24">{{
                     item.basketWeight?.toFixed(2)
                   }}</TableCell>
                   <TableCell class="text-center font-black text-primary text-xs py-2">{{
                     item.cuplumpWeight?.toFixed(2)
                   }}</TableCell>
-                  <TableCell class="text-center font-bold text-xs py-2 font-mono">{{
+                  <TableCell class="text-center font-bold text-xs py-2 font-mono w-32">{{
                     item.afterPress?.toFixed(2)
                   }}</TableCell>
                   <TableCell
-                    class="text-center font-black text-indigo-600 text-xs py-2 bg-indigo-50/30"
+                    class="text-center font-black text-indigo-600 text-xs py-2 bg-indigo-50/30 w-28"
                   >
                     {{ item.percentCp?.toFixed(2) }}%
                   </TableCell>
-                  <TableCell class="text-center text-muted-foreground text-[11px] py-2">{{
+                  <TableCell class="text-center text-muted-foreground text-[11px] py-2 w-28">{{
                     item.beforeBaking1?.toFixed(3)
                   }}</TableCell>
-                  <TableCell class="text-center text-muted-foreground text-[11px] py-2">{{
+                  <TableCell class="text-center text-muted-foreground text-[11px] py-2 w-28">{{
                     item.beforeBaking2?.toFixed(3)
                   }}</TableCell>
-                  <TableCell class="text-center text-muted-foreground text-[11px] py-2">{{
+                  <TableCell class="text-center text-muted-foreground text-[11px] py-2 w-28">{{
                     item.beforeBaking3?.toFixed(3)
                   }}</TableCell>
                   <TableCell class="text-center py-2">

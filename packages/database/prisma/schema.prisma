@@ -297,6 +297,13 @@ model Booking {
   trailerWeightOut    Float?  @map("trailer_weight_out")
   trailerRubberType   String? @map("trailer_rubber_type")
   trailerRubberSource String? @map("trailer_rubber_source")
+  trailerLotNo        String? @map("trailer_lot_no")
+  
+  // Lab Results (Trailer)
+  trailerMoisture     Float? @map("trailer_moisture")
+  trailerDrcEst       Float? @map("trailer_drc_est")
+  trailerDrcRequested Float? @map("trailer_drc_requested")
+  trailerDrcActual    Float? @map("trailer_drc_actual")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

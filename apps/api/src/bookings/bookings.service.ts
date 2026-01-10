@@ -349,10 +349,15 @@ export class BookingsService {
             estimatedWeight: data.estimatedWeight ? parseFloat(data.estimatedWeight) : null,
             recorder: data.recorder,
             lotNo: data.lotNo,
+            trailerLotNo: data.trailerLotNo,
             moisture: data.moisture !== undefined ? parseFloat(data.moisture) : undefined,
             drcEst: data.drcEst !== undefined ? parseFloat(data.drcEst) : undefined,
             drcRequested: data.drcRequested !== undefined ? parseFloat(data.drcRequested) : undefined,
             drcActual: data.drcActual !== undefined ? parseFloat(data.drcActual) : undefined,
+            trailerMoisture: data.trailerMoisture !== undefined ? parseFloat(data.trailerMoisture) : undefined,
+            trailerDrcEst: data.trailerDrcEst !== undefined ? parseFloat(data.trailerDrcEst) : undefined,
+            trailerDrcRequested: data.trailerDrcRequested !== undefined ? parseFloat(data.trailerDrcRequested) : undefined,
+            trailerDrcActual: data.trailerDrcActual !== undefined ? parseFloat(data.trailerDrcActual) : undefined,
         };
 
         if (data.status === 'APPROVED') {

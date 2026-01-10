@@ -67,7 +67,8 @@
     },
     "date": "Date",
     "slot": "Slot",
-    "supplier": "Supplier"
+    "supplier": "Supplier",
+    "decimalLimit": "Maximum {n} decimal places"
   },
   "validation": {
     "required": "This field is required",
