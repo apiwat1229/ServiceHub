@@ -392,9 +392,9 @@ const confirmSaveSamples = async () => {
     // Reset and Reload
     newSamples.value = [];
     fetchData();
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to save samples:', error);
-    toast.error(t('cuplump.failedToSave'));
+    toast.error(error.response?.data?.message || t('cuplump.failedToSave'));
   } finally {
     isSaving.value = false;
   }

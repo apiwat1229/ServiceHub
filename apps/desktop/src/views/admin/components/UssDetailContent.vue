@@ -367,9 +367,9 @@ const confirmSaveSamples = async () => {
     // Reset and Reload
     newSamples.value = [];
     fetchData();
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to save samples:', error);
-    toast.error(t('uss.failedToSave')); // Changed locale key
+    toast.error(error.response?.data?.message || t('uss.failedToSave'));
   } finally {
     isSaving.value = false;
   }
