@@ -324,11 +324,12 @@ const confirmSaveSamples = async () => {
 
   isSaving.value = true;
   try {
-    const promises = populatedSamples.map((sample) => {
+    // Execute sequentially to prevent race conditions on sampleNo generation
+    for (const sample of populatedSamples) {
       // Logic for Percent CP if not already set (safety)
       if (!sample.percentCp) calculatePercentCp(sample);
 
-      return bookingsApi.saveSample(props.bookingId, {
+      await bookingsApi.saveSample(props.bookingId, {
         ...sample,
         beforePress: parseFloat(sample.beforePress),
         afterPress: parseFloat(sample.afterPress),
@@ -340,9 +341,7 @@ const confirmSaveSamples = async () => {
         isTrailer: props.isTrailer,
         cuplumpWeight: parseFloat(sample.beforePress) - parseFloat(sample.basket),
       });
-    });
-
-    await Promise.all(promises);
+    }
 
     // ALSO save the main booking info in case anything was changed in the popovers
     const updateData: any = {};

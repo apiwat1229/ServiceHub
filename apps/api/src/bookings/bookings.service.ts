@@ -577,46 +577,52 @@ export class BookingsService {
             });
         }
 
-        // Create
-        // Auto-assign sampleNo if not provided
-        let sampleNo = data.sampleNo;
-        if (!sampleNo) {
-            const last = await this.prisma.bookingLabSample.findFirst({
-                where: { bookingId, isTrailer: data.isTrailer || false },
-                orderBy: { sampleNo: 'desc' }
-            });
-            sampleNo = (last?.sampleNo || 0) + 1;
-        }
-
-        return this.prisma.bookingLabSample.create({
-            data: {
-                bookingId,
-                sampleNo,
-                isTrailer: data.isTrailer || false,
-                beforePress: this.safeParseFloat(data.beforePress),
-                basketWeight: this.safeParseFloat(data.basketWeight),
-                cuplumpWeight: this.safeParseFloat(data.cuplumpWeight),
-                afterPress: this.safeParseFloat(data.afterPress),
-                percentCp: this.safeParseFloat(data.percentCp),
-                beforeBaking1: this.safeParseFloat(data.beforeBaking1),
-                beforeBaking2: this.safeParseFloat(data.beforeBaking2),
-                beforeBaking3: this.safeParseFloat(data.beforeBaking3),
+        try {
+            // Auto-assign sampleNo if not provided
+            let sampleNo = data.sampleNo;
+            if (!sampleNo) {
+                const last = await this.prisma.bookingLabSample.findFirst({
+                    where: { bookingId, isTrailer: data.isTrailer || false },
+                    orderBy: { sampleNo: 'desc' }
+                });
+                sampleNo = (last?.sampleNo || 0) + 1;
             }
+            console.log(`[BookingsService] Assigned sampleNo: ${sampleNo}, isTrailer: ${data.isTrailer}`);
+
+            const result = await this.prisma.bookingLabSample.create({
+                data: {
+                    bookingId,
+                    sampleNo,
+                    isTrailer: data.isTrailer || false,
+                    beforePress: this.safeParseFloat(data.beforePress),
+                    basketWeight: this.safeParseFloat(data.basketWeight),
+                    cuplumpWeight: this.safeParseFloat(data.cuplumpWeight),
+                    afterPress: this.safeParseFloat(data.afterPress),
+                    percentCp: this.safeParseFloat(data.percentCp),
+                    beforeBaking1: this.safeParseFloat(data.beforeBaking1),
+                    beforeBaking2: this.safeParseFloat(data.beforeBaking2),
+                    beforeBaking3: this.safeParseFloat(data.beforeBaking3),
+                }
+            });
+            console.log(`[BookingsService] Sample saved successfully: ${result.id}`);
+            return result;
+        } catch (error: any) {
+            console.error('[BookingsService] Failed to save sample:', error);
+            throw new BadRequestException(`Failed to save sample: ${error.message}`);
         }
-        });
-}
+    }
 
     async deleteSample(bookingId: string, sampleId: string) {
-    // Verify ownership?
-    return this.prisma.bookingLabSample.delete({
-        where: { id: sampleId }
-    });
-}
-}
+        // Verify ownership?
+        return this.prisma.bookingLabSample.delete({
+            where: { id: sampleId }
+        });
+    }
+
     private safeParseFloat(val: any): number | null | undefined {
-    if (val === undefined) return undefined;
-    if (val === null || val === '') return null;
-    const parsed = parseFloat(val);
-    return isNaN(parsed) ? null : parsed;
-}
+        if (val === undefined) return undefined;
+        if (val === null || val === '') return null;
+        const parsed = parseFloat(val);
+        return isNaN(parsed) ? null : parsed;
+    }
 }
