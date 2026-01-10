@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Request, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, Query, Request, UseGuards } from '@nestjs/common';
 import { Permissions } from '../auth/decorators/permissions.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
@@ -35,14 +35,17 @@ export class BookingsController {
 
     @Post(':id/samples')
     @Permissions('bookings:create')
-    saveSample(@Param('id') id: string, @Body() body: any, @Request() req: any) {
+    async saveSample(@Param('id') id: string, @Body() body: any, @Request() req: any) {
         console.log(`\n--- [BookingsController] Request to saveSample ---`);
         console.log(`Booking ID: ${id}`);
         console.log(`User: ${req.user?.username || req.user?.id || 'Unknown'}`);
-        console.log(`Content-Type: ${req.headers['content-type']}`);
-        console.log(`Payload Body:`, JSON.stringify(body, null, 2));
-        console.log(`------------------------------------------------\n`);
-        return this.bookingsService.saveSample(id, body);
+        try {
+            return await this.bookingsService.saveSample(id, body);
+        } catch (error: any) {
+            console.error(`[BookingsController] CRITICAL ERROR:`, error);
+            // Force return error as JSON to see it in frontend
+            throw new BadRequestException(`CONTROLLER CAUGHT: ${error.message} \nStack: ${error.stack}`);
+        }
     }
 
     @Delete(':id/samples/:sampleId')
