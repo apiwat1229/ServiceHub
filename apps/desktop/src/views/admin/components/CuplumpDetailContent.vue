@@ -1,4 +1,14 @@
 <script setup lang="ts">
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,7 +23,7 @@ import {
 } from '@/components/ui/table';
 import { bookingsApi } from '@/services/bookings';
 import { rubberTypesApi } from '@/services/rubberTypes';
-import { Plus, Save, Trash2 } from 'lucide-vue-next';
+import { AlertTriangle, Plus, Save, Trash2 } from 'lucide-vue-next';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
@@ -44,6 +54,7 @@ const isSaving = ref(false);
 const isLotNoOpen = ref(false);
 const isDrcOpen = ref(false);
 const isMoistureOpen = ref(false);
+const showSaveConfirm = ref(false);
 
 const drcForm = ref({
   drcEst: '',
@@ -202,6 +213,12 @@ const calculatePercentCp = (sample: any) => {
   }
 };
 
+const populatedCount = computed(() => {
+  return newSamples.value.filter(
+    (s) => s.beforePress || s.afterPress || s.beforeBaking1 || s.beforeBaking2 || s.beforeBaking3
+  ).length;
+});
+
 const removeNewSampleRow = (index: number) => {
   newSamples.value.splice(index, 1);
 };
@@ -291,23 +308,60 @@ const calculateCuplump = (before: number, basket: number) => {
 };
 
 const handleSaveAllSamples = async () => {
-  if (newSamples.value.length === 0) return;
+  // Filter for rows that have some data (not just the default basket weight)
+  const populatedSamples = newSamples.value.filter(
+    (s) => s.beforePress || s.afterPress || s.beforeBaking1 || s.beforeBaking2 || s.beforeBaking3
+  );
 
-  // Validation
-  const valid = newSamples.value.every((s) => s.beforePress);
-  if (!valid) {
-    toast.error(t('cuplump.enterBeforePress'));
+  // If we have populated samples, they MUST be valid (must have beforePress and afterPress)
+  const allValid = populatedSamples.every((s) => s.beforePress && s.afterPress);
+
+  if (populatedSamples.length > 0 && !allValid) {
+    toast.error(
+      t('cuplump.enterRequiredFields') ||
+        'Please enter both Before Press and After Press for all items'
+    );
+    return;
+  }
+  // If no populated samples, nothing to save (but we still might want to save header info?
+  // For now let's assume the button is primary for samples, but saving header is a side effect.
+  // Actually, if samples list is empty, we force save header updates immediately without confirm?
+  // Or we just block? User said "Save (0)" is weird.
+  // Let's stick to: if count > 0, show confirm. If count == 0, just save header info silently?
+  // The User wanted "Save" to save everything.
+
+  if (populatedSamples.length === 0) {
+    // Just save header info
+    await saveHeaderInfoOnly();
     return;
   }
 
-  if (!confirm(t('cuplump.confirmSaveAll', { count: newSamples.value.length }) + '?')) return;
+  showSaveConfirm.value = true;
+};
+
+const confirmSaveSamples = async () => {
+  showSaveConfirm.value = false;
+
+  // Re-filter to be safe (though state shouldn't have changed much)
+  const populatedSamples = newSamples.value.filter(
+    (s) => s.beforePress || s.afterPress || s.beforeBaking1 || s.beforeBaking2 || s.beforeBaking3
+  );
 
   isSaving.value = true;
   try {
-    const promises = newSamples.value.map((sample) => {
+    const promises = populatedSamples.map((sample) => {
+      // Logic for Percent CP if not already set (safety)
+      if (!sample.percentCp) calculatePercentCp(sample);
+
       return bookingsApi.saveSample(props.bookingId, {
         ...sample,
-        basketWeight: parseFloat(sample.basket), // Map frontend 'basket' to backend 'basketWeight'
+        beforePress: parseFloat(sample.beforePress),
+        afterPress: parseFloat(sample.afterPress),
+        percentCp: parseFloat(sample.percentCp),
+        basketWeight: parseFloat(sample.basket),
+        beforeBaking1: sample.beforeBaking1 ? parseFloat(sample.beforeBaking1) : null,
+        beforeBaking2: sample.beforeBaking2 ? parseFloat(sample.beforeBaking2) : null,
+        beforeBaking3: sample.beforeBaking3 ? parseFloat(sample.beforeBaking3) : null,
         isTrailer: props.isTrailer,
         cuplumpWeight: parseFloat(sample.beforePress) - parseFloat(sample.basket),
       });
@@ -380,6 +434,35 @@ const validateLotInput = (event: Event) => {
     lotNoError.value = '';
     // Model is already updated by v-model, but ensuring consistency:
     booking.value.lotNo = cleanedValue;
+  }
+};
+
+const saveHeaderInfoOnly = async () => {
+  isSaving.value = true;
+  try {
+    const updateData: any = {};
+    if (props.isTrailer) {
+      updateData.trailerLotNo = booking.value.lotNo;
+      updateData.trailerMoisture = booking.value.moisture;
+      updateData.trailerDrcEst = booking.value.drcEst;
+      updateData.trailerDrcRequested = booking.value.drcRequested;
+      updateData.trailerDrcActual = booking.value.drcActual;
+    } else {
+      updateData.lotNo = booking.value.lotNo;
+      updateData.moisture = booking.value.moisture;
+      updateData.drcEst = booking.value.drcEst;
+      updateData.drcRequested = booking.value.drcRequested;
+      updateData.drcActual = booking.value.drcActual;
+    }
+
+    await bookingsApi.update(props.bookingId, updateData);
+    toast.success(t('common.saved'));
+    emit('update');
+  } catch (error) {
+    console.error('Failed to save header info:', error);
+    toast.error(t('common.errorSaving'));
+  } finally {
+    isSaving.value = false;
   }
 };
 
@@ -1074,12 +1157,34 @@ onMounted(async () => {
               @click="handleSaveAllSamples"
             >
               <Save class="w-3.5 h-3.5" />
-              {{ t('common.save') }} ({{ newSamples.length }})
+              {{ t('common.save') }} ({{ populatedCount }})
             </Button>
           </div>
         </div>
       </div>
     </template>
+
+    <AlertDialog :open="showSaveConfirm" @update:open="showSaveConfirm = $event">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle class="flex items-center gap-2">
+            <AlertTriangle class="h-5 w-5 text-yellow-500" />
+            {{ t('common.confirm') }}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {{ t('cuplump.confirmSaveAll', { count: populatedCount }) }}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel @click="showSaveConfirm = false">{{
+            t('common.cancel')
+          }}</AlertDialogCancel>
+          <AlertDialogAction @click="confirmSaveSamples">{{
+            t('common.confirm')
+          }}</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   </div>
 </template>
 ```

@@ -44,6 +44,7 @@
     "saveChanges": "Save Changes",
     "saved": "Saved successfully",
     "saveSuccess": "Saved successfully",
+    "confirmSaveAll": "Are you sure you want to save {count} item(s)?",
     "deleteSuccess": "Deleted successfully",
     "errorSaving": "Error saving data",
     "fillAllRequiredFields": "Please fill all required fields",
@@ -1297,7 +1298,10 @@
     "enterBeforePress": "Please enter Before Press weight",
     "failedToSave": "Failed to save sample",
     "failedToDelete": "Failed to delete",
-    "numericOnly": "Numbers only (0-9)"
+    "numericOnly": "Numbers only (0-9)",
+    "confirmSaveAll": "Are you sure you want to save {count} item(s)?",
+    "enterRequiredFields": "Please enter both Before Press and After Press for all items",
+    "noSamplesToSave": "No samples with data to save."
   },
   "uss": {
     "title": "USS",
@@ -1332,8 +1336,9 @@
     "noSamples": "No recorded items yet.",
     "confirmDelete": "Are you sure you want to delete this item?",
     "sampleSaved": "Sample saved successfully",
-    "sampleDeleted": "Sample deleted successfully",
-    "enterBeforePress": "Please enter Before Press weight",
+    "samplesSaved": "Samples saved successfully",
+    "confirmSaveAll": "Are you sure you want to save {count} item(s)?",
+    "enterRequiredFields": "Please enter both Before Press and After Press for all items",
     "failedToSave": "Failed to save sample",
     "failedToDelete": "Failed to delete sample",
     "numericOnly": "Numeric Only"

@@ -45,8 +45,9 @@
     "users": "ผู้ใช้งาน",
     "optional": "ระบุหรือไม่ก็ได้",
     "next": "ถัดไป",
-    "previous": "ย้อนกลับ",
-    "fillAllRequiredFields": "กรุณากรอกข้อมูลให้ครบถ้วน",
+    "sampleSaved": "บันทึกตัวอย่างสำเร็จ",
+    "confirmSaveAll": "คุณแน่ใจหรือไม่ที่จะบันทึก {count} รายการ?",
+    "enterRequiredFields": "กรุณากรอกข้อมูล Before Press และ After Press ให้ครบถ้วน",
     "sortAZ": "A-Z",
     "sortRecent": "ใช้งานล่าสุด",
     "sortBy": "เรียงตาม",
@@ -978,7 +979,6 @@
         "user": "ผู้ใช้ทั่วไป",
         "admin": "ผู้ดูแลระบบ"
       },
-      "deleteConfirm": "คุณแน่ใจหรือไม่?",
       "deleteMessage": "การกระทำนี้ไม่สามารถย้อนกลับได้",
       "pincode": "รหัส PIN",
       "uploadImage": "อัปโหลดรูปภาพ",
@@ -1001,8 +1001,8 @@
       "allStatus": "สถานะทั้งหมด",
       "createSuccess": "สร้างผู้ใช้สำเร็จ",
       "updateSuccess": "อัปเดตผู้ใช้สำเร็จ",
-      "deleteSuccess": "ลบผู้ใช้สำเร็จ",
-      "deleteTitle": "ลบผู้ใช้?",
+      "saveSuccess": "บันทึกข้อมูลสำเร็จ",
+      "deleteConfirm": "ลบตัวอย่าง?",
       "deleteDesc": "คุณแน่ใจหรือไม่ว่าต้องการลบผู้ใช้นี้? การกระทำนี้ไม่สามารถย้อนกลับได้",
       "fetchError": "โหลดข้อมูลผู้ใช้ไม่สำเร็จ",
       "saveError": "บันทึกผู้ใช้ไม่สำเร็จ",
@@ -1299,7 +1299,10 @@
     "sampleDeleted": "ลบรายการเรียบร้อย",
     "enterBeforePress": "กรุณากรอกน้ำหนักก่อนอัด",
     "failedToSave": "บันทึกไม่สำเร็จ",
-    "failedToDelete": "ลบไม่สำเร็จ"
+    "failedToDelete": "ลบไม่สำเร็จ",
+    "confirmSaveAll": "คุณแน่ใจหรือไม่ที่จะบันทึก {count} รายการ?",
+    "enterRequiredFields": "กรุณากรอกข้อมูล Before Press และ After Press ให้ครบถ้วน",
+    "noSamplesToSave": "ไม่มีรายการที่มีข้อมูลให้บันทึก"
   },
   "uss": {
     "title": "ยางแผ่นรมควัน",
