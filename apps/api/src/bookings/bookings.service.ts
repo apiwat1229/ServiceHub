@@ -559,22 +559,30 @@ export class BookingsService {
     }
 
     async saveSample(bookingId: string, data: any) {
-        // If ID provided, update. Else create.
+        // If ID provided, try to update. If not found, fall through to create.
         if (data.id) {
-            return this.prisma.bookingLabSample.update({
-                where: { id: data.id },
-                data: {
-                    beforePress: data.beforePress ? parseFloat(data.beforePress) : null,
-                    basketWeight: data.basketWeight ? parseFloat(data.basketWeight) : null,
-                    cuplumpWeight: data.cuplumpWeight ? parseFloat(data.cuplumpWeight) : null,
-                    afterPress: data.afterPress ? parseFloat(data.afterPress) : null,
-                    percentCp: data.percentCp ? parseFloat(data.percentCp) : null,
-                    beforeBaking1: data.beforeBaking1 ? parseFloat(data.beforeBaking1) : null,
-                    beforeBaking2: data.beforeBaking2 ? parseFloat(data.beforeBaking2) : null,
-                    beforeBaking3: data.beforeBaking3 ? parseFloat(data.beforeBaking3) : null,
-                    // If sampleNo needs update? Usually locked.
+            try {
+                return await this.prisma.bookingLabSample.update({
+                    where: { id: data.id },
+                    data: {
+                        beforePress: safeParseFloat(data.beforePress),
+                        basketWeight: safeParseFloat(data.basketWeight),
+                        cuplumpWeight: safeParseFloat(data.cuplumpWeight),
+                        afterPress: safeParseFloat(data.afterPress),
+                        percentCp: safeParseFloat(data.percentCp),
+                        beforeBaking1: safeParseFloat(data.beforeBaking1),
+                        beforeBaking2: safeParseFloat(data.beforeBaking2),
+                        beforeBaking3: safeParseFloat(data.beforeBaking3),
+                    }
+                });
+            } catch (error: any) {
+                // If record not found (P2025), proceed to create logic
+                if (error.code !== 'P2025') {
+                    console.error('[BookingsService] Update failed:', error);
+                    throw error;
                 }
-            });
+                console.log(`[BookingsService] Sample ID ${data.id} from frontend not found in DB. Creating new record instead.`);
+            }
         }
         console.log(`[BookingsService] saveSample input for booking ${bookingId}:`, JSON.stringify(data, null, 2));
 
