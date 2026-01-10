@@ -2,7 +2,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DialogContent } from '@/components/ui/dialog';
-import { Calendar, ClipboardList, Clock, Package, User, Wrench } from 'lucide-vue-next';
+import { Calendar, ClipboardList, Clock, Package, User } from 'lucide-vue-next';
 
 const props = defineProps<{
   repair: any;
@@ -25,125 +25,186 @@ const getStatusColor = (cost: number) => {
 </script>
 
 <template>
-  <DialogContent class="sm:max-w-[650px] p-0 overflow-hidden border-none shadow-2xl">
-    <div class="bg-slate-900 p-8 text-white relative overflow-hidden">
-      <!-- Decorative background icon -->
-      <Wrench class="absolute -right-8 -bottom-8 w-40 h-40 text-white/5 rotate-12" />
-
-      <div class="relative z-10">
-        <div class="flex items-center gap-3 mb-4">
-          <Badge
-            variant="outline"
-            :class="`border-white/20 text-white font-bold uppercase tracking-widest text-[10px] bg-white/10 px-2 py-1`"
+  <DialogContent
+    class="w-[95vw] sm:max-w-[700px] p-0 overflow-hidden border border-slate-200 shadow-2xl bg-white flex flex-col max-h-[95vh] rounded-sm"
+  >
+    <!-- Formal Document Header -->
+    <div class="p-8 border-b-4 border-slate-900 bg-white">
+      <div class="flex items-start justify-between mb-4">
+        <div class="space-y-1">
+          <p
+            class="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] leading-none mb-1"
           >
-            Maintenance Record
-          </Badge>
-          <div class="flex items-center gap-1.5 text-white/60 text-xs">
-            <Clock class="w-3 h-3" />
-            {{ repair.date }}
-          </div>
+            Official Maintenance Record
+          </p>
+          <h2 class="text-3xl font-black tracking-tighter text-slate-900 leading-none">
+            {{ repair.machineName }}
+          </h2>
         </div>
+        <Badge
+          variant="outline"
+          class="border-slate-200 text-slate-600 font-black uppercase tracking-widest text-[9px] bg-slate-50 px-2 py-1 flex-shrink-0"
+        >
+          LOG ID: #{{ repair.id.slice(-6).toUpperCase() }}
+        </Badge>
+      </div>
 
-        <h2 class="text-3xl font-black tracking-tight mb-2">{{ repair.machineName }}</h2>
-        <p class="text-white/60 flex items-center gap-2 text-sm font-medium">
-          <Calendar class="w-4 h-4" />
-          Processed on {{ repair.date }}
-        </p>
+      <div class="flex items-center gap-4 pt-2 border-t border-slate-50 mt-4">
+        <div class="flex items-center gap-2">
+          <Calendar class="w-3.5 h-3.5 text-slate-400" />
+          <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">{{
+            repair.date
+          }}</span>
+        </div>
+        <span class="text-slate-200">•</span>
+        <div class="flex items-center gap-2">
+          <Badge
+            :class="`rounded-sm font-black uppercase tracking-tight text-[9px] px-2 py-0 border ${getStatusColor(repair.totalCost)}`"
+          >
+            {{ repair.totalCost > 10000 ? 'Major Repair' : 'Routine Service' }}
+          </Badge>
+        </div>
       </div>
     </div>
 
-    <div class="p-8 bg-white space-y-8">
-      <!-- Summary Grid -->
-      <div class="grid grid-cols-2 gap-6">
-        <div class="space-y-1.5">
-          <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">
-            Primary Technician
-          </p>
-          <div class="flex items-center gap-2 text-slate-900 font-bold">
-            <div
-              class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200"
-            >
-              <User class="w-4 h-4 text-slate-500" />
-            </div>
-            {{ repair.technician || 'Not assigned' }}
+    <div class="p-8 flex-1 overflow-y-auto space-y-10 min-h-0 bg-white">
+      <!-- Section 1: Personnel & Classification -->
+      <section class="grid grid-cols-2 gap-12">
+        <div class="space-y-4">
+          <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
+            <User class="w-3.5 h-3.5 text-slate-900" />
+            <h3 class="text-[10px] font-black uppercase tracking-widest text-slate-900">
+              Personnel in Charge
+            </h3>
+          </div>
+          <div class="space-y-1">
+            <p class="text-sm font-black text-slate-900">
+              {{ repair.technician || 'Not assigned' }}
+            </p>
+            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+              Certified Technical Lead
+            </p>
           </div>
         </div>
-        <div class="space-y-1.5">
-          <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">
-            Service Category
-          </p>
-          <div class="flex items-center gap-2">
-            <Badge
-              :class="`rounded-full font-bold uppercase tracking-tight text-[10px] px-3 ${getStatusColor(repair.totalCost)}`"
-            >
-              {{ repair.totalCost > 10000 ? 'Major Repair' : 'Routine Service' }}
-            </Badge>
+
+        <div class="space-y-4">
+          <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
+            <Clock class="w-3.5 h-3.5 text-slate-900" />
+            <h3 class="text-[10px] font-black uppercase tracking-widest text-slate-900">
+              Timestamp
+            </h3>
+          </div>
+          <div class="space-y-1">
+            <p class="text-sm font-black text-slate-900">{{ repair.date }}</p>
+            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+              Recorded Date of Service
+            </p>
           </div>
         </div>
-      </div>
+      </section>
 
-      <!-- Detail Sections -->
-      <div class="space-y-4">
-        <div class="flex items-center gap-2 text-slate-900 font-bold">
-          <ClipboardList class="w-5 h-5 text-blue-600" />
-          <h3>Description of Issue</h3>
+      <!-- Section 2: Technical Description -->
+      <section class="space-y-4">
+        <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
+          <ClipboardList class="w-3.5 h-3.5 text-slate-900" />
+          <h3 class="text-[10px] font-black uppercase tracking-widest text-slate-900">
+            Description of Issue / Detail
+          </h3>
         </div>
-        <div
-          class="bg-slate-50 border border-slate-100 rounded-xl p-5 text-slate-700 leading-relaxed italic"
-        >
-          "{{ repair.issue }}"
+        <div class="bg-slate-50 border border-slate-100 p-6 rounded-sm">
+          <p class="text-sm font-bold text-slate-800 leading-relaxed italic">
+            "{{ repair.issue }}"
+          </p>
         </div>
-      </div>
+      </section>
 
-      <div class="space-y-4">
-        <div class="flex items-center gap-2 text-slate-900 font-bold">
-          <Package class="w-5 h-5 text-indigo-600" />
-          <h3>Resources & Parts Used</h3>
+      <!-- Section 3: Resource Inventory -->
+      <section class="space-y-4">
+        <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
+          <Package class="w-3.5 h-3.5 text-slate-900" />
+          <h3 class="text-[10px] font-black uppercase tracking-widest text-slate-900">
+            Resources & Materials Inventory
+          </h3>
         </div>
 
         <div
           v-if="repair.parts && repair.parts.length > 0"
-          class="border rounded-xl overflow-hidden divide-y divide-slate-100"
+          class="border border-slate-100 rounded-sm overflow-hidden"
         >
-          <div
-            v-for="(part, idx) in repair.parts"
-            :key="idx"
-            class="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
-          >
-            <div class="flex items-center gap-3">
-              <div
-                class="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 border border-slate-200"
+          <table class="w-full text-left border-collapse">
+            <thead
+              class="bg-slate-50 border-b border-slate-100 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]"
+            >
+              <tr>
+                <th class="px-4 py-3">Material Code / Description</th>
+                <th class="px-4 py-3 text-right">Quantity</th>
+                <th class="px-4 py-3 text-right">Unit Price</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-50">
+              <tr
+                v-for="(part, idx) in repair.parts"
+                :key="idx"
+                class="hover:bg-slate-50/50 transition-colors"
               >
-                <Package class="w-5 h-5" />
-              </div>
-              <div>
-                <p class="font-bold text-slate-900 text-sm">{{ part.name }}</p>
-                <p class="text-[10px] font-mono text-slate-400">{{ part.code }}</p>
-              </div>
-            </div>
-            <div class="text-right">
-              <p class="font-bold text-slate-900 text-sm">{{ part.qty }} {{ part.unit }}</p>
-              <p class="text-[10px] text-slate-400">@ {{ formatCurrency(part.price) }}</p>
-            </div>
-          </div>
+                <td class="px-4 py-4">
+                  <p class="text-xs font-black text-slate-900 uppercase tracking-tighter">
+                    {{ part.name }}
+                  </p>
+                  <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                    {{ part.code || 'N/A' }}
+                  </p>
+                </td>
+                <td class="px-4 py-4 text-right">
+                  <span class="text-xs font-black text-slate-900">{{ part.qty }}</span>
+                  <span class="text-[10px] font-bold text-slate-400 ml-1 uppercase">{{
+                    part.unit || 'Units'
+                  }}</span>
+                </td>
+                <td class="px-4 py-4 text-right">
+                  <p class="text-xs font-black text-slate-900 tracking-tight">
+                    {{ formatCurrency(part.price) }}
+                  </p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
         <div
           v-else
-          class="text-center py-10 bg-slate-50/50 rounded-xl border-2 border-dashed border-slate-200"
+          class="text-center py-10 bg-slate-50 rounded-sm border border-slate-100 border-dashed"
         >
-          <p class="text-slate-400 text-sm">No replacement parts were used in this service.</p>
-        </div>
-      </div>
-
-      <!-- Cost Section -->
-      <div class="pt-6 border-t flex items-center justify-between">
-        <div>
-          <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">
-            Economic Valuation
+          <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest">
+            No replacement materials utilized during this session.
           </p>
-          <p class="text-2xl font-black text-slate-900">{{ formatCurrency(repair.totalCost) }}</p>
         </div>
-        <Button variant="outline" class="gap-2 border-slate-200" @click="emit('close')">
+      </section>
+    </div>
+
+    <!-- Formal Economic Footer -->
+    <div
+      class="p-8 border-t-2 border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-6"
+    >
+      <div class="text-center sm:text-left">
+        <p class="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">
+          Total Economic Valuation
+        </p>
+        <p class="text-3xl font-black text-slate-900 tracking-tighter">
+          {{ formatCurrency(repair.totalCost) }}
+        </p>
+      </div>
+      <div class="flex items-center gap-3">
+        <Button
+          variant="ghost"
+          class="h-10 px-6 font-black text-[10px] uppercase tracking-widest text-slate-500 hover:text-slate-900"
+          @click="emit('close')"
+        >
+          Cancel
+        </Button>
+        <Button
+          class="h-10 px-10 rounded-sm bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 shadow-sm"
+          @click="emit('close')"
+        >
           Close Record
         </Button>
       </div>

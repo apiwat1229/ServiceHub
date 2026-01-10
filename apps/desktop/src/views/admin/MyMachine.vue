@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -7,10 +6,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useMyMachine } from '@/composables/useMyMachine';
-import { ClipboardList, LayoutDashboard, Package, Plus, Search, Settings } from 'lucide-vue-next';
+import { ClipboardList, LayoutDashboard, Package, Settings } from 'lucide-vue-next';
 import { onMounted, ref } from 'vue';
 import { toast } from 'vue-sonner';
 
@@ -22,19 +19,34 @@ import RepairList from './components/mymachine/RepairList.vue';
 import StockForm from './components/mymachine/StockForm.vue';
 import StockList from './components/mymachine/StockList.vue';
 
-const { loadData, addMachine, addRepair, addStock } = useMyMachine();
+const { loadData, addMachine, updateMachine, addRepair, addStock } = useMyMachine();
 const searchQuery = ref('');
 const activeTab = ref('dashboard');
 
 // Modal States
 const isMachineDialogOpen = ref(false);
+const editingMachine = ref<any>(null);
 const isRepairDialogOpen = ref(false);
 const isStockDialogOpen = ref(false);
 
 const handleMachineSave = (data: any) => {
-  addMachine(data);
+  if (editingMachine.value) {
+    updateMachine(editingMachine.value.id, data);
+  } else {
+    addMachine(data);
+    toast.success('Machine registered successfully');
+  }
+  closeMachineDialog();
+};
+
+const handleEditMachine = (machine: any) => {
+  editingMachine.value = machine;
+  isMachineDialogOpen.value = true;
+};
+
+const closeMachineDialog = () => {
   isMachineDialogOpen.value = false;
-  toast.success('Machine registered successfully');
+  editingMachine.value = null;
 };
 
 const handleRepairSave = (data: any) => {
@@ -55,112 +67,116 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="h-screen flex flex-col p-6 pb-2 bg-slate-50 font-sans overflow-hidden">
-    <!-- Professional Header (Help Desk Style) -->
+  <div class="h-screen flex flex-col bg-slate-50 font-sans overflow-hidden">
+    <!-- Modern Compact Header - Sticky -->
     <div
-      class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 flex-shrink-0 mb-6"
+      class="sticky top-0 z-10 bg-white/80 backdrop-blur-md border border-slate-200/50 flex-shrink-0 shadow-sm rounded-xl mx-6 mt-4 mb-0 overflow-hidden"
     >
-      <div>
-        <h1 class="text-3xl font-bold tracking-tight text-slate-900">Maintenance System</h1>
-        <p class="text-muted-foreground mt-1 text-sm">
-          Centralized management for machines, repairs, and spare parts inventory.
-        </p>
-      </div>
-      <div class="flex items-center gap-3">
-        <Button
-          variant="outline"
-          class="gap-2 border-slate-200 bg-white"
-          @click="isMachineDialogOpen = true"
-        >
-          <Settings class="w-4 h-4" />
-          Add Machine
-        </Button>
-        <Button
-          variant="outline"
-          class="gap-2 border-slate-200 bg-white"
-          @click="isStockDialogOpen = true"
-        >
-          <Package class="w-4 h-4" />
-          Add Stock
-        </Button>
-        <Button
-          class="gap-2 bg-blue-600 hover:bg-blue-700 shadow-md"
-          @click="isRepairDialogOpen = true"
-        >
-          <Plus class="w-4 h-4" />
-          New Repair Log
-        </Button>
+      <div class="px-6 py-2.5 flex items-center justify-between gap-4">
+        <!-- Left: Title -->
+        <div class="flex-shrink-0">
+          <h1 class="text-lg font-bold text-slate-900">Maintenance System</h1>
+          <p class="text-[10px] text-slate-500">
+            Centralized management for machines, repairs, and spare parts
+          </p>
+        </div>
+
+        <!-- Center: Navigation Tabs -->
+        <nav class="flex items-center gap-1 bg-slate-100 p-0.5 rounded-md">
+          <button
+            @click="activeTab = 'dashboard'"
+            :class="[
+              'px-3 py-1 rounded text-xs font-medium transition-all inline-flex items-center gap-1.5',
+              activeTab === 'dashboard'
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-600 hover:text-slate-900',
+            ]"
+          >
+            <LayoutDashboard class="w-3 h-3" />
+            <span>Overview</span>
+          </button>
+          <button
+            @click="activeTab = 'machines'"
+            :class="[
+              'px-3 py-1 rounded text-xs font-medium transition-all inline-flex items-center gap-1.5',
+              activeTab === 'machines'
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-600 hover:text-slate-900',
+            ]"
+          >
+            <Settings class="w-3 h-3" />
+            <span>Machines</span>
+          </button>
+          <button
+            @click="activeTab = 'repairs'"
+            :class="[
+              'px-3 py-1 rounded text-xs font-medium transition-all inline-flex items-center gap-1.5',
+              activeTab === 'repairs'
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-600 hover:text-slate-900',
+            ]"
+          >
+            <ClipboardList class="w-3 h-3" />
+            <span>Repairs</span>
+          </button>
+          <button
+            @click="activeTab = 'stock'"
+            :class="[
+              'px-3 py-1 rounded text-xs font-medium transition-all inline-flex items-center gap-1.5',
+              activeTab === 'stock'
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-600 hover:text-slate-900',
+            ]"
+          >
+            <Package class="w-3 h-3" />
+            <span>Parts</span>
+          </button>
+        </nav>
       </div>
     </div>
 
-    <!-- Main Content Tabs (Help Desk Style) -->
-    <Tabs v-model="activeTab" class="w-full flex-1 flex flex-col min-h-0">
-      <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-4 flex-shrink-0">
-        <TabsList class="bg-muted p-1 rounded-lg">
-          <TabsTrigger
-            value="dashboard"
-            class="gap-2 px-4 py-2 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all text-sm font-medium"
-          >
-            <LayoutDashboard class="w-4 h-4" /> Overview
-          </TabsTrigger>
-          <TabsTrigger
-            value="machines"
-            class="gap-2 px-4 py-2 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all text-sm font-medium"
-          >
-            <Settings class="w-4 h-4" /> Machine Registry
-          </TabsTrigger>
-          <TabsTrigger
-            value="repairs"
-            class="gap-2 px-4 py-2 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all text-sm font-medium"
-          >
-            <ClipboardList class="w-4 h-4" /> Repair Logs
-          </TabsTrigger>
-          <TabsTrigger
-            value="stock"
-            class="gap-2 px-4 py-2 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all text-sm font-medium"
-          >
-            <Package class="w-4 h-4" /> Spare Parts
-          </TabsTrigger>
-        </TabsList>
-
-        <!-- Search Bar in Tabs Row -->
-        <div class="relative w-full sm:w-64">
-          <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Search registry..."
-            class="pl-9 bg-white border-slate-200 focus:bg-white transition-colors h-9 text-sm"
-            v-model="searchQuery"
-          />
-        </div>
+    <!-- Main Content Area -->
+    <div class="flex-1 min-h-0 overflow-hidden">
+      <!-- Tab Contents -->
+      <div v-show="activeTab === 'dashboard'" class="h-full overflow-hidden">
+        <MachineDashboard />
       </div>
 
-      <!-- Tab Contents -->
-      <TabsContent value="dashboard" class="mt-0 outline-none flex-1 overflow-hidden">
-        <MachineDashboard />
-      </TabsContent>
+      <div v-show="activeTab === 'machines'" class="h-full overflow-hidden">
+        <MachineList
+          :search-query="searchQuery"
+          @add-machine="isMachineDialogOpen = true"
+          @edit-machine="handleEditMachine"
+        />
+      </div>
 
-      <TabsContent value="machines" class="mt-0 outline-none flex-1 overflow-hidden">
-        <MachineList :search-query="searchQuery" />
-      </TabsContent>
+      <div v-show="activeTab === 'repairs'" class="h-full overflow-hidden">
+        <RepairList :search-query="searchQuery" @add-repair="isRepairDialogOpen = true" />
+      </div>
 
-      <TabsContent value="repairs" class="mt-0 outline-none flex-1 overflow-hidden">
-        <RepairList :search-query="searchQuery" />
-      </TabsContent>
-
-      <TabsContent value="stock" class="mt-0 outline-none flex-1 overflow-hidden">
-        <StockList :search-query="searchQuery" />
-      </TabsContent>
-    </Tabs>
+      <div v-show="activeTab === 'stock'" class="h-full overflow-hidden">
+        <StockList :search-query="searchQuery" @add-stock="isStockDialogOpen = true" />
+      </div>
+    </div>
 
     <!-- Dialogs -->
-    <Dialog v-model:open="isMachineDialogOpen">
-      <DialogContent class="max-w-4xl max-h-[90vh] overflow-y-auto">
+    <Dialog :open="isMachineDialogOpen" @update:open="(val) => !val && closeMachineDialog()">
+      <DialogContent class="max-w-4xl max-h-[90vh] overflow-y-auto font-sans">
         <DialogHeader class="border-b pb-4 mb-2">
-          <DialogTitle>Add New Machine</DialogTitle>
-          <DialogDescription>Register a new machine to the system database.</DialogDescription>
+          <DialogTitle>{{ editingMachine ? 'Edit Machine Info' : 'Add New Machine' }}</DialogTitle>
+          <DialogDescription>
+            {{
+              editingMachine
+                ? 'Update machine details and operational status.'
+                : 'Register a new machine to the system database.'
+            }}
+          </DialogDescription>
         </DialogHeader>
-        <MachineForm @save="handleMachineSave" @cancel="isMachineDialogOpen = false" />
+        <MachineForm
+          :initial-data="editingMachine"
+          @save="handleMachineSave"
+          @cancel="closeMachineDialog"
+        />
       </DialogContent>
     </Dialog>
 

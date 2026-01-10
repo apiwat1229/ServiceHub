@@ -216,6 +216,11 @@ const routes = [
                 path: '',
                 name: 'MyMachine',
                 component: () => import('../views/admin/MyMachine.vue'),
+            },
+            {
+                path: ':id',
+                name: 'MachineDetail',
+                component: () => import('../views/admin/components/mymachine/MachineDetail.vue'),
             }
         ]
     },

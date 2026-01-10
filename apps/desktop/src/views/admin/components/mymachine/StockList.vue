@@ -40,6 +40,10 @@ const props = defineProps<{
   searchQuery?: string;
 }>();
 
+const emit = defineEmits<{
+  (e: 'add-stock'): void;
+}>();
+
 const { stocks, deleteStock } = useMyMachine();
 
 // Filters
@@ -113,9 +117,18 @@ const columns: ColumnDef<any>[] = [
     cell: ({ row }) => {
       const item = row.original;
       return h('div', { class: 'flex items-center gap-3' }, [
-        h('div', { class: 'p-2 bg-slate-100 rounded-lg border border-slate-200 text-slate-400' }, [
-          h(Package, { class: 'w-4 h-4' }),
-        ]),
+        h(
+          'div',
+          {
+            class:
+              'w-10 h-10 rounded-lg border border-slate-200 overflow-hidden bg-slate-100 flex items-center justify-center text-slate-400 flex-shrink-0',
+          },
+          [
+            item.image
+              ? h('img', { src: item.image, class: 'w-full h-full object-cover' })
+              : h(Package, { class: 'w-4 h-4' }),
+          ]
+        ),
         h('div', { class: 'flex flex-col' }, [
           h('span', { class: 'font-bold text-slate-900' }, item.name),
           h(
@@ -222,131 +235,149 @@ const columns: ColumnDef<any>[] = [
 </script>
 
 <template>
-  <div class="h-full flex flex-col space-y-6 overflow-hidden">
-    <!-- Statistics Cards (Help Desk Style) -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 flex-shrink-0">
-      <Card class="border-border/50 shadow-sm bg-white overflow-hidden group">
-        <CardContent class="p-5">
-          <div class="flex items-center justify-between">
-            <div class="space-y-1">
-              <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                Inventory Value
-              </p>
-              <h3 class="text-2xl font-black text-slate-900">
-                {{ formatCurrency(stockStats.totalValue) }}
-              </h3>
-            </div>
-            <div
-              class="p-3 bg-blue-50 text-blue-600 rounded-xl group-hover:scale-110 transition-transform"
-            >
-              <DollarSign class="w-5 h-5" />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card class="border-border/50 shadow-sm bg-white overflow-hidden group">
-        <CardContent class="p-5">
-          <div class="flex items-center justify-between">
-            <div class="space-y-1">
-              <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                Total Line Items
-              </p>
-              <h3 class="text-2xl font-black text-slate-900">{{ stockStats.totalItems }}</h3>
-            </div>
-            <div
-              class="p-3 bg-indigo-50 text-indigo-600 rounded-xl group-hover:scale-110 transition-transform"
-            >
-              <Package class="w-5 h-5" />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card
-        class="border-border/50 shadow-sm bg-white overflow-hidden group transition-all"
-        :class="stockStats.lowStockItems > 0 ? 'border-red-100 ring-1 ring-red-50' : ''"
-      >
-        <CardContent class="p-5">
-          <div class="flex items-center justify-between">
-            <div class="space-y-1">
-              <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                Low Stock Alerts
-              </p>
-              <h3
-                class="text-2xl font-black"
-                :class="stockStats.lowStockItems > 0 ? 'text-red-600' : 'text-slate-900'"
+  <div class="h-full flex flex-col overflow-hidden bg-slate-50">
+    <!-- Scrollable Content Area -->
+    <div class="flex-1 overflow-y-auto px-6 pb-6 pt-4">
+      <!-- Statistics Cards (Modern Compact) -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 flex-shrink-0 pb-4">
+        <Card
+          class="border-slate-200/50 shadow-sm bg-white/80 backdrop-blur-sm overflow-hidden group hover:shadow-md transition-all"
+        >
+          <CardContent class="p-3">
+            <div class="flex items-center justify-between">
+              <div class="space-y-1">
+                <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                  Inventory Value
+                </p>
+                <h3 class="text-2xl font-black text-slate-900">
+                  {{ formatCurrency(stockStats.totalValue) }}
+                </h3>
+              </div>
+              <div
+                class="p-3 bg-blue-50 text-blue-600 rounded-xl group-hover:scale-110 transition-transform"
               >
-                {{ stockStats.lowStockItems }}
-              </h3>
+                <DollarSign class="w-5 h-5" />
+              </div>
             </div>
-            <div
-              class="p-3 rounded-xl group-hover:scale-110 transition-transform"
-              :class="
-                stockStats.lowStockItems > 0
-                  ? 'bg-red-50 text-red-600'
-                  : 'bg-slate-50 text-slate-400'
-              "
-            >
-              <AlertTriangle class="w-5 h-5" />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      <Card class="border-border/50 shadow-sm bg-white overflow-hidden group">
-        <CardContent class="p-5">
-          <div class="flex items-center justify-between">
-            <div class="space-y-1">
-              <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Categories</p>
-              <h3 class="text-2xl font-black text-slate-900">{{ stockStats.totalCategories }}</h3>
+        <Card
+          class="border-slate-200/50 shadow-sm bg-white/80 backdrop-blur-sm overflow-hidden group hover:shadow-md transition-all"
+        >
+          <CardContent class="p-3">
+            <div class="flex items-center justify-between">
+              <div class="space-y-1">
+                <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                  Total Line Items
+                </p>
+                <h3 class="text-2xl font-black text-slate-900">{{ stockStats.totalItems }}</h3>
+              </div>
+              <div
+                class="p-3 bg-indigo-50 text-indigo-600 rounded-xl group-hover:scale-110 transition-transform"
+              >
+                <Package class="w-5 h-5" />
+              </div>
             </div>
-            <div
-              class="p-3 bg-emerald-50 text-emerald-600 rounded-xl group-hover:scale-110 transition-transform"
-            >
-              <Filter class="w-5 h-5" />
+          </CardContent>
+        </Card>
+
+        <Card
+          class="border-slate-200/50 shadow-sm bg-white/80 backdrop-blur-sm overflow-hidden group hover:shadow-md transition-all"
+          :class="stockStats.lowStockItems > 0 ? 'border-red-200/50 ring-1 ring-red-100/50' : ''"
+        >
+          <CardContent class="p-3">
+            <div class="flex items-center justify-between">
+              <div class="space-y-1">
+                <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                  Low Stock Alerts
+                </p>
+                <h3
+                  class="text-2xl font-black"
+                  :class="stockStats.lowStockItems > 0 ? 'text-red-600' : 'text-slate-900'"
+                >
+                  {{ stockStats.lowStockItems }}
+                </h3>
+              </div>
+              <div
+                class="p-3 rounded-xl group-hover:scale-110 transition-transform"
+                :class="
+                  stockStats.lowStockItems > 0
+                    ? 'bg-red-50 text-red-600'
+                    : 'bg-slate-50 text-slate-400'
+                "
+              >
+                <AlertTriangle class="w-5 h-5" />
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+          </CardContent>
+        </Card>
 
-    <!-- Filter & Table -->
-    <div class="flex-1 min-h-0 flex flex-col space-y-4">
-      <div
-        class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 px-1 flex-shrink-0"
-      >
-        <h2 class="text-lg font-semibold tracking-tight text-slate-900">Spare Parts Inventory</h2>
-
-        <div class="flex items-center gap-2">
-          <div class="relative w-full md:w-64">
-            <Search class="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-            <Input
-              v-model="localSearch"
-              placeholder="Filter by name or code..."
-              class="pl-8 bg-white border-slate-200 focus:bg-white transition-colors h-9 text-sm"
-            />
-          </div>
-          <Select v-model="categoryFilter">
-            <SelectTrigger class="w-[160px] bg-white border-slate-200 h-9 text-sm">
-              <SelectValue placeholder="All Categories" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">All Categories</SelectItem>
-              <SelectItem value="Mechanical">Mechanical</SelectItem>
-              <SelectItem value="Electrical">Electrical</SelectItem>
-              <SelectItem value="Electronic">Electronic</SelectItem>
-              <SelectItem value="Consumables">Consumables</SelectItem>
-              <SelectItem value="Spare Parts">Spare Parts</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <Card
+          class="border-slate-200/50 shadow-sm bg-white/80 backdrop-blur-sm overflow-hidden group hover:shadow-md transition-all"
+        >
+          <CardContent class="p-3">
+            <div class="flex items-center justify-between">
+              <div class="space-y-1">
+                <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Categories</p>
+                <h3 class="text-2xl font-black text-slate-900">{{ stockStats.totalCategories }}</h3>
+              </div>
+              <div
+                class="p-3 bg-emerald-50 text-emerald-600 rounded-xl group-hover:scale-110 transition-transform"
+              >
+                <Filter class="w-5 h-5" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      <div
-        class="flex-1 min-h-0 rounded-xl border bg-white shadow-sm overflow-hidden border-slate-200 flex flex-col"
-      >
-        <DataTable :columns="columns" :data="filteredStocks" class="flex-1" />
+      <!-- Filter & Table -->
+      <div class="flex flex-col space-y-4">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 flex-shrink-0">
+          <div>
+            <h2 class="text-base font-bold text-slate-900">Spare Parts Inventory</h2>
+            <p class="text-xs text-slate-500">Inventory levels and spare parts availability</p>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <div class="relative w-full md:w-64">
+              <Search class="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                v-model="localSearch"
+                placeholder="Filter by name or code..."
+                class="pl-8 bg-white border-slate-200 focus:bg-white transition-colors h-9 text-sm"
+              />
+            </div>
+            <Select v-model="categoryFilter">
+              <SelectTrigger class="w-[160px] bg-white border-slate-200 h-9 text-sm">
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All Categories</SelectItem>
+                <SelectItem value="Mechanical">Mechanical</SelectItem>
+                <SelectItem value="Electrical">Electrical</SelectItem>
+                <SelectItem value="Electronic">Electronic</SelectItem>
+                <SelectItem value="Consumables">Consumables</SelectItem>
+                <SelectItem value="Spare Parts">Spare Parts</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              class="gap-2 bg-blue-600 hover:bg-blue-700 shadow-md h-9"
+              @click="emit('add-stock')"
+            >
+              <Package class="w-4 h-4" />
+              Add Stock
+            </Button>
+          </div>
+        </div>
+
+        <!-- DataTable -->
+        <div
+          class="rounded-xl border border-slate-200/50 bg-white/80 backdrop-blur-sm shadow-sm overflow-hidden"
+        >
+          <DataTable :columns="columns" :data="filteredStocks" />
+        </div>
       </div>
     </div>
   </div>

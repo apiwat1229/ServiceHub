@@ -2,36 +2,56 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import DataTable from '@/components/ui/data-table/DataTable.vue';
-import { Dialog } from '@/components/ui/dialog'; // Restored
+import { Dialog } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { useMyMachine } from '@/composables/useMyMachine';
 import type { ColumnDef } from '@tanstack/vue-table';
-import { ArrowUpDown, Copy, Monitor, QrCode, Trash2 } from 'lucide-vue-next'; // Added Copy
+import { Edit2, Monitor, QrCode, Search, Settings, Trash2 } from 'lucide-vue-next';
 import { computed, h, ref } from 'vue';
-import { toast } from 'vue-sonner'; // Added toast
+import { useRouter } from 'vue-router';
 import MachineQrModal from './MachineQrModal.vue';
+import RepairDetailModal from './RepairDetailModal.vue';
 
 const props = defineProps<{
   searchQuery?: string;
 }>();
 
+const router = useRouter();
+const emit = defineEmits<{
+  (e: 'add-machine'): void;
+  (e: 'edit-machine', machine: any): void;
+}>();
+
 const { machines, deleteMachine, getMachineStats } = useMyMachine();
 
+const localSearch = ref('');
 const isQrModalOpen = ref(false);
+const isRepairDetailOpen = ref(false);
 const selectedMachine = ref<any>(null);
+const selectedRepair = ref<any>(null);
 
 const generateQr = (machine: any) => {
   selectedMachine.value = machine;
   isQrModalOpen.value = true;
 };
 
+const viewDetail = (machine: any) => {
+  router.push(`/my-machine/${machine.id}`);
+};
+
+const viewRepairDetail = (repair: any) => {
+  selectedRepair.value = repair;
+  isRepairDetailOpen.value = true;
+};
+
 const filteredMachines = computed(() => {
-  if (!props.searchQuery) return machines.value;
-  const q = props.searchQuery.toLowerCase();
+  const q = (localSearch.value || props.searchQuery || '').toLowerCase();
+  if (!q) return machines.value;
   return machines.value.filter(
     (m) =>
       m.name.toLowerCase().includes(q) ||
-      m.model.toLowerCase().includes(q) ||
-      m.location.toLowerCase().includes(q)
+      (m.model && m.model.toLowerCase().includes(q)) ||
+      (m.location && m.location.toLowerCase().includes(q))
   );
 });
 
@@ -58,68 +78,76 @@ const getStatusStyles = (status: string) => {
 const columns: ColumnDef<any>[] = [
   {
     accessorKey: 'name',
-    header: ({ column }) => {
-      return h(
-        Button,
-        {
-          variant: 'ghost',
-          class: 'hover:bg-transparent p-0 font-bold',
-          onClick: () => column.toggleSorting(column.getIsSorted() === 'asc'),
-        },
-        () => ['Machine Information', h(ArrowUpDown, { class: 'ml-2 h-4 w-4' })]
-      );
-    },
+    header: 'Machine & Model',
     cell: ({ row }) => {
       const machine = row.original;
-      return h('div', { class: 'flex items-center gap-3' }, [
+      return h('div', { class: 'flex items-center gap-3 group/name' }, [
         h(
           'div',
           {
             class:
-              'w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 border border-slate-200',
+              'flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center border border-slate-200 bg-gradient-to-br from-white to-slate-50 text-slate-400 hover:text-blue-600 hover:border-blue-200 hover:from-blue-50 hover:to-blue-100 transition-all shadow-sm',
           },
           [h(Monitor, { class: 'w-5 h-5' })]
         ),
-        h('div', { class: 'flex flex-col' }, [
-          h('span', { class: 'font-bold text-slate-900' }, machine.name),
-          h(
-            'span',
-            { class: 'text-xs text-muted-foreground' },
-            machine.model || 'No model specified'
-          ),
+        h('div', { class: 'min-w-0 flex-1' }, [
+          h('div', { class: 'flex items-center gap-2 mb-0.5' }, [
+            h(
+              'span',
+              {
+                class:
+                  'font-bold text-slate-900 group-hover/name:text-blue-700 transition-colors truncate cursor-pointer',
+                onClick: (e) => {
+                  e.stopPropagation();
+                  viewDetail(machine);
+                },
+              },
+              machine.name
+            ),
+            h(
+              'span',
+              {
+                class:
+                  'text-[9px] font-bold text-slate-400 uppercase tracking-wider px-1.5 py-0.5 bg-slate-100 rounded border border-slate-200 flex-shrink-0',
+              },
+              machine.model || 'STD'
+            ),
+          ]),
+          h('p', { class: 'text-xs text-slate-500 truncate' }, machine.location || 'Not assigned'),
         ]),
       ]);
     },
-  },
-  {
-    accessorKey: 'location',
-    header: 'Location',
-    cell: ({ row }) =>
-      h('div', { class: 'text-sm text-slate-600' }, row.getValue('location') || 'Not assigned'),
   },
   {
     accessorKey: 'status',
     header: 'Status',
     cell: ({ row }) => {
       const status = row.getValue('status') as string;
-      return h(
-        Badge,
-        {
-          variant: 'outline',
-          class: `px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${getStatusStyles(status)}`,
-        },
-        () => status
-      );
+      const stats = getMachineStats(row.original.id);
+      return h('div', { class: 'flex flex-col gap-1' }, [
+        h(
+          Badge,
+          {
+            variant: 'outline',
+            class: `text-[10px] font-bold uppercase tracking-wide px-2 py-1 ${getStatusStyles(status)}`,
+          },
+          () => status
+        ),
+        h('span', { class: 'text-[10px] text-slate-400' }, `${stats.count} repairs logged`),
+      ]);
     },
   },
   {
     id: 'utilization',
-    header: 'Log Activity',
+    header: () => h('div', { class: 'text-right' }, 'Total Cost'),
     cell: ({ row }) => {
       const stats = getMachineStats(row.original.id);
-      return h('div', { class: 'flex flex-col gap-0.5 text-xs' }, [
-        h('span', { class: 'text-slate-700 font-medium' }, `${stats.count} Repairs`),
-        h('span', { class: 'text-slate-400' }, `Total: ฿${stats.cost.toLocaleString()}`),
+      return h('div', { class: 'text-right' }, [
+        h(
+          'div',
+          { class: 'text-base font-black text-slate-900 hover:text-blue-700 transition-colors' },
+          `฿${stats.cost.toLocaleString()}`
+        ),
       ]);
     },
   },
@@ -129,24 +157,19 @@ const columns: ColumnDef<any>[] = [
     enableHiding: false,
     cell: ({ row }) => {
       const machine = row.original;
-      const copyId = () => {
-        navigator.clipboard.writeText(machine.id);
-        toast.success('Asset ID copied to clipboard');
-      };
 
-      return h('div', { class: 'flex items-center justify-end gap-1 prop-2' }, [
-        // Action: Copy ID
+      return h('div', { class: 'flex items-center justify-end gap-1 pr-2' }, [
+        // Action: Edit Asset
         h(
           Button,
           {
             variant: 'ghost',
             size: 'icon',
-            class:
-              'h-8 w-8 text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors',
-            title: 'Copy Asset ID',
-            onClick: copyId,
+            class: 'h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 transition-colors',
+            title: 'Edit Machine',
+            onClick: () => emit('edit-machine', machine),
           },
-          () => h(Copy, { class: 'h-3.5 w-3.5' })
+          () => h(Edit2, { class: 'h-3.5 w-3.5' })
         ),
 
         // Action: Generate QR
@@ -181,17 +204,51 @@ const columns: ColumnDef<any>[] = [
 </script>
 
 <template>
-  <div class="h-full flex flex-col space-y-4 overflow-hidden">
-    <div class="flex-shrink-0 flex items-center justify-between">
-      <h2 class="text-lg font-semibold tracking-tight text-slate-900 px-1">Registered Assets</h2>
-    </div>
-    <div class="flex-1 min-h-0 flex flex-col">
+  <div class="h-full flex flex-col overflow-hidden bg-slate-50">
+    <!-- Scrollable Content Area -->
+    <div class="flex-1 overflow-y-auto px-6 pb-6 pt-4">
+      <!-- Header Section -->
+      <div class="flex flex-shrink-0 items-center justify-between mb-4">
+        <div>
+          <h2 class="text-base font-bold text-slate-900">Registered Assets</h2>
+          <p class="text-xs text-slate-500">Manage and monitor your industrial equipment</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="relative w-64 flex-shrink-0">
+            <Search class="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
+            <Input
+              v-model="localSearch"
+              type="search"
+              placeholder="Search assets..."
+              class="pl-8 pr-2 h-9 text-xs bg-white border-slate-200 focus:bg-white transition-all shadow-sm"
+            />
+          </div>
+          <Button
+            class="gap-2 bg-blue-600 hover:bg-blue-700 shadow-md h-9"
+            @click="emit('add-machine')"
+          >
+            <Settings class="w-4 h-4" />
+            Add Machine
+          </Button>
+        </div>
+      </div>
+
+      <!-- DataTable -->
       <div
-        class="flex-1 min-h-0 rounded-xl border bg-white shadow-sm overflow-hidden border-slate-200 flex flex-col"
+        class="rounded-xl border border-slate-200/50 bg-white/80 backdrop-blur-sm shadow-sm overflow-hidden"
       >
-        <DataTable :columns="columns" :data="filteredMachines" class="flex-1" />
+        <DataTable :columns="columns" :data="filteredMachines" />
       </div>
     </div>
+
+    <!-- Repair Detail Modal (Nested trigger) -->
+    <Dialog v-model:open="isRepairDetailOpen">
+      <RepairDetailModal
+        v-if="selectedRepair"
+        :repair="selectedRepair"
+        @close="isRepairDetailOpen = false"
+      />
+    </Dialog>
 
     <!-- QR Modal -->
     <Dialog v-model:open="isQrModalOpen">

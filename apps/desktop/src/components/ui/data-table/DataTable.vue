@@ -30,12 +30,18 @@ import { Trash2 } from 'lucide-vue-next';
 import { h, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-const props = defineProps<{
-  columns: ColumnDef<TData, TValue>[];
-  data: TData[];
-  searchKey?: string;
-  enableSelection?: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    columns: ColumnDef<TData, TValue>[];
+    data: TData[];
+    searchKey?: string;
+    enableSelection?: boolean;
+    initialPageSize?: number;
+  }>(),
+  {
+    initialPageSize: 5,
+  }
+);
 
 const emit = defineEmits<{
   deleteSelected: [selectedRows: TData[]];
@@ -79,6 +85,11 @@ const table = useVueTable({
   getCoreRowModel: getCoreRowModel(),
   getPaginationRowModel: getPaginationRowModel(),
   getSortedRowModel: getSortedRowModel(),
+  initialState: {
+    pagination: {
+      pageSize: props.initialPageSize,
+    },
+  },
   state: {
     get sorting() {
       return sorting.value;
@@ -102,9 +113,9 @@ const { t } = useI18n();
 </script>
 
 <template>
-  <div class="space-y-4 relative">
+  <div class="flex flex-col space-y-4 relative">
     <!-- Table -->
-    <div class="relative rounded-[6px] border overflow-auto flex-1 min-h-0">
+    <div class="relative rounded-[6px] overflow-auto flex-1 min-h-0">
       <Table class="w-full relative">
         <TableHeader class="sticky top-0 bg-white z-10 shadow-sm whitespace-nowrap">
           <TableRow
@@ -147,7 +158,7 @@ const { t } = useI18n();
     </div>
 
     <!-- Pagination -->
-    <div class="flex items-center justify-between">
+    <div class="flex items-center justify-between px-6 py-2">
       <div class="flex items-center gap-4">
         <!-- Page Size Selector - Moved to front -->
         <div class="flex items-center gap-2">
@@ -162,16 +173,14 @@ const { t } = useI18n();
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="5">5</SelectItem>
               <SelectItem value="10">10</SelectItem>
-              <SelectItem value="20">20</SelectItem>
-              <SelectItem value="30">30</SelectItem>
-              <SelectItem value="50">50</SelectItem>
-              <SelectItem value="100">100</SelectItem>
+              <SelectItem value="15">15</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
-        <div class="text-sm text-muted-foreground">
+        <div v-if="enableSelection" class="text-sm text-muted-foreground">
           {{
             t('common.table.selectedRows', {
               selected: table.getFilteredSelectedRowModel().rows.length,

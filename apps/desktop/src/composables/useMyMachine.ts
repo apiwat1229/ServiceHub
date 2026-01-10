@@ -42,6 +42,7 @@ export interface StockItem {
     dateReceived?: string;
     receiver?: string;
     description?: string;
+    image?: string;
 }
 
 // Mock Data
@@ -163,6 +164,15 @@ export function useMyMachine() {
         toast.success('Machine removed');
     };
 
+    const updateMachine = (id: string, updates: Partial<Machine>) => {
+        const index = machines.value.findIndex(m => m.id === id);
+        if (index !== -1) {
+            machines.value[index] = { ...machines.value[index], ...updates };
+            saveData();
+            toast.success('Machine updated');
+        }
+    };
+
     const addRepair = (repair: Omit<Repair, 'id' | 'timestamp'>) => {
         const newRepair: Repair = {
             ...repair,
@@ -227,6 +237,7 @@ export function useMyMachine() {
         stocks,
         loadData,
         addMachine,
+        updateMachine,
         deleteMachine,
         addRepair,
         deleteRepair,
