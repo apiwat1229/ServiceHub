@@ -339,6 +339,13 @@ export class BookingsService {
             };
         }
 
+        const safeParseFloat = (val: any) => {
+            if (val === undefined) return undefined;
+            if (val === null || val === '') return null;
+            const parsed = parseFloat(val);
+            return isNaN(parsed) ? null : parsed;
+        };
+
         const updateData: any = {
             supplierId: data.supplierId,
             supplierCode: data.supplierCode,
@@ -346,18 +353,18 @@ export class BookingsService {
             truckType: data.truckType,
             truckRegister: data.truckRegister,
             rubberType: data.rubberType,
-            estimatedWeight: data.estimatedWeight ? parseFloat(data.estimatedWeight) : null,
+            estimatedWeight: safeParseFloat(data.estimatedWeight),
             recorder: data.recorder,
             lotNo: data.lotNo,
             trailerLotNo: data.trailerLotNo,
-            moisture: data.moisture !== undefined ? parseFloat(data.moisture) : undefined,
-            drcEst: data.drcEst !== undefined ? parseFloat(data.drcEst) : undefined,
-            drcRequested: data.drcRequested !== undefined ? parseFloat(data.drcRequested) : undefined,
-            drcActual: data.drcActual !== undefined ? parseFloat(data.drcActual) : undefined,
-            trailerMoisture: data.trailerMoisture !== undefined ? parseFloat(data.trailerMoisture) : undefined,
-            trailerDrcEst: data.trailerDrcEst !== undefined ? parseFloat(data.trailerDrcEst) : undefined,
-            trailerDrcRequested: data.trailerDrcRequested !== undefined ? parseFloat(data.trailerDrcRequested) : undefined,
-            trailerDrcActual: data.trailerDrcActual !== undefined ? parseFloat(data.trailerDrcActual) : undefined,
+            moisture: safeParseFloat(data.moisture),
+            drcEst: safeParseFloat(data.drcEst),
+            drcRequested: safeParseFloat(data.drcRequested),
+            drcActual: safeParseFloat(data.drcActual),
+            trailerMoisture: safeParseFloat(data.trailerMoisture),
+            trailerDrcEst: safeParseFloat(data.trailerDrcEst),
+            trailerDrcRequested: safeParseFloat(data.trailerDrcRequested),
+            trailerDrcActual: safeParseFloat(data.trailerDrcActual),
         };
 
         if (data.status === 'APPROVED') {
