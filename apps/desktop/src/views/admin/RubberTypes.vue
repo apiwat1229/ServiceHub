@@ -189,7 +189,7 @@ const columns: ColumnDef<RubberType>[] = [
           'span',
           {
             class: [
-              'inline-flex items-center justify-center rounded-md px-1.5 py-0 text-[9px] font-bold uppercase tracking-wide h-5 min-w-[60px]',
+              'inline-flex items-center justify-center rounded-md px-1.5 py-0 text-[0.5625rem] font-bold uppercase tracking-wide h-5 min-w-[60px]',
               isActive ? 'bg-emerald-500/10 text-emerald-500' : 'bg-muted text-muted-foreground',
             ].join(' '),
           },

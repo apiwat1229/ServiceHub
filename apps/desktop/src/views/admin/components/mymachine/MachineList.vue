@@ -108,7 +108,7 @@ const columns: ColumnDef<any>[] = [
               'span',
               {
                 class:
-                  'text-[9px] font-bold text-slate-400 uppercase tracking-wider px-1.5 py-0.5 bg-slate-100 rounded border border-slate-200 flex-shrink-0',
+                  'text-[0.5625rem] font-bold text-slate-400 uppercase tracking-wider px-1.5 py-0.5 bg-slate-100 rounded border border-slate-200 flex-shrink-0',
               },
               machine.model || 'STD'
             ),
@@ -129,11 +129,11 @@ const columns: ColumnDef<any>[] = [
           Badge,
           {
             variant: 'outline',
-            class: `text-[10px] font-bold uppercase tracking-wide px-2 py-1 ${getStatusStyles(status)}`,
+            class: `text-[0.625rem] font-bold uppercase tracking-wide px-2 py-1 ${getStatusStyles(status)}`,
           },
           () => status
         ),
-        h('span', { class: 'text-[10px] text-slate-400' }, `${stats.count} repairs logged`),
+        h('span', { class: 'text-[0.625rem] text-slate-400' }, `${stats.count} repairs logged`),
       ]);
     },
   },

@@ -45,7 +45,7 @@ const downloadQr = () => {
         </div>
         <div>
           <DialogTitle class="text-lg sm:text-xl">Asset QR Code</DialogTitle>
-          <DialogDescription class="text-[10px] sm:text-xs">
+          <DialogDescription class="text-[0.625rem] sm:text-xs">
             Scannable link for external asset status tracking.
           </DialogDescription>
         </div>
@@ -75,12 +75,12 @@ const downloadQr = () => {
       <!-- Info Card -->
       <div class="w-full bg-slate-50 rounded-xl p-4 border border-slate-100 mb-6">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider"
+          <span class="text-[0.625rem] font-semibold text-slate-500 uppercase tracking-wider"
             >Public Asset Link</span
           >
           <button
             @click="copyToClipboard"
-            class="flex items-center gap-1.5 text-[10px] text-blue-600 font-bold hover:text-blue-700 transition-colors"
+            class="flex items-center gap-1.5 text-[0.625rem] text-blue-600 font-bold hover:text-blue-700 transition-colors"
           >
             <Copy class="h-3 w-3" />
             Copy
@@ -97,7 +97,7 @@ const downloadQr = () => {
       <!-- Quick Info Refernce -->
       <div class="grid grid-cols-2 gap-3 w-full">
         <div class="bg-white border border-slate-100 rounded-lg p-2.5 sm:p-3 text-center">
-          <p class="text-[9px] sm:text-[10px] text-slate-400 uppercase font-bold mb-0.5">
+          <p class="text-[0.5625rem] sm:text-[0.625rem] text-slate-400 uppercase font-bold mb-0.5">
             Asset Name
           </p>
           <p class="text-xs sm:text-sm font-semibold text-slate-700 truncate px-1">
@@ -105,7 +105,7 @@ const downloadQr = () => {
           </p>
         </div>
         <div class="bg-white border border-slate-100 rounded-lg p-2.5 sm:p-3 text-center">
-          <p class="text-[9px] sm:text-[10px] text-slate-400 uppercase font-bold mb-0.5">Model</p>
+          <p class="text-[0.5625rem] sm:text-[0.625rem] text-slate-400 uppercase font-bold mb-0.5">Model</p>
           <p class="text-xs sm:text-sm font-semibold text-slate-700 truncate px-1">
             {{ machine.model }}
           </p>

@@ -133,7 +133,7 @@ const columns: ColumnDef<any>[] = [
           h('span', { class: 'font-bold text-slate-900' }, item.name),
           h(
             'span',
-            { class: 'text-[10px] font-medium text-slate-400 uppercase tracking-tight' },
+            { class: 'text-[0.625rem] font-medium text-slate-400 uppercase tracking-tight' },
             item.code || 'NO-CODE'
           ),
         ]),
@@ -177,7 +177,7 @@ const columns: ColumnDef<any>[] = [
               Badge,
               {
                 variant: 'outline',
-                class: 'bg-red-50 text-red-700 border-red-100 text-[9px] font-bold px-1.5 py-0',
+                class: 'bg-red-50 text-red-700 border-red-100 text-[0.5625rem] font-bold px-1.5 py-0',
               },
               () => 'LOW STOCK'
             )
@@ -192,7 +192,7 @@ const columns: ColumnDef<any>[] = [
       const amount = parseFloat(row.getValue('price'));
       return h('div', { class: 'flex flex-col' }, [
         h('span', { class: 'text-sm font-bold text-slate-900' }, `฿${amount.toLocaleString()}`),
-        h('span', { class: 'text-[10px] text-slate-400' }, 'Unit Price'),
+        h('span', { class: 'text-[0.625rem] text-slate-400' }, 'Unit Price'),
       ]);
     },
   },

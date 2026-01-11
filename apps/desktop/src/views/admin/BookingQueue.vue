@@ -37,13 +37,6 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Card } from '@/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import Spinner from '@/components/ui/spinner/Spinner.vue';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuthStore } from '@/stores/auth';
@@ -431,15 +424,22 @@ watch(selectedSlot, (newSlot) => {
       </div>
 
       <div class="flex items-center space-x-2">
-        <Select v-model="queueMode">
-          <SelectTrigger class="w-[150px] h-9">
-            <SelectValue placeholder="Select Queue" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Cuplump">Queue Cuplump</SelectItem>
-            <SelectItem value="USS">Queue USS</SelectItem>
-          </SelectContent>
-        </Select>
+        <Tabs v-model="queueMode" class="w-[250px]">
+          <TabsList class="grid w-full grid-cols-2">
+            <TabsTrigger
+              value="Cuplump"
+              class="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            >
+              Cuplump
+            </TabsTrigger>
+            <TabsTrigger
+              value="USS"
+              class="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            >
+              USS
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
 
         <Button variant="outline" size="sm" @click="fetchQueues">
           <RefreshCw class="mr-2 h-4 w-4" />
@@ -522,7 +522,7 @@ watch(selectedSlot, (newSlot) => {
                   ]"
                 >
                   <span class="text-xs font-bold leading-none">{{ slot.label }}</span>
-                  <div class="text-[10px] leading-none opacity-90">
+                  <div class="text-[0.625rem] leading-none opacity-90">
                     <template v-if="slotStats[slot.value]">
                       <span
                         v-if="
@@ -617,9 +617,10 @@ watch(selectedSlot, (newSlot) => {
           <!-- Header: Queue & Actions -->
           <div class="flex justify-between items-start mb-4">
             <div class="flex flex-col">
-              <span class="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">{{
-                t('bookingQueue.queueNumber')
-              }}</span>
+              <span
+                class="text-[0.625rem] uppercase tracking-widest text-muted-foreground font-bold"
+                >{{ t('bookingQueue.queueNumber') }}</span
+              >
               <div class="flex items-baseline gap-1">
                 <span class="text-3xl font-black text-primary leading-none">{{
                   queue.queueNo
@@ -633,7 +634,7 @@ watch(selectedSlot, (newSlot) => {
                 class="flex items-center text-green-600 bg-green-50 px-2.5 py-1 rounded-full border border-green-100 shadow-sm shrink-0"
               >
                 <CheckCircle2 class="h-3 w-3 mr-1" />
-                <span class="text-[10px] font-bold uppercase tracking-tight">{{
+                <span class="text-[0.625rem] font-bold uppercase tracking-tight">{{
                   t('booking.deliveryCompleted') || 'Completed'
                 }}</span>
               </div>
@@ -670,7 +671,7 @@ watch(selectedSlot, (newSlot) => {
             <div class="space-y-1">
               <div class="flex items-center gap-1.5">
                 <IdCard class="w-3 h-3 text-blue-600" />
-                <span class="text-[13px] font-bold text-blue-600 uppercase">{{
+                <span class="text-[0.8125rem] font-bold text-blue-600 uppercase">{{
                   queue.supplierCode
                 }}</span>
               </div>
@@ -711,14 +712,14 @@ watch(selectedSlot, (newSlot) => {
           >
             <div class="flex items-center gap-1.5">
               <Hash class="w-3 h-3 text-muted-foreground" />
-              <span class="text-[11px] font-mono font-medium text-muted-foreground">{{
+              <span class="text-[0.6875rem] font-mono font-medium text-muted-foreground">{{
                 queue.bookingCode
               }}</span>
             </div>
             <Button
               variant="outline"
               size="sm"
-              class="h-7 px-2.5 text-[11px] font-bold gap-1.5 bg-background shadow-sm hover:bg-primary hover:text-white transition-all rounded-lg"
+              class="h-7 px-2.5 text-[0.6875rem] font-bold gap-1.5 bg-background shadow-sm hover:bg-primary hover:text-white transition-all rounded-lg"
               @click="handleShowTicket(queue)"
             >
               <FileText class="h-3 w-3" />

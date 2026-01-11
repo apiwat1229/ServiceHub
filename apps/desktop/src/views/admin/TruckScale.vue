@@ -1578,7 +1578,7 @@ onUnmounted(() => {
                 >
                   <div class="flex items-center gap-1.5 mb-0.5">
                     <Truck class="w-3.5 h-3.5 text-blue-600" />
-                    <span class="text-[10px] text-blue-600 font-bold uppercase tracking-wider">{{
+                    <span class="text-[0.625rem] text-blue-600 font-bold uppercase tracking-wider">{{
                       t('truckScale.totalExpected') || 'Total Expected'
                     }}</span>
                   </div>
@@ -1592,7 +1592,7 @@ onUnmounted(() => {
                 >
                   <div class="flex items-center gap-1.5 mb-0.5">
                     <CheckCircle class="w-3.5 h-3.5 text-green-600" />
-                    <span class="text-[10px] text-green-600 font-bold uppercase tracking-wider">{{
+                    <span class="text-[0.625rem] text-green-600 font-bold uppercase tracking-wider">{{
                       t('truckScale.stats.checkedIn')
                     }}</span>
                   </div>
@@ -1606,7 +1606,7 @@ onUnmounted(() => {
                 >
                   <div class="flex items-center gap-1.5 mb-0.5">
                     <Clock class="w-3.5 h-3.5 text-orange-600" />
-                    <span class="text-[10px] text-orange-600 font-bold uppercase tracking-wider">{{
+                    <span class="text-[0.625rem] text-orange-600 font-bold uppercase tracking-wider">{{
                       t('truckScale.stats.pending')
                     }}</span>
                   </div>
@@ -1706,7 +1706,7 @@ onUnmounted(() => {
                 >
                   <div class="flex items-center gap-1.5 mb-0.5">
                     <Truck class="w-3.5 h-3.5 text-blue-600" />
-                    <span class="text-[10px] text-blue-600 font-bold uppercase tracking-wider">{{
+                    <span class="text-[0.625rem] text-blue-600 font-bold uppercase tracking-wider">{{
                       t('truckScale.totalExpected')
                     }}</span>
                   </div>
@@ -1720,7 +1720,7 @@ onUnmounted(() => {
                 >
                   <div class="flex items-center gap-1.5 mb-0.5">
                     <CheckCircle class="w-3.5 h-3.5 text-green-600" />
-                    <span class="text-[10px] text-green-600 font-bold uppercase tracking-wider">{{
+                    <span class="text-[0.625rem] text-green-600 font-bold uppercase tracking-wider">{{
                       t('truckScale.stats.checkedIn')
                     }}</span>
                   </div>
@@ -1734,7 +1734,7 @@ onUnmounted(() => {
                 >
                   <div class="flex items-center gap-1.5 mb-0.5">
                     <Clock class="w-3.5 h-3.5 text-orange-600" />
-                    <span class="text-[10px] text-orange-600 font-bold uppercase tracking-wider">{{
+                    <span class="text-[0.625rem] text-orange-600 font-bold uppercase tracking-wider">{{
                       t('truckScale.stats.pending')
                     }}</span>
                   </div>
@@ -1833,7 +1833,7 @@ onUnmounted(() => {
                 >
                   <div class="flex items-center gap-1.5 mb-0.5">
                     <Truck class="w-3.5 h-3.5 text-blue-600" />
-                    <span class="text-[10px] text-blue-600 font-bold uppercase tracking-wider">{{
+                    <span class="text-[0.625rem] text-blue-600 font-bold uppercase tracking-wider">{{
                       t('truckScale.totalExpected')
                     }}</span>
                   </div>
@@ -1847,7 +1847,7 @@ onUnmounted(() => {
                 >
                   <div class="flex items-center gap-1.5 mb-0.5">
                     <CheckCircle class="w-3.5 h-3.5 text-green-600" />
-                    <span class="text-[10px] text-green-600 font-bold uppercase tracking-wider">{{
+                    <span class="text-[0.625rem] text-green-600 font-bold uppercase tracking-wider">{{
                       t('truckScale.stats.checkedIn')
                     }}</span>
                   </div>
@@ -1861,7 +1861,7 @@ onUnmounted(() => {
                 >
                   <div class="flex items-center gap-1.5 mb-0.5">
                     <Clock class="w-3.5 h-3.5 text-orange-600" />
-                    <span class="text-[10px] text-orange-600 font-bold uppercase tracking-wider">{{
+                    <span class="text-[0.625rem] text-orange-600 font-bold uppercase tracking-wider">{{
                       t('truckScale.stats.pending')
                     }}</span>
                   </div>
@@ -1961,7 +1961,7 @@ onUnmounted(() => {
                 >
                   <div class="flex items-center gap-1.5 mb-0.5">
                     <Truck class="w-3.5 h-3.5 text-blue-600" />
-                    <span class="text-[10px] text-blue-600 font-bold uppercase tracking-wider">{{
+                    <span class="text-[0.625rem] text-blue-600 font-bold uppercase tracking-wider">{{
                       t('truckScale.stats.totalTrips')
                     }}</span>
                   </div>
@@ -1976,7 +1976,7 @@ onUnmounted(() => {
                 >
                   <div class="flex items-center gap-1.5 mb-0.5">
                     <Circle class="w-2 h-2 fill-current text-green-500" />
-                    <span class="text-[10px] text-green-600 font-bold uppercase tracking-wider">{{
+                    <span class="text-[0.625rem] text-green-600 font-bold uppercase tracking-wider">{{
                       t('truckScale.stats.totalGrossWeight') || 'Total Gross Weight'
                     }}</span>
                   </div>
@@ -1984,7 +1984,7 @@ onUnmounted(() => {
                     <span class="text-3xl font-black text-green-950 leading-none">{{
                       dashboardStats.net.toLocaleString()
                     }}</span>
-                    <span class="text-[10px] font-bold text-green-600/70">Kg.</span>
+                    <span class="text-[0.625rem] font-bold text-green-600/70">Kg.</span>
                   </div>
                 </div>
 
@@ -1994,7 +1994,7 @@ onUnmounted(() => {
                 >
                   <div class="flex items-center gap-1.5 mb-0.5">
                     <Weight class="w-3.5 h-3.5 text-indigo-600" />
-                    <span class="text-[10px] text-indigo-600 font-bold uppercase tracking-wider">{{
+                    <span class="text-[0.625rem] text-indigo-600 font-bold uppercase tracking-wider">{{
                       t('truckScale.stats.totalWeightIn') || 'Total Weight In'
                     }}</span>
                   </div>
@@ -2002,7 +2002,7 @@ onUnmounted(() => {
                     <span class="text-3xl font-black text-indigo-950 leading-none">{{
                       dashboardStats.gross.toLocaleString()
                     }}</span>
-                    <span class="text-[10px] font-bold text-indigo-600/70">Kg.</span>
+                    <span class="text-[0.625rem] font-bold text-indigo-600/70">Kg.</span>
                   </div>
                 </div>
 
@@ -2012,7 +2012,7 @@ onUnmounted(() => {
                 >
                   <div class="flex items-center gap-1.5 mb-0.5">
                     <Circle class="w-2 h-2 fill-current text-orange-500" />
-                    <span class="text-[10px] text-orange-600 font-bold uppercase tracking-wider">{{
+                    <span class="text-[0.625rem] text-orange-600 font-bold uppercase tracking-wider">{{
                       t('truckScale.stats.inOut')
                     }}</span>
                   </div>
@@ -2024,7 +2024,7 @@ onUnmounted(() => {
                     <span class="text-lg font-bold text-orange-800">{{
                       dashboardStats.weightOut.toLocaleString()
                     }}</span>
-                    <span class="text-[10px] font-bold text-orange-600/70 ml-0.5">Kg.</span>
+                    <span class="text-[0.625rem] font-bold text-orange-600/70 ml-0.5">Kg.</span>
                   </div>
                 </div>
               </div>

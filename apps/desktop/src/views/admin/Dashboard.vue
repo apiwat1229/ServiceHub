@@ -231,7 +231,7 @@ onUnmounted(() => {
               </div>
               <Badge
                 variant="outline"
-                class="ml-auto text-[10px] h-5 bg-emerald-50 text-emerald-600 border-emerald-200"
+                class="ml-auto text-[0.625rem] h-5 bg-emerald-50 text-emerald-600 border-emerald-200"
               >
                 Online
               </Badge>

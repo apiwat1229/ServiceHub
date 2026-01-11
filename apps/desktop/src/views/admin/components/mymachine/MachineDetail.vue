@@ -81,13 +81,13 @@ onMounted(() => {
             <div class="grid grid-cols-2 gap-x-12 gap-y-6">
               <!-- Top Identity Info integrated into specs -->
               <div class="flex justify-between items-end border-b border-slate-50 pb-2">
-                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest"
+                <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest"
                   >Asset Name</span
                 >
                 <span class="text-sm font-black text-slate-900">{{ machine.name }}</span>
               </div>
               <div class="flex justify-between items-end border-b border-slate-50 pb-2">
-                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest"
+                <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest"
                   >Register ID</span
                 >
                 <span class="text-sm font-black text-slate-900"
@@ -96,19 +96,19 @@ onMounted(() => {
               </div>
 
               <div class="flex justify-between items-end border-b border-slate-50 pb-2">
-                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest"
+                <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest"
                   >Model Name</span
                 >
                 <span class="text-sm font-black text-slate-900">{{ machine.model }}</span>
               </div>
               <div class="flex justify-between items-end border-b border-slate-50 pb-2">
-                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest"
+                <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest"
                   >Location Zone</span
                 >
                 <span class="text-sm font-black text-slate-900">{{ machine.location }}</span>
               </div>
               <div class="flex justify-between items-end border-b border-slate-50 pb-2">
-                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest"
+                <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest"
                   >Commission Date</span
                 >
                 <span class="text-sm font-black text-slate-900">{{
@@ -116,11 +116,11 @@ onMounted(() => {
                 }}</span>
               </div>
               <div class="flex justify-between items-end border-b border-slate-50 pb-2">
-                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest"
+                <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest"
                   >Status</span
                 >
                 <Badge
-                  :class="`rounded-sm font-black uppercase tracking-widest text-[9px] px-2 py-0.5 border ${getStatusColor(machine.status)}`"
+                  :class="`rounded-sm font-black uppercase tracking-widest text-[0.5625rem] px-2 py-0.5 border ${getStatusColor(machine.status)}`"
                 >
                   {{ machine.status }}
                 </Badge>
@@ -141,25 +141,25 @@ onMounted(() => {
               class="flex items-center gap-12 bg-slate-50/50 p-8 border border-slate-100 rounded-sm"
             >
               <div class="flex-1 space-y-1 text-center">
-                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <p class="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest">
                   Lifetime Cost
                 </p>
                 <p class="text-3xl font-black text-slate-900 tracking-tighter">
                   {{ formatCurrency(totalRepairCost) }}
                 </p>
-                <p class="text-[9px] font-bold text-slate-400 uppercase">
+                <p class="text-[0.5625rem] font-bold text-slate-400 uppercase">
                   Total Maintenance Expenditure
                 </p>
               </div>
               <div class="w-px h-12 bg-slate-200"></div>
               <div class="flex-1 space-y-1 text-center">
-                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <p class="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest">
                   Maintenance Frequency
                 </p>
                 <p class="text-3xl font-black text-slate-900 tracking-tighter">
                   {{ machineRepairs.length }} Events
                 </p>
-                <p class="text-[9px] font-bold text-slate-400 uppercase">Confirmed Recorded Logs</p>
+                <p class="text-[0.5625rem] font-bold text-slate-400 uppercase">Confirmed Recorded Logs</p>
               </div>
             </div>
           </section>
@@ -177,7 +177,7 @@ onMounted(() => {
                   Maintenance Log Book
                 </h2>
               </div>
-              <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest"
+              <span class="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest"
                 >{{ machineRepairs.length }} entries recorded</span
               >
             </div>
@@ -206,7 +206,7 @@ onMounted(() => {
                         </span>
                         <span class="w-1.5 h-1.5 bg-slate-200 rounded-full"></span>
                         <span
-                          class="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"
+                          class="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"
                         >
                           <User class="w-3.5 h-3.5 text-slate-300" />
                           TECH: {{ repair.technician || 'N/A' }}
@@ -217,7 +217,7 @@ onMounted(() => {
                       <p class="text-sm font-black text-slate-900 tracking-tight leading-none mb-1">
                         {{ formatCurrency(repair.totalCost) }}
                       </p>
-                      <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                      <p class="text-[0.5625rem] font-black text-slate-400 uppercase tracking-[0.2em]">
                         Service Fee
                       </p>
                     </div>
@@ -234,7 +234,7 @@ onMounted(() => {
                       <div class="flex items-center gap-2 mb-3">
                         <Clock class="w-3.5 h-3.5 text-blue-500" />
                         <p
-                          class="text-[10px] font-black text-blue-600 uppercase tracking-widest leading-none"
+                          class="text-[0.625rem] font-black text-blue-600 uppercase tracking-widest leading-none"
                         >
                           Maintenance Description / Detail
                         </p>
@@ -249,7 +249,7 @@ onMounted(() => {
                   <div v-if="repair.parts && repair.parts.length > 0" class="space-y-3">
                     <div class="flex items-center gap-2">
                       <Package class="w-3.5 h-3.5 text-slate-400" />
-                      <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                      <p class="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest">
                         Parts & Materials Used
                       </p>
                     </div>
@@ -267,22 +267,22 @@ onMounted(() => {
                           </div>
                           <div>
                             <p
-                              class="text-[11px] font-black text-slate-900 uppercase tracking-tighter leading-none mb-1"
+                              class="text-[0.6875rem] font-black text-slate-900 uppercase tracking-tighter leading-none mb-1"
                             >
                               {{ part.name }}
                             </p>
                             <p
-                              class="text-[9px] font-bold text-slate-400 uppercase tracking-widest"
+                              class="text-[0.5625rem] font-bold text-slate-400 uppercase tracking-widest"
                             >
                               {{ (part as any).code || 'N/A' }}
                             </p>
                           </div>
                         </div>
                         <div class="text-right">
-                          <p class="text-[11px] font-black text-slate-900 leading-none mb-1">
+                          <p class="text-[0.6875rem] font-black text-slate-900 leading-none mb-1">
                             {{ part.qty }} {{ (part as any).unit || 'Units' }}
                           </p>
-                          <p class="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
+                          <p class="text-[0.5625rem] font-bold text-slate-400 uppercase tracking-tighter">
                             @ {{ formatCurrency(part.price) }}
                           </p>
                         </div>
@@ -304,7 +304,7 @@ onMounted(() => {
                     Clean Log Book
                   </p>
                   <p
-                    class="text-[10px] font-bold text-slate-400 uppercase tracking-widest max-w-[200px] mx-auto leading-relaxed"
+                    class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest max-w-[200px] mx-auto leading-relaxed"
                   >
                     No official maintenance history recorded for this asset.
                   </p>
@@ -316,22 +316,22 @@ onMounted(() => {
           <!-- Section 4: Document Footer / Verification -->
           <footer class="pt-8 border-t-2 border-slate-100 flex items-center justify-between">
             <div class="space-y-1">
-              <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">
+              <p class="text-[0.5625rem] font-black text-slate-400 uppercase tracking-[0.2em]">
                 Generated By System
               </p>
               <div class="flex items-center gap-2">
                 <Layout class="w-3.5 h-3.5 text-slate-300" />
-                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                <p class="text-[0.625rem] font-bold text-slate-500 uppercase tracking-widest">
                   Asset Management Module v1.0
                 </p>
               </div>
             </div>
             <div class="text-right">
-              <p class="text-[9px] font-black text-slate-300 uppercase tracking-widest">
+              <p class="text-[0.5625rem] font-black text-slate-300 uppercase tracking-widest">
                 Official Record
               </p>
               <p
-                class="text-[10px] font-black text-slate-900 uppercase tracking-tighter leading-none"
+                class="text-[0.625rem] font-black text-slate-900 uppercase tracking-tighter leading-none"
               >
                 DO NOT REMOVE
               </p>
@@ -351,7 +351,7 @@ onMounted(() => {
       >
         <FileText class="w-8 h-8 text-slate-400" />
       </div>
-      <p class="text-slate-400 font-black uppercase text-[10px] tracking-[0.3em] text-center">
+      <p class="text-slate-400 font-black uppercase text-[0.625rem] tracking-[0.3em] text-center">
         Pulling Official Records...
       </p>
     </div>

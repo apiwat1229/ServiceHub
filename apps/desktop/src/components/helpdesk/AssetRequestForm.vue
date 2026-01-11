@@ -311,7 +311,7 @@ const getImageUrl = (path: string | null | undefined) => {
                       user.displayName || `${user.firstName || ''} ${user.lastName || ''}`.trim()
                     }}
                   </span>
-                  <span class="text-[11px] text-slate-500 font-medium tracking-tight">
+                  <span class="text-[0.6875rem] text-slate-500 font-medium tracking-tight">
                     {{ user.position || user.role }}
                   </span>
                 </div>
@@ -358,7 +358,7 @@ const getImageUrl = (path: string | null | undefined) => {
               </div>
               <div
                 v-if="selectedAsset.stock <= 5"
-                class="absolute top-2 right-2 bg-orange-500/10 text-orange-600 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border border-orange-500/20"
+                class="absolute top-2 right-2 bg-orange-500/10 text-orange-600 px-2 py-0.5 rounded-full text-[0.625rem] font-bold uppercase tracking-wider border border-orange-500/20"
               >
                 Low Stock
               </div>
@@ -374,7 +374,7 @@ const getImageUrl = (path: string | null | undefined) => {
                 </h4>
               </div>
 
-              <div class="grid grid-cols-[80px,1fr] gap-y-1.5 text-[12px] sm:text-[13px]">
+              <div class="grid grid-cols-[80px,1fr] gap-y-1.5 text-[0.75rem] sm:text-[0.8125rem]">
                 <span class="text-slate-400 font-medium tracking-tight">Code:</span>
                 <span class="text-slate-700 font-bold font-mono tracking-tight">{{
                   selectedAsset.code
@@ -399,7 +399,7 @@ const getImageUrl = (path: string | null | undefined) => {
                   v-else
                   class="h-[60px] border border-dashed border-slate-200 rounded-lg flex items-center justify-center bg-slate-50/50"
                 >
-                  <span class="text-[10px] text-slate-400 font-medium italic"
+                  <span class="text-[0.625rem] text-slate-400 font-medium italic"
                     >No Barcode Assigned</span
                   >
                 </div>

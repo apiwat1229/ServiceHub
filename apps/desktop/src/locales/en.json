@@ -97,7 +97,7 @@
       "description": "Material Requirements Planning for production and inventory."
     },
     "cuplump": {
-      "name": "Cuplump Pool",
+      "name": "Cuplump",
       "description": "Cuplump Management System"
     },
     "booking": {
@@ -416,7 +416,7 @@
       }
     },
     "projectTimeline": {
-      "name": "Project TimeLine",
+      "name": "Project Management",
       "description": "Inventory Management and project tracking."
     },
     "contracts": {
@@ -725,7 +725,8 @@
       "analytics": "Analytics",
       "roles": "Roles & Permissions",
       "bookingQueue": "Booking Queue",
-      "truckScale": "Truck Scale"
+      "truckScale": "Truck Scale",
+      "receiving": "Raw Material Receiving"
     },
     "userProfile": {
       "title": "User Profile",
@@ -1251,6 +1252,7 @@
   },
   "cuplump": {
     "title": "Cuplump",
+    "detailTitle": "Cuplump Details",
     "pageTitle": "Cuplump",
     "pageDescription": "Cuplump Management System",
     "lotNo": "Lot Number",
@@ -1302,21 +1304,28 @@
     "failedToDelete": "Failed to delete",
     "numericOnly": "Numbers only (0-9)",
     "confirmSaveAll": "Are you sure you want to save {count} item(s)?",
-    "enterRequiredFields": "Please enter both Before Press and After Press for all items",
+    "enterRequiredFields": "Please enter Before Press and After Press for all items",
     "noSamplesToSave": "No samples with data to save.",
     "lotNoDuplicate": "Lot Number already exists"
   },
   "uss": {
     "title": "USS",
+    "detailTitle": "USS Details",
     "lotNo": "Lot No.",
+    "lotNumber": "Lot Number",
     "supplier": "Supplier",
     "truck": "Truck",
     "rubberType": "Rubber Type",
-    "moisture": "Moisture",
-    "drcEst": "DRC Est.",
+    "totalPallets": "Total Pallets",
+    "grossPlusPalletsWeight": "Gross + Pallets Weight",
+    "beforeDryer": "Before Dryer",
+    "drcEst": "% DRC Est.",
+    "drcRequested": "DRC Req.",
+    "drcActual": "DRC Actual",
     "avgCp": "AVG %CP",
     "grossWeight": "Gross Weight",
     "netWeight": "Net Weight",
+    "action": "Action",
     "all": "All",
     "complete": "Complete",
     "incomplete": "Incomplete",
@@ -1325,16 +1334,12 @@
     "mainInfo": "Main Info",
     "date": "Date",
     "recordedItems": "Recorded Items",
-    "specialReceiving": "Special Receiving",
-    "beforePress": "Before Press",
-    "basket": "Basket",
-    "uss": "USS",
-    "afterPress": "After Press",
-    "percentCp": "%CP",
-    "beforeBaking": "Before Baking",
-    "action": "Action",
-    "saveRecord": "Save Record",
-    "addFirstSample": "Add First Sample",
+    "palletNumber": "Pallet No.",
+    "palletWeight": "Pallet Weight (Kg.)",
+    "totalWeight": "Total Weight (Kg.)",
+    "spgr": "SPGR",
+    "totals": "Totals",
+    "pallet": "Pallet",
     "clear": "Clear",
     "noSamples": "No recorded items yet.",
     "confirmDelete": "Are you sure you want to delete this item?",
@@ -1342,7 +1347,7 @@
     "sampleSaved": "Sample saved successfully",
     "samplesSaved": "Samples saved successfully",
     "confirmSaveAll": "Are you sure you want to save {count} item(s)?",
-    "enterRequiredFields": "Please enter both Before Press and After Press for all items",
+    "enterRequiredFields": "Please enter both Total Weight and Pallet Weight for all items",
     "failedToSave": "Failed to save sample",
     "failedToDelete": "Failed to delete sample",
     "numericOnly": "Numeric Only",

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent } from '@/components/ui/card';
 import DataTable from '@/components/ui/data-table/DataTable.vue';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+// import { Dialog, DialogContent } from '@/components/ui/dialog'; // Removed
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { bookingsApi } from '@/services/bookings';
@@ -13,14 +13,22 @@ import { getLocalTimeZone, today } from '@internationalized/date';
 import type { ColumnDef } from '@tanstack/vue-table';
 import { format } from 'date-fns';
 import { Calendar as CalendarIcon, Droplets, Edit, Search } from 'lucide-vue-next';
-import { VisuallyHidden } from 'radix-vue';
+// import { VisuallyHidden } from 'radix-vue'; // Removed
 import { computed, h, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useRouter } from 'vue-router';
 import { toast } from 'vue-sonner';
-import CuplumpDetailContent from './components/CuplumpDetailContent.vue';
+// import CuplumpDetailContent from './components/CuplumpDetailContent.vue'; // Removed
+
+const props = defineProps({
+  embedded: {
+    type: Boolean,
+    default: false,
+  },
+});
 
 const { t } = useI18n();
-// const router = useRouter(); // Router might not be needed for nav anymore if fully modal based
+const router = useRouter();
 
 // State
 const bookings = ref<any[]>([]);
@@ -46,16 +54,15 @@ const handleDateSelect = (newDate: any) => {
 };
 
 // Modal Logic
-const isDetailOpen = ref(false);
-const selectedBooking = ref<any>(null);
-
 const handleRowClick = (row: any) => {
-  selectedBooking.value = {
-    bookingId: row.originalId,
-    isTrailer: row.isTrailerPart,
-    partLabel: row.partLabel,
-  };
-  isDetailOpen.value = true;
+  router.push({
+    name: 'CuplumpDetail',
+    params: { id: row.originalId },
+    query: {
+      isTrailer: row.isTrailerPart ? 'true' : 'false',
+      partLabel: row.partLabel,
+    },
+  });
 };
 
 // Fetch Data
@@ -323,14 +330,14 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="h-full flex flex-col max-w-[1600px] mx-auto p-6 space-y-6">
+  <div class="h-full flex flex-col max-w-[1600px] mx-auto space-y-6" :class="{ 'p-6': !embedded }">
     <!-- Header Controls -->
     <Card class="border-border/50 shadow-sm bg-card/50 backdrop-blur-sm">
       <CardContent
         class="p-4 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6"
       >
         <!-- Title Section -->
-        <div class="flex items-center gap-4 min-w-fit">
+        <div class="flex items-center gap-4 min-w-fit" v-if="!embedded">
           <div class="p-3 bg-primary/10 rounded-xl text-primary flex items-center justify-center">
             <Droplets class="h-8 w-8" />
           </div>
@@ -476,22 +483,6 @@ onMounted(() => {
     </div>
 
     <!-- Detail Modal -->
-    <Dialog v-model:open="isDetailOpen">
-      <DialogContent class="max-w-[95vw] h-auto max-h-[95vh] overflow-y-auto flex flex-col p-6">
-        <VisuallyHidden>
-          <DialogTitle>{{ t('cuplump.mainInfo') }}</DialogTitle>
-          <DialogDescription>Booking Details</DialogDescription>
-        </VisuallyHidden>
-        <CuplumpDetailContent
-          v-if="selectedBooking"
-          :booking-id="selectedBooking.bookingId"
-          :is-trailer="selectedBooking.isTrailer"
-          :part-label="selectedBooking.partLabel"
-          :existing-bookings="processedBookings"
-          @close="isDetailOpen = false"
-          @update="fetchBookings"
-        />
-      </DialogContent>
-    </Dialog>
+    <!-- Detail Modal Removed -->
   </div>
 </template>

@@ -135,7 +135,7 @@ const columns: ColumnDef<any>[] = [
       if (!parts || parts.length === 0)
         return h(
           'span',
-          { class: 'text-slate-400 text-[10px] italic font-medium uppercase tracking-tight' },
+          { class: 'text-slate-400 text-[0.625rem] italic font-medium uppercase tracking-tight' },
           'No resources used'
         );
       return h('div', { class: 'flex items-center gap-1.5' }, [
@@ -169,7 +169,7 @@ const columns: ColumnDef<any>[] = [
           Badge,
           {
             variant: 'outline',
-            class: `px-1.5 py-0 text-[9px] uppercase font-black ${getStatusStyles(amount)}`,
+            class: `px-1.5 py-0 text-[0.5625rem] uppercase font-black ${getStatusStyles(amount)}`,
           },
           () => (amount > 10000 ? 'Major' : 'Service')
         ),

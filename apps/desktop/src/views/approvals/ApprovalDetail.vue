@@ -256,11 +256,11 @@ onMounted(() => {
                     <span class="text-xs font-black text-emerald-800">{{
                       request.currentData?.rubberType || bookingContext?.rubberType || '-'
                     }}</span>
-                    <span class="text-[9px] font-bold text-slate-500 uppercase tracking-tight">
+                    <span class="text-[0.5625rem] font-bold text-slate-500 uppercase tracking-tight">
                       {{ request.currentData?.truckType || bookingContext?.truckType || '-' }}
                     </span>
                     <span
-                      class="text-[9px] font-mono font-black text-blue-600 bg-blue-50 px-1 py-0.5 rounded border border-blue-100"
+                      class="text-[0.5625rem] font-mono font-black text-blue-600 bg-blue-50 px-1 py-0.5 rounded border border-blue-100"
                     >
                       {{
                         request.currentData?.truckRegister || bookingContext?.truckRegister || '-'
@@ -287,11 +287,11 @@ onMounted(() => {
                     class="flex items-center gap-1.5 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200/50 w-fit"
                   >
                     <div
-                      class="w-3.5 h-3.5 rounded bg-primary/20 flex items-center justify-center text-[8px] font-black text-primary"
+                      class="w-3.5 h-3.5 rounded bg-primary/20 flex items-center justify-center text-[0.5rem] font-black text-primary"
                     >
                       {{ request.requester?.displayName?.charAt(0) || 'U' }}
                     </div>
-                    <span class="text-[11px] font-black text-slate-700 truncate max-w-[100px]">{{
+                    <span class="text-[0.6875rem] font-black text-slate-700 truncate max-w-[100px]">{{
                       request.requester?.displayName || request.requester?.email || '-'
                     }}</span>
                   </div>
@@ -300,7 +300,7 @@ onMounted(() => {
                   <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">{{
                     t('approval.detail.submittedDate')
                   }}</span>
-                  <span class="text-[11px] font-bold text-slate-600">{{
+                  <span class="text-[0.6875rem] font-bold text-slate-600">{{
                     formatDateWithTime(request.submittedAt)
                   }}</span>
                 </div>
@@ -313,7 +313,7 @@ onMounted(() => {
                 <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">{{
                   t('approval.detail.reason')
                 }}</span>
-                <p class="mt-2 text-[11px] italic text-slate-600 font-medium leading-relaxed">
+                <p class="mt-2 text-[0.6875rem] italic text-slate-600 font-medium leading-relaxed">
                   {{ request.reason || '-' }}
                 </p>
               </div>
@@ -331,22 +331,22 @@ onMounted(() => {
                       :key="key"
                       class="flex items-center flex-wrap gap-x-2 gap-y-0.5"
                     >
-                      <span class="text-[10px] text-slate-400 font-black uppercase tracking-tighter"
+                      <span class="text-[0.625rem] text-slate-400 font-black uppercase tracking-tighter"
                         >{{ prettifyKey(String(key)) }}:</span
                       >
                       <div class="flex items-center gap-1.5 flex-wrap">
                         <!-- Old Value -->
                         <span
-                          class="text-[10px] text-slate-400 line-through decoration-slate-300 decoration-1"
+                          class="text-[0.625rem] text-slate-400 line-through decoration-slate-300 decoration-1"
                         >
                           {{ formatValue(request.currentData?.[key]) || '-' }}
                         </span>
 
                         <!-- Arrow indicator -->
-                        <span class="text-[10px] text-slate-300">➜</span>
+                        <span class="text-[0.625rem] text-slate-300">➜</span>
 
                         <!-- New Value -->
-                        <span class="text-[11px] font-black text-primary">{{
+                        <span class="text-[0.6875rem] font-black text-primary">{{
                           formatValue(value)
                         }}</span>
                       </div>
@@ -358,7 +358,7 @@ onMounted(() => {
                     v-if="request.remark"
                     class="pt-1.5 border-t border-slate-100/50 mt-1.5 first:mt-0 first:pt-0 first:border-0"
                   >
-                    <p class="text-[11px] italic text-slate-500 font-medium leading-relaxed">
+                    <p class="text-[0.6875rem] italic text-slate-500 font-medium leading-relaxed">
                       "{{ request.remark }}"
                     </p>
                   </div>
@@ -366,7 +366,7 @@ onMounted(() => {
                   <!-- Fallback if absolutely nothing -->
                   <p
                     v-if="!Object.keys(changedFields).length && !request.remark"
-                    class="text-[11px] text-slate-300 italic font-medium"
+                    class="text-[0.6875rem] text-slate-300 italic font-medium"
                   >
                     {{ t('approval.detail.noChanges') || 'No changes detected' }}
                   </p>

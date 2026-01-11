@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent } from '@/components/ui/card';
 import DataTable from '@/components/ui/data-table/DataTable.vue';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+// import { Dialog, DialogContent } from '@/components/ui/dialog'; // Removed
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { bookingsApi } from '@/services/bookings';
@@ -12,15 +12,23 @@ import { rubberTypesApi, type RubberType } from '@/services/rubberTypes';
 import { getLocalTimeZone, today } from '@internationalized/date';
 import type { ColumnDef } from '@tanstack/vue-table';
 import { format } from 'date-fns';
-import { Calendar as CalendarIcon, Edit, Search, Sheet } from 'lucide-vue-next'; // Changed Droplets to Sheet
-import { VisuallyHidden } from 'radix-vue';
+import { Calendar as CalendarIcon, Edit, Search, Sheet, Trash2 } from 'lucide-vue-next'; // Changed Droplets to Sheet
+// import { VisuallyHidden } from 'radix-vue'; // Removed
 import { computed, h, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useRouter } from 'vue-router';
 import { toast } from 'vue-sonner';
-import UssDetailContent from './components/UssDetailContent.vue'; // Changed import
+// import UssDetailContent from './components/UssDetailContent.vue'; // Removed
+
+const props = defineProps({
+  embedded: {
+    type: Boolean,
+    default: false,
+  },
+});
 
 const { t } = useI18n();
-// const router = useRouter(); // Router might not be needed for nav anymore if fully modal based
+const router = useRouter();
 
 // State
 const bookings = ref<any[]>([]);
@@ -46,16 +54,15 @@ const handleDateSelect = (newDate: any) => {
 };
 
 // Modal Logic
-const isDetailOpen = ref(false);
-const selectedBooking = ref<any>(null);
-
 const handleRowClick = (row: any) => {
-  selectedBooking.value = {
-    bookingId: row.originalId,
-    isTrailer: row.isTrailerPart,
-    partLabel: row.partLabel,
-  };
-  isDetailOpen.value = true;
+  router.push({
+    name: 'UssDetail',
+    params: { id: row.originalId },
+    query: {
+      isTrailer: row.isTrailerPart ? 'true' : 'false',
+      partLabel: row.partLabel,
+    },
+  });
 };
 
 // Fetch Data
@@ -86,11 +93,14 @@ const getRubberTypeName = (code: string) => {
 };
 
 // Helper to check if Rubber Type is USS
-const isUssType = (code: string) => {
-  // Changed function name
-  if (!code) return false;
-  const type = rubberTypes.value.find((t) => t.code === code);
-  return type ? type.category === 'USS' : false; // Changed Category Check
+const isUssType = (val: string) => {
+  if (!val) return false;
+  // Look up in master data by code or name
+  const type = rubberTypes.value.find((t) => t.code === val || t.name === val);
+  if (type) return type.category === 'USS';
+  // Robust fallback for names like "EUDR USS", "Regular USS"
+  const upperVal = val.toUpperCase();
+  return upperVal.includes('USS');
 };
 
 // Processed Data (Split logic)
@@ -100,9 +110,15 @@ const processedBookings = computed(() => {
   bookings.value.forEach((b) => {
     const isTrailer = ['10 ล้อ พ่วง', '10 ล้อ (พ่วง)'].includes(b.truckType);
 
-    // Filter Main Truck by Rubber Type
-    if (isUssType(b.rubberType)) {
-      // Changed check
+    // 1. Main Truck Part
+    const hasMainWeight =
+      (b.weightIn && b.weightIn > 0) ||
+      (b.grossWeight && b.grossWeight > 0) ||
+      (b.actualWeight && b.actualWeight > 0) ||
+      (b.estimatedWeight && b.estimatedWeight > 0);
+
+    if (isUssType(b.rubberType) && hasMainWeight) {
+      const isComplete = (b.weightOut || 0) > 0;
       result.push({
         ...b,
         id: b.id + '-main',
@@ -111,20 +127,27 @@ const processedBookings = computed(() => {
         partLabel: t('truckScale.mainTruck') || 'Main Truck',
         displayRubberType: getRubberTypeName(b.rubberType),
         displayRubberSource: b.rubberSource,
-        displayWeightIn: b.weightIn,
-        displayWeightOut: b.weightOut,
-        moisture: b.moisture || '-',
-        drcEst: b.drcEst || '-',
-        drcRequested: b.drcRequested || '-',
-        drcActual: b.drcActual || '-',
-        cpAvg: b.cpAvg || '-',
+        displayWeightIn: b.weightIn || b.grossWeight || b.actualWeight || 0,
+        displayWeightOut: b.weightOut || 0,
+        moisture: b.moisture ? b.moisture.toFixed(1) : '-',
+        drcEst: b.drcEst ? b.drcEst.toFixed(1) : '-',
+        drcRequested: b.drcRequested ? b.drcRequested.toFixed(1) : '-',
+        drcActual: b.drcActual ? b.drcActual.toFixed(1) : '-',
+        cpAvg: b.cpAvg ? b.cpAvg.toFixed(2) : '-',
         lotNo: b.lotNo || '-',
+        isComplete,
       });
     }
 
     // 2. Trailer Part
-    if (isTrailer && b.trailerWeightIn > 0 && isUssType(b.trailerRubberType)) {
-      // Changed check
+    const hasTrailerWeight =
+      (b.trailerWeightIn && b.trailerWeightIn > 0) ||
+      (b.trailerGrossWeight && b.trailerGrossWeight > 0) ||
+      (b.trailerActualWeight && b.trailerActualWeight > 0) ||
+      (b.trailerEstimatedWeight && b.trailerEstimatedWeight > 0);
+
+    if (isTrailer && hasTrailerWeight && isUssType(b.trailerRubberType)) {
+      const isComplete = (b.trailerWeightOut || 0) > 0;
       result.push({
         ...b,
         id: b.id + '-trailer',
@@ -133,12 +156,13 @@ const processedBookings = computed(() => {
         partLabel: t('truckScale.trailer') || 'Trailer',
         displayRubberType: getRubberTypeName(b.trailerRubberType),
         displayRubberSource: b.trailerRubberSource || '-',
-        displayWeightIn: b.trailerWeightIn || 0,
+        displayWeightIn: b.trailerWeightIn || b.trailerGrossWeight || b.trailerActualWeight || 0,
         displayWeightOut: b.trailerWeightOut || 0,
-        moisture: b.trailerMoisture || '-',
-        drcEst: b.trailerDrcEst || '-',
-        cpAvg: b.trailerCpAvg || '-',
-        lotNo: b.trailerLotNo || '1251226-' + b.queueNo + '/2',
+        moisture: b.trailerMoisture ? b.trailerMoisture.toFixed(1) : '-',
+        drcEst: b.trailerDrcEst ? b.trailerDrcEst.toFixed(1) : '-',
+        cpAvg: b.trailerCpAvg ? b.trailerCpAvg.toFixed(2) : '-',
+        lotNo: b.trailerLotNo || '2251226-' + b.queueNo + '/2',
+        isComplete,
       });
     }
   });
@@ -146,9 +170,9 @@ const processedBookings = computed(() => {
   let data = result;
 
   if (activeTab.value === 'complete') {
-    data = data.filter((item) => item.displayWeightOut > 0);
+    data = data.filter((item) => item.isComplete);
   } else if (activeTab.value === 'incomplete') {
-    data = data.filter((item) => !item.displayWeightOut);
+    data = data.filter((item) => !item.isComplete);
   }
 
   if (searchQuery.value) {
@@ -166,7 +190,7 @@ const processedBookings = computed(() => {
 
 const stats = computed(() => {
   const total = processedBookings.value.length;
-  const complete = processedBookings.value.filter((i) => i.displayWeightOut > 0).length;
+  const complete = processedBookings.value.filter((i) => i.isComplete).length;
   const incomplete = total - complete;
   const grossWeight = processedBookings.value.reduce((sum, i) => sum + (i.displayWeightIn || 0), 0);
   const netWeight = processedBookings.value.reduce((sum, i) => {
@@ -180,7 +204,7 @@ const stats = computed(() => {
 const columns: ColumnDef<any>[] = [
   {
     accessorKey: 'lotNo',
-    header: () => t('uss.lotNo'),
+    header: () => t('uss.lotNumber'),
     cell: ({ row }) =>
       h('div', { class: 'flex flex-col' }, [
         h('span', { class: 'font-bold text-foreground' }, row.original.lotNo),
@@ -204,95 +228,58 @@ const columns: ColumnDef<any>[] = [
       ]),
   },
   {
-    accessorKey: 'truckRegister',
-    header: () => t('uss.truck'),
+    accessorKey: 'totalPallets',
+    header: () => h('div', { class: 'text-center' }, t('uss.totalPallets')),
     cell: ({ row }) =>
-      h('div', { class: 'flex flex-col' }, [
-        h('span', { class: 'font-medium' }, row.original.truckRegister || '-'),
-        h(
-          'span',
-          { class: 'text-xs text-muted-foreground' },
-          row.original.truckType + (row.original.isTrailerPart ? ' (Trailer)' : '')
-        ),
-      ]),
-  },
-  {
-    accessorKey: 'rubberType',
-    header: () => t('uss.rubberType'),
-    cell: ({ row }) =>
-      h('div', { class: 'flex flex-col' }, [
-        h('span', { class: 'font-medium' }, row.original.displayRubberType || '-'),
-        h(
-          'span',
-          { class: 'text-xs text-muted-foreground' },
-          row.original.displayRubberSource || '-'
-        ),
-      ]),
-  },
-  {
-    accessorKey: 'moisture',
-    header: () =>
       h(
         'div',
-        {
-          class: 'bg-orange-100/50 text-orange-700 px-2 py-1 rounded text-center text-xs font-bold',
-        },
-        t('uss.moisture')
+        { class: 'text-center font-medium' },
+        (row.original.subBookings?.length || 0).toString()
+      ), // Assuming subBookings exists, fallback to 0
+  },
+  {
+    accessorKey: 'grossPlusPallets',
+    header: () => h('div', { class: 'text-center' }, t('uss.grossPlusPalletsWeight')),
+    cell: ({ row }) =>
+      h(
+        'div',
+        { class: 'text-center font-medium' },
+        (row.original.displayWeightIn || 0).toLocaleString()
       ),
-    cell: ({ row }) =>
-      h('div', { class: 'text-center font-bold text-orange-600' }, row.original.moisture),
   },
   {
-    accessorKey: 'drcEst',
-    header: () =>
-      h(
-        'div',
-        { class: 'bg-blue-100/50 text-blue-700 px-2 py-1 rounded text-center text-xs font-bold' },
-        t('uss.drcEst')
-      ),
-    cell: ({ row }) =>
-      h('div', { class: 'text-center font-bold text-blue-600' }, row.original.drcEst),
-  },
-  {
-    accessorKey: 'cpAvg',
-    header: () =>
-      h(
-        'div',
-        { class: 'bg-green-100/50 text-green-700 px-2 py-1 rounded text-center text-xs font-bold' },
-        t('uss.avgCp')
-      ),
-    cell: ({ row }) =>
-      h('div', { class: 'text-center font-bold text-green-600' }, row.original.cpAvg),
-  },
-  {
-    accessorKey: 'weightIn',
-    header: () => t('uss.grossWeight'),
+    accessorKey: 'grossWeight',
+    header: () => h('div', { class: 'text-center' }, t('uss.grossWeight')),
     cell: ({ row }) =>
       h(
         'div',
-        { class: 'font-bold' },
-        (row.original.displayWeightIn || 0).toLocaleString() + ' ' + t('uss.kg')
+        { class: 'text-center font-medium' },
+        (row.original.displayWeightOut || 0).toLocaleString()
       ),
   },
   {
     accessorKey: 'netWeight',
-    header: () => t('uss.netWeight'),
+    header: () => h('div', { class: 'text-center' }, t('uss.netWeight')),
     cell: ({ row }) => {
       const net = (row.original.displayWeightIn || 0) - (row.original.displayWeightOut || 0);
-      return h(
-        'div',
-        { class: 'font-bold text-green-600' },
-        (net > 0 ? net : 0).toLocaleString() + ' ' + t('uss.kg')
-      );
+      return h('div', { class: 'text-center font-bold' }, (net > 0 ? net : 0).toLocaleString());
     },
   },
   {
+    accessorKey: 'drcEst',
+    header: () => h('div', { class: 'text-center' }, t('uss.drcEst')),
+    cell: ({ row }) => h('div', { class: 'text-center font-medium' }, row.original.drcEst),
+  },
+  {
+    accessorKey: 'beforeDryer',
+    header: () => h('div', { class: 'text-center' }, t('uss.beforeDryer')),
+    cell: ({ row }) => h('div', { class: 'text-center font-medium' }, row.original.moisture),
+  },
+  {
     id: 'actions',
-    header: () => h('div', { class: 'text-right' }, t('common.actions')),
+    header: () => h('div', { class: 'text-center' }, t('uss.action')),
     cell: ({ row }) => {
-      return h(
-        'div',
-        { class: 'text-right' },
+      return h('div', { class: 'flex items-center justify-center gap-2' }, [
         h(
           Button,
           {
@@ -304,8 +291,20 @@ const columns: ColumnDef<any>[] = [
             },
           },
           () => h(Edit, { class: 'w-4 h-4 text-muted-foreground' })
-        )
-      );
+        ),
+        h(
+          Button,
+          {
+            variant: 'ghost',
+            size: 'icon',
+            onClick: (e: any) => {
+              e.stopPropagation();
+              // Add delete handler if needed, placeholder for now
+            },
+          },
+          () => h(Trash2, { class: 'w-4 h-4 text-destructive' })
+        ),
+      ]);
     },
   },
 ];
@@ -316,14 +315,14 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="h-full flex flex-col max-w-[1600px] mx-auto p-6 space-y-6">
+  <div class="h-full flex flex-col max-w-[1600px] mx-auto space-y-6" :class="{ 'p-6': !embedded }">
     <!-- Header Controls -->
     <Card class="border-border/50 shadow-sm bg-card/50 backdrop-blur-sm">
       <CardContent
         class="p-4 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6"
       >
         <!-- Title Section -->
-        <div class="flex items-center gap-4 min-w-fit">
+        <div class="flex items-center gap-4 min-w-fit" v-if="!embedded">
           <div class="p-3 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
             <Sheet class="h-8 w-8" />
           </div>
@@ -469,22 +468,6 @@ onMounted(() => {
     </div>
 
     <!-- Detail Modal -->
-    <Dialog v-model:open="isDetailOpen">
-      <DialogContent class="max-w-[95vw] h-auto max-h-[95vh] overflow-y-auto flex flex-col p-6">
-        <VisuallyHidden>
-          <DialogTitle>{{ t('uss.mainInfo') }}</DialogTitle>
-          <DialogDescription>Booking Details</DialogDescription>
-        </VisuallyHidden>
-        <UssDetailContent
-          v-if="selectedBooking"
-          :booking-id="selectedBooking.bookingId"
-          :is-trailer="selectedBooking.isTrailer"
-          :part-label="selectedBooking.partLabel"
-          :existing-bookings="processedBookings"
-          @close="isDetailOpen = false"
-          @update="fetchBookings"
-        />
-      </DialogContent>
-    </Dialog>
+    <!-- Detail Modal Removed -->
   </div>
 </template>

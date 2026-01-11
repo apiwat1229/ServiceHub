@@ -92,11 +92,11 @@ const downloadQr = () => {
       <!-- Quick Stats Ref -->
       <div class="grid grid-cols-2 gap-3 w-full">
         <div class="bg-white border border-slate-100 rounded-lg p-3 text-center">
-          <p class="text-[10px] text-slate-400 uppercase font-bold mb-0.5">Asset</p>
+          <p class="text-[0.625rem] text-slate-400 uppercase font-bold mb-0.5">Asset</p>
           <p class="text-sm font-semibold text-slate-700">{{ repair.machineName }}</p>
         </div>
         <div class="bg-white border border-slate-100 rounded-lg p-3 text-center">
-          <p class="text-[10px] text-slate-400 uppercase font-bold mb-0.5">Repair Date</p>
+          <p class="text-[0.625rem] text-slate-400 uppercase font-bold mb-0.5">Repair Date</p>
           <p class="text-sm font-semibold text-slate-700">{{ repair.date }}</p>
         </div>
       </div>

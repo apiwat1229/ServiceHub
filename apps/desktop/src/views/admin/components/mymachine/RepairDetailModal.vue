@@ -33,7 +33,7 @@ const getStatusColor = (cost: number) => {
       <div class="flex items-start justify-between mb-4">
         <div class="space-y-1">
           <p
-            class="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] leading-none mb-1"
+            class="text-[0.625rem] font-black text-slate-400 uppercase tracking-[0.3em] leading-none mb-1"
           >
             Official Maintenance Record
           </p>
@@ -43,7 +43,7 @@ const getStatusColor = (cost: number) => {
         </div>
         <Badge
           variant="outline"
-          class="border-slate-200 text-slate-600 font-black uppercase tracking-widest text-[9px] bg-slate-50 px-2 py-1 flex-shrink-0"
+          class="border-slate-200 text-slate-600 font-black uppercase tracking-widest text-[0.5625rem] bg-slate-50 px-2 py-1 flex-shrink-0"
         >
           LOG ID: #{{ repair.id.slice(-6).toUpperCase() }}
         </Badge>
@@ -59,7 +59,7 @@ const getStatusColor = (cost: number) => {
         <span class="text-slate-200">•</span>
         <div class="flex items-center gap-2">
           <Badge
-            :class="`rounded-sm font-black uppercase tracking-tight text-[9px] px-2 py-0 border ${getStatusColor(repair.totalCost)}`"
+            :class="`rounded-sm font-black uppercase tracking-tight text-[0.5625rem] px-2 py-0 border ${getStatusColor(repair.totalCost)}`"
           >
             {{ repair.totalCost > 10000 ? 'Major Repair' : 'Routine Service' }}
           </Badge>
@@ -73,7 +73,7 @@ const getStatusColor = (cost: number) => {
         <div class="space-y-4">
           <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
             <User class="w-3.5 h-3.5 text-slate-900" />
-            <h3 class="text-[10px] font-black uppercase tracking-widest text-slate-900">
+            <h3 class="text-[0.625rem] font-black uppercase tracking-widest text-slate-900">
               Personnel in Charge
             </h3>
           </div>
@@ -81,7 +81,7 @@ const getStatusColor = (cost: number) => {
             <p class="text-sm font-black text-slate-900">
               {{ repair.technician || 'Not assigned' }}
             </p>
-            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+            <p class="text-[0.625rem] text-slate-400 font-bold uppercase tracking-widest">
               Certified Technical Lead
             </p>
           </div>
@@ -90,13 +90,13 @@ const getStatusColor = (cost: number) => {
         <div class="space-y-4">
           <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
             <Clock class="w-3.5 h-3.5 text-slate-900" />
-            <h3 class="text-[10px] font-black uppercase tracking-widest text-slate-900">
+            <h3 class="text-[0.625rem] font-black uppercase tracking-widest text-slate-900">
               Timestamp
             </h3>
           </div>
           <div class="space-y-1">
             <p class="text-sm font-black text-slate-900">{{ repair.date }}</p>
-            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+            <p class="text-[0.625rem] text-slate-400 font-bold uppercase tracking-widest">
               Recorded Date of Service
             </p>
           </div>
@@ -107,7 +107,7 @@ const getStatusColor = (cost: number) => {
       <section class="space-y-4">
         <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
           <ClipboardList class="w-3.5 h-3.5 text-slate-900" />
-          <h3 class="text-[10px] font-black uppercase tracking-widest text-slate-900">
+          <h3 class="text-[0.625rem] font-black uppercase tracking-widest text-slate-900">
             Description of Issue / Detail
           </h3>
         </div>
@@ -122,7 +122,7 @@ const getStatusColor = (cost: number) => {
       <section class="space-y-4">
         <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
           <Package class="w-3.5 h-3.5 text-slate-900" />
-          <h3 class="text-[10px] font-black uppercase tracking-widest text-slate-900">
+          <h3 class="text-[0.625rem] font-black uppercase tracking-widest text-slate-900">
             Resources & Materials Inventory
           </h3>
         </div>
@@ -133,7 +133,7 @@ const getStatusColor = (cost: number) => {
         >
           <table class="w-full text-left border-collapse">
             <thead
-              class="bg-slate-50 border-b border-slate-100 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]"
+              class="bg-slate-50 border-b border-slate-100 text-[0.5625rem] font-black text-slate-400 uppercase tracking-[0.2em]"
             >
               <tr>
                 <th class="px-4 py-3">Material Code / Description</th>
@@ -151,13 +151,13 @@ const getStatusColor = (cost: number) => {
                   <p class="text-xs font-black text-slate-900 uppercase tracking-tighter">
                     {{ part.name }}
                   </p>
-                  <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                  <p class="text-[0.5625rem] font-bold text-slate-400 uppercase tracking-widest">
                     {{ part.code || 'N/A' }}
                   </p>
                 </td>
                 <td class="px-4 py-4 text-right">
                   <span class="text-xs font-black text-slate-900">{{ part.qty }}</span>
-                  <span class="text-[10px] font-bold text-slate-400 ml-1 uppercase">{{
+                  <span class="text-[0.625rem] font-bold text-slate-400 ml-1 uppercase">{{
                     part.unit || 'Units'
                   }}</span>
                 </td>
@@ -174,7 +174,7 @@ const getStatusColor = (cost: number) => {
           v-else
           class="text-center py-10 bg-slate-50 rounded-sm border border-slate-100 border-dashed"
         >
-          <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest">
+          <p class="text-slate-400 text-[0.625rem] font-black uppercase tracking-widest">
             No replacement materials utilized during this session.
           </p>
         </div>
@@ -186,7 +186,7 @@ const getStatusColor = (cost: number) => {
       class="p-8 border-t-2 border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-6"
     >
       <div class="text-center sm:text-left">
-        <p class="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">
+        <p class="text-[0.5625rem] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">
           Total Economic Valuation
         </p>
         <p class="text-3xl font-black text-slate-900 tracking-tighter">
@@ -196,13 +196,13 @@ const getStatusColor = (cost: number) => {
       <div class="flex items-center gap-3">
         <Button
           variant="ghost"
-          class="h-10 px-6 font-black text-[10px] uppercase tracking-widest text-slate-500 hover:text-slate-900"
+          class="h-10 px-6 font-black text-[0.625rem] uppercase tracking-widest text-slate-500 hover:text-slate-900"
           @click="emit('close')"
         >
           Cancel
         </Button>
         <Button
-          class="h-10 px-10 rounded-sm bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 shadow-sm"
+          class="h-10 px-10 rounded-sm bg-slate-900 text-white font-black text-[0.625rem] uppercase tracking-widest hover:bg-slate-800 shadow-sm"
           @click="emit('close')"
         >
           Close Record

@@ -76,7 +76,7 @@ onMounted(() => {
         <!-- Left: Title -->
         <div class="flex-shrink-0">
           <h1 class="text-lg font-bold text-slate-900">Maintenance System</h1>
-          <p class="text-[10px] text-slate-500">
+          <p class="text-[0.625rem] text-slate-500">
             Centralized management for machines, repairs, and spare parts
           </p>
         </div>

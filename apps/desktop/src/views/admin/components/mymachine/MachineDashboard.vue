@@ -72,7 +72,7 @@ const columns: ColumnDef<any>[] = [
               'span',
               {
                 class:
-                  'text-[9px] font-bold text-slate-400 uppercase tracking-wider px-1.5 py-0.5 bg-slate-100 rounded border border-slate-200 flex-shrink-0',
+                  'text-[0.5625rem] font-bold text-slate-400 uppercase tracking-wider px-1.5 py-0.5 bg-slate-100 rounded border border-slate-200 flex-shrink-0',
               },
               machines.value.find((m) => m.id === repair.machineId)?.model || 'STD'
             ),
@@ -110,7 +110,7 @@ const columns: ColumnDef<any>[] = [
         Badge,
         {
           variant: 'outline',
-          class: `text-[10px] font-bold uppercase tracking-wide px-2 py-1 ${
+          class: `text-[0.625rem] font-bold uppercase tracking-wide px-2 py-1 ${
             cost > 10000
               ? 'bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-700 border-indigo-200'
               : 'bg-gradient-to-r from-emerald-50 to-green-50 text-emerald-700 border-emerald-200'
@@ -148,13 +148,13 @@ const columns: ColumnDef<any>[] = [
           <CardContent class="p-3">
             <div class="flex items-center justify-between">
               <div class="flex-1">
-                <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">
+                <p class="text-[0.625rem] font-semibold text-slate-500 uppercase tracking-wide">
                   Total Cost
                 </p>
                 <h3 class="text-xl font-bold mt-0.5 text-slate-900">
                   {{ formatCurrency(totalCost) }}
                 </h3>
-                <p class="text-[9px] text-slate-400 mt-0.5">Investment in repairs</p>
+                <p class="text-[0.5625rem] text-slate-400 mt-0.5">Investment in repairs</p>
               </div>
               <div class="p-1.5 bg-emerald-50 rounded-md">
                 <DollarSign class="w-4 h-4 text-emerald-600" />
@@ -169,13 +169,13 @@ const columns: ColumnDef<any>[] = [
           <CardContent class="p-3">
             <div class="flex items-center justify-between">
               <div class="flex-1">
-                <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">
+                <p class="text-[0.625rem] font-semibold text-slate-500 uppercase tracking-wide">
                   Active
                 </p>
                 <h3 class="text-xl font-bold mt-0.5 text-slate-900">
                   {{ activeMachines }} / {{ machines.length }}
                 </h3>
-                <p class="text-[9px] text-slate-400 mt-0.5">Operational equipment</p>
+                <p class="text-[0.5625rem] text-slate-400 mt-0.5">Operational equipment</p>
               </div>
               <div class="p-1.5 bg-blue-50 rounded-md">
                 <CheckCircle2 class="w-4 h-4 text-blue-600" />
@@ -190,11 +190,11 @@ const columns: ColumnDef<any>[] = [
           <CardContent class="p-3">
             <div class="flex items-center justify-between">
               <div class="flex-1">
-                <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">
+                <p class="text-[0.625rem] font-semibold text-slate-500 uppercase tracking-wide">
                   Repairs
                 </p>
                 <h3 class="text-xl font-bold mt-0.5 text-slate-900">{{ totalRepairs }}</h3>
-                <p class="text-[9px] text-slate-400 mt-0.5">Maintenance logs</p>
+                <p class="text-[0.5625rem] text-slate-400 mt-0.5">Maintenance logs</p>
               </div>
               <div class="p-1.5 bg-purple-50 rounded-md">
                 <Wrench class="w-4 h-4 text-purple-600" />
@@ -209,13 +209,13 @@ const columns: ColumnDef<any>[] = [
           <CardContent class="p-3">
             <div class="flex items-center justify-between">
               <div class="flex-1">
-                <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">
+                <p class="text-[0.625rem] font-semibold text-slate-500 uppercase tracking-wide">
                   Critical
                 </p>
                 <h3 class="text-base font-bold mt-0.5 text-slate-900 truncate max-w-[110px]">
                   {{ mostRepaired ? mostRepaired[0] : '-' }}
                 </h3>
-                <p class="text-[9px] text-orange-600 mt-0.5">
+                <p class="text-[0.5625rem] text-orange-600 mt-0.5">
                   {{ mostRepaired ? `${mostRepaired[1]} repairs` : 'No repairs' }}
                 </p>
               </div>

@@ -396,7 +396,7 @@ const uploadCroppedImage = async () => {
 
     <!-- Background Decorations -->
     <div
-      class="fixed font-bold text-[300px] text-muted-foreground/5 opacity-[0.02] -z-10 top-0 right-0 pointer-events-none select-none rotate-12"
+      class="fixed font-bold text-[18.75rem] text-muted-foreground/5 opacity-[0.02] -z-10 top-0 right-0 pointer-events-none select-none rotate-12"
     >
       <User />
     </div>

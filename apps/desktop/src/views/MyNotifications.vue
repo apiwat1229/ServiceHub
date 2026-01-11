@@ -442,7 +442,7 @@ onUnmounted(() => {
           <!-- Stats & Actions -->
           <div class="flex flex-1 items-center justify-end gap-8 md:gap-12 text-center">
             <div>
-              <p class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">
+              <p class="text-[0.625rem] font-bold text-muted-foreground uppercase tracking-widest mb-1">
                 Total Notifications
               </p>
               <p class="text-2xl font-bold text-foreground">{{ notifications.length }}</p>

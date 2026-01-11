@@ -83,6 +83,7 @@ const pageTitle = computed(() => {
   const name = route.name?.toString() || '';
   if (name === 'Home') return 'Dashboard';
   if (name === 'AdminDashboard') return 'Admin Panel';
+  if (name === 'ProjectTimeline') return t('services.projectTimeline.name');
   return name;
 });
 
@@ -394,7 +395,7 @@ onUnmounted(() => {
             />
             <span
               v-if="unreadCount > 0"
-              class="absolute top-1 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground animate-in zoom-in duration-300"
+              class="absolute top-1 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[0.625rem] font-bold text-destructive-foreground animate-in zoom-in duration-300"
             >
               {{ unreadCount > 9 ? '9+' : unreadCount }}
             </span>
@@ -428,7 +429,9 @@ onUnmounted(() => {
                       notification.title
                     }}</span>
                   </div>
-                  <span class="text-[10px] text-muted-foreground whitespace-nowrap flex-shrink-0">
+                  <span
+                    class="text-[0.625rem] text-muted-foreground whitespace-nowrap flex-shrink-0"
+                  >
                     {{ formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true }) }}
                   </span>
                 </div>

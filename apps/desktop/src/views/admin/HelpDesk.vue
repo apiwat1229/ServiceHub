@@ -286,7 +286,7 @@ const itAssetColumns: ColumnDef<ITAsset>[] = [
                       h('div', { class: 'text-sm font-bold' }, item.name),
                       h(
                         'div',
-                        { class: 'grid grid-cols-[80px_1fr] gap-x-2 gap-y-0.5 text-[11px]' },
+                        { class: 'grid grid-cols-[80px_1fr] gap-x-2 gap-y-0.5 text-[0.6875rem]' },
                         [
                           h('span', { class: 'text-muted-foreground' }, 'Device Code:'),
                           h('span', { class: 'font-mono' }, item.code),
@@ -964,14 +964,14 @@ const categories = computed(() => {
                   <div class="flex items-center gap-3 flex-shrink-0 pl-4">
                     <Badge
                       variant="secondary"
-                      class="text-[10px] h-5 px-1.5 font-mono font-medium text-muted-foreground bg-muted border border-border rounded pointer-events-none"
+                      class="text-[0.625rem] h-5 px-1.5 font-mono font-medium text-muted-foreground bg-muted border border-border rounded pointer-events-none"
                     >
                       {{ ticket.ticketNo }}
                     </Badge>
                     <Badge
                       :class="[
                         getStatusColor(ticket.status),
-                        'px-2.5 py-0.5 text-[10px] font-bold border-0 rounded uppercase tracking-wide pointer-events-none',
+                        'px-2.5 py-0.5 text-[0.625rem] font-bold border-0 rounded uppercase tracking-wide pointer-events-none',
                       ]"
                     >
                       {{ ticket.status }}
@@ -1126,14 +1126,14 @@ const categories = computed(() => {
                   <div class="flex items-center gap-3 flex-shrink-0 pl-4">
                     <Badge
                       variant="secondary"
-                      class="text-[10px] h-5 px-1.5 font-mono font-medium text-muted-foreground bg-muted border border-border rounded pointer-events-none"
+                      class="text-[0.625rem] h-5 px-1.5 font-mono font-medium text-muted-foreground bg-muted border border-border rounded pointer-events-none"
                     >
                       {{ ticket.ticketNo }}
                     </Badge>
                     <Badge
                       :class="[
                         getStatusColor(ticket.status),
-                        'px-2.5 py-0.5 text-[10px] font-bold border-0 rounded uppercase tracking-wide pointer-events-none',
+                        'px-2.5 py-0.5 text-[0.625rem] font-bold border-0 rounded uppercase tracking-wide pointer-events-none',
                       ]"
                     >
                       {{ ticket.status }}

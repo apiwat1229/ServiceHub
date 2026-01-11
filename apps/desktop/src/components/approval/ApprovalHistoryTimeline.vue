@@ -92,7 +92,7 @@ const getConfig = (action: string) => {
                   <div
                     v-for="(value, key) in log.newValue"
                     :key="key"
-                    class="bg-blue-50 text-blue-700 border border-blue-100 px-1.5 py-0.5 rounded text-[10px] flex items-center gap-1 shadow-sm uppercase font-bold"
+                    class="bg-blue-50 text-blue-700 border border-blue-100 px-1.5 py-0.5 rounded text-[0.625rem] flex items-center gap-1 shadow-sm uppercase font-bold"
                   >
                     <span class="opacity-60"
                       >{{

@@ -945,7 +945,7 @@ onMounted(() => {
               <h3 class="font-bold text-base mb-0.5 text-foreground tracking-tight">
                 {{ group.name }}
               </h3>
-              <p class="text-[11px] text-muted-foreground line-clamp-2 h-7 mb-2 leading-relaxed">
+              <p class="text-[0.6875rem] text-muted-foreground line-clamp-2 h-7 mb-2 leading-relaxed">
                 {{ group.description || t('admin.notifications.noDescription') }}
               </p>
 
@@ -962,20 +962,20 @@ onMounted(() => {
                       class="w-6 h-6 border-2 border-background ring-2 ring-background transition-transform hover:scale-110 hover:z-10"
                     >
                       <AvatarImage :src="getUserAvatar(memberId)" />
-                      <AvatarFallback class="text-[9px] bg-muted text-muted-foreground font-bold">
+                      <AvatarFallback class="text-[0.5625rem] bg-muted text-muted-foreground font-bold">
                         U{{ i + 1 }}
                       </AvatarFallback>
                     </Avatar>
                   </template>
                   <div
                     v-if="(group.memberIds?.length || 0) > 3"
-                    class="w-6 h-6 rounded-full border-2 border-background bg-muted flex items-center justify-center text-[8px] font-bold text-muted-foreground z-0 pl-0.5"
+                    class="w-6 h-6 rounded-full border-2 border-background bg-muted flex items-center justify-center text-[0.5rem] font-bold text-muted-foreground z-0 pl-0.5"
                   >
                     +{{ (group.memberIds?.length || 0) - 3 }}
                   </div>
                 </div>
 
-                <Badge variant="secondary" class="text-[10px] px-2 py-0.5 font-semibold">
+                <Badge variant="secondary" class="text-[0.625rem] px-2 py-0.5 font-semibold">
                   {{ group.memberIds?.length || 0 }} {{ t('admin.notifications.members') }}
                 </Badge>
               </div>

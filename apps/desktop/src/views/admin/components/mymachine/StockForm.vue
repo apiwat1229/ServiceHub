@@ -166,7 +166,7 @@ const handleSave = () => {
               class="mx-auto"
             />
           </div>
-          <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">
+          <p class="text-[0.625rem] font-black uppercase tracking-widest text-slate-400 mb-1">
             Encoded Data
           </p>
           <code

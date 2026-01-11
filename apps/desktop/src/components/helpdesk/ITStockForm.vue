@@ -357,7 +357,7 @@ const handleSubmit = async () => {
           <div class="flex items-center justify-between">
             <Label for="stock-barcode"
               >{{ t('services.itHelp.stock.barcode') }}
-              <span class="text-[10px] text-muted-foreground"
+              <span class="text-[0.625rem] text-muted-foreground"
                 >({{ t('common.optional') }})</span
               ></Label
             >

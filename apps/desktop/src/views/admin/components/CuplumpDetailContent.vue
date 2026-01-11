@@ -734,7 +734,7 @@ onMounted(async () => {
       <!-- Section 1: Identification Header -->
       <div class="flex items-center justify-between pb-4 border-b">
         <div class="min-w-0 flex-1">
-          <div class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">
+          <div class="text-[0.625rem] text-slate-500 font-bold uppercase tracking-widest mb-1">
             {{ t('cuplump.supplier') }}
           </div>
           <h1
@@ -746,9 +746,37 @@ onMounted(async () => {
           </h1>
         </div>
 
+        <!-- Section 1.5: Centered Weights -->
+        <div class="flex items-center gap-8 px-8">
+          <div class="flex flex-col items-center">
+            <span class="text-[0.625rem] font-bold text-blue-600 uppercase tracking-tighter mb-1">{{
+              t('cuplump.grossWeight')
+            }}</span>
+            <div class="flex items-baseline gap-1">
+              <span class="text-2xl font-black text-blue-700 leading-none">{{
+                displayGrossWeight
+              }}</span>
+              <span class="text-[0.625rem] text-muted-foreground font-bold">Kg</span>
+            </div>
+          </div>
+          <div class="h-8 w-px bg-slate-200 dark:bg-slate-800"></div>
+          <div class="flex flex-col items-center">
+            <span
+              class="text-[0.625rem] font-bold text-green-600 uppercase tracking-tighter mb-1"
+              >{{ t('cuplump.netWeight') }}</span
+            >
+            <div class="flex items-baseline gap-1">
+              <span class="text-2xl font-black text-green-700 leading-none">{{
+                displayNetWeight
+              }}</span>
+              <span class="text-[0.625rem] text-muted-foreground font-bold">Kg</span>
+            </div>
+          </div>
+        </div>
+
         <div class="flex flex-col items-end pr-6">
           <div class="flex flex-col items-center min-w-[8rem]">
-            <div class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">
+            <div class="text-[0.625rem] text-slate-500 font-bold uppercase tracking-widest mb-1">
               {{ t('cuplump.lotNo') }}
             </div>
             <div class="flex items-center gap-1">
@@ -775,73 +803,45 @@ onMounted(async () => {
 
       <div class="flex-1 overflow-y-auto pr-2 space-y-4 pt-4">
         <!-- Section 2: Key Metrics Dashboard (Final Results) -->
-        <div class="grid grid-cols-12 gap-3">
+        <div class="grid grid-cols-6 gap-2">
           <!-- Rubber Type -->
           <div
-            class="col-span-2 px-4 py-3 rounded-xl bg-slate-50/50 border border-slate-100 dark:bg-slate-900/20 dark:border-slate-800 flex flex-col justify-center min-h-[4.5rem]"
+            class="px-3 py-3 rounded-xl bg-slate-50/50 border border-slate-100 dark:bg-slate-900/20 dark:border-slate-800 flex flex-col justify-center min-h-[4.5rem]"
           >
-            <div class="text-[0.625rem] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
+            <div
+              class="text-[0.625rem] font-bold text-slate-500 uppercase tracking-widest mb-1.5 leading-none"
+            >
               {{ t('cuplump.rubberType') }}
             </div>
-            <div class="text-sm font-black text-slate-900 dark:text-slate-100 leading-tight">
+            <div class="text-xs font-black text-slate-900 dark:text-slate-100 leading-tight">
               {{ displayRubberType }}
-            </div>
-          </div>
-
-          <!-- Gross Weight -->
-          <div
-            class="col-span-2 p-2 rounded-xl bg-blue-50/50 border border-blue-100 dark:bg-blue-900/20 dark:border-blue-800 flex flex-col justify-center items-center text-center min-h-[4.5rem]"
-          >
-            <div
-              class="text-[0.5625rem] font-bold text-blue-600 uppercase tracking-tighter mb-1.5 leading-none"
-            >
-              {{ t('cuplump.grossWeight') }}
-            </div>
-            <div class="text-2xl font-black text-blue-700 leading-none">
-              {{ displayGrossWeight }}
-              <span class="text-[0.5625rem] text-muted-foreground ml-0.5">Kg</span>
-            </div>
-          </div>
-
-          <!-- Net Weight -->
-          <div
-            class="col-span-2 p-2 rounded-xl bg-green-50/50 border border-green-100 dark:bg-green-900/20 dark:border-green-800 flex flex-col justify-center items-center text-center min-h-[4.5rem]"
-          >
-            <div
-              class="text-[0.5625rem] font-bold text-green-600 uppercase tracking-tighter mb-1.5 leading-none"
-            >
-              {{ t('cuplump.netWeight') }}
-            </div>
-            <div class="text-2xl font-black text-green-700 leading-none">
-              {{ displayNetWeight }}
-              <span class="text-[0.5625rem] text-muted-foreground ml-0.5">Kg</span>
             </div>
           </div>
 
           <!-- Ave. %CP -->
           <div
-            class="col-span-1 p-2 rounded-xl bg-indigo-50/50 border border-indigo-100 dark:bg-indigo-900/20 dark:border-indigo-800 flex flex-col justify-center items-center text-center min-h-[4.5rem]"
+            class="p-2 rounded-xl bg-indigo-50/50 border border-indigo-100 dark:bg-indigo-900/20 dark:border-indigo-800 flex flex-col justify-center items-center text-center min-h-[4.5rem]"
           >
             <div
-              class="text-[0.5625rem] font-bold text-indigo-600 uppercase tracking-tighter mb-1.5"
+              class="text-[0.5625rem] font-bold text-indigo-600 uppercase tracking-tighter mb-1.5 leading-none"
             >
               {{ t('cuplump.avgCp') }}
             </div>
-            <div class="text-2xl font-black text-indigo-700 leading-none">{{ averageCp }}%</div>
+            <div class="text-xl font-black text-indigo-700 leading-none">{{ averageCp }}%</div>
           </div>
 
           <!-- Moisture -->
           <Popover v-model:open="isMoistureOpen">
             <PopoverTrigger as-child>
               <div
-                class="col-span-1 cursor-pointer p-2 rounded-xl bg-orange-50/50 border border-orange-100 dark:bg-orange-900/20 dark:border-orange-800 flex flex-col justify-center items-center text-center min-h-[4.5rem] hover:bg-orange-100/50 transition-colors"
+                class="cursor-pointer p-2 rounded-xl bg-orange-50/50 border border-orange-100 dark:bg-orange-900/20 dark:border-orange-800 flex flex-col justify-center items-center text-center min-h-[4.5rem] hover:bg-orange-100/50 transition-colors"
               >
                 <div
-                  class="text-[0.5625rem] font-bold text-orange-600 uppercase tracking-tighter mb-1.5"
+                  class="text-[0.5625rem] font-bold text-orange-600 uppercase tracking-tighter mb-1.5 leading-none"
                 >
                   {{ t('cuplump.moisture') }}
                 </div>
-                <div class="text-2xl font-black text-orange-700 leading-none">
+                <div class="text-xl font-black text-orange-700 leading-none">
                   {{ (booking.moisture || 0).toFixed(1) }}%
                 </div>
               </div>
@@ -862,8 +862,12 @@ onMounted(async () => {
                   />
                   <span class="text-sm font-bold text-muted-foreground">%</span>
                 </div>
-                <div class="flex justify-end">
-                  <Button size="sm" class="h-8 gap-1.5" @click="handleSaveMoisture">
+                <div class="flex justify-end pt-2 border-t">
+                  <Button
+                    size="sm"
+                    class="h-8 gap-1.5 bg-orange-600 hover:bg-orange-700 text-white"
+                    @click="handleSaveMoisture"
+                  >
                     <Save class="w-3.5 h-3.5" />
                     {{ t('common.save') }}
                   </Button>
@@ -871,103 +875,109 @@ onMounted(async () => {
               </div>
             </PopoverContent>
           </Popover>
-          <!-- DRC Dashboard Group (Item 6) -->
+
+          <!-- DRC Dashboard (3 items triggering one Popover) -->
+          <!-- EST -->
+          <div
+            @click="isDrcOpen = true"
+            class="cursor-pointer p-2 rounded-xl bg-teal-50/50 border border-teal-100 dark:bg-teal-900/20 dark:border-teal-800 flex flex-col justify-center items-center text-center min-h-[4.5rem] hover:bg-teal-100/50 transition-colors"
+          >
+            <div
+              class="text-[0.5625rem] font-bold text-teal-600 uppercase tracking-tighter mb-1.5 leading-none"
+            >
+              EST.
+            </div>
+            <div class="text-xl font-black text-teal-700 leading-none">
+              {{ (booking.drcEst || 0).toFixed(1) }}%
+            </div>
+          </div>
+
+          <!-- REQ -->
+          <div
+            @click="isDrcOpen = true"
+            class="cursor-pointer p-2 rounded-xl bg-teal-50/50 border border-teal-100 dark:bg-teal-900/20 dark:border-teal-800 flex flex-col justify-center items-center text-center min-h-[4.5rem] hover:bg-teal-100/50 transition-colors"
+          >
+            <div
+              class="text-[0.5625rem] font-bold text-teal-600 uppercase tracking-tighter mb-1.5 leading-none"
+            >
+              DRC % REQ.
+            </div>
+            <div class="text-xl font-black text-teal-700 leading-none">
+              {{ (booking.drcRequested || 0).toFixed(1) }}%
+            </div>
+          </div>
+
+          <!-- ACTUAL -->
           <Popover v-model:open="isDrcOpen">
             <PopoverTrigger as-child>
               <div
-                class="col-span-4 cursor-pointer p-3 rounded-xl bg-teal-50/50 border border-teal-100 dark:bg-teal-900/20 dark:border-teal-800 flex flex-col min-h-[4.5rem] hover:bg-teal-100/50 transition-colors group relative"
+                class="cursor-pointer p-2 rounded-xl bg-teal-50/50 border border-teal-100 dark:bg-teal-900/20 dark:border-teal-800 flex flex-col justify-center items-center text-center min-h-[4.5rem] hover:bg-teal-100/50 transition-colors"
               >
-                <!-- Main Header -->
                 <div
-                  class="text-[0.625rem] font-bold text-teal-600 uppercase tracking-widest text-center absolute top-2 left-0 right-0"
+                  class="text-[0.5625rem] font-bold text-teal-600 uppercase tracking-tighter mb-1.5 leading-none"
                 >
-                  DRC %
+                  ACTUAL
                 </div>
-
-                <div class="flex flex-1 items-center justify-between mt-4 px-0.5">
-                  <!-- EST -->
-                  <div class="flex-1 flex flex-col items-center">
-                    <span
-                      class="text-[0.5625rem] font-bold text-teal-600/70 uppercase tracking-widest mb-1"
-                      >{{ t('cuplump.drcEstShort') }}</span
-                    >
-                    <span class="text-2xl font-black text-teal-700">
-                      {{ (booking.drcEst || 0).toFixed(1) }}%
-                    </span>
-                  </div>
-
-                  <div class="w-px h-10 bg-teal-200/50 mx-1"></div>
-
-                  <!-- REQ -->
-                  <div class="flex-1 flex flex-col items-center">
-                    <span
-                      class="text-[0.5625rem] font-bold text-teal-600/70 uppercase tracking-widest mb-1"
-                      >{{ t('cuplump.drcReqShort') }}</span
-                    >
-                    <span class="text-2xl font-black text-teal-700">
-                      {{ (booking.drcRequested || 0).toFixed(1) }}%
-                    </span>
-                  </div>
-
-                  <div class="w-px h-10 bg-teal-200/50 mx-1"></div>
-
-                  <!-- ACTUAL -->
-                  <div class="flex-1 flex flex-col items-center">
-                    <span
-                      class="text-[0.5625rem] font-bold text-teal-600/70 uppercase tracking-widest mb-1"
-                      >{{ t('cuplump.drcActualShort') }}</span
-                    >
-                    <span class="text-2xl font-black text-teal-700">
-                      {{ (booking.drcActual || 0).toFixed(1) }}%
-                    </span>
-                  </div>
+                <div class="text-xl font-black text-teal-700 leading-none">
+                  {{ (booking.drcActual || 0).toFixed(1) }}%
                 </div>
               </div>
             </PopoverTrigger>
             <PopoverContent class="w-80">
               <div class="grid gap-4">
                 <div class="space-y-2">
-                  <h4 class="font-medium leading-none">{{ t('cuplump.drcManagement') }}</h4>
-                  <p class="text-sm text-muted-foreground">{{ t('cuplump.adjustDrcValues') }}</p>
+                  <h4 class="font-medium leading-none text-teal-700">DRC % Management</h4>
+                  <p class="text-xs text-muted-foreground">
+                    Adjust estimation, requested, and actual values.
+                  </p>
                 </div>
                 <div class="grid gap-3">
                   <div class="grid grid-cols-3 items-center gap-4">
-                    <Label for="drcEst">{{ t('cuplump.drcEst') }}</Label>
+                    <Label for="drcEst" class="text-xs uppercase font-bold text-teal-600">{{
+                      t('cuplump.drcEst')
+                    }}</Label>
                     <Input
                       id="drcEst"
                       v-model="drcForm.drcEst"
                       type="number"
                       step="0.01"
-                      class="col-span-2 h-8"
+                      class="col-span-2 h-8 font-bold"
                       @keydown.enter="handleSaveDrc"
                     />
                   </div>
                   <div class="grid grid-cols-3 items-center gap-4">
-                    <Label for="drcReq">{{ t('cuplump.drcReq') }}</Label>
+                    <Label for="drcReq" class="text-xs uppercase font-bold text-teal-600">{{
+                      t('cuplump.drcReq')
+                    }}</Label>
                     <Input
                       id="drcReq"
                       v-model="drcForm.drcRequested"
                       type="number"
                       step="0.01"
-                      class="col-span-2 h-8"
+                      class="col-span-2 h-8 font-bold"
                       @keydown.enter="handleSaveDrc"
                     />
                   </div>
                   <div class="grid grid-cols-3 items-center gap-4">
-                    <Label for="drcActual">{{ t('cuplump.drcActual') }}</Label>
+                    <Label for="drcActual" class="text-xs uppercase font-bold text-teal-600">{{
+                      t('cuplump.drcActual')
+                    }}</Label>
                     <Input
                       id="drcActual"
                       v-model="drcForm.drcActual"
                       type="number"
                       step="0.01"
-                      class="col-span-2 h-8"
+                      class="col-span-2 h-8 font-bold"
                       @keydown.enter="handleSaveDrc"
                     />
                   </div>
                 </div>
-
-                <div class="flex justify-end pt-2">
-                  <Button size="sm" class="h-8 gap-1.5" @click="handleSaveDrc">
+                <div class="flex justify-end pt-2 border-t mt-2">
+                  <Button
+                    size="sm"
+                    class="h-8 gap-1.5 bg-teal-600 hover:bg-teal-700 text-white"
+                    @click="handleSaveDrc"
+                  >
                     <Save class="w-3.5 h-3.5" />
                     {{ t('common.save') }}
                   </Button>
@@ -984,7 +994,7 @@ onMounted(async () => {
               class="text-xs font-bold flex items-center gap-2 uppercase tracking-wide text-muted-foreground"
             >
               {{ t('cuplump.recordedItems') }}
-              <span class="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[9px]">{{
+              <span class="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[0.5625rem]">{{
                 samples.length
               }}</span>
             </h3>
@@ -1008,43 +1018,43 @@ onMounted(async () => {
                   class="hover:bg-transparent border-b border-slate-200 dark:border-slate-800"
                 >
                   <TableHead
-                    class="w-[40px] h-9 text-[9px] uppercase font-bold text-center text-muted-foreground"
+                    class="w-[30px] h-8 text-[0.5rem] uppercase font-bold text-center text-muted-foreground"
                     >#</TableHead
                   >
                   <TableHead
-                    class="h-9 text-[9px] uppercase font-bold text-center text-muted-foreground w-28"
+                    class="h-8 text-[0.5rem] uppercase font-bold text-center text-muted-foreground w-24"
                     >{{ t('cuplump.beforePress') }}</TableHead
                   >
                   <TableHead
-                    class="h-9 text-[9px] uppercase font-bold text-center text-muted-foreground w-20"
+                    class="h-8 text-[0.5rem] uppercase font-bold text-center text-muted-foreground w-16"
                     >{{ t('cuplump.basket') }}</TableHead
                   >
                   <TableHead
-                    class="h-9 text-[9px] uppercase font-bold text-primary text-center bg-blue-50/30 dark:bg-blue-900/10 w-20"
+                    class="h-8 text-[0.5rem] uppercase font-bold text-primary text-center bg-blue-50/30 dark:bg-blue-900/10 w-16"
                     >{{ t('cuplump.cuplump') }}</TableHead
                   >
                   <TableHead
-                    class="h-9 text-[9px] uppercase font-bold text-center text-muted-foreground w-28"
+                    class="h-8 text-[0.5rem] uppercase font-bold text-center text-muted-foreground w-24"
                     >{{ t('cuplump.afterPress') }}</TableHead
                   >
                   <TableHead
-                    class="h-9 text-[9px] uppercase font-bold text-indigo-600 dark:text-indigo-400 text-center bg-indigo-50/30 dark:bg-indigo-900/10 w-24"
+                    class="h-8 text-[0.5rem] uppercase font-bold text-indigo-600 dark:text-indigo-400 text-center bg-indigo-50/30 dark:bg-indigo-900/10 w-20"
                     >{{ t('cuplump.percentCp') }}</TableHead
                   >
                   <TableHead
-                    class="h-9 text-[9px] uppercase font-bold text-center text-muted-foreground w-24"
+                    class="h-8 text-[0.5rem] uppercase font-bold text-center text-muted-foreground w-20"
                     >{{ t('cuplump.beforeBaking1') }}</TableHead
                   >
                   <TableHead
-                    class="h-9 text-[9px] uppercase font-bold text-center text-muted-foreground w-24"
+                    class="h-8 text-[0.5rem] uppercase font-bold text-center text-muted-foreground w-20"
                     >{{ t('cuplump.beforeBaking2') }}</TableHead
                   >
                   <TableHead
-                    class="h-9 text-[9px] uppercase font-bold text-center text-muted-foreground w-24"
+                    class="h-8 text-[0.5rem] uppercase font-bold text-center text-muted-foreground w-20"
                     >{{ t('cuplump.beforeBaking3') }}</TableHead
                   >
                   <TableHead
-                    class="w-[60px] h-9 text-[9px] uppercase font-bold text-center text-muted-foreground"
+                    class="w-[50px] h-8 text-[0.5rem] uppercase font-bold text-center text-muted-foreground"
                     >{{ t('cuplump.action') }}</TableHead
                   >
                 </TableRow>

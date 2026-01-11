@@ -429,12 +429,12 @@ const handlePostComment = async () => {
                     <div class="flex items-center gap-2 mb-2">
                       <Avatar class="w-6 h-6">
                         <AvatarImage :src="authStore.user?.avatar || ''" />
-                        <AvatarFallback class="text-[10px] bg-primary/10 text-primary">
+                        <AvatarFallback class="text-[0.625rem] bg-primary/10 text-primary">
                           {{ authStore.user?.displayName?.substring(0, 2).toUpperCase() || 'ME' }}
                         </AvatarFallback>
                       </Avatar>
                       <span class="text-xs font-medium">You</span>
-                      <span class="text-[10px] text-muted-foreground ml-auto">Now</span>
+                      <span class="text-[0.625rem] text-muted-foreground ml-auto">Now</span>
                     </div>
                     <Textarea
                       placeholder="Write a comment..."
@@ -442,7 +442,7 @@ const handlePostComment = async () => {
                       class="min-h-[80px] bg-muted/20 resize-none text-sm border-0 focus-visible:ring-0 px-0 shadow-none"
                     />
                     <div class="flex justify-between items-center mt-2 border-t pt-2">
-                      <span class="text-[10px] text-muted-foreground">Visible to everyone</span>
+                      <span class="text-[0.625rem] text-muted-foreground">Visible to everyone</span>
                       <Button
                         size="sm"
                         variant="ghost"
@@ -469,12 +469,12 @@ const handlePostComment = async () => {
                     <div class="flex items-center gap-2 mb-1">
                       <Avatar class="w-6 h-6">
                         <AvatarImage :src="ticketComment.user.avatar || ''" />
-                        <AvatarFallback class="text-[10px] bg-muted text-muted-foreground">
+                        <AvatarFallback class="text-[0.625rem] bg-muted text-muted-foreground">
                           {{ ticketComment.user.displayName?.substring(0, 2).toUpperCase() }}
                         </AvatarFallback>
                       </Avatar>
                       <span class="text-xs font-medium">{{ ticketComment.user.displayName }}</span>
-                      <span class="text-[10px] text-muted-foreground ml-auto">
+                      <span class="text-[0.625rem] text-muted-foreground ml-auto">
                         {{ formatDate(ticketComment.createdAt) }}
                       </span>
                     </div>
@@ -494,7 +494,7 @@ const handlePostComment = async () => {
                       localTicket?.requester?.displayName || 'User'
                     }}</span>
                     created this ticket.
-                    <div class="text-[10px] opacity-70 mt-0.5">
+                    <div class="text-[0.625rem] opacity-70 mt-0.5">
                       {{ localTicket ? formatDate(localTicket.createdAt) : '' }}
                     </div>
                   </div>
@@ -546,7 +546,7 @@ const handlePostComment = async () => {
                     <span class="text-sm font-semibold truncate">{{
                       localTicket?.requester?.displayName || localTicket?.requester?.username
                     }}</span>
-                    <span class="text-[10px] text-muted-foreground truncate">{{
+                    <span class="text-[0.625rem] text-muted-foreground truncate">{{
                       localTicket?.requester?.email
                     }}</span>
                   </div>
@@ -677,7 +677,7 @@ const handlePostComment = async () => {
                         <div class="flex items-center gap-2">
                           <Avatar class="w-5 h-5">
                             <AvatarImage :src="user.avatar || ''" />
-                            <AvatarFallback class="text-[9px]">{{
+                            <AvatarFallback class="text-[0.5625rem]">{{
                               userInitials(user)
                             }}</AvatarFallback>
                           </Avatar>

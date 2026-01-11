@@ -671,7 +671,7 @@ const confirmDelete = async () => {
                         <Check class="h-4 w-4" />
                       </div>
                       <span class="flex-1">{{ user.userName }}</span>
-                      <Badge v-if="user.isMapped" variant="secondary" class="text-[10px] ml-2">
+                      <Badge v-if="user.isMapped" variant="secondary" class="text-[0.625rem] ml-2">
                         {{ user.department || 'Mapped' }}
                       </Badge>
                     </CommandItem>
@@ -680,7 +680,7 @@ const confirmDelete = async () => {
               </Command>
             </PopoverContent>
           </Popover>
-          <div class="text-[10px] text-muted-foreground flex justify-between">
+          <div class="text-[0.625rem] text-muted-foreground flex justify-between">
             <span>Selected: {{ mappingForm.userNames.length }} users</span>
             <span
               v-if="mappingForm.userNames.length > 0"

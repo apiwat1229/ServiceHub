@@ -508,19 +508,19 @@ onMounted(() => {
             class="flex items-center gap-8 md:gap-12 justify-center md:justify-end text-center w-full md:w-auto"
           >
             <div>
-              <p class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">
+              <p class="text-[0.625rem] font-bold text-muted-foreground uppercase tracking-widest mb-1">
                 {{ t('admin.roles.totalRoles') }}
               </p>
               <p class="text-2xl font-bold text-foreground">{{ roles.length }}</p>
             </div>
             <div>
-              <p class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">
+              <p class="text-[0.625rem] font-bold text-emerald-600 uppercase tracking-widest mb-1">
                 {{ t('admin.roles.assignedUsers') }}
               </p>
               <p class="text-2xl font-bold text-emerald-600">{{ assignedUsersCount }}</p>
             </div>
             <div>
-              <p class="text-[10px] font-bold text-orange-500 uppercase tracking-widest mb-1">
+              <p class="text-[0.625rem] font-bold text-orange-500 uppercase tracking-widest mb-1">
                 {{ t('admin.roles.unassigned') }}
               </p>
               <p class="text-2xl font-bold text-orange-500">{{ unassignedUsersCount }}</p>
@@ -562,7 +562,7 @@ onMounted(() => {
                 <h3 class="font-bold text-base mb-0.5 text-foreground tracking-tight">
                   {{ role.name }}
                 </h3>
-                <p class="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
+                <p class="text-[0.6875rem] text-muted-foreground line-clamp-2 leading-relaxed">
                   {{ role.description }}
                 </p>
               </div>
@@ -609,21 +609,21 @@ onMounted(() => {
                     class="w-6 h-6 border-2 border-background ring-2 ring-background transition-transform hover:scale-110 hover:z-10"
                   >
                     <AvatarImage :src="avatar" />
-                    <AvatarFallback class="text-[9px] bg-muted text-muted-foreground font-bold"
+                    <AvatarFallback class="text-[0.5625rem] bg-muted text-muted-foreground font-bold"
                       >U{{ i + 1 }}</AvatarFallback
                     >
                   </Avatar>
                 </template>
                 <div
                   v-if="(role.usersCount || 0) > 3"
-                  class="w-6 h-6 rounded-full border-2 border-background bg-muted flex items-center justify-center text-[8px] font-bold text-muted-foreground z-0 pl-0.5"
+                  class="w-6 h-6 rounded-full border-2 border-background bg-muted flex items-center justify-center text-[0.5rem] font-bold text-muted-foreground z-0 pl-0.5"
                 >
                   +{{ (role.usersCount || 0) - 3 }}
                 </div>
               </div>
 
               <div
-                class="px-3 py-1 rounded-md bg-secondary/80 font-bold text-[10px] uppercase tracking-wider text-secondary-foreground"
+                class="px-3 py-1 rounded-md bg-secondary/80 font-bold text-[0.625rem] uppercase tracking-wider text-secondary-foreground"
               >
                 {{ role.usersCount || 0 }} {{ t('common.users') }}
               </div>

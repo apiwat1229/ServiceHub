@@ -544,7 +544,7 @@ onMounted(() => {
                   {{ task.title }}
                 </div>
                 <span
-                  class="text-[10px] px-1.5 py-0.5 rounded-full font-medium border"
+                  class="text-[0.625rem] px-1.5 py-0.5 rounded-full font-medium border"
                   :class="{
                     'bg-slate-100 text-slate-600 border-slate-200': task.status === 'Planning',
                     'bg-blue-50 text-blue-600 border-blue-100': task.status === 'In Progress',
@@ -559,7 +559,7 @@ onMounted(() => {
                 <div class="text-xs text-muted-foreground flex items-center gap-1">
                   <UserIcon class="w-3 h-3" /> {{ task.assignee }}
                 </div>
-                <div class="text-[10px] font-mono text-muted-foreground/70">
+                <div class="text-[0.625rem] font-mono text-muted-foreground/70">
                   {{ task.progress }}%
                 </div>
               </div>
@@ -609,13 +609,13 @@ onMounted(() => {
               <template v-if="isSameDay(day, new Date())">
                 <span class="text-sm tracking-tight">{{ formatDateDay(day) }}</span>
                 <span
-                  class="text-[9px] uppercase font-bold bg-emerald-100/50 px-1.5 rounded-sm mt-0.5 text-emerald-600"
+                  class="text-[0.5625rem] uppercase font-bold bg-emerald-100/50 px-1.5 rounded-sm mt-0.5 text-emerald-600"
                   >Today</span
                 >
               </template>
               <template v-else>
                 <span class="font-bold text-sm">{{ formatDateDay(day) }}</span>
-                <span class="text-[10px] uppercase opacity-70">{{ formatDateWeek(day) }}</span>
+                <span class="text-[0.625rem] uppercase opacity-70">{{ formatDateWeek(day) }}</span>
               </template>
             </div>
           </div>

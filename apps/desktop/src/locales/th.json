@@ -90,7 +90,7 @@
       "description": "การวางแผนความต้องการวัสดุสำหรับการผลิตและสินค้าคงคลัง"
     },
     "cuplump": {
-      "name": "บ่อยางก้อนถ้วย",
+      "name": "ยางก้อนถ้วย",
       "description": "ระบบจัดการและติดตามยางก้อนถ้วย"
     },
     "booking": {
@@ -404,8 +404,8 @@
       }
     },
     "uss": {
-      "name": "USS",
-      "description": "ระบบรับซื้อ USS"
+      "name": "ยางแผ่นรมควัน",
+      "description": "ระบบจัดการและติดตามยางแผ่นรมควัน"
     },
     "shipping": {
       "name": "การจัดส่งสินค้า",
@@ -426,6 +426,10 @@
     "purchasing": {
       "name": "จัดซื้อ",
       "description": "การจัดการการจัดซื้อและการประสานงานผู้จัดจำหน่าย"
+    },
+    "projectTimeline": {
+      "name": "การบริหารจัดการโครงการ",
+      "description": "การจัดการสินค้าคงคลังและการติดตามโครงการ"
     },
     "contracts": {
       "name": "จัดการสัญญา",
@@ -760,7 +764,8 @@
       "analytics": "การวิเคราะห์",
       "roles": "บทบาทและสิทธิ์",
       "bookingQueue": "คิวการจอง",
-      "truckScale": "เครื่องชั่งรถบรรทุก"
+      "truckScale": "เครื่องชั่งรถบรรทุก",
+      "receiving": "การรับวัตถุดิบ"
     },
     "userProfile": {
       "title": "โปรไฟล์ผู้ใช้",
@@ -1252,6 +1257,7 @@
   },
   "cuplump": {
     "title": "ยางก้อนถ้วย",
+    "detailTitle": "รายละเอียดการรับยางก้อนถ้วย",
     "pageTitle": "ยางก้อนถ้วย",
     "pageDescription": "ระบบจัดการและติดตามยางก้อนถ้วย",
     "lotNo": "หมายเลขล็อต",
@@ -1308,13 +1314,20 @@
     "lotNoDuplicate": "เลขล็อตนี้ถูกใช้งานไปแล้ว"
   },
   "uss": {
+    "action": "การดำเนินการ",
     "title": "ยางแผ่นรมควัน",
+    "detailTitle": "รายละเอียดการรับยางแผ่นรมควัน",
     "lotNo": "หมายเลขล็อต",
+    "lotNumber": "หมายเลขล็อต",
     "supplier": "ผู้จัดจำหน่าย",
     "truck": "รถบรรทุก",
     "rubberType": "ประเภทยาง",
-    "moisture": "ความชื้น",
-    "drcEst": "DRC โดยประมาณ",
+    "totalPallets": "จำนวนพาเลท",
+    "grossPlusPalletsWeight": "น้ำหนักรวมพาเลท",
+    "beforeDryer": "ก่อนอบ",
+    "drcEst": "DRC โดยเปรมาณ",
+    "drcRequested": "DRC ที่ต้องการ",
+    "drcActual": "DRC จริง",
     "avgCp": "%เนื้อยางเฉลี่ย",
     "grossWeight": "น้ำหนักรวม",
     "netWeight": "น้ำหนักสุทธิ",
@@ -1326,16 +1339,12 @@
     "mainInfo": "ข้อมูลหลัก",
     "date": "วันที่",
     "recordedItems": "รายการที่บันทึกแล้ว",
-    "specialReceiving": "รายการรับเศษยาง",
-    "beforePress": "ก่อนอัด",
-    "basket": "ตะกร้า",
-    "uss": "ยางแผ่น",
-    "afterPress": "หลังอัด",
-    "percentCp": "%เนื้อยาง",
-    "beforeBaking": "ก่อนอบ",
-    "action": "จัดการ",
-    "saveRecord": "บันทึกข้อมูล",
-    "addFirstSample": "เพิ่มตัวอย่างแรก",
+    "palletNumber": "หมายเลขพาเลท",
+    "palletWeight": "น้ำหนักพาเลท (กก.)",
+    "totalWeight": "น้ำหนักรวม (กก.)",
+    "spgr": "SPGR",
+    "totals": "รวมทั้งหมด",
+    "pallet": "พาเลท",
     "clear": "ล้างข้อมูล",
     "noSamples": "ยังไม่มีรายการที่บันทึก",
     "confirmDelete": "ต้องการลบรายการนี้?",
@@ -1346,7 +1355,8 @@
     "failedToSave": "บันทึกไม่สำเร็จ",
     "failedToDelete": "ลบไม่สำเร็จ",
     "numericOnly": "ตัวเลขเท่านั้น",
-    "lotNoDuplicate": "เลขล็อตนี้ถูกใช้งานไปแล้ว"
+    "lotNoDuplicate": "เลขล็อตนี้ถูกใช้งานไปแล้ว",
+    "enterRequiredFields": "กรุณากรอกทั้งน้ำหนักรวมและน้ำหนักพาเลทสำหรับทุกรายการ"
   },
   "approval": {
     "title": "คำขออนุมัติ",

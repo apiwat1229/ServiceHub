@@ -93,18 +93,18 @@ const getCategoryColor = (cost: number) => {
           <div class="flex items-center gap-2 mb-4">
             <Badge
               variant="outline"
-              class="bg-blue-500/10 text-blue-400 border-blue-500/30 font-bold tracking-wider px-2 py-0.5 text-[9px] uppercase"
+              class="bg-blue-500/10 text-blue-400 border-blue-500/30 font-bold tracking-wider px-2 py-0.5 text-[0.5625rem] uppercase"
             >
               Maintenance Record
             </Badge>
-            <div class="flex items-center gap-1.5 text-[10px] text-slate-400 font-medium">
+            <div class="flex items-center gap-1.5 text-[0.625rem] text-slate-400 font-medium">
               <Clock class="h-3 w-3" />
               {{ repair.date }}
             </div>
           </div>
 
           <h1 class="text-2xl font-black mb-1 tracking-tight">{{ repair.machineName }}</h1>
-          <div class="flex items-center gap-2 text-[10px] text-slate-400 font-medium">
+          <div class="flex items-center gap-2 text-[0.625rem] text-slate-400 font-medium">
             <Calendar class="h-3 w-3" />
             Processed on {{ repair.date }}
           </div>
@@ -116,7 +116,7 @@ const getCategoryColor = (cost: number) => {
         <!-- Main Info Row -->
         <div class="grid grid-cols-2 gap-4 pb-6 border-b border-slate-100">
           <div class="space-y-1.5">
-            <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Technician</p>
+            <p class="text-[0.5625rem] font-bold text-slate-400 uppercase tracking-widest">Technician</p>
             <div class="flex items-center gap-2">
               <div class="h-7 w-7 rounded-lg bg-slate-100 flex items-center justify-center">
                 <User class="h-3.5 w-3.5 text-slate-500" />
@@ -125,10 +125,10 @@ const getCategoryColor = (cost: number) => {
             </div>
           </div>
           <div class="space-y-1.5 text-right">
-            <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Category</p>
+            <p class="text-[0.5625rem] font-bold text-slate-400 uppercase tracking-widest">Category</p>
             <Badge
               variant="outline"
-              :class="`h-7 px-2.5 rounded-lg text-[9px] font-bold uppercase tracking-wider ${getCategoryColor(repair.totalCost)}`"
+              :class="`h-7 px-2.5 rounded-lg text-[0.5625rem] font-bold uppercase tracking-wider ${getCategoryColor(repair.totalCost)}`"
             >
               {{ repair.totalCost > 1000 ? 'Major Repair' : 'Routine Service' }}
             </Badge>
@@ -142,7 +142,7 @@ const getCategoryColor = (cost: number) => {
             <h3 class="font-bold text-slate-700 text-xs">Issue Description</h3>
           </div>
           <div
-            class="bg-slate-50 rounded-xl p-3.5 border border-slate-100 italic text-[12px] text-slate-600 leading-relaxed"
+            class="bg-slate-50 rounded-xl p-3.5 border border-slate-100 italic text-[0.75rem] text-slate-600 leading-relaxed"
           >
             "{{ repair.issue }}"
           </div>
@@ -167,8 +167,8 @@ const getCategoryColor = (cost: number) => {
                   <Package class="h-3.5 w-3.5 text-slate-400 group-hover:text-blue-500" />
                 </div>
                 <div>
-                  <p class="text-[12px] font-bold text-slate-800">{{ part.name }}</p>
-                  <p class="text-[9px] font-semibold text-slate-400">
+                  <p class="text-[0.75rem] font-bold text-slate-800">{{ part.name }}</p>
+                  <p class="text-[0.5625rem] font-semibold text-slate-400">
                     @ ฿{{ part.price.toLocaleString() }}
                   </p>
                 </div>
@@ -183,7 +183,7 @@ const getCategoryColor = (cost: number) => {
         <!-- Economic Valuation -->
         <div class="pt-6 border-t border-slate-100 flex items-end justify-between">
           <div class="space-y-1">
-            <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+            <p class="text-[0.5625rem] font-bold text-slate-400 uppercase tracking-widest">
               Total Valuation
             </p>
             <p class="text-2xl font-black text-slate-900 tracking-tight">
@@ -193,7 +193,7 @@ const getCategoryColor = (cost: number) => {
           <Button
             @click="printRecord"
             variant="outline"
-            class="rounded-lg h-8 px-3 text-[10px] hover:bg-slate-50 border-slate-200 print:hidden"
+            class="rounded-lg h-8 px-3 text-[0.625rem] hover:bg-slate-50 border-slate-200 print:hidden"
           >
             <Printer class="h-3 w-3 mr-2" />
             Print Report
@@ -203,7 +203,7 @@ const getCategoryColor = (cost: number) => {
 
       <!-- Compact Footer -->
       <div class="bg-slate-50/50 py-3 text-center border-t border-slate-100">
-        <p class="text-[8px] font-bold text-slate-400 uppercase tracking-[0.2em]">
+        <p class="text-[0.5rem] font-bold text-slate-400 uppercase tracking-[0.2em]">
           SECURE SYSTEM • MAINTENANCE AUDIT TRAIL
         </p>
       </div>

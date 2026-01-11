@@ -505,7 +505,7 @@ const typeChartOptions = computed(() => ({
     show: true,
     position: 'bottom' as const,
     horizontalAlign: 'center' as const,
-    fontSize: '12px',
+    fontSize: '0.75rem',
     markers: {
       size: 6,
     },
@@ -562,7 +562,7 @@ const userChartOptions = computed(() => ({
     formatter: (val: number) => formatNumber(val),
     offsetY: -20,
     style: {
-      fontSize: '11px',
+      fontSize: '0.6875rem',
       colors: ['#64748b'],
     },
   },
@@ -604,7 +604,7 @@ const deptChartOptions = computed(() => ({
     formatter: (val: number) => formatNumber(val),
     offsetY: -20,
     style: {
-      fontSize: '11px',
+      fontSize: '0.6875rem',
       colors: ['#64748b'],
     },
   },
@@ -717,7 +717,7 @@ const historyChartOptions = computed(() => ({
     enabled: true,
     formatter: (val: number) => formatNumber(val),
     style: {
-      fontSize: '10px',
+      fontSize: '0.625rem',
       colors: ['hsl(var(--primary))', 'hsl(var(--chart-1))', 'hsl(var(--chart-2))'],
     },
     background: {
@@ -775,7 +775,7 @@ const historyChartOptions = computed(() => ({
           style: {
             color: '#fff',
             background: '#ef4444',
-            fontSize: '10px',
+            fontSize: '0.625rem',
             fontWeight: 600,
           },
           text: 'Limit Quota (12,000)',
@@ -1328,7 +1328,7 @@ onUnmounted(() => {
             <div class="flex items-center justify-between mb-3">
               <span class="text-xs font-semibold text-muted-foreground">Usage Trend</span>
               <span
-                class="text-[10px] text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full border border-border/50"
+                class="text-[0.625rem] text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full border border-border/50"
               >
                 Previous {{ viewMode === 'range' ? 'Range' : 'Month' }}
               </span>
@@ -1337,11 +1337,11 @@ onUnmounted(() => {
               <!-- B&W Trend -->
               <div class="flex flex-col gap-0.5">
                 <div class="flex items-center justify-between">
-                  <span class="text-[11px] font-bold text-slate-600">B&W</span>
+                  <span class="text-[0.6875rem] font-bold text-slate-600">B&W</span>
                   <span
                     :class="
                       cn(
-                        'text-[10px] px-1.5 py-0.5 rounded-sm font-bold flex items-center gap-1',
+                        'text-[0.625rem] px-1.5 py-0.5 rounded-sm font-bold flex items-center gap-1',
                         comparisonStats.diffBW > 0
                           ? 'bg-red-50 text-red-600'
                           : 'bg-green-50 text-green-600'
@@ -1369,11 +1369,11 @@ onUnmounted(() => {
               <!-- Color Trend -->
               <div class="flex flex-col gap-0.5 pl-4">
                 <div class="flex items-center justify-between">
-                  <span class="text-[11px] font-bold text-pink-600">Color</span>
+                  <span class="text-[0.6875rem] font-bold text-pink-600">Color</span>
                   <span
                     :class="
                       cn(
-                        'text-[10px] px-1.5 py-0.5 rounded-sm font-bold flex items-center gap-1',
+                        'text-[0.625rem] px-1.5 py-0.5 rounded-sm font-bold flex items-center gap-1',
                         comparisonStats.diffColor > 0
                           ? 'bg-red-50 text-red-600'
                           : 'bg-green-50 text-green-600'
@@ -1406,7 +1406,7 @@ onUnmounted(() => {
             <div class="grid grid-cols-2 gap-4 divide-x h-full items-center">
               <div class="flex flex-col gap-1">
                 <div class="flex items-center justify-between">
-                  <span class="text-[11px] font-medium text-muted-foreground">Total Users</span>
+                  <span class="text-[0.6875rem] font-medium text-muted-foreground">Total Users</span>
                   <Users class="h-3.5 w-3.5 text-muted-foreground/70" />
                 </div>
                 <div class="text-2xl font-bold text-slate-700">
@@ -1415,7 +1415,7 @@ onUnmounted(() => {
               </div>
               <div class="flex flex-col gap-1 pl-4">
                 <div class="flex items-center justify-between">
-                  <span class="text-[11px] font-medium text-muted-foreground">Total Depts</span>
+                  <span class="text-[0.6875rem] font-medium text-muted-foreground">Total Depts</span>
                   <BarChart3 class="h-3.5 w-3.5 text-muted-foreground/70" />
                 </div>
                 <div class="text-2xl font-bold text-slate-700">
@@ -1656,7 +1656,7 @@ onUnmounted(() => {
                       <Badge variant="secondary" class="font-bold">{{
                         formatNumber(user.total)
                       }}</Badge>
-                      <span v-if="user.meterTotal" class="text-[10px] text-muted-foreground mt-1">
+                      <span v-if="user.meterTotal" class="text-[0.625rem] text-muted-foreground mt-1">
                         Rd: {{ formatNumber(user.meterTotal) }}
                       </span>
                     </div>
@@ -1664,7 +1664,7 @@ onUnmounted(() => {
                   <td class="p-3 text-right text-muted-foreground whitespace-nowrap">
                     <div class="flex flex-col items-end">
                       <span class="text-foreground">{{ formatNumber(user.printBW) }}</span>
-                      <span v-if="user.meterPrint" class="text-[10px]"
+                      <span v-if="user.meterPrint" class="text-[0.625rem]"
                         >Rd: {{ formatNumber(user.meterPrint) }}</span
                       >
                     </div>
@@ -1672,7 +1672,7 @@ onUnmounted(() => {
                   <td class="p-3 text-right text-muted-foreground whitespace-nowrap">
                     <div class="flex flex-col items-end">
                       <span class="text-foreground">{{ formatNumber(user.printColor) }}</span>
-                      <span v-if="user.meterColor" class="text-[10px]"
+                      <span v-if="user.meterColor" class="text-[0.625rem]"
                         >Rd: {{ formatNumber(user.meterColor) }}</span
                       >
                     </div>

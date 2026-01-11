@@ -103,10 +103,9 @@ function thaiDateWithWeekday(dateField: Date): string {
     :style="{
       background: theme.cardBg,
       border: `2px solid ${theme.border}`,
-      padding: '24px 16px',
+      padding: '1.5rem 1rem',
       borderRadius: '12px',
-      fontFamily: '\'Sarabun\', \'Kanit\', sans-serif',
-      minHeight: '310px',
+      minHeight: '19.375rem',
     }"
     class="shadow-md w-full max-w-[250px] relative transition-all duration-300 hover:scale-[1.2] hover:z-50 hover:shadow-2xl cursor-default flex flex-col overflow-hidden"
   >
@@ -122,34 +121,34 @@ function thaiDateWithWeekday(dateField: Date): string {
             @error="(e: any) => (e.target.style.display = 'none')"
           />
         </div>
-        <span class="text-[10px] font-bold opacity-40 uppercase tracking-widest">{{
+        <span class="text-[0.625rem] font-bold opacity-40 uppercase tracking-widest">{{
           ticket.rubberType?.includes('USS') ? 'Queue USS' : 'Queue Cuplump'
         }}</span>
       </div>
 
       <!-- Details -->
       <div class="space-y-1.5">
-        <div class="flex justify-between text-[12px] leading-tight">
+        <div class="flex justify-between text-[0.75rem] leading-tight">
           <span class="font-medium text-muted-foreground/70">{{ t('ticketDialog.code') }}:</span>
           <span class="text-right flex-1 ml-2 font-bold">{{ ticket.supplierCode || '-' }}</span>
         </div>
-        <div class="flex justify-between text-[12px] leading-tight">
+        <div class="flex justify-between text-[0.75rem] leading-tight">
           <span class="font-medium text-muted-foreground/70">{{ t('ticketDialog.name') }}:</span>
           <span class="text-right flex-1 ml-2 font-bold">{{ ticket.supplierName || '-' }}</span>
         </div>
-        <div class="flex justify-between text-[12px] leading-tight text-muted-foreground">
+        <div class="flex justify-between text-[0.75rem] leading-tight text-muted-foreground">
           <span class="font-medium">{{ t('ticketDialog.date') }}:</span>
           <span class="text-right flex-1 ml-2">{{ formattedDate }}</span>
         </div>
-        <div class="flex justify-between text-[12px] leading-tight text-muted-foreground">
+        <div class="flex justify-between text-[0.75rem] leading-tight text-muted-foreground">
           <span class="font-medium">{{ t('ticketDialog.time') }}:</span>
           <span class="text-right flex-1 ml-2">{{ ticket.startTime || '-' }}</span>
         </div>
-        <div class="flex justify-between text-[12px] leading-tight text-muted-foreground">
+        <div class="flex justify-between text-[0.75rem] leading-tight text-muted-foreground">
           <span class="font-medium">{{ t('ticketDialog.truck') }}:</span>
           <span class="text-right flex-1 ml-2">{{ truckPreview }}</span>
         </div>
-        <div class="flex justify-between text-[12px] leading-tight">
+        <div class="flex justify-between text-[0.75rem] leading-tight">
           <span class="font-medium text-muted-foreground/70">{{ t('ticketDialog.type') }}:</span>
           <span class="text-right flex-1 ml-2 font-bold">
             {{
@@ -160,15 +159,15 @@ function thaiDateWithWeekday(dateField: Date): string {
             }}
           </span>
         </div>
-        <div class="flex justify-between text-[11px] leading-tight text-muted-foreground/60">
+        <div class="flex justify-between text-[0.6875rem] leading-tight text-muted-foreground/60">
           <span class="font-medium">{{ t('ticketDialog.booking') }}:</span>
-          <span class="text-right flex-1 ml-2 font-mono text-[11px]">{{
+          <span class="text-right flex-1 ml-2 font-mono text-[0.6875rem]">{{
             ticket.bookingCode || '-'
           }}</span>
         </div>
-        <div class="flex justify-between text-[11px] leading-tight text-muted-foreground/60">
+        <div class="flex justify-between text-[0.6875rem] leading-tight text-muted-foreground/60">
           <span class="font-medium">Recorder:</span>
-          <span class="text-right flex-1 ml-2 font-mono text-[11px]">{{
+          <span class="text-right flex-1 ml-2 font-mono text-[0.6875rem]">{{
             ticket.recorder || '-'
           }}</span>
         </div>
@@ -176,7 +175,7 @@ function thaiDateWithWeekday(dateField: Date): string {
 
       <!-- Queue Number -->
       <div class="flex justify-between items-center my-4">
-        <span class="text-[11px] font-black opacity-60 uppercase tracking-tight">{{
+        <span class="text-[0.6875rem] font-black opacity-60 uppercase tracking-tight">{{
           t('ticketDialog.queue')
         }}</span>
         <div
@@ -186,7 +185,7 @@ function thaiDateWithWeekday(dateField: Date): string {
             borderRadius: '8px',
             background: theme.queueBg,
             color: '#fff',
-            fontSize: '28px',
+            fontSize: '1.75rem',
             fontWeight: 900,
             border: `2px solid rgba(0,0,0,0.15)`,
             display: 'flex',
@@ -203,10 +202,10 @@ function thaiDateWithWeekday(dateField: Date): string {
 
       <!-- Info (Ultra Compact) -->
       <div class="text-center my-3 leading-tight px-1">
-        <p class="text-[8px] font-bold text-gray-500 uppercase tracking-wide">
+        <p class="text-[0.5rem] font-bold text-gray-500 uppercase tracking-wide">
           VEHICLES CAN PARK OVERNIGHT IN FRONT OF THE FACTORY
         </p>
-        <p class="text-[8px] font-bold text-red-600 uppercase tracking-wide mt-0.5">
+        <p class="text-[0.5rem] font-bold text-red-600 uppercase tracking-wide mt-0.5">
           * DO NOT PARK ON THE FACTORY ENTRANCE ROAD *
         </p>
       </div>
@@ -227,7 +226,7 @@ function thaiDateWithWeekday(dateField: Date): string {
           v-else
           class="w-20 h-20 bg-muted/50 rounded border border-dashed border-muted-foreground/30 flex items-center justify-center"
         >
-          <span class="text-gray-400 text-[10px]">{{ t('ticketDialog.noCode') }}</span>
+          <span class="text-gray-400 text-[0.625rem]">{{ t('ticketDialog.noCode') }}</span>
         </div>
       </div>
     </div>
@@ -242,7 +241,6 @@ function thaiDateWithWeekday(dateField: Date): string {
       >
         <span
           class="text-4xl font-black text-red-600/90 uppercase tracking-[0.15em] leading-none drop-shadow-sm"
-          style="font-family: 'Sarabun', sans-serif"
         >
           CANCELLED
         </span>

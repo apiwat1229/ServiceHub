@@ -148,6 +148,11 @@ const routes = [
                 component: () => import('../views/admin/Uss.vue'),
             },
             {
+                path: 'uss/:id',
+                name: 'UssDetail',
+                component: () => import('../views/admin/UssDetail.vue'),
+            },
+            {
                 path: 'project-timeline',
                 name: 'ProjectTimeline',
                 component: () => import('../views/admin/ProjectTimeline.vue'),
@@ -243,6 +248,18 @@ const routes = [
                 path: ':id',
                 name: 'EditContract',
                 component: () => import('../views/admin/contracts/ContractForm.vue'),
+            },
+        ]
+    },
+    {
+        path: '/admin/receiving',
+        component: () => import('@/components/layout/NavbarOnlyLayout.vue'),
+        meta: { requiresAuth: true },
+        children: [
+            {
+                path: '',
+                name: 'Raw Material Receiving',
+                component: () => import('../views/admin/Receiving.vue'),
             },
         ]
     },
