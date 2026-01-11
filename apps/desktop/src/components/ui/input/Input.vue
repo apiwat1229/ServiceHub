@@ -20,6 +20,7 @@ const modelValue = useVModel(props, 'modelValue', emits, {
 
 <template>
   <input
+    v-bind="$attrs"
     v-model="modelValue"
     :class="
       cn(

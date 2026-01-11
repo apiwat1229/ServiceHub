@@ -25,6 +25,7 @@
     "import": "Import",
     "refresh": "Refresh",
     "loading": "Loading...",
+    "deleting": "Deleting...",
     "noData": "No data available",
     "error": "Error",
     "success": "Success",
@@ -1293,6 +1294,7 @@
     "clear": "Clear",
     "noSamples": "No samples recorded yet.",
     "confirmDelete": "Delete this item?",
+    "confirmDeleteMsg": "This action cannot be undone. This sample row will be permanently deleted.",
     "sampleSaved": "Sample saved",
     "sampleDeleted": "Sample deleted",
     "enterBeforePress": "Please enter Before Press weight",
@@ -1301,7 +1303,8 @@
     "numericOnly": "Numbers only (0-9)",
     "confirmSaveAll": "Are you sure you want to save {count} item(s)?",
     "enterRequiredFields": "Please enter both Before Press and After Press for all items",
-    "noSamplesToSave": "No samples with data to save."
+    "noSamplesToSave": "No samples with data to save.",
+    "lotNoDuplicate": "Lot Number already exists"
   },
   "uss": {
     "title": "USS",
@@ -1335,13 +1338,15 @@
     "clear": "Clear",
     "noSamples": "No recorded items yet.",
     "confirmDelete": "Are you sure you want to delete this item?",
+    "confirmDeleteMsg": "This action cannot be undone. This sample row will be permanently deleted.",
     "sampleSaved": "Sample saved successfully",
     "samplesSaved": "Samples saved successfully",
     "confirmSaveAll": "Are you sure you want to save {count} item(s)?",
     "enterRequiredFields": "Please enter both Before Press and After Press for all items",
     "failedToSave": "Failed to save sample",
     "failedToDelete": "Failed to delete sample",
-    "numericOnly": "Numeric Only"
+    "numericOnly": "Numeric Only",
+    "lotNoDuplicate": "Lot Number already exists"
   },
   "approval": {
     "title": "Approval Requests",

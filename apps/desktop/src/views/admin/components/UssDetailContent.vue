@@ -23,8 +23,8 @@ import {
 } from '@/components/ui/table';
 import { bookingsApi } from '@/services/bookings';
 import { rubberTypesApi } from '@/services/rubberTypes';
-import { AlertTriangle, Plus, Save, Trash2 } from 'lucide-vue-next';
-import { computed, onMounted, ref, watch } from 'vue';
+import { AlertTriangle, Check, Pencil, Plus, Save, Trash2 } from 'lucide-vue-next';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
 
@@ -34,6 +34,7 @@ const props = defineProps<{
   bookingId: string;
   isTrailer: boolean;
   partLabel: string;
+  existingBookings: any[];
 }>();
 
 const emit = defineEmits(['close', 'update']);
@@ -48,10 +49,30 @@ const lotNoError = ref(''); // Validation error message
 const isLoading = ref(false);
 const isSaving = ref(false);
 
-const isLotNoOpen = ref(false);
 const isDrcOpen = ref(false);
 const isMoistureOpen = ref(false);
 const showSaveConfirm = ref(false);
+const showDeleteConfirm = ref(false);
+const sampleToDeleteId = ref<string | null>(null);
+const isDeleting = ref(false);
+const editingSampleId = ref<string | null>(null);
+
+const toggleEdit = async (id: string) => {
+  const isEditing = editingSampleId.value === id;
+  editingSampleId.value = isEditing ? null : id;
+
+  if (!isEditing) {
+    await nextTick();
+    const targetRow = document.querySelector(`[data-row-id="${id}"]`);
+    if (targetRow) {
+      const firstInput = targetRow.querySelector('input:not([readonly])') as HTMLInputElement;
+      if (firstInput) {
+        firstInput.focus();
+        firstInput.select();
+      }
+    }
+  }
+};
 
 const drcForm = ref({
   drcEst: '',
@@ -80,9 +101,10 @@ watch(isDrcOpen, (newVal) => {
 // New Sample Form (Batch)
 const newSamples = ref<any[]>([]);
 
-const addNewSampleRow = () => {
+const addNewSampleRow = async () => {
+  const tempId = 'temp-' + Date.now();
   newSamples.value.push({
-    id: 'temp-' + Date.now(),
+    id: tempId,
     beforePress: '',
     basket: 1.4,
     afterPress: '',
@@ -91,10 +113,20 @@ const addNewSampleRow = () => {
     beforeBaking2: '',
     beforeBaking3: '',
   });
+
+  await nextTick();
+  const targetRow = document.querySelector(`[data-row-id="${tempId}"]`);
+  if (targetRow) {
+    const firstInput = targetRow.querySelector('input') as HTMLInputElement;
+    if (firstInput) {
+      firstInput.focus();
+    }
+  }
 };
 
 const populatedCount = computed(() => {
-  return newSamples.value.filter(
+  const allSamples = [...samples.value, ...newSamples.value];
+  return allSamples.filter(
     (s) => s.beforePress || s.afterPress || s.beforeBaking1 || s.beforeBaking2 || s.beforeBaking3
   ).length;
 });
@@ -128,29 +160,11 @@ const focusNextInput = (event: KeyboardEvent) => {
       event.preventDefault();
       inputs[nextIndex].focus();
     } else {
-      // If we are at the last field of the samples table, add a new row
-      const table = target.closest('table');
-      if (table) {
+      // If we are at the very last field of the entire form, trigger Save
+      const isLastField = currentIndex === inputs.length - 1;
+      if (isLastField) {
         event.preventDefault();
-        addNewSampleRow();
-        // Wait for nextTick/DOM update to focus the first input of the new row
-        setTimeout(() => {
-          const freshInputs = Array.from(
-            document.querySelectorAll(
-              'input:not([readonly]):not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([readonly]):not([disabled])'
-            )
-          ) as HTMLElement[];
-          let finalIndex = currentIndex + 1;
-          while (
-            finalIndex < freshInputs.length &&
-            freshInputs[finalIndex].getAttribute('data-skip-enter') === 'true'
-          ) {
-            finalIndex++;
-          }
-          if (freshInputs[finalIndex]) {
-            freshInputs[finalIndex].focus();
-          }
-        }, 50);
+        handleSaveAllSamples();
       }
     }
   }
@@ -168,21 +182,6 @@ const displayWeightIn = computed(() => {
   if (!booking.value) return 0;
   const w = props.isTrailer ? booking.value.trailerWeightIn : booking.value.weightIn;
   return (w || 0).toLocaleString();
-});
-
-// Lot Number Display Logic
-const displayLotNo = computed(() => {
-  if (!booking.value) return '-';
-  const lot = props.isTrailer
-    ? booking.value.trailerLotNo || booking.value.lotNo
-    : booking.value.lotNo;
-  if (lot) return lot;
-
-  // Fallback for trailer as seen in Uss.vue
-  if (props.isTrailer) {
-    return '1251226-' + (booking.value.queueNo || '0') + '/2';
-  }
-  return '-';
 });
 
 // Net Weight
@@ -203,6 +202,22 @@ const handleNumericInput = (sample: any, field: string, value: string) => {
   const parts = cleaned.split('.');
   if (parts.length > 2) {
     cleaned = parts[0] + '.' + parts.slice(1).join('');
+  }
+
+  // AUTO-DECIMAL LOGIC
+  // If dot is NOT present, check length for auto-insertion
+  if (parts.length === 1 && cleaned.length > 0) {
+    if (['beforePress', 'afterPress'].includes(field)) {
+      // 2 digits -> Auto add dot
+      if (cleaned.length === 2 && !value.endsWith('.')) {
+        cleaned += '.';
+      }
+    } else if (field.startsWith('beforeBaking')) {
+      // 1 digit -> Auto add dot
+      if (cleaned.length === 1 && !value.endsWith('.')) {
+        cleaned += '.';
+      }
+    }
   }
 
   // Handle decimal precision
@@ -273,7 +288,18 @@ const fetchData = async () => {
       drcActual: props.isTrailer ? bookingData.trailerDrcActual || 0 : bookingData.drcActual || 0,
     };
     originalLotNo.value = booking.value.lotNo;
-    samples.value = samplesData.filter((s: any) => s.isTrailer === props.isTrailer);
+    samples.value = samplesData
+      .filter((s: any) => s.isTrailer === props.isTrailer)
+      .map((s: any) => ({
+        ...s,
+        beforePress: s.beforePress?.toString() || '',
+        basket: s.basketWeight?.toString() || '1.4',
+        afterPress: s.afterPress?.toString() || '',
+        percentCp: s.percentCp?.toString() || '',
+        beforeBaking1: s.beforeBaking1?.toString() || '',
+        beforeBaking2: s.beforeBaking2?.toString() || '',
+        beforeBaking3: s.beforeBaking3?.toString() || '',
+      }));
     rubberTypes.value = typesData;
   } catch (error) {
     console.error('Failed to load data:', error);
@@ -288,13 +314,43 @@ const calculateUss = (before: number, basket: number) => {
   return Math.max(0, before - basket).toFixed(2);
 };
 
+const saveHeaderInfoOnly = async () => {
+  isSaving.value = true;
+  try {
+    const updateData: any = {};
+    if (props.isTrailer) {
+      updateData.trailerLotNo = booking.value.lotNo;
+      updateData.trailerMoisture = booking.value.moisture;
+      updateData.trailerDrcEst = booking.value.drcEst;
+      updateData.trailerDrcRequested = booking.value.drcRequested;
+      updateData.trailerDrcActual = booking.value.drcActual;
+    } else {
+      updateData.lotNo = booking.value.lotNo;
+      updateData.moisture = booking.value.moisture;
+      updateData.drcEst = booking.value.drcEst;
+      updateData.drcRequested = booking.value.drcRequested;
+      updateData.drcActual = booking.value.drcActual;
+    }
+
+    await bookingsApi.update(props.bookingId, updateData);
+    toast.success(t('common.saved'));
+    emit('update');
+  } catch (error) {
+    console.error('Failed to save header info:', error);
+    toast.error(t('common.errorSaving'));
+  } finally {
+    isSaving.value = false;
+  }
+};
+
 const handleSaveAllSamples = async () => {
-  // Filter for rows that have some data (not just the default basket weight)
-  const populatedSamples = newSamples.value.filter(
+  // We save both updated existing samples AND newly added samples
+  const allSamples = [...samples.value, ...newSamples.value];
+  const populatedSamples = allSamples.filter(
     (s) => s.beforePress || s.afterPress || s.beforeBaking1 || s.beforeBaking2 || s.beforeBaking3
   );
 
-  // If we have populated samples, they MUST be valid (must have beforePress and afterPress)
+  // Validation
   const allValid = populatedSamples.every((s) => s.beforePress && s.afterPress);
 
   if (populatedSamples.length > 0 && !allValid) {
@@ -304,7 +360,6 @@ const handleSaveAllSamples = async () => {
     return;
   }
 
-  // Check if count > 0, show confirm. If count == 0, just save header info silently
   if (populatedSamples.length === 0) {
     // Just save header info
     await saveHeaderInfoOnly();
@@ -317,8 +372,8 @@ const handleSaveAllSamples = async () => {
 const confirmSaveSamples = async () => {
   showSaveConfirm.value = false;
 
-  // Re-filter
-  const populatedSamples = newSamples.value.filter(
+  const allSamples = [...samples.value, ...newSamples.value];
+  const populatedSamples = allSamples.filter(
     (s) => s.beforePress || s.afterPress || s.beforeBaking1 || s.beforeBaking2 || s.beforeBaking3
   );
 
@@ -362,7 +417,7 @@ const confirmSaveSamples = async () => {
     await bookingsApi.update(props.bookingId, updateData);
 
     toast.success(t('uss.sampleSaved'));
-    emit('update');
+    emit('update'); // Notify parent to refresh
 
     // Reset and Reload
     newSamples.value = [];
@@ -375,59 +430,72 @@ const confirmSaveSamples = async () => {
   }
 };
 
-const saveHeaderInfoOnly = async () => {
-  isSaving.value = true;
-  try {
-    const updateData: any = {};
-    if (props.isTrailer) {
-      updateData.trailerLotNo = booking.value.lotNo;
-      updateData.trailerMoisture = booking.value.moisture;
-      updateData.trailerDrcEst = booking.value.drcEst;
-      updateData.trailerDrcRequested = booking.value.drcRequested;
-      updateData.trailerDrcActual = booking.value.drcActual;
-    } else {
-      updateData.lotNo = booking.value.lotNo;
-      updateData.moisture = booking.value.moisture;
-      updateData.drcEst = booking.value.drcEst;
-      updateData.drcRequested = booking.value.drcRequested;
-      updateData.drcActual = booking.value.drcActual;
-    }
-
-    await bookingsApi.update(props.bookingId, updateData);
-    toast.success(t('common.saved'));
-    emit('update');
-  } catch (error) {
-    console.error('Failed to save header info:', error);
-    toast.error(t('common.errorSaving'));
-  } finally {
-    isSaving.value = false;
-  }
+const handleDeleteSample = (sampleId: string) => {
+  sampleToDeleteId.value = sampleId;
+  showDeleteConfirm.value = true;
 };
 
-const handleDeleteSample = async (sampleId: string) => {
-  if (!confirm(t('uss.confirmDelete'))) return; // Changed locale key
+const confirmDeleteSample = async () => {
+  if (!sampleToDeleteId.value) return;
+  isDeleting.value = true;
   try {
-    await bookingsApi.deleteSample(props.bookingId, sampleId);
-    toast.success(t('uss.sampleDeleted')); // Changed locale key
+    await bookingsApi.deleteSample(props.bookingId, sampleToDeleteId.value);
+    toast.success(t('uss.sampleDeleted'));
     emit('update');
-    fetchData();
+    await fetchData();
   } catch (e) {
-    toast.error(t('uss.failedToDelete')); // Changed locale key
+    toast.error(t('uss.failedToDelete'));
+  } finally {
+    isDeleting.value = false;
+    showDeleteConfirm.value = false;
+    sampleToDeleteId.value = null;
   }
 };
+
+// Prefix Logic for Lot No
+const lotNoPrefix = computed(() => {
+  const dateStr =
+    booking.value?.date || booking.value?.entryDate || booking.value?.createdAt || new Date();
+  const now = new Date(dateStr);
+
+  // Safety check for invalid date
+  if (isNaN(now.getTime())) return '';
+
+  const yy = now.getFullYear().toString().slice(-2);
+  const mm = (now.getMonth() + 1).toString().padStart(2, '0');
+  const dd = now.getDate().toString().padStart(2, '0');
+  return `1${yy}${mm}${dd}-`;
+});
+
+// Computed Suffix for Input Binding
+const lotNoSuffix = computed({
+  get() {
+    if (!booking.value?.lotNo) return '';
+    const prefix = lotNoPrefix.value;
+    if (booking.value.lotNo.startsWith(prefix)) {
+      return booking.value.lotNo.slice(prefix.length);
+    }
+    return booking.value.lotNo;
+  },
+  set(val: string) {
+    if (!booking.value) return;
+    booking.value.lotNo = lotNoPrefix.value + val;
+  },
+});
 
 const validateLotInput = (event: Event) => {
   const input = event.target as HTMLInputElement;
-  const rawValue = input.value;
-  const cleanedValue = rawValue.replace(/\D/g, '');
+  const rawSuffix = input.value;
+  // Clean value (keep digits, / and -)
+  const cleanedSuffix = rawSuffix.replace(/[^0-9/-]/g, '');
 
-  if (rawValue !== cleanedValue) {
-    lotNoError.value = t('uss.numericOnly'); // Changed locale key
-    booking.value.lotNo = cleanedValue;
-    input.value = cleanedValue;
+  if (rawSuffix !== cleanedSuffix) {
+    lotNoError.value = t('uss.invalidChar') || 'Only numbers, / and - allowed';
+    lotNoSuffix.value = cleanedSuffix;
+    input.value = cleanedSuffix;
   } else {
     lotNoError.value = '';
-    booking.value.lotNo = cleanedValue;
+    lotNoSuffix.value = cleanedSuffix;
   }
 };
 
@@ -462,8 +530,8 @@ const saveBookingInfo = async () => {
 const handleUpdateLotNo = async () => {
   if (!booking.value) return;
 
-  if (booking.value.lotNo && !/^\d+$/.test(booking.value.lotNo)) {
-    lotNoError.value = t('uss.numericOnly'); // Changed locale key
+  if (booking.value.lotNo && !/^[0-9/\-]+$/.test(booking.value.lotNo)) {
+    lotNoError.value = t('uss.invalidChar') || 'Only numbers, / and - allowed';
     return;
   }
 
@@ -473,9 +541,23 @@ const handleUpdateLotNo = async () => {
     return;
   }
 
+  // Check for uniqueness
+  const fullLotNo = lotNoPrefix.value + lotNoSuffix.value;
+  const isDuplicate = props.existingBookings.some((b) => {
+    // Check if it matches any other booking's lot no
+    // (excluding current booking on the same part)
+    const isSameBooking = b.originalId === props.bookingId && b.isTrailerPart === props.isTrailer;
+    return !isSameBooking && b.lotNo === fullLotNo;
+  });
+
+  if (isDuplicate) {
+    lotNoError.value = t('uss.lotNoDuplicate') || 'Lot Number already exists';
+    toast.error(lotNoError.value);
+    return;
+  }
+
   lotNoError.value = '';
   await saveBookingInfo();
-  isLotNoOpen.value = false;
 };
 
 const handleSaveDrc = async () => {
@@ -558,9 +640,20 @@ const handleSaveMoisture = async () => {
 
 // Mock Stats from Samples
 const averageCp = computed(() => {
-  if (!samples.value.length) return 0;
-  const sum = samples.value.reduce((acc, s) => acc + (s.percentCp || 0), 0);
-  return (sum / samples.value.length).toFixed(2);
+  const allSamples = [...(samples.value ?? []), ...(newSamples.value ?? [])];
+  const validSamples = allSamples.filter((s) => {
+    const cp = parseFloat(s.percentCp);
+    return !isNaN(cp) && cp > 0;
+  });
+
+  if (!validSamples.length) return '0.00';
+
+  const sum = validSamples.reduce((acc, s) => {
+    const cp = parseFloat(s.percentCp);
+    return acc + cp;
+  }, 0);
+
+  return (sum / validSamples.length).toFixed(2);
 });
 
 watch(
@@ -574,14 +667,19 @@ onMounted(async () => {
   await fetchData();
   // Auto-initialize first row if nothing exists
   if (samples.value.length === 0 && newSamples.value.length === 0) {
-    addNewSampleRow();
-    // Focus the first input of the newly added row
-    setTimeout(() => {
-      const firstInput = document.querySelector(
-        'input:not([readonly]):not([disabled])'
-      ) as HTMLElement;
-      if (firstInput) firstInput.focus();
-    }, 100);
+    await addNewSampleRow();
+  } else {
+    // If we have samples, the user might be entering info from the list
+    // Look for the first editable input (could be a new sample row or just an unlocked row)
+    await nextTick();
+    const firstEditable = document.querySelector(
+      'input:not([readonly]):not([disabled])'
+    ) as HTMLInputElement;
+    if (firstEditable) {
+      firstEditable.focus();
+      // If it's a numeric field, select text for easier entry
+      if (firstEditable.value) firstEditable.select();
+    }
   }
 });
 </script>
@@ -612,58 +710,28 @@ onMounted(async () => {
         </div>
 
         <div class="flex flex-col items-end pr-6">
-          <div class="flex flex-col items-center min-w-[6rem]">
+          <div class="flex flex-col items-center min-w-[8rem]">
             <div class="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mb-1">
               {{ t('uss.lotNo') }}
             </div>
-            <Popover v-model:open="isLotNoOpen">
-              <PopoverTrigger as-child>
-                <div
-                  class="cursor-pointer flex items-center justify-center font-bold tracking-tight hover:text-primary transition-colors min-w-full h-8"
-                  :class="[
-                    displayLotNo !== '-'
-                      ? displayLotNo.length > 10
-                        ? 'text-lg'
-                        : 'text-xl'
-                      : 'text-xs text-muted-foreground bg-slate-100 dark:bg-slate-800 rounded-md px-3',
-                    { 'text-destructive': lotNoError },
-                  ]"
+            <div class="flex items-center gap-1">
+              <div
+                class="flex items-center w-56 h-10 px-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md focus-within:ring-2 focus-within:ring-primary shadow-sm ring-offset-background transition-colors"
+                :class="{ 'border-destructive focus-within:ring-destructive': lotNoError }"
+              >
+                <span
+                  class="text-lg font-black text-slate-900 dark:text-slate-100 whitespace-nowrap select-none"
+                  >{{ lotNoPrefix }}</span
                 >
-                  <template v-if="displayLotNo !== '-'">
-                    {{ displayLotNo }}
-                  </template>
-                  <template v-else>
-                    <div class="flex items-center gap-1.5 opacity-70 group-hover:opacity-100">
-                      <Plus class="w-3.5 h-3.5" />
-                      <span>{{ t('common.add') || 'Add' }}</span>
-                    </div>
-                  </template>
-                </div>
-              </PopoverTrigger>
-              <PopoverContent class="w-60">
-                <div class="grid gap-4">
-                  <div class="space-y-2">
-                    <h4 class="font-medium leading-none">{{ t('uss.lotNo') }}</h4>
-                    <p class="text-xs text-muted-foreground">Enter the Lot Number.</p>
-                  </div>
-                  <div class="flex gap-2">
-                    <Input
-                      v-model="booking.lotNo"
-                      class="h-8 font-bold text-center"
-                      :class="{ 'border-destructive focus-visible:ring-destructive': lotNoError }"
-                      @keydown.enter="handleUpdateLotNo"
-                      @input="validateLotInput"
-                    />
-                  </div>
-                  <div class="flex justify-end">
-                    <Button size="sm" class="h-8 gap-1.5" @click="handleUpdateLotNo">
-                      <Save class="w-3.5 h-3.5" />
-                      {{ t('common.save') }}
-                    </Button>
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
+                <input
+                  v-model="lotNoSuffix"
+                  class="flex-1 bg-transparent border-none outline-none focus:ring-0 font-black text-lg p-0 h-full ml-0.5"
+                  @keydown.enter="handleUpdateLotNo"
+                  @blur="handleUpdateLotNo"
+                  @input="validateLotInput"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -966,65 +1034,220 @@ onMounted(async () => {
                     >#</TableHead
                   >
                   <TableHead
-                    class="h-9 text-[9px] uppercase font-bold text-center text-muted-foreground"
+                    class="h-9 text-[9px] uppercase font-bold text-center text-muted-foreground w-28"
                     >{{ t('uss.beforePress') }}</TableHead
                   >
                   <TableHead
-                    class="h-9 text-[9px] uppercase font-bold text-center text-muted-foreground"
+                    class="h-9 text-[9px] uppercase font-bold text-center text-muted-foreground w-20"
                     >{{ t('uss.basket') }}</TableHead
                   >
                   <TableHead
-                    class="h-9 text-[9px] uppercase font-bold text-primary text-center bg-blue-50/30 dark:bg-blue-900/10"
+                    class="h-9 text-[9px] uppercase font-bold text-primary text-center bg-blue-50/30 dark:bg-blue-900/10 w-20"
                     >{{ t('uss.uss') }}</TableHead
                   >
                   <TableHead
-                    class="h-9 text-[9px] uppercase font-bold text-center text-muted-foreground"
+                    class="h-9 text-[9px] uppercase font-bold text-center text-muted-foreground w-28"
                     >{{ t('uss.afterPress') }}</TableHead
                   >
                   <TableHead
-                    class="h-9 text-[9px] uppercase font-bold text-indigo-600 dark:text-indigo-400 text-center bg-indigo-50/30 dark:bg-indigo-900/10"
+                    class="h-9 text-[9px] uppercase font-bold text-indigo-600 dark:text-indigo-400 text-center bg-indigo-50/30 dark:bg-indigo-900/10 w-24"
                     >{{ t('uss.percentCp') }}</TableHead
                   >
                   <TableHead
-                    class="h-9 text-[9px] uppercase font-bold text-center text-muted-foreground"
+                    class="h-9 text-[9px] uppercase font-bold text-center text-muted-foreground w-24"
                     >Bake 1</TableHead
                   >
                   <TableHead
-                    class="h-9 text-[9px] uppercase font-bold text-center text-muted-foreground"
+                    class="h-9 text-[9px] uppercase font-bold text-center text-muted-foreground w-24"
                     >Bake 2</TableHead
                   >
                   <TableHead
-                    class="h-9 text-[9px] uppercase font-bold text-center text-muted-foreground"
+                    class="h-9 text-[9px] uppercase font-bold text-center text-muted-foreground w-24"
                     >Bake 3</TableHead
                   >
-                  <TableHead class="w-[40px] h-9"></TableHead>
+                  <TableHead
+                    class="w-[60px] h-9 text-[9px] uppercase font-bold text-center text-muted-foreground"
+                    >{{ t('uss.action') }}</TableHead
+                  >
                 </TableRow>
               </TableHeader>
               <TableBody>
-                <!-- New Samples -->
+                <!-- Saved Samples (Rendered FIRST) -->
+                <TableRow
+                  v-for="(sample, index) in samples"
+                  :key="sample.id"
+                  :data-row-id="sample.id"
+                  class="group hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors border-b border-slate-100 dark:border-slate-800"
+                >
+                  <TableCell class="text-center font-medium text-muted-foreground text-xs py-1.5">{{
+                    index + 1
+                  }}</TableCell>
+                  <TableCell class="py-1.5 px-1">
+                    <Input
+                      v-model="sample.beforePress"
+                      type="text"
+                      :readonly="editingSampleId !== sample.id"
+                      class="h-7 w-24 mx-auto p-1 text-center font-bold text-xs rounded-sm focus-visible:ring-1 shadow-sm transition-all relative z-10"
+                      :class="[
+                        editingSampleId === sample.id
+                          ? 'bg-white border-primary ring-1 ring-primary/20 cursor-text'
+                          : 'bg-slate-50/50 border-transparent cursor-default',
+                      ]"
+                      @keydown.enter="focusNextInput"
+                      @input="handleNumericInput(sample, 'beforePress', sample.beforePress)"
+                    />
+                  </TableCell>
+                  <TableCell class="py-1.5 px-1">
+                    <Input
+                      v-model="sample.basket"
+                      type="text"
+                      :readonly="editingSampleId !== sample.id"
+                      class="h-7 w-16 mx-auto p-1 text-center font-semibold text-xs rounded-sm focus-visible:ring-1 shadow-sm transition-all relative z-10"
+                      :class="[
+                        editingSampleId === sample.id
+                          ? 'bg-white border-primary ring-1 ring-primary/20 cursor-text'
+                          : 'bg-slate-50/50 border-transparent cursor-default',
+                      ]"
+                      data-skip-enter="true"
+                      @keydown.enter="focusNextInput"
+                      @input="handleNumericInput(sample, 'basket', sample.basket)"
+                    />
+                  </TableCell>
+                  <TableCell
+                    class="text-center font-black text-primary text-xs py-1.5 bg-blue-50/20 shadow-none border-x border-blue-100/30"
+                  >
+                    {{
+                      calculateUss(
+                        parseFloat(sample.beforePress || '0'),
+                        parseFloat(sample.basket || '0')
+                      )
+                    }}
+                  </TableCell>
+                  <TableCell class="py-1.5 px-1">
+                    <Input
+                      v-model="sample.afterPress"
+                      type="text"
+                      :readonly="editingSampleId !== sample.id"
+                      class="h-7 w-24 mx-auto p-1 text-center font-bold text-xs rounded-sm focus-visible:ring-1 shadow-sm transition-all relative z-10"
+                      :class="[
+                        editingSampleId === sample.id
+                          ? 'bg-white border-primary ring-1 ring-primary/20 cursor-text'
+                          : 'bg-slate-50/50 border-transparent cursor-default',
+                      ]"
+                      @keydown.enter="focusNextInput"
+                      @input="handleNumericInput(sample, 'afterPress', sample.afterPress)"
+                    />
+                  </TableCell>
+                  <TableCell
+                    class="text-center font-black text-indigo-600 text-xs py-1.5 bg-indigo-50/20 border-x border-indigo-100/30"
+                  >
+                    <Input
+                      v-model="sample.percentCp"
+                      type="text"
+                      class="h-7 w-20 mx-auto p-1 text-center font-bold text-xs bg-transparent border-none focus-visible:ring-0 shadow-none pointer-events-none"
+                      readonly
+                    />
+                  </TableCell>
+                  <TableCell class="py-1.5 px-1">
+                    <Input
+                      v-model="sample.beforeBaking1"
+                      type="text"
+                      :readonly="editingSampleId !== sample.id"
+                      class="h-7 w-20 mx-auto p-1 text-center text-xs rounded-sm focus-visible:ring-1 shadow-sm transition-all relative z-10"
+                      :class="[
+                        editingSampleId === sample.id
+                          ? 'bg-white border-primary/30 ring-1 ring-primary/10 cursor-text'
+                          : 'bg-slate-50/30 border-transparent cursor-default',
+                      ]"
+                      @keydown.enter="focusNextInput"
+                      @input="handleNumericInput(sample, 'beforeBaking1', sample.beforeBaking1)"
+                    />
+                  </TableCell>
+                  <TableCell class="py-1.5 px-1">
+                    <Input
+                      v-model="sample.beforeBaking2"
+                      type="text"
+                      :readonly="editingSampleId !== sample.id"
+                      class="h-7 w-20 mx-auto p-1 text-center text-xs rounded-sm focus-visible:ring-1 shadow-sm transition-all relative z-10"
+                      :class="[
+                        editingSampleId === sample.id
+                          ? 'bg-white border-primary/30 ring-1 ring-primary/10 cursor-text'
+                          : 'bg-slate-50/30 border-transparent cursor-default',
+                      ]"
+                      @keydown.enter="focusNextInput"
+                      @input="handleNumericInput(sample, 'beforeBaking2', sample.beforeBaking2)"
+                    />
+                  </TableCell>
+                  <TableCell class="py-1.5 px-1">
+                    <Input
+                      v-model="sample.beforeBaking3"
+                      type="text"
+                      :readonly="editingSampleId !== sample.id"
+                      class="h-7 w-20 mx-auto p-1 text-center text-xs rounded-sm focus-visible:ring-1 shadow-sm transition-all relative z-10"
+                      :class="[
+                        editingSampleId === sample.id
+                          ? 'bg-white border-primary/30 ring-1 ring-primary/10 cursor-text'
+                          : 'bg-slate-50/30 border-transparent cursor-default',
+                      ]"
+                      @keydown.enter="focusNextInput"
+                      @input="handleNumericInput(sample, 'beforeBaking3', sample.beforeBaking3)"
+                    />
+                  </TableCell>
+                  <TableCell class="py-1.5 text-center">
+                    <div class="flex items-center justify-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        class="h-6 w-6 rounded-full transition-all"
+                        :class="[
+                          editingSampleId === sample.id
+                            ? 'text-green-600 bg-green-50 hover:bg-green-100'
+                            : 'text-slate-400 hover:text-primary hover:bg-primary/10',
+                        ]"
+                        @click="toggleEdit(sample.id)"
+                      >
+                        <component
+                          :is="editingSampleId === sample.id ? Check : Pencil"
+                          class="w-3 h-3"
+                        />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        class="h-6 w-6 text-destructive hover:bg-destructive/10 rounded-full transition-all"
+                        @click="handleDeleteSample(sample.id)"
+                      >
+                        <Trash2 class="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+
+                <!-- New Samples (Rendered AFTER - Bottom) -->
                 <TableRow
                   v-for="(sample, index) in newSamples"
                   :key="sample.id"
+                  :data-row-id="sample.id"
                   class="bg-blue-50/20 hover:bg-blue-50/30 transition-colors border-b border-blue-100/50 dark:border-blue-900/30"
                 >
-                  <TableCell class="text-center font-bold text-primary py-1.5 text-xs">{{
-                    samples.length + index + 1
-                  }}</TableCell>
-                  <TableCell class="py-1.5"
+                  <TableCell class="text-center font-medium text-muted-foreground text-xs py-1.5">
+                    New
+                  </TableCell>
+                  <TableCell class="py-1.5 px-1"
                     ><Input
                       v-model="sample.beforePress"
                       type="text"
                       placeholder="เช่น 12.23"
-                      class="h-7 w-32 mx-auto p-1 text-center font-bold text-xs bg-white/80 dark:bg-slate-800/80 shadow-sm"
+                      class="h-7 w-24 mx-auto p-1 text-center font-bold text-xs bg-white border border-slate-200 dark:bg-slate-900 dark:border-slate-700 rounded-sm focus-visible:ring-1 focus-visible:ring-primary shadow-sm hover:bg-slate-50 transition-all relative z-10 cursor-text"
                       @keydown.enter="focusNextInput"
                       @input="handleNumericInput(sample, 'beforePress', sample.beforePress)"
                   /></TableCell>
-                  <TableCell class="py-1.5"
+                  <TableCell class="py-1.5 px-1"
                     ><Input
                       v-model="sample.basket"
                       type="text"
                       placeholder="1.4"
-                      class="h-7 w-24 mx-auto p-1 text-center font-semibold text-xs bg-white/80 dark:bg-slate-800/80 shadow-sm"
+                      class="h-7 w-16 mx-auto p-1 text-center font-semibold text-xs bg-white border border-slate-200 dark:bg-slate-900 dark:border-slate-700 rounded-sm focus-visible:ring-1 focus-visible:ring-primary shadow-sm hover:bg-slate-50 transition-all relative z-10 cursor-text"
                       data-skip-enter="true"
                       @keydown.enter="focusNextInput"
                       @input="handleNumericInput(sample, 'basket', sample.basket)"
@@ -1039,47 +1262,47 @@ onMounted(async () => {
                       )
                     }}
                   </TableCell>
-                  <TableCell class="py-1.5"
+                  <TableCell class="py-1.5 px-1"
                     ><Input
                       v-model="sample.afterPress"
                       type="text"
                       placeholder="เช่น 10.72"
-                      class="h-7 w-32 mx-auto p-1 text-center font-semibold text-xs bg-white/80 dark:bg-slate-800/80 shadow-sm"
+                      class="h-7 w-24 mx-auto p-1 text-center font-bold text-xs bg-white border border-slate-200 dark:bg-slate-900 dark:border-slate-700 rounded-sm focus-visible:ring-1 focus-visible:ring-primary shadow-sm hover:bg-slate-50 transition-all relative z-10 cursor-text"
                       @keydown.enter="focusNextInput"
                       @input="handleNumericInput(sample, 'afterPress', sample.afterPress)"
                   /></TableCell>
-                  <TableCell class="py-1.5"
+                  <TableCell class="py-1.5 px-0.5"
                     ><Input
                       v-model="sample.percentCp"
-                      type="number"
-                      class="h-7 w-28 mx-auto p-1 text-center font-semibold text-xs bg-indigo-50/50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300"
+                      type="text"
+                      class="h-7 w-20 mx-auto p-1 text-center font-bold text-xs bg-indigo-50/50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 pointer-events-none"
                       placeholder="Auto"
                       readonly
                   /></TableCell>
-                  <TableCell class="py-1.5"
+                  <TableCell class="py-1.5 px-1"
                     ><Input
                       v-model="sample.beforeBaking1"
                       type="text"
                       placeholder="0.210"
-                      class="h-7 w-28 mx-auto p-1 text-center text-xs"
+                      class="h-7 w-20 mx-auto p-1 text-center text-xs bg-white border border-slate-100 dark:bg-slate-900 dark:border-slate-800 rounded-sm focus-visible:ring-1 shadow-sm hover:bg-slate-50 transition-all relative z-10 cursor-text"
                       @keydown.enter="focusNextInput"
                       @input="handleNumericInput(sample, 'beforeBaking1', sample.beforeBaking1)"
                   /></TableCell>
-                  <TableCell class="py-1.5"
+                  <TableCell class="py-1.5 px-1"
                     ><Input
                       v-model="sample.beforeBaking2"
                       type="text"
                       placeholder="0.220"
-                      class="h-7 w-28 mx-auto p-1 text-center text-xs"
+                      class="h-7 w-20 mx-auto p-1 text-center text-xs bg-white border border-slate-100 dark:bg-slate-900 dark:border-slate-800 rounded-sm focus-visible:ring-1 shadow-sm hover:bg-slate-50 transition-all relative z-10 cursor-text"
                       @keydown.enter="focusNextInput"
                       @input="handleNumericInput(sample, 'beforeBaking2', sample.beforeBaking2)"
                   /></TableCell>
-                  <TableCell class="py-1.5"
+                  <TableCell class="py-1.5 px-1"
                     ><Input
                       v-model="sample.beforeBaking3"
                       type="text"
                       placeholder="0.230"
-                      class="h-7 w-28 mx-auto p-1 text-center text-xs"
+                      class="h-7 w-20 mx-auto p-1 text-center text-xs bg-white border border-slate-100 dark:bg-slate-900 dark:border-slate-800 rounded-sm focus-visible:ring-1 shadow-sm hover:bg-slate-50 transition-all relative z-10 cursor-text"
                       @keydown.enter="focusNextInput"
                       @input="handleNumericInput(sample, 'beforeBaking3', sample.beforeBaking3)"
                   /></TableCell>
@@ -1087,54 +1310,8 @@ onMounted(async () => {
                     <Button
                       size="icon"
                       variant="ghost"
-                      class="h-6 w-6 text-muted-foreground hover:text-destructive"
+                      class="h-6 w-6 text-destructive hover:bg-destructive/10 rounded-full transition-all"
                       @click="removeNewSampleRow(index)"
-                    >
-                      <Trash2 class="w-3.5 h-3.5" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-
-                <!-- Existing Samples -->
-                <TableRow
-                  v-for="(sample, index) in samples"
-                  :key="sample.id"
-                  class="group hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors border-b border-slate-100 dark:border-slate-800"
-                >
-                  <TableCell class="text-center font-medium text-muted-foreground text-xs">{{
-                    index + 1
-                  }}</TableCell>
-                  <TableCell class="text-center font-bold text-xs w-32">{{
-                    sample.beforePress || '-'
-                  }}</TableCell>
-                  <TableCell class="text-center text-xs text-muted-foreground font-medium w-24">{{
-                    sample.basketWeight || '-'
-                  }}</TableCell>
-                  <TableCell class="text-center font-bold text-primary text-xs">{{
-                    sample.cuplumpWeight || '-'
-                  }}</TableCell>
-                  <TableCell class="text-center text-xs text-muted-foreground w-32">{{
-                    sample.afterPress || '-'
-                  }}</TableCell>
-                  <TableCell
-                    class="text-center font-bold text-indigo-600 dark:text-indigo-400 text-xs w-28"
-                    >{{ sample.percentCp || '-' }}%</TableCell
-                  >
-                  <TableCell class="text-center text-xs text-muted-foreground w-28">{{
-                    sample.beforeBaking1 || '-'
-                  }}</TableCell>
-                  <TableCell class="text-center text-xs text-muted-foreground w-28">{{
-                    sample.beforeBaking2 || '-'
-                  }}</TableCell>
-                  <TableCell class="text-center text-xs text-muted-foreground w-28">{{
-                    sample.beforeBaking3 || '-'
-                  }}</TableCell>
-                  <TableCell class="py-1.5 text-center">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      class="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
-                      @click="handleDeleteSample(sample.id)"
                     >
                       <Trash2 class="w-3.5 h-3.5" />
                     </Button>
@@ -1152,7 +1329,7 @@ onMounted(async () => {
             </Table>
           </div>
 
-          <div v-if="newSamples.length > 0" class="flex justify-end pt-2">
+          <div v-if="populatedCount > 0" class="flex justify-end pt-2">
             <Button
               size="sm"
               class="bg-green-600 hover:bg-green-700 h-8 text-xs gap-1.5 shadow-sm px-4"
@@ -1186,6 +1363,35 @@ onMounted(async () => {
           <AlertDialogAction @click="confirmSaveSamples">{{
             t('common.confirm')
           }}</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
+    <AlertDialog :open="showDeleteConfirm" @update:open="showDeleteConfirm = $event">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle class="flex items-center gap-2">
+            <Trash2 class="h-5 w-5 text-destructive" />
+            {{ t('uss.confirmDelete') }}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {{
+              t('uss.confirmDeleteMsg') ||
+              'This action cannot be undone. This sample row will be permanently deleted.'
+            }}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel @click="showDeleteConfirm = false">{{
+            t('common.cancel')
+          }}</AlertDialogCancel>
+          <AlertDialogAction
+            class="bg-destructive hover:bg-destructive/90"
+            :disabled="isDeleting"
+            @click="confirmDeleteSample"
+          >
+            {{ isDeleting ? t('common.deleting') : t('common.confirm') }}
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

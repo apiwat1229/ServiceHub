@@ -480,6 +480,7 @@ onMounted(() => {
           :booking-id="selectedBooking.bookingId"
           :is-trailer="selectedBooking.isTrailer"
           :part-label="selectedBooking.partLabel"
+          :existing-bookings="processedBookings"
           @close="isDetailOpen = false"
           @update="fetchBookings"
         />
