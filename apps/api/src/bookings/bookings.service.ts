@@ -287,6 +287,7 @@ export class BookingsService {
 
         return this.prisma.booking.findMany({
             where,
+            include: { labSamples: true },
             orderBy: { queueNo: 'asc' },
         });
     }
@@ -573,6 +574,9 @@ export class BookingsService {
                         beforeBaking1: safeParseFloat(data.beforeBaking1),
                         beforeBaking2: safeParseFloat(data.beforeBaking2),
                         beforeBaking3: safeParseFloat(data.beforeBaking3),
+                        p0: safeParseFloat(data.p0),
+                        p30: safeParseFloat(data.p30),
+                        pri: safeParseFloat(data.pri),
                     }
                 });
             } catch (error: any) {
@@ -613,6 +617,9 @@ export class BookingsService {
                 beforeBaking1: safeParseFloat(data.beforeBaking1),
                 beforeBaking2: safeParseFloat(data.beforeBaking2),
                 beforeBaking3: safeParseFloat(data.beforeBaking3),
+                p0: safeParseFloat(data.p0),
+                p30: safeParseFloat(data.p30),
+                pri: safeParseFloat(data.pri),
             };
             console.log(`[BookingsService] Prepared Prisma Payload:`, JSON.stringify(payloadData, null, 2));
 
@@ -620,6 +627,7 @@ export class BookingsService {
                 data: payloadData
             });
             console.log(`[BookingsService] Sample saved successfully: ${result.id}`);
+            await this.updateBookingLabStats(bookingId);
             return result;
         } catch (error: any) {
             console.error('[BookingsService] Failed to save sample:', error);
@@ -628,10 +636,45 @@ export class BookingsService {
     }
 
     async deleteSample(bookingId: string, sampleId: string) {
-        // Verify ownership?
-        return this.prisma.bookingLabSample.delete({
+        const result = await this.prisma.bookingLabSample.delete({
             where: { id: sampleId }
         });
+        await this.updateBookingLabStats(bookingId);
+        return result;
+    }
+
+    private async updateBookingLabStats(bookingId: string) {
+        const samples = await this.prisma.bookingLabSample.findMany({
+            where: { bookingId }
+        });
+
+        const mainSamples = samples.filter(s => !s.isTrailer);
+        const trailerSamples = samples.filter(s => s.isTrailer);
+
+        const updateData: any = {};
+
+        const calculateAverages = (items: any[], prefix = '') => {
+            const validCp = items.filter(s => s.percentCp && s.percentCp > 0);
+            const validPri = items.filter(s => s.pri && s.pri > 0);
+
+            if (validCp.length > 0) {
+                const avgCp = validCp.reduce((sum, s) => sum + s.percentCp, 0) / validCp.length;
+                updateData[prefix ? `${prefix}DrcEst` : 'drcEst'] = avgCp;
+            }
+            if (validPri.length > 0) {
+                // PRI is just for display usually, but we could store average if needed
+            }
+        };
+
+        calculateAverages(mainSamples);
+        calculateAverages(trailerSamples, 'trailer');
+
+        if (Object.keys(updateData).length > 0) {
+            await this.prisma.booking.update({
+                where: { id: bookingId },
+                data: updateData
+            });
+        }
     }
 }
 

@@ -29,9 +29,7 @@ const currentTab = ref('cl-po-pri');
 
 const tabs = [
   { id: 'cl-po-pri', label: 'CL PO PRI', icon: ClipboardList },
-  { id: 'cl-po-pri-list', label: 'CL PO PRI List', icon: List },
   { id: 'cl-lab', label: 'CL Lab', icon: TestTubes },
-  { id: 'cl-lab-list', label: 'CL Lab List', icon: List },
   { id: 'cuplump-pool', label: 'Cuplump Pool', icon: Waves },
   { id: 'select-pool', label: 'Select Pool', icon: Tags },
   { id: 'uss-po-pri', label: 'USS PO PRI', icon: ClipboardList },

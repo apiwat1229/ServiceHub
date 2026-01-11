@@ -1,28 +1,59 @@
 <script setup lang="ts">
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import DataTable from '@/components/ui/data-table/DataTable.vue';
 import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { bookingsApi } from '@/services/bookings';
+import { getLocalTimeZone, today } from '@internationalized/date';
 import type { ColumnDef } from '@tanstack/vue-table';
-import { CalendarIcon, Edit, Search } from 'lucide-vue-next';
-import { computed, h, onMounted, ref } from 'vue';
+import { format } from 'date-fns';
+import { Calendar as CalendarIcon, Edit, Search } from 'lucide-vue-next';
+import { computed, h, onMounted, ref, watch } from 'vue';
+import ClPoPriDialog from '../components/ClPoPriDialog.vue';
 
 const bookings = ref<any[]>([]);
 const isLoading = ref(false);
 const searchQuery = ref('');
 const statusFilter = ref('ALL');
 
+// Detail Dialog
+const isDialogOpen = ref(false);
+const selectedBookingId = ref<string | null>(null);
+
+const handleOpenDetail = (bookingId: string) => {
+  selectedBookingId.value = bookingId;
+  isDialogOpen.value = true;
+};
+
+// Date Handling
+const selectedDateObject = ref<any>(today(getLocalTimeZone()));
+const isDatePopoverOpen = ref(false);
+const selectedDate = computed(() => {
+  return selectedDateObject.value ? selectedDateObject.value.toString() : '';
+});
+
+watch(selectedDate, (newVal) => {
+  if (newVal) fetchData();
+});
+
+const handleDateSelect = (newDate: any) => {
+  selectedDateObject.value = newDate;
+  isDatePopoverOpen.value = false;
+};
+
 const fetchData = async () => {
   isLoading.value = true;
   try {
-    const data = await bookingsApi.getAll();
-    // Filter for Cuplump only - Update logic to strict Cuplump if needed, keeping permissive for now to ensure data shows
-    bookings.value = data.filter(
+    const data = await bookingsApi.getAll({ date: selectedDate.value });
+    // Filter for Cuplump only
+    bookings.value = (data || []).filter(
       (b: any) =>
-        b.rubberType === 'Coagulating Cup Lumps' ||
-        b.rubberType.includes('Cup') ||
-        b.rubberType.includes('CL')
+        b.rubberType &&
+        (b.rubberType === 'Coagulating Cup Lumps' ||
+          b.rubberType.includes('Cup') ||
+          b.rubberType.includes('CL'))
     );
   } catch (error) {
     console.error('Failed to load bookings:', error);
@@ -54,12 +85,20 @@ const filteredBookings = computed(() => {
   return result;
 });
 
-const totalGrossWeight = computed(() => {
-  return filteredBookings.value.reduce((sum, b) => sum + (b.totalWeight || 0), 0);
+const stats = computed(() => {
+  const total = bookings.value.length;
+  // Temporary: assuming a placeholder 'isComplete' property for now or checking moisture
+  const complete = bookings.value.filter((b: any) => (b.moisture || 0) > 0).length;
+  const incomplete = total - complete;
+  return { total, complete, incomplete };
 });
 
 const totalNetWeight = computed(() => {
-  return 0; // Placeholder
+  return filteredBookings.value.reduce((sum, b) => {
+    const inW = b.weightIn || 0;
+    const outW = b.weightOut || 0;
+    return sum + Math.max(0, inW - outW);
+  }, 0);
 });
 
 // Column Definitions
@@ -120,73 +159,45 @@ const columns: ColumnDef<any>[] = [
     },
   },
   {
-    accessorKey: 'moisture',
+    accessorKey: 'avgPo',
     header: () =>
       h(
         'div',
         {
           class:
-            'text-center bg-orange-50 text-orange-700 h-8 flex items-center justify-center rounded-sm mx-1 min-w-[80px] font-bold text-xs',
+            'text-center bg-slate-100 text-slate-700 h-8 flex items-center justify-center rounded-sm mx-1 min-w-[80px] font-bold text-xs',
         },
-        'MOISTURE'
+        'AVG PO'
       ),
     cell: ({ row }) => {
-      const val = row.original.moisture;
-      return h('div', { class: 'text-center' }, [
-        val
-          ? h('span', { class: 'text-orange-600 font-bold' }, val)
-          : h('span', { class: 'text-muted-foreground/30' }, '-'),
-      ]);
+      const samples = row.original.labSamples || [];
+      const validPo = samples.filter((s: any) => s.p0 && s.p0 > 0);
+      if (validPo.length === 0)
+        return h('div', { class: 'text-center text-muted-foreground/30' }, '-');
+
+      const avg = validPo.reduce((sum: number, s: any) => sum + s.p0, 0) / validPo.length;
+      return h('div', { class: 'text-center font-bold text-slate-600' }, avg.toFixed(2));
     },
   },
   {
-    accessorKey: 'drcEst',
+    accessorKey: 'avgPri',
     header: () =>
       h(
         'div',
         {
           class:
-            'text-center bg-blue-50 text-blue-700 h-8 flex items-center justify-center rounded-sm mx-1 min-w-[80px] font-bold text-xs',
+            'text-center bg-slate-100 text-slate-700 h-8 flex items-center justify-center rounded-sm mx-1 min-w-[80px] font-bold text-xs',
         },
-        'DRC EST.'
+        'AVG PRI'
       ),
     cell: ({ row }) => {
-      const val = row.original.drcEst;
-      return h('div', { class: 'text-center' }, [
-        val
-          ? h('span', { class: 'text-blue-600 font-bold' }, val)
-          : h('span', { class: 'text-muted-foreground/30' }, '-'),
-      ]);
-    },
-  },
-  {
-    accessorKey: 'avgCp',
-    header: () =>
-      h(
-        'div',
-        {
-          class:
-            'text-center bg-green-50 text-green-700 h-8 flex items-center justify-center rounded-sm mx-1 min-w-[80px] font-bold text-xs',
-        },
-        'AVG %CP'
-      ),
-    cell: ({ row }) => {
-      const val = row.original.avgCp;
-      return h('div', { class: 'text-center' }, [
-        val
-          ? h('span', { class: 'text-green-600 font-bold' }, val)
-          : h('span', { class: 'text-muted-foreground/30' }, '-'),
-      ]);
-    },
-  },
-  {
-    accessorKey: 'totalWeight',
-    header: () => h('div', { class: 'text-right' }, 'Gross Weight'),
-    cell: ({ row }) => {
-      const val = row.original.totalWeight;
-      return h('div', { class: 'text-right' }, [
-        h('span', { class: 'font-bold' }, val ? `${val.toLocaleString()} Kg.` : '-'),
-      ]);
+      const samples = row.original.labSamples || [];
+      const validPri = samples.filter((s: any) => s.pri && s.pri > 0);
+      if (validPri.length === 0)
+        return h('div', { class: 'text-center text-muted-foreground/30' }, '-');
+
+      const avg = validPri.reduce((sum: number, s: any) => sum + s.pri, 0) / validPri.length;
+      return h('div', { class: 'text-center font-bold text-slate-600' }, avg.toFixed(2));
     },
   },
   {
@@ -204,25 +215,31 @@ const columns: ColumnDef<any>[] = [
   {
     id: 'actions',
     header: () => h('div', { class: 'text-center' }, 'Actions'),
-    cell: () => {
-      return h('div', { class: 'text-center' }, [
+    cell: ({ row }) => {
+      const booking = row.original;
+      return h(
+        'div',
+        { class: 'flex justify-end pr-2' },
         h(
           Button,
           {
             variant: 'ghost',
-            size: 'icon',
-            class: 'h-8 w-8 text-muted-foreground hover:text-primary',
+            size: 'sm',
+            onClick: (e: Event) => {
+              e.stopPropagation();
+              handleOpenDetail(booking.id);
+            },
+            class: 'h-8 w-8 p-0 text-slate-400 hover:text-blue-600 hover:bg-blue-50',
           },
-          () => h(Edit, { class: 'w-4 h-4' })
-        ),
-      ]);
+          { default: () => h(Edit, { class: 'h-4 w-4' }) }
+        )
+      );
     },
   },
 ];
 
 const handleRowClick = (row: any) => {
-  // Navigation logic here if needed
-  console.log('Clicked row', row);
+  handleOpenDetail(row.id);
 };
 
 onMounted(() => {
@@ -236,62 +253,112 @@ onMounted(() => {
     <div
       class="flex flex-col md:flex-row justify-between items-center gap-4 bg-card p-4 rounded-lg border shadow-sm"
     >
-      <div class="flex items-center gap-3 w-full md:w-auto">
-        <div class="relative w-full md:w-64">
-          <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            v-model="searchQuery"
-            type="search"
-            placeholder="Search..."
-            class="pl-9 bg-background"
-          />
-        </div>
+      <div class="flex items-center gap-2 w-full md:w-auto">
+        <Popover>
+          <PopoverTrigger as-child>
+            <Button
+              variant="outline"
+              class="w-10 px-0 border-input/50 h-10 bg-background"
+              :class="{
+                'text-primary border-primary/50 bg-primary/5': searchQuery,
+                'text-muted-foreground': !searchQuery,
+              }"
+            >
+              <Search class="h-4 w-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent class="w-[300px] p-0" align="start">
+            <div class="p-2">
+              <div class="relative">
+                <Search
+                  class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"
+                />
+                <Input
+                  v-model="searchQuery"
+                  placeholder="Search..."
+                  class="pl-9 border-none focus-visible:ring-0"
+                  autoFocus
+                />
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
 
-        <Button
-          variant="outline"
-          class="w-[130px] justify-start text-left font-normal bg-background"
-        >
-          <CalendarIcon class="mr-2 h-4 w-4" />
-          <span>Pick a date</span>
-        </Button>
+        <Popover v-model:open="isDatePopoverOpen">
+          <PopoverTrigger as-child>
+            <Button
+              variant="outline"
+              class="w-[150px] justify-start text-left font-normal border-input/50 h-10"
+            >
+              <CalendarIcon class="mr-2 h-4 w-4 text-muted-foreground" />
+              <span class="text-sm">
+                {{ selectedDate ? format(new Date(selectedDate), 'dd-MMM-yyyy') : 'Pick a date' }}
+              </span>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent class="w-auto p-0" align="start">
+            <Calendar
+              v-model="selectedDateObject"
+              mode="single"
+              :initial-focus="true"
+              @update:model-value="handleDateSelect"
+            />
+          </PopoverContent>
+        </Popover>
 
-        <div class="flex items-center gap-2 bg-muted/50 p-1 rounded-md">
+        <div class="flex items-center gap-2 bg-muted/30 p-1 rounded-lg ml-2">
           <Button
             variant="ghost"
             size="sm"
-            class="h-8 px-3 rounded-sm bg-background shadow-sm text-foreground"
+            class="h-8 px-3 rounded-sm transition-all"
+            :class="
+              statusFilter === 'ALL'
+                ? 'bg-background shadow-sm text-foreground'
+                : 'text-muted-foreground hover:bg-background/50'
+            "
             @click="statusFilter = 'ALL'"
           >
-            All <Badge variant="secondary" class="ml-2 bg-slate-100 text-slate-700">3</Badge>
+            All
+            <Badge variant="secondary" class="ml-2 bg-slate-100 text-slate-700 border-none">{{
+              stats.total
+            }}</Badge>
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            class="h-8 px-3 rounded-sm text-muted-foreground hover:bg-background/50"
+            class="h-8 px-3 rounded-sm transition-all text-green-600"
+            :class="
+              statusFilter === 'COMPLETE'
+                ? 'bg-background shadow-sm'
+                : 'text-green-600/70 hover:bg-background/50'
+            "
             @click="statusFilter = 'COMPLETE'"
           >
-            Complete <Badge variant="secondary" class="ml-2 bg-green-100 text-green-700">6</Badge>
+            Complete
+            <Badge variant="secondary" class="ml-2 bg-green-100 text-green-700 border-none">{{
+              stats.complete
+            }}</Badge>
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            class="h-8 px-3 rounded-sm text-muted-foreground hover:bg-background/50"
+            class="h-8 px-3 rounded-sm transition-all text-orange-600"
+            :class="
+              statusFilter === 'INCOMPLETE'
+                ? 'bg-background shadow-sm'
+                : 'text-orange-600/70 hover:bg-background/50'
+            "
             @click="statusFilter = 'INCOMPLETE'"
           >
             Incomplete
-            <Badge variant="secondary" class="ml-2 bg-orange-100 text-orange-700">3</Badge>
+            <Badge variant="secondary" class="ml-2 bg-orange-100 text-orange-700 border-none">{{
+              stats.incomplete
+            }}</Badge>
           </Button>
         </div>
       </div>
 
       <div class="flex items-center gap-8 px-4">
-        <div class="text-right">
-          <p class="text-xs text-muted-foreground font-medium">Gross Weight</p>
-          <p class="text-xl font-bold font-mono">
-            {{ totalGrossWeight.toLocaleString() }}
-            <span class="text-sm font-normal text-muted-foreground">Kg.</span>
-          </p>
-        </div>
         <div class="text-right">
           <p class="text-xs text-muted-foreground font-medium">Net Weight</p>
           <p class="text-xl font-bold font-mono text-green-600">
@@ -309,8 +376,14 @@ onMounted(() => {
         :data="filteredBookings"
         :loading="isLoading"
         @row-click="handleRowClick"
-        :initial-page-size="5"
       />
     </div>
+
+    <!-- Detail Dialog -->
+    <ClPoPriDialog
+      v-model:open="isDialogOpen"
+      :booking-id="selectedBookingId"
+      @update="fetchData"
+    />
   </div>
 </template>

@@ -339,6 +339,11 @@ model BookingLabSample {
   beforeBaking2 Float? @map("before_baking_2")
   beforeBaking3 Float? @map("before_baking_3")
 
+  // PO & PRI Data
+  p0   Float? @map("p0")
+  p30  Float? @map("p30")
+  pri  Float? @map("pri")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
