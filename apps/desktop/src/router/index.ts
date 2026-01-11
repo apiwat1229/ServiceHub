@@ -148,6 +148,11 @@ const routes = [
                 component: () => import('../views/admin/Uss.vue'),
             },
             {
+                path: 'qa',
+                name: 'Quality Assurance',
+                component: () => import('../views/admin/QualityAssurance.vue'),
+            },
+            {
                 path: 'uss/:id',
                 name: 'UssDetail',
                 component: () => import('../views/admin/UssDetail.vue'),
