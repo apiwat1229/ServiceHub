@@ -45,6 +45,15 @@ const handleDateSelect = (newDate: any) => {
   isDatePopoverOpen.value = false;
 };
 
+// Helper to check if Rubber Type is USS
+const isUssType = (val: string) => {
+  if (!val) return false;
+  const type = rubberTypes.value.find((t) => t.code === val || t.name === val);
+  if (type) return type.category === 'USS';
+  const upperVal = val.toUpperCase();
+  return upperVal.includes('USS');
+};
+
 const fetchData = async () => {
   isLoading.value = true;
   try {
@@ -54,14 +63,8 @@ const fetchData = async () => {
     ]);
 
     rubberTypes.value = typesData;
-    // Filter for Cuplump only
-    bookings.value = (bookingsData || []).filter(
-      (b: any) =>
-        b.rubberType &&
-        (b.rubberType === 'Coagulating Cup Lumps' ||
-          b.rubberType.includes('Cup') ||
-          b.rubberType.includes('CL'))
-    );
+    // Filter for USS only
+    bookings.value = (bookingsData || []).filter((b: any) => isUssType(b.rubberType));
   } catch (error) {
     console.error('Failed to load data:', error);
   } finally {

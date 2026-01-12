@@ -18,7 +18,13 @@ onUnmounted(() => {
 <template>
   <GlobalBackground />
   <router-view />
-  <Toaster position="top-center" :duration="2000" :expand="true" :visibleToasts="5" />
+  <Toaster
+    position="top-center"
+    :duration="5000"
+    :expand="true"
+    :visibleToasts="5"
+    :close-button="true"
+  />
 </template>
 
 <style>

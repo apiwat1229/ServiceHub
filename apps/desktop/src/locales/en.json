@@ -1356,6 +1356,8 @@
   "approval": {
     "title": "Approval Requests",
     "manageAll": "Manage All Approval Requests",
+    "requestDetails": "Request Details",
+    "note": "Note",
     "noHistory": "No history available",
     "noActions": "No actions available",
     "list": {

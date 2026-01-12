@@ -4,6 +4,7 @@ import { io, Socket } from 'socket.io-client';
 class SocketService {
     private socket: Socket | null = null;
     private isConnected = false;
+    private pendingRoomUserId: string | null = null;
 
     connect() {
         if (this.socket) return;
@@ -33,8 +34,12 @@ class SocketService {
         this.socket.on('connect', () => {
             console.log('SocketService: Connected:', this.socket?.id);
             this.isConnected = true;
-            // Try to join if user is already available
-            if (authStore.user?.id) {
+
+            // Join pending room if exists, otherwise join from authStore
+            if (this.pendingRoomUserId) {
+                this.joinRoom(this.pendingRoomUserId);
+                this.pendingRoomUserId = null;
+            } else if (authStore.user?.id) {
                 this.joinRoom(authStore.user.id);
             } else {
                 console.log('SocketService: User ID not ready yet, waiting for joinRoom call.');
@@ -61,7 +66,8 @@ class SocketService {
             console.log(`SocketService: Joining room user:${userId}`);
             this.socket.emit('join', userId);
         } else {
-            console.warn('SocketService: Cannot join room, socket not connected.');
+            console.log(`SocketService: Socket or connection not ready, buffering joinRoom for user:${userId}`);
+            this.pendingRoomUserId = userId;
         }
     }
 

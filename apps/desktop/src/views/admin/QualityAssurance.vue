@@ -12,18 +12,21 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { bookingsApi } from '@/services/bookings';
+import { rubberTypesApi, type RubberType } from '@/services/rubberTypes';
 import { ClipboardList, FlaskConical, List, Tags, TestTubes, Waves } from 'lucide-vue-next';
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { toast } from 'vue-sonner';
 import ClPoPriTab from './tabs/ClPoPriTab.vue';
+import UssPoPriTab from './tabs/UssPoPriTab.vue';
 
 const { t } = useI18n();
 const router = useRouter();
 
 const isLoading = ref(false);
 const bookings = ref<any[]>([]);
+const rubberTypes = ref<RubberType[]>([]);
 
 const currentTab = ref('cl-po-pri');
 
@@ -39,16 +42,25 @@ const tabs = [
 const fetchData = async () => {
   isLoading.value = true;
   try {
-    const data = await bookingsApi.getAll();
+    const [bookingsData, typesData] = await Promise.all([
+      bookingsApi.getAll(),
+      rubberTypesApi.getAll(),
+    ]);
     // Filter for bookings that are relevant to QA (e.g., Checked In, Weight In, etc.)
     // For now, showing all or those that have lab data potential
-    bookings.value = data;
+    bookings.value = bookingsData;
+    rubberTypes.value = typesData;
   } catch (error) {
-    console.error('Failed to load bookings:', error);
+    console.error('Failed to load data:', error);
     toast.error(t('common.errorLoading'));
   } finally {
     isLoading.value = false;
   }
+};
+
+const getRubberTypeName = (code: string) => {
+  const type = rubberTypes.value.find((t) => t.code === code);
+  return type ? type.name : code;
 };
 
 const filteredBookings = computed(() => {
@@ -123,9 +135,12 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Content Area -->
     <div v-if="currentTab === 'cl-po-pri'">
       <ClPoPriTab />
+    </div>
+
+    <div v-else-if="currentTab === 'uss-po-pri'">
+      <UssPoPriTab />
     </div>
 
     <!-- Fallback / Other Tabs (Placeholder for now) -->
@@ -187,7 +202,7 @@ onMounted(() => {
                   </div>
                 </TableCell>
                 <TableCell>
-                  {{ booking.rubberType }}
+                  {{ getRubberTypeName(booking.rubberType) }}
                 </TableCell>
                 <TableCell>
                   <div class="flex flex-col">

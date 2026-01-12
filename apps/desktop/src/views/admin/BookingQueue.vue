@@ -2,20 +2,15 @@
 import { bookingsApi } from '@/services/bookings';
 import { fromDate, getLocalTimeZone, type DateValue } from '@internationalized/date';
 import { format } from 'date-fns';
+import { enUS, th } from 'date-fns/locale';
 import {
   Calendar as CalendarIcon,
   CheckCircle2,
   Edit2,
   FileText,
-  Hash,
-  IdCard,
-  Package,
   Plus,
   RefreshCw,
-  Scale,
   Trash2,
-  Truck,
-  User,
 } from 'lucide-vue-next';
 import { computed, onMounted, ref, watch, type Ref } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -82,10 +77,12 @@ const SLOT_QUEUE_CONFIG: Record<string, { start: number; limit: number | null }>
 
 // --- State ---
 // --- State ---
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const authStore = useAuthStore();
 const route = useRoute();
 const router = useRouter();
+
+const currentLocale = computed(() => (locale.value === 'th' ? th : enUS));
 const selectedDate = ref(fromDate(new Date(), getLocalTimeZone())) as Ref<DateValue>;
 const selectedSlot = ref<string>('08:00-09:00'); // Default slot
 const queues = ref<any[]>([]);
@@ -604,14 +601,8 @@ watch(selectedSlot, (newSlot) => {
       <Card
         v-for="queue in filteredQueues"
         :key="queue.id"
-        class="group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border border-slate-300 bg-card/60 backdrop-blur-sm shadow-sm flex flex-col w-full max-w-[310px]"
+        class="group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border border-slate-300 bg-card/60 backdrop-blur-sm shadow-sm flex flex-col w-full max-w-[310px] min-h-[380px]"
       >
-        <!-- Top Status Bar (Color by Day) -->
-        <div
-          class="h-1.5 w-full shrink-0"
-          :style="{ backgroundColor: DAY_COLORS[selectedDateJS.getDay()].queueBg }"
-        ></div>
-
         <!-- Card Body -->
         <div class="p-4 flex-1 flex flex-col">
           <!-- Header: Queue & Actions -->
@@ -665,61 +656,81 @@ watch(selectedSlot, (newSlot) => {
             </div>
           </div>
 
-          <!-- Main Info -->
-          <div class="space-y-4 flex-1">
-            <!-- Supplier Section -->
-            <div class="space-y-1">
-              <div class="flex items-center gap-1.5">
-                <IdCard class="w-3 h-3 text-blue-600" />
-                <span class="text-[0.8125rem] font-bold text-blue-600 uppercase">{{
-                  queue.supplierCode
-                }}</span>
-              </div>
-              <div class="flex items-start gap-2">
-                <User class="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-                <p class="font-bold text-sm leading-snug line-clamp-2">{{ queue.supplierName }}</p>
-              </div>
+          <!-- Main Info List -->
+          <div class="space-y-2.5 flex-1">
+            <!-- Row: Code -->
+            <div class="flex justify-between items-start text-[0.8125rem]">
+              <span class="text-muted-foreground font-medium">{{ t('ticketDialog.code') }}:</span>
+              <span class="font-bold text-blue-600 ml-2 text-right">{{ queue.supplierCode }}</span>
             </div>
 
-            <!-- Details Section -->
-            <div class="grid grid-cols-1 gap-2 border-t border-border/50 pt-3">
-              <div v-if="queue.truckType || queue.truckRegister" class="flex items-center gap-2">
-                <Truck class="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                <span class="text-xs font-medium text-foreground truncate">
-                  {{ [queue.truckType, queue.truckRegister].filter(Boolean).join(' - ') }}
-                </span>
-              </div>
-              <div class="flex items-center gap-2">
-                <Package class="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                <span class="text-xs font-medium text-foreground truncate">
-                  {{
-                    RUBBER_TYPE_MAP[queue.rubberType] || queue.rubberTypeName || queue.rubberType
-                  }}
-                </span>
-              </div>
-              <div v-if="queue.estimatedWeight !== null" class="flex items-center gap-2">
-                <Scale class="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                <span class="text-xs font-medium text-foreground truncate">
-                  {{ new Intl.NumberFormat('en-US').format(queue.estimatedWeight) }} Kg
-                </span>
-              </div>
+            <!-- Row: Name -->
+            <div class="flex justify-between items-start text-[0.8125rem]">
+              <span class="text-muted-foreground font-medium">{{ t('ticketDialog.name') }}:</span>
+              <span class="font-bold text-foreground ml-2 text-right line-clamp-2">{{
+                queue.supplierName
+              }}</span>
             </div>
-          </div>
 
-          <!-- Footer: Booking Code & Ticket -->
-          <div
-            class="pt-3 border-t border-border/50 flex justify-between items-center bg-muted/30 -mx-4 px-4 py-2 mt-auto"
-          >
-            <div class="flex items-center gap-1.5">
-              <Hash class="w-3 h-3 text-muted-foreground" />
-              <span class="text-[0.6875rem] font-mono font-medium text-muted-foreground">{{
+            <!-- Row: Date -->
+            <div class="flex justify-between items-start text-[0.8125rem]">
+              <span class="text-muted-foreground font-medium">{{ t('ticketDialog.date') }}:</span>
+              <span class="font-medium text-foreground ml-2 text-right">
+                ( {{ format(new Date(queue.date), 'EEEE', { locale: currentLocale }) }} )
+                {{ format(new Date(queue.date), 'd MMM yyyy', { locale: currentLocale }) }}
+              </span>
+            </div>
+
+            <!-- Row: Time -->
+            <div class="flex justify-between items-start text-[0.8125rem]">
+              <span class="text-muted-foreground font-medium">{{ t('ticketDialog.time') }}:</span>
+              <span class="font-medium text-foreground ml-2 text-right">{{
+                queue.startTime || queue.slot?.split('-')[0] || '-'
+              }}</span>
+            </div>
+
+            <!-- Row: Truck -->
+            <div class="flex justify-between items-start text-[0.8125rem]">
+              <span class="text-muted-foreground font-medium">{{ t('ticketDialog.truck') }}:</span>
+              <span class="font-bold text-foreground ml-2 text-right">
+                {{ [queue.truckType, queue.truckRegister].filter(Boolean).join(' ') }}
+              </span>
+            </div>
+
+            <!-- Row: Rubber Type -->
+            <div class="flex justify-between items-start text-[0.8125rem]">
+              <span class="text-muted-foreground font-medium">{{ t('ticketDialog.type') }}:</span>
+              <span class="font-bold text-foreground ml-2 text-right">
+                {{ RUBBER_TYPE_MAP[queue.rubberType] || queue.rubberTypeName || queue.rubberType }}
+              </span>
+            </div>
+
+            <!-- Divider -->
+            <div class="border-t border-dashed border-border/60 my-1"></div>
+
+            <!-- Row: Booking Code -->
+            <div class="flex justify-between items-start text-[0.75rem]">
+              <span class="text-muted-foreground">{{ t('ticketDialog.booking') }}:</span>
+              <span class="font-mono font-medium text-muted-foreground ml-2 text-right">{{
                 queue.bookingCode
               }}</span>
             </div>
+
+            <!-- Row: Recorder -->
+            <div class="flex justify-between items-start text-[0.75rem]">
+              <span class="text-muted-foreground">{{ t('ticketDialog.recorder') }}:</span>
+              <span class="font-medium text-muted-foreground/80 ml-2 text-right italic">{{
+                queue.recorder || '-'
+              }}</span>
+            </div>
+          </div>
+
+          <!-- Footer Actions -->
+          <div class="pt-3 flex justify-end mt-auto">
             <Button
               variant="outline"
               size="sm"
-              class="h-7 px-2.5 text-[0.6875rem] font-bold gap-1.5 bg-background shadow-sm hover:bg-primary hover:text-white transition-all rounded-lg"
+              class="h-7 px-3 text-[0.6875rem] font-bold gap-1.5 bg-background shadow-sm hover:bg-primary hover:text-white transition-all rounded-lg"
               @click="handleShowTicket(queue)"
             >
               <FileText class="h-3 w-3" />
@@ -727,6 +738,12 @@ watch(selectedSlot, (newSlot) => {
             </Button>
           </div>
         </div>
+
+        <!-- Bottom Status Bar (Color by Day) -->
+        <div
+          class="h-1.5 w-full shrink-0"
+          :style="{ backgroundColor: DAY_COLORS[selectedDateJS.getDay()].queueBg }"
+        ></div>
       </Card>
     </div>
 
