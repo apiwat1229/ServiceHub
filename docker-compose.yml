@@ -40,6 +40,9 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_URL: postgresql://postgres:postgres@postgres:5432/myapp?schema=public
+      SCHEMA: /schema.prisma
+    volumes:
+      - ./packages/database/prisma/schema.prisma:/schema.prisma
     ports:
       - '5555:5555'
     depends_on:
