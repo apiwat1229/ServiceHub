@@ -76,6 +76,7 @@ const activeTab = ref('checkin');
 const bookings = ref<any[]>([]);
 const isLoading = ref(false);
 const searchQuery = ref('');
+const selectedCategory = ref('all'); // all, cuplump, uss
 const settingsOpen = ref(false);
 const settings = ref({
   autoRefresh: true,
@@ -97,6 +98,33 @@ const getRubberTypeName = (code: string | undefined) => {
   const found = rubberTypes.value.find((r) => r.code === code);
   return found ? found.name : code;
 };
+
+const isUssType = (code: string | undefined) => {
+  if (!code) return false;
+  const found = rubberTypes.value.find((r) => r.code === code);
+  if (found) return found.category === 'USS';
+  return code.toUpperCase().includes('USS');
+};
+
+const isCuplumpType = (code: string | undefined) => {
+  if (!code) return false;
+  const found = rubberTypes.value.find((r) => r.code === code);
+  if (found) return found.category === 'Cuplump' || found.category === 'CL';
+  // Fallback check for names
+  const upperCode = code.toUpperCase();
+  return upperCode.includes('CL') || upperCode.includes('CUPLUMP');
+};
+
+const processedBookingsByCategory = computed(() => {
+  let data = bookings.value;
+  if (selectedCategory.value === 'cuplump') {
+    return data.filter((b) => isCuplumpType(b.rubberType) || isCuplumpType(b.trailerRubberType));
+  }
+  if (selectedCategory.value === 'uss') {
+    return data.filter((b) => isUssType(b.rubberType) || isUssType(b.trailerRubberType));
+  }
+  return data;
+});
 
 const fetchMasterData = async () => {
   try {
@@ -276,15 +304,16 @@ const confirmApproveBooking = async () => {
 
 // Stats
 const stats = computed(() => {
-  const total = bookings.value.length;
-  const checkedIn = bookings.value.filter((b) => b.checkinAt).length;
+  const data = processedBookingsByCategory.value;
+  const total = data.length;
+  const checkedIn = data.filter((b) => b.checkinAt).length;
   const pending = total - checkedIn;
   return { total, checkedIn, pending };
 });
 
 // Filtered Data
 const filteredBookings = computed(() => {
-  let data = bookings.value;
+  let data = processedBookingsByCategory.value;
 
   // Filter by Tab
   if (activeTab.value === 'checkin') {
@@ -387,7 +416,7 @@ const confirmWeightOut = async () => {
 };
 
 const dashboardStats = computed(() => {
-  const completed = bookings.value.filter((b) => b.weightOut);
+  const completed = processedBookingsByCategory.value.filter((b) => b.weightOut);
   const totalCount = completed.length;
   const totalWeightIn = completed.reduce((sum, b) => sum + (b.weightIn || 0), 0);
   const totalWeightOut = completed.reduce((sum, b) => sum + (b.weightOut || 0), 0);
@@ -1422,78 +1451,80 @@ onUnmounted(() => {
           <p class="text-muted-foreground">{{ t('truckScale.formDescription') }}</p>
         </div>
 
-        <!-- Tabs List (Right Aligned) -->
-        <TabsList class="h-10 bg-muted/50 p-1 rounded-lg self-start md:self-center">
-          <TabsTrigger
-            value="checkin"
-            class="px-4 text-sm font-medium transition-all data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-md"
-          >
-            {{ t('truckScale.checkIn') }}
-          </TabsTrigger>
-          <TabsTrigger
-            value="scale-in"
-            class="px-4 text-sm font-medium transition-all data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-md"
-          >
-            {{ t('truckScale.weightIn') }}
-          </TabsTrigger>
-          <TabsTrigger
-            value="scale-out"
-            class="px-4 text-sm font-medium transition-all data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-md"
-          >
-            {{ t('truckScale.weightOut') }}
-          </TabsTrigger>
-          <TabsTrigger
-            value="dashboard"
-            class="px-4 text-sm font-medium transition-all data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-md"
-          >
-            {{ t('truckScale.dashboard') }}
-          </TabsTrigger>
-        </TabsList>
+        <div class="flex items-center gap-2 ml-auto">
+          <!-- Tabs List -->
+          <TabsList class="h-10 bg-muted/50 p-1 rounded-lg self-start md:self-center">
+            <TabsTrigger
+              value="checkin"
+              class="px-4 text-sm font-medium transition-all data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-md"
+            >
+              {{ t('truckScale.checkIn') }}
+            </TabsTrigger>
+            <TabsTrigger
+              value="scale-in"
+              class="px-4 text-sm font-medium transition-all data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-md"
+            >
+              {{ t('truckScale.weightIn') }}
+            </TabsTrigger>
+            <TabsTrigger
+              value="scale-out"
+              class="px-4 text-sm font-medium transition-all data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-md"
+            >
+              {{ t('truckScale.weightOut') }}
+            </TabsTrigger>
+            <TabsTrigger
+              value="dashboard"
+              class="px-4 text-sm font-medium transition-all data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-md"
+            >
+              {{ t('truckScale.dashboard') }}
+            </TabsTrigger>
+          </TabsList>
 
-        <!-- Settings Button -->
-        <Dialog v-model:open="settingsOpen">
-          <DialogTrigger as-child>
-            <Button variant="outline" size="icon" class="ml-2">
-              <Settings class="w-4 h-4" />
-            </Button>
-          </DialogTrigger>
-          <DialogContent class="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>{{ t('common.settings') }}</DialogTitle>
-              <DialogDescription>
-                Configure notification and auto-refresh settings.
-              </DialogDescription>
-            </DialogHeader>
-            <div class="grid gap-4 py-4">
-              <div class="flex items-center justify-between space-x-2">
-                <Label htmlFor="auto-refresh" class="flex flex-col space-y-1">
-                  <span>{{ t('truckScale.settings.autoRefresh') }}</span>
-                  <span class="font-normal leading-snug text-muted-foreground">
-                    {{ t('truckScale.settings.autoRefreshDesc') }}
-                  </span>
-                </Label>
-                <Checkbox
-                  id="auto-refresh"
-                  :checked="settings.autoRefresh"
-                  @update:checked="(v) => (settings.autoRefresh = v)"
-                />
+          <!-- Settings Button -->
+          <Dialog v-model:open="settingsOpen">
+            <DialogTrigger as-child>
+              <Button variant="outline" size="icon" class="ml-2">
+                <Settings class="w-4 h-4" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent class="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>{{ t('common.settings') }}</DialogTitle>
+                <DialogDescription>
+                  Configure notification and auto-refresh settings.
+                </DialogDescription>
+              </DialogHeader>
+              <div class="grid gap-4 py-4">
+                <div class="flex items-center justify-between space-x-2">
+                  <Label htmlFor="auto-refresh" class="flex flex-col space-y-1">
+                    <span>{{ t('truckScale.settings.autoRefresh') }}</span>
+                    <span class="font-normal leading-snug text-muted-foreground">
+                      {{ t('truckScale.settings.autoRefreshDesc') }}
+                    </span>
+                  </Label>
+                  <Checkbox
+                    id="auto-refresh"
+                    :checked="settings.autoRefresh"
+                    @update:checked="(v) => (settings.autoRefresh = v)"
+                  />
+                </div>
+                <div class="flex items-center justify-between space-x-2">
+                  <Label htmlFor="sound" class="flex flex-col space-y-1">
+                    <span>{{ t('truckScale.settings.sound') }}</span>
+                    <span class="font-normal leading-snug text-muted-foreground">
+                      {{ t('truckScale.settings.soundDesc') }}
+                    </span>
+                  </Label>
+                  <Checkbox
+                    id="sound"
+                    :checked="settings.sound"
+                    @update:checked="(v) => (settings.sound = v)"
+                  />
+                </div>
               </div>
-              <div class="flex items-center justify-between space-x-2">
-                <Label htmlFor="sound" class="flex flex-col space-y-1">
-                  <span>{{ t('truckScale.settings.sound') }}</span>
-                  <span class="font-normal leading-snug text-muted-foreground">
-                    {{ t('truckScale.settings.soundDesc') }}
-                  </span>
-                </Label>
-                <Checkbox
-                  id="sound"
-                  :checked="settings.sound"
-                  @update:checked="(v) => (settings.sound = v)"
-                />
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <TabsContent value="checkin" class="space-y-6 mt-0">
@@ -1502,7 +1533,7 @@ onUnmounted(() => {
           <CardContent class="p-6 space-y-6">
             <!-- Filters & Stats Combined Row -->
             <!-- Filters & Stats Combined Row -->
-            <div class="flex flex-col xl:flex-row gap-4 items-end justify-between w-full">
+            <div class="flex flex-col xl:flex-row gap-4 items-end justify-start w-full">
               <!-- Filters Group -->
               <div class="flex flex-col md:flex-row gap-3 items-end w-full xl:w-auto shrink-0">
                 <div class="grid gap-1.5 w-full md:w-auto">
@@ -1569,48 +1600,81 @@ onUnmounted(() => {
                     </PopoverContent>
                   </Popover>
                 </div>
+
+                <div class="grid gap-1.5 w-full md:w-auto">
+                  <Label class="text-xs font-semibold text-muted-foreground ml-0.5">{{
+                    t('truckScale.rubberType')
+                  }}</Label>
+                  <Tabs v-model="selectedCategory" class="h-10 bg-muted/50 p-1 rounded-lg">
+                    <TabsList class="bg-transparent h-full p-0 flex gap-1">
+                      <TabsTrigger
+                        value="all"
+                        class="h-8 text-[0.7rem] px-3 font-semibold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-md transition-all"
+                      >
+                        ALL
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="cuplump"
+                        class="h-8 text-[0.7rem] px-3 font-semibold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-md transition-all"
+                      >
+                        Cuplump
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="uss"
+                        class="h-8 text-[0.7rem] px-3 font-semibold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-md transition-all"
+                      >
+                        USS
+                      </TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </div>
               </div>
 
               <!-- Stats Cards Group (Right Aligned) -->
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-3 w-full xl:flex-1 mt-4 xl:mt-0">
+              <div
+                class="grid grid-cols-1 md:grid-cols-[200px_200px_200px] gap-3 w-full xl:w-auto mt-4 xl:mt-0"
+              >
                 <div
-                  class="rounded-xl border bg-blue-50/50 border-blue-100 px-3 py-2 flex flex-col items-center justify-center gap-0.5 shadow-sm w-full min-h-[72px]"
+                  class="rounded-xl border bg-blue-50/50 border-blue-100 px-4 py-2 flex items-center justify-between shadow-sm w-full min-h-[56px]"
                 >
-                  <div class="flex items-center gap-1.5 mb-0.5">
-                    <Truck class="w-3.5 h-3.5 text-blue-600" />
-                    <span class="text-[0.625rem] text-blue-600 font-bold uppercase tracking-wider">{{
-                      t('truckScale.totalExpected') || 'Total Expected'
-                    }}</span>
+                  <div class="flex items-center gap-2">
+                    <Truck class="w-4 h-4 text-blue-600" />
+                    <span
+                      class="text-[0.6875rem] text-blue-600 font-bold uppercase tracking-wider"
+                      >{{ t('truckScale.totalExpected') || 'Total Expected' }}</span
+                    >
                   </div>
-                  <span class="text-3xl font-black text-blue-950 leading-none">{{
+                  <span class="text-2xl font-black text-blue-950 leading-none">{{
                     stats.total
                   }}</span>
                 </div>
 
                 <div
-                  class="rounded-xl border bg-green-50/50 border-green-100 px-3 py-2 flex flex-col items-center justify-center gap-0.5 shadow-sm w-full min-h-[72px]"
+                  class="rounded-xl border bg-green-50/50 border-green-100 px-4 py-2 flex items-center justify-between shadow-sm w-full min-h-[56px]"
                 >
-                  <div class="flex items-center gap-1.5 mb-0.5">
-                    <CheckCircle class="w-3.5 h-3.5 text-green-600" />
-                    <span class="text-[0.625rem] text-green-600 font-bold uppercase tracking-wider">{{
-                      t('truckScale.stats.checkedIn')
-                    }}</span>
+                  <div class="flex items-center gap-2">
+                    <CheckCircle class="w-4 h-4 text-green-600" />
+                    <span
+                      class="text-[0.6875rem] text-green-600 font-bold uppercase tracking-wider"
+                      >{{ t('truckScale.stats.checkedIn') }}</span
+                    >
                   </div>
-                  <span class="text-3xl font-black text-green-950 leading-none">{{
+                  <span class="text-2xl font-black text-green-950 leading-none">{{
                     stats.checkedIn
                   }}</span>
                 </div>
 
                 <div
-                  class="rounded-xl border bg-orange-50/50 border-orange-100 px-3 py-2 flex flex-col items-center justify-center gap-0.5 shadow-sm w-full min-h-[72px]"
+                  class="rounded-xl border bg-orange-50/50 border-orange-100 px-4 py-2 flex items-center justify-between shadow-sm w-full min-h-[56px]"
                 >
-                  <div class="flex items-center gap-1.5 mb-0.5">
-                    <Clock class="w-3.5 h-3.5 text-orange-600" />
-                    <span class="text-[0.625rem] text-orange-600 font-bold uppercase tracking-wider">{{
-                      t('truckScale.stats.pending')
-                    }}</span>
+                  <div class="flex items-center gap-2">
+                    <Clock class="w-4 h-4 text-orange-600" />
+                    <span
+                      class="text-[0.6875rem] text-orange-600 font-bold uppercase tracking-wider"
+                      >{{ t('truckScale.stats.pending') }}</span
+                    >
                   </div>
-                  <span class="text-3xl font-black text-orange-950 leading-none">{{
+                  <span class="text-2xl font-black text-orange-950 leading-none">{{
                     stats.pending
                   }}</span>
                 </div>
@@ -1628,7 +1692,7 @@ onUnmounted(() => {
         <Card class="border-none shadow-sm bg-card/50 backdrop-blur-sm">
           <CardContent class="p-6 space-y-6">
             <!-- Scale-In Filters & Stats -->
-            <div class="flex flex-col xl:flex-row gap-4 items-end justify-between w-full">
+            <div class="flex flex-col xl:flex-row gap-4 items-end justify-start w-full">
               <!-- Filters Group -->
               <div class="flex flex-col md:flex-row gap-3 items-end w-full xl:w-auto shrink-0">
                 <div class="grid gap-1.5 w-full md:w-auto">
@@ -1697,48 +1761,81 @@ onUnmounted(() => {
                     </PopoverContent>
                   </Popover>
                 </div>
+
+                <div class="grid gap-1.5 w-full md:w-auto">
+                  <Label class="text-xs font-semibold text-muted-foreground ml-0.5">{{
+                    t('truckScale.rubberType')
+                  }}</Label>
+                  <Tabs v-model="selectedCategory" class="h-10 bg-muted/50 p-1 rounded-lg">
+                    <TabsList class="bg-transparent h-full p-0 flex gap-1">
+                      <TabsTrigger
+                        value="all"
+                        class="h-8 text-[0.7rem] px-3 font-semibold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-md transition-all"
+                      >
+                        ALL
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="cuplump"
+                        class="h-8 text-[0.7rem] px-3 font-semibold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-md transition-all"
+                      >
+                        Cuplump
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="uss"
+                        class="h-8 text-[0.7rem] px-3 font-semibold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-md transition-all"
+                      >
+                        USS
+                      </TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </div>
               </div>
 
               <!-- Stats Cards Group -->
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-3 w-full xl:flex-1 mt-4 xl:mt-0">
+              <div
+                class="grid grid-cols-1 md:grid-cols-[200px_200px_200px] gap-3 w-full xl:w-auto mt-4 xl:mt-0"
+              >
                 <div
-                  class="rounded-xl border bg-blue-50/50 border-blue-100 px-3 py-2 flex flex-col items-center justify-center gap-0.5 shadow-sm w-full min-h-[72px]"
+                  class="rounded-xl border bg-blue-50/50 border-blue-100 px-4 py-2 flex items-center justify-between shadow-sm w-full min-h-[56px]"
                 >
-                  <div class="flex items-center gap-1.5 mb-0.5">
-                    <Truck class="w-3.5 h-3.5 text-blue-600" />
-                    <span class="text-[0.625rem] text-blue-600 font-bold uppercase tracking-wider">{{
-                      t('truckScale.totalExpected')
-                    }}</span>
+                  <div class="flex items-center gap-2">
+                    <Truck class="w-4 h-4 text-blue-600" />
+                    <span
+                      class="text-[0.6875rem] text-blue-600 font-bold uppercase tracking-wider"
+                      >{{ t('truckScale.totalExpected') }}</span
+                    >
                   </div>
-                  <span class="text-3xl font-black text-blue-950 leading-none">{{
+                  <span class="text-2xl font-black text-blue-950 leading-none">{{
                     stats.total
                   }}</span>
                 </div>
 
                 <div
-                  class="rounded-xl border bg-green-50/50 border-green-100 px-3 py-2 flex flex-col items-center justify-center gap-0.5 shadow-sm w-full min-h-[72px]"
+                  class="rounded-xl border bg-green-50/50 border-green-100 px-4 py-2 flex items-center justify-between shadow-sm w-full min-h-[56px]"
                 >
-                  <div class="flex items-center gap-1.5 mb-0.5">
-                    <CheckCircle class="w-3.5 h-3.5 text-green-600" />
-                    <span class="text-[0.625rem] text-green-600 font-bold uppercase tracking-wider">{{
-                      t('truckScale.stats.checkedIn')
-                    }}</span>
+                  <div class="flex items-center gap-2">
+                    <CheckCircle class="w-4 h-4 text-green-600" />
+                    <span
+                      class="text-[0.6875rem] text-green-600 font-bold uppercase tracking-wider"
+                      >{{ t('truckScale.stats.checkedIn') }}</span
+                    >
                   </div>
-                  <span class="text-3xl font-black text-green-950 leading-none">{{
+                  <span class="text-2xl font-black text-green-950 leading-none">{{
                     stats.checkedIn
                   }}</span>
                 </div>
 
                 <div
-                  class="rounded-xl border bg-orange-50/50 border-orange-100 px-3 py-2 flex flex-col items-center justify-center gap-0.5 shadow-sm w-full min-h-[72px]"
+                  class="rounded-xl border bg-orange-50/50 border-orange-100 px-4 py-2 flex items-center justify-between shadow-sm w-full min-h-[56px]"
                 >
-                  <div class="flex items-center gap-1.5 mb-0.5">
-                    <Clock class="w-3.5 h-3.5 text-orange-600" />
-                    <span class="text-[0.625rem] text-orange-600 font-bold uppercase tracking-wider">{{
-                      t('truckScale.stats.pending')
-                    }}</span>
+                  <div class="flex items-center gap-2">
+                    <Clock class="w-4 h-4 text-orange-600" />
+                    <span
+                      class="text-[0.6875rem] text-orange-600 font-bold uppercase tracking-wider"
+                      >{{ t('truckScale.stats.pending') }}</span
+                    >
                   </div>
-                  <span class="text-3xl font-black text-orange-950 leading-none">{{
+                  <span class="text-2xl font-black text-orange-950 leading-none">{{
                     stats.pending
                   }}</span>
                 </div>
@@ -1755,7 +1852,7 @@ onUnmounted(() => {
         <Card class="border-none shadow-sm bg-card/50 backdrop-blur-sm">
           <CardContent class="p-6 space-y-6">
             <!-- Scale-Out Filters & Stats -->
-            <div class="flex flex-col xl:flex-row gap-4 items-end justify-between w-full">
+            <div class="flex flex-col xl:flex-row gap-4 items-end justify-start w-full">
               <!-- Filters Group -->
               <div class="flex flex-col md:flex-row gap-3 items-end w-full xl:w-auto shrink-0">
                 <div class="grid gap-1.5 w-full md:w-auto">
@@ -1824,48 +1921,81 @@ onUnmounted(() => {
                     </PopoverContent>
                   </Popover>
                 </div>
+
+                <div class="grid gap-1.5 w-full md:w-auto">
+                  <Label class="text-xs font-semibold text-muted-foreground ml-0.5">{{
+                    t('truckScale.rubberType')
+                  }}</Label>
+                  <Tabs v-model="selectedCategory" class="h-10 bg-muted/50 p-1 rounded-lg">
+                    <TabsList class="bg-transparent h-full p-0 flex gap-1">
+                      <TabsTrigger
+                        value="all"
+                        class="h-8 text-[0.7rem] px-3 font-semibold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-md transition-all"
+                      >
+                        ALL
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="cuplump"
+                        class="h-8 text-[0.7rem] px-3 font-semibold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-md transition-all"
+                      >
+                        Cuplump
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="uss"
+                        class="h-8 text-[0.7rem] px-3 font-semibold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-md transition-all"
+                      >
+                        USS
+                      </TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </div>
               </div>
 
               <!-- Stats Cards Group -->
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-3 w-full xl:flex-1 mt-4 xl:mt-0">
+              <div
+                class="grid grid-cols-1 md:grid-cols-[200px_200px_200px] gap-3 w-full xl:w-auto mt-4 xl:mt-0"
+              >
                 <div
-                  class="rounded-xl border bg-blue-50/50 border-blue-100 px-3 py-2 flex flex-col items-center justify-center gap-0.5 shadow-sm w-full min-h-[72px]"
+                  class="rounded-xl border bg-blue-50/50 border-blue-100 px-4 py-2 flex items-center justify-between shadow-sm w-full min-h-[56px]"
                 >
-                  <div class="flex items-center gap-1.5 mb-0.5">
-                    <Truck class="w-3.5 h-3.5 text-blue-600" />
-                    <span class="text-[0.625rem] text-blue-600 font-bold uppercase tracking-wider">{{
-                      t('truckScale.totalExpected')
-                    }}</span>
+                  <div class="flex items-center gap-2">
+                    <Truck class="w-4 h-4 text-blue-600" />
+                    <span
+                      class="text-[0.6875rem] text-blue-600 font-bold uppercase tracking-wider"
+                      >{{ t('truckScale.totalExpected') }}</span
+                    >
                   </div>
-                  <span class="text-3xl font-black text-blue-950 leading-none">{{
+                  <span class="text-2xl font-black text-blue-950 leading-none">{{
                     stats.total
                   }}</span>
                 </div>
 
                 <div
-                  class="rounded-xl border bg-green-50/50 border-green-100 px-3 py-2 flex flex-col items-center justify-center gap-0.5 shadow-sm w-full min-h-[72px]"
+                  class="rounded-xl border bg-green-50/50 border-green-100 px-4 py-2 flex items-center justify-between shadow-sm w-full min-h-[56px]"
                 >
-                  <div class="flex items-center gap-1.5 mb-0.5">
-                    <CheckCircle class="w-3.5 h-3.5 text-green-600" />
-                    <span class="text-[0.625rem] text-green-600 font-bold uppercase tracking-wider">{{
-                      t('truckScale.stats.checkedIn')
-                    }}</span>
+                  <div class="flex items-center gap-2">
+                    <CheckCircle class="w-4 h-4 text-green-600" />
+                    <span
+                      class="text-[0.6875rem] text-green-600 font-bold uppercase tracking-wider"
+                      >{{ t('truckScale.stats.checkedIn') }}</span
+                    >
                   </div>
-                  <span class="text-3xl font-black text-green-950 leading-none">{{
+                  <span class="text-2xl font-black text-green-950 leading-none">{{
                     stats.checkedIn
                   }}</span>
                 </div>
 
                 <div
-                  class="rounded-xl border bg-orange-50/50 border-orange-100 px-3 py-2 flex flex-col items-center justify-center gap-0.5 shadow-sm w-full min-h-[72px]"
+                  class="rounded-xl border bg-orange-50/50 border-orange-100 px-4 py-2 flex items-center justify-between shadow-sm w-full min-h-[56px]"
                 >
-                  <div class="flex items-center gap-1.5 mb-0.5">
-                    <Clock class="w-3.5 h-3.5 text-orange-600" />
-                    <span class="text-[0.625rem] text-orange-600 font-bold uppercase tracking-wider">{{
-                      t('truckScale.stats.pending')
-                    }}</span>
+                  <div class="flex items-center gap-2">
+                    <Clock class="w-4 h-4 text-orange-600" />
+                    <span
+                      class="text-[0.6875rem] text-orange-600 font-bold uppercase tracking-wider"
+                      >{{ t('truckScale.stats.pending') }}</span
+                    >
                   </div>
-                  <span class="text-3xl font-black text-orange-950 leading-none">{{
+                  <span class="text-2xl font-black text-orange-950 leading-none">{{
                     stats.pending
                   }}</span>
                 </div>
@@ -1951,80 +2081,125 @@ onUnmounted(() => {
                     </PopoverContent>
                   </Popover>
                 </div>
+
+                <div class="grid gap-1.5 w-full md:w-auto">
+                  <Label class="text-xs font-semibold text-muted-foreground ml-0.5">{{
+                    t('truckScale.rubberType')
+                  }}</Label>
+                  <Tabs v-model="selectedCategory" class="h-10 bg-muted/50 p-1 rounded-lg">
+                    <TabsList class="bg-transparent h-full p-0 flex gap-1">
+                      <TabsTrigger
+                        value="all"
+                        class="h-8 text-[0.7rem] px-3 font-semibold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-md transition-all"
+                      >
+                        ALL
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="cuplump"
+                        class="h-8 text-[0.7rem] px-3 font-semibold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-md transition-all"
+                      >
+                        Cuplump
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="uss"
+                        class="h-8 text-[0.7rem] px-3 font-semibold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-md transition-all"
+                      >
+                        USS
+                      </TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </div>
               </div>
 
-              <!-- Right: Stats Cards -->
-              <div class="grid grid-cols-2 md:grid-cols-4 gap-3 w-full xl:flex-1 mt-4 xl:mt-0">
+              <div
+                class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[200px_1fr_1fr_1fr] gap-3 w-full xl:flex-1 mt-4 xl:mt-0"
+              >
                 <!-- Total Truck -->
                 <div
-                  class="rounded-xl border bg-blue-50/50 border-blue-100 px-3 py-2 flex flex-col items-center justify-center gap-0.5 shadow-sm w-full min-h-[72px]"
+                  class="rounded-xl border bg-blue-50/50 border-blue-100 px-4 py-2 flex items-center justify-between shadow-sm w-full min-h-[56px]"
                 >
-                  <div class="flex items-center gap-1.5 mb-0.5">
-                    <Truck class="w-3.5 h-3.5 text-blue-600" />
-                    <span class="text-[0.625rem] text-blue-600 font-bold uppercase tracking-wider">{{
-                      t('truckScale.stats.totalTrips')
-                    }}</span>
+                  <div class="flex items-center gap-2">
+                    <Truck class="w-4 h-4 text-blue-600" />
+                    <span
+                      class="text-[0.6875rem] text-blue-600 font-bold uppercase tracking-wider"
+                      >{{ t('truckScale.stats.totalTrips') }}</span
+                    >
                   </div>
-                  <span class="text-3xl font-black text-blue-950 leading-none">{{
+                  <span class="text-2xl font-black text-blue-950 leading-none">{{
                     dashboardStats.count
                   }}</span>
                 </div>
 
                 <!-- Gross Weight -->
                 <div
-                  class="rounded-xl border bg-green-50/50 border-green-100 px-3 py-2 flex flex-col items-center justify-center gap-0.5 shadow-sm w-full min-h-[72px]"
+                  class="rounded-xl border bg-green-50/50 border-green-100 px-4 py-2 flex items-center justify-between shadow-sm w-full min-h-[56px]"
                 >
-                  <div class="flex items-center gap-1.5 mb-0.5">
+                  <div class="flex items-center gap-2">
                     <Circle class="w-2 h-2 fill-current text-green-500" />
-                    <span class="text-[0.625rem] text-green-600 font-bold uppercase tracking-wider">{{
-                      t('truckScale.stats.totalGrossWeight') || 'Total Gross Weight'
-                    }}</span>
+                    <span
+                      class="text-[0.6875rem] text-green-600 font-bold uppercase tracking-wider"
+                      >{{ t('truckScale.stats.totalGrossWeight') || 'Total Gross Weight' }}</span
+                    >
                   </div>
                   <div class="flex items-baseline gap-1">
-                    <span class="text-3xl font-black text-green-950 leading-none">{{
-                      dashboardStats.net.toLocaleString()
+                    <span class="text-2xl font-black text-green-950 leading-none">{{
+                      (dashboardStats.net / 1000).toLocaleString(undefined, {
+                        minimumFractionDigits: 1,
+                        maximumFractionDigits: 1,
+                      })
                     }}</span>
-                    <span class="text-[0.625rem] font-bold text-green-600/70">Kg.</span>
+                    <span class="text-[0.625rem] font-bold text-green-600/70">Ton</span>
                   </div>
                 </div>
 
                 <!-- Weight In -->
                 <div
-                  class="rounded-xl border bg-indigo-50/50 border-indigo-100 px-3 py-2 flex flex-col items-center justify-center gap-0.5 shadow-sm w-full min-h-[72px]"
+                  class="rounded-xl border bg-indigo-50/50 border-indigo-100 px-4 py-2 flex items-center justify-between shadow-sm w-full min-h-[56px]"
                 >
-                  <div class="flex items-center gap-1.5 mb-0.5">
-                    <Weight class="w-3.5 h-3.5 text-indigo-600" />
-                    <span class="text-[0.625rem] text-indigo-600 font-bold uppercase tracking-wider">{{
-                      t('truckScale.stats.totalWeightIn') || 'Total Weight In'
-                    }}</span>
+                  <div class="flex items-center gap-2">
+                    <Weight class="w-4 h-4 text-indigo-600" />
+                    <span
+                      class="text-[0.6875rem] text-indigo-600 font-bold uppercase tracking-wider"
+                      >{{ t('truckScale.stats.totalWeightIn') || 'Total Weight In' }}</span
+                    >
                   </div>
                   <div class="flex items-baseline gap-1">
-                    <span class="text-3xl font-black text-indigo-950 leading-none">{{
-                      dashboardStats.gross.toLocaleString()
+                    <span class="text-2xl font-black text-indigo-950 leading-none">{{
+                      (dashboardStats.gross / 1000).toLocaleString(undefined, {
+                        minimumFractionDigits: 1,
+                        maximumFractionDigits: 1,
+                      })
                     }}</span>
-                    <span class="text-[0.625rem] font-bold text-indigo-600/70">Kg.</span>
+                    <span class="text-[0.625rem] font-bold text-indigo-600/70">Ton</span>
                   </div>
                 </div>
 
                 <!-- In / Out -->
                 <div
-                  class="rounded-xl border bg-orange-50/50 border-orange-100 px-3 py-2 flex flex-col items-center justify-center gap-0.5 shadow-sm w-full min-h-[72px]"
+                  class="rounded-xl border bg-orange-50/50 border-orange-100 px-4 py-2 flex items-center justify-between shadow-sm w-full min-h-[56px]"
                 >
-                  <div class="flex items-center gap-1.5 mb-0.5">
+                  <div class="flex items-center gap-2">
                     <Circle class="w-2 h-2 fill-current text-orange-500" />
-                    <span class="text-[0.625rem] text-orange-600 font-bold uppercase tracking-wider">{{
-                      t('truckScale.stats.inOut')
-                    }}</span>
+                    <span
+                      class="text-[0.6875rem] text-orange-600 font-bold uppercase tracking-wider"
+                      >{{ t('truckScale.stats.inOut') }}</span
+                    >
                   </div>
                   <div class="flex items-baseline gap-1">
-                    <span class="text-lg font-black text-orange-950">{{
-                      dashboardStats.weightIn.toLocaleString()
+                    <span class="text-xl font-black text-orange-950">{{
+                      (dashboardStats.weightIn / 1000).toLocaleString(undefined, {
+                        minimumFractionDigits: 1,
+                        maximumFractionDigits: 1,
+                      })
                     }}</span>
                     <span class="text-orange-400 font-light mx-0.5">/</span>
-                    <span class="text-lg font-bold text-orange-800">{{
-                      dashboardStats.weightOut.toLocaleString()
+                    <span class="text-xl font-bold text-orange-800">{{
+                      (dashboardStats.weightOut / 1000).toLocaleString(undefined, {
+                        minimumFractionDigits: 1,
+                        maximumFractionDigits: 1,
+                      })
                     }}</span>
-                    <span class="text-[0.625rem] font-bold text-orange-600/70 ml-0.5">Kg.</span>
+                    <span class="text-[0.625rem] font-bold text-orange-600/70 ml-0.5">Ton</span>
                   </div>
                 </div>
               </div>
