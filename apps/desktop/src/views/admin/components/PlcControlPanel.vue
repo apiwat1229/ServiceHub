@@ -195,9 +195,10 @@ onUnmounted(() => {
             size="sm"
             @click="loadData"
             :disabled="isLoading"
-            class="h-9 rounded-lg border-slate-200 hover:bg-slate-50"
+            class="h-9 rounded-lg border-slate-200 hover:bg-slate-50 relative group"
           >
-            <RefreshCw :class="['w-4 h-4', isLoading && 'animate-spin']" />
+            <RefreshCw :class="['w-4 h-4 mr-2', isLoading && 'animate-spin']" />
+            Sync from PLC
           </Button>
           <Button
             size="sm"
@@ -206,7 +207,7 @@ onUnmounted(() => {
             :disabled="isWriting || !status?.isConnected"
           >
             <Save class="w-4 h-4" />
-            Sync Matrix
+            Write & Pulse
           </Button>
         </div>
       </div>
