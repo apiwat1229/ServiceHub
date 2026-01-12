@@ -203,6 +203,17 @@ const slotStats = computed(() => {
 
     let limit = slot.limit;
 
+    // --- NEW LOGIC FOR ALL DAY SUMMARY ---
+    if (slot.value === '08:00-17:00' && queueMode.value === 'Cuplump') {
+      const totalBooked = dailyQueues.value.filter((q) => {
+        const isUSS = q.rubberType && q.rubberType.toUpperCase().includes('USS');
+        return !isUSS;
+      }).length;
+      stats[slot.value] = { booked: totalBooked, limit: null };
+      return;
+    }
+    // -------------------------------------
+
     // Special case Saturday
     if (selectedDateJS.value.getDay() === 6 && slot.value === '10:00-11:00') {
       limit = null;
@@ -247,9 +258,13 @@ async function fetchQueues() {
       queues.value = dailyQueues.value.filter(
         (q) => q.rubberType && q.rubberType.toUpperCase().includes('USS')
       );
+    } else if (selectedSlot.value === '08:00-17:00') {
+      // For Cuplump 'All Day' view, show ALL daily Cuplump bookings
+      queues.value = dailyQueues.value.filter(
+        (q) => !(q.rubberType && q.rubberType.toUpperCase().includes('USS'))
+      );
     } else {
-      // For Cuplump, fetch specific slot bookings (or filter from daily if optimized, but sticking to API for now)
-      // Actually, existing logic fetched slot specific. Let's keep it consistent.
+      // For Cuplump specific slot, fetch specific slot bookings
       const resp = await bookingsApi.getAll({
         date: dateParam,
         slot: selectedSlot.value,
