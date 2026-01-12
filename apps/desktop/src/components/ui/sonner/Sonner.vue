@@ -32,7 +32,7 @@ const delegatedProps = reactiveOmit(props, 'toastOptions', 'position');
         actionButton: '!bg-white !text-black hover:!bg-white/90 font-bold',
         cancelButton: '!bg-white/20 !text-white hover:!bg-white/30',
         closeButton:
-          '!bg-white !text-slate-900 !border !border-slate-200 hover:!bg-slate-100 !opacity-100 !shadow-sm',
+          '!bg-white !text-slate-900 !border-2 !border-black hover:!bg-slate-100 !opacity-100 !shadow-sm',
       },
     }"
   >

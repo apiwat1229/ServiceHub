@@ -20,8 +20,10 @@ export class PlcService implements OnModuleInit, OnModuleDestroy {
     private readonly rack: number;
     private readonly slot: number;
 
+    private lastError: string | null = null;
+
     constructor(private configService: ConfigService) {
-        this.plcIp = this.configService.get<string>('PLC_IP', '192.168.190.53'); // Updated to matching Python default
+        this.plcIp = this.configService.get<string>('PLC_IP', '192.168.190.53');
         this.rack = this.configService.get<number>('PLC_RACK', 0);
         this.slot = this.configService.get<number>('PLC_SLOT', 1);
     }
@@ -42,17 +44,19 @@ export class PlcService implements OnModuleInit, OnModuleDestroy {
         if (this.isConnecting || this.isConnected) return;
 
         this.isConnecting = true;
+        this.lastError = null;
         try {
             this.conn.initiateConnection(
                 { port: 102, host: this.plcIp, rack: this.rack, slot: this.slot },
                 (err: Error | string | undefined) => {
                     this.isConnecting = false;
                     if (err !== undefined) {
+                        this.lastError = `Connection Failed: ${err}`;
                         this.logger.error(`PLC Connection Failed: ${err}`);
                         this.isConnected = false;
-                        // Retry later
                         setTimeout(() => this.connect(), 5000);
                     } else {
+                        this.lastError = null;
                         this.logger.log('PLC Connected successfully.');
                         this.isConnected = true;
                     }
@@ -60,6 +64,7 @@ export class PlcService implements OnModuleInit, OnModuleDestroy {
             );
         } catch (err) {
             this.isConnecting = false;
+            this.lastError = `Connection Error (sync): ${err}`;
             this.logger.error(`PLC Connection Error (sync): ${err}`);
             this.isConnected = false;
             setTimeout(() => this.connect(), 5000);
@@ -68,8 +73,7 @@ export class PlcService implements OnModuleInit, OnModuleDestroy {
 
     async readDb54() {
         if (!this.isConnected) {
-            this.logger.warn('Cannot read DB54: PLC not connected');
-            return null;
+            throw new Error('PLC not connected');
         }
 
         return new Promise<Db54Data>((resolve, reject) => {
@@ -78,8 +82,11 @@ export class PlcService implements OnModuleInit, OnModuleDestroy {
                 this.conn.readArea(0x84, 54, 0, 94, (err: Error | string | undefined, data: Buffer) => {
                     if (err) {
                         this.logger.error(`Error reading DB54: ${err}`);
-                        resolve(null);
+                        reject(new Error(`Error reading DB54: ${err}`));
                     } else {
+                        // Log the raw buffer to see if we are getting zeros or data
+                        this.logger.log(`[DEBUG] RAW BUFFER (Hex): ${data.toString('hex')}`);
+
                         const result: Db54Data = {
                             brightness: data.readInt16BE(0),
                             positions: [],
@@ -97,7 +104,7 @@ export class PlcService implements OnModuleInit, OnModuleDestroy {
                 });
             } catch (syncErr) {
                 this.logger.error(`Error initiating readDb54: ${syncErr}`);
-                resolve(null);
+                reject(new Error(`Error initiating readDb54: ${syncErr}`));
             }
         });
     }
@@ -193,6 +200,7 @@ export class PlcService implements OnModuleInit, OnModuleDestroy {
         return {
             isConnected: this.isConnected,
             ip: this.plcIp,
+            lastError: this.lastError,
         };
     }
 }

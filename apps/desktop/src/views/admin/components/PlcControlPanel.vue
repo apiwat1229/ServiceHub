@@ -70,19 +70,25 @@ const loadData = async () => {
       plcApi.getLineUse(),
       plcApi.getDb54(),
     ]);
+    console.log('PLC Status:', statusRes);
+    console.log('PLC DB54 Data (Full):', JSON.stringify(dbRes, null, 2));
+
     status.value = statusRes;
     lineUse.value = lineRes;
 
+    // dbRes is now guaranteed to be valid if no error was thrown
     if (dbRes) {
       internalBrightness.value = dbRes.brightness.toString();
       internalPositions.value = dbRes.positions.map((p) => ({
         color: p.color.toString(),
         text: p.text.toString(),
       }));
+      toast.success('Data synced from PLC');
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to load PLC data:', error);
-    toast.error('Sync error.');
+    const msg = error.response?.data?.message || error.message || 'Sync error';
+    toast.error(`PLC Error: ${msg}`);
   } finally {
     isLoading.value = false;
   }

@@ -18,6 +18,7 @@ export interface LineUseData {
 export interface PlcStatus {
     isConnected: boolean;
     ip: string;
+    lastError?: string;
 }
 
 export const plcApi = {
