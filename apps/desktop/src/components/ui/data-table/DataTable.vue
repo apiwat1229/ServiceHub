@@ -37,9 +37,11 @@ const props = withDefaults(
     searchKey?: string;
     enableSelection?: boolean;
     initialPageSize?: number;
+    autoResetPageIndex?: boolean;
   }>(),
   {
     initialPageSize: 5,
+    autoResetPageIndex: true,
   }
 );
 
@@ -107,6 +109,7 @@ const table = useVueTable({
       typeof updaterOrValue === 'function' ? updaterOrValue(rowSelection.value) : updaterOrValue;
   },
   enableRowSelection: props.enableSelection,
+  autoResetPageIndex: props.autoResetPageIndex,
 });
 
 const { t } = useI18n();

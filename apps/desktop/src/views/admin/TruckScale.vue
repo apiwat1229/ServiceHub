@@ -742,27 +742,41 @@ const saveWeightIn = async () => {
     weightInData.value.rubberType !== '' &&
     weightInData.value.trailerRubberType !== '';
 
+  console.log('Validating Weight In:', {
+    isTrailerTruck,
+    sameRubberType,
+    weightInData: weightInData.value,
+  });
+
   // Validation
   if (
     !weightInData.value.rubberSource ||
     !weightInData.value.rubberType ||
     !weightInData.value.weightIn
   ) {
+    console.warn('Main truck validation failed');
     toast.error(t('common.fillAllRequiredFields') || 'Please fill all required fields');
     return;
   }
 
   if (isTrailerTruck) {
-    if (!weightInData.value.trailerWeightIn) {
-      toast.error(t('common.fillAllRequiredFields') || 'Please fill all required fields');
-      return;
-    }
-
+    // If NOT same rubber type, trailer MUST have its own weight and type/source
     if (!sameRubberType) {
-      if (!weightInData.value.trailerRubberSource || !weightInData.value.trailerRubberType) {
+      if (!weightInData.value.trailerWeightIn) {
+        console.warn('Trailer weight validation failed (not same type)');
         toast.error(t('common.fillAllRequiredFields') || 'Please fill all required fields');
         return;
       }
+      if (!weightInData.value.trailerRubberSource || !weightInData.value.trailerRubberType) {
+        console.warn('Trailer source/type validation failed');
+        toast.error(t('common.fillAllRequiredFields') || 'Please fill all required fields');
+        return;
+      }
+    } else {
+      // If same rubber type, we allow trailerWeightIn to be 0 or empty
+      // (assuming it might be already included in the mainWeightIn if user prefers)
+      // But we still log it for clarity
+      console.log('Same rubber type detected, trailer weight is optional');
     }
   }
 
@@ -1527,7 +1541,8 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <TabsContent value="checkin" class="space-y-6 mt-0">
+      <!-- Persistent Controls & Stats -->
+      <div v-if="activeTab !== 'dashboard'">
         <!-- Controls & Stats -->
         <Card class="border-none shadow-sm bg-card/50 backdrop-blur-sm">
           <CardContent class="p-6 space-y-6">
@@ -1682,328 +1697,34 @@ onUnmounted(() => {
             </div>
           </CardContent>
         </Card>
+      </div>
 
+      <TabsContent value="checkin" class="space-y-6 mt-0">
         <!-- DataTable -->
-        <DataTable :columns="columns" :data="filteredBookings" :loading="isLoading" />
+        <DataTable
+          :columns="columns"
+          :data="filteredBookings"
+          :loading="isLoading"
+          :auto-reset-page-index="false"
+        />
       </TabsContent>
 
       <TabsContent value="scale-in" class="space-y-6 mt-0">
-        <!-- Controls & Stats (Scale In) -->
-        <Card class="border-none shadow-sm bg-card/50 backdrop-blur-sm">
-          <CardContent class="p-6 space-y-6">
-            <!-- Scale-In Filters & Stats -->
-            <div class="flex flex-col xl:flex-row gap-4 items-end justify-start w-full">
-              <!-- Filters Group -->
-              <div class="flex flex-col md:flex-row gap-3 items-end w-full xl:w-auto shrink-0">
-                <div class="grid gap-1.5 w-full md:w-auto">
-                  <Label class="text-xs font-semibold text-muted-foreground ml-0.5">{{
-                    t('booking.selectDate')
-                  }}</Label>
-                  <Popover v-model:open="isDatePopoverOpen">
-                    <PopoverTrigger as-child>
-                      <Button
-                        variant="outline"
-                        :class="
-                          cn(
-                            'w-full md:w-[200px] justify-start text-left font-normal h-10',
-                            !selectedDate && 'text-muted-foreground'
-                          )
-                        "
-                      >
-                        <CalendarIcon class="mr-2 h-4 w-4 text-muted-foreground" />
-                        <span>{{
-                          selectedDate
-                            ? format(new Date(selectedDate), 'dd-MMM-yyyy')
-                            : 'Pick a date'
-                        }}</span>
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent class="w-auto p-0">
-                      <Calendar
-                        :model-value="selectedDateObject"
-                        @update:model-value="handleDateSelect"
-                        mode="single"
-                        initial-focus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div class="flex items-center">
-                  <Popover>
-                    <PopoverTrigger as-child>
-                      <Button variant="outline" size="icon" class="w-10 h-10 shrink-0">
-                        <Search class="h-4 w-4 text-muted-foreground" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent class="w-80" align="start" side="bottom">
-                      <div class="grid gap-4">
-                        <div class="space-y-2">
-                          <h4 class="font-medium leading-none">
-                            {{ t('truckScale.searchBooking') }}
-                          </h4>
-                          <p class="text-sm text-muted-foreground">
-                            {{ t('truckScale.searchPlaceholder') }}
-                          </p>
-                        </div>
-                        <div class="relative">
-                          <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                          <Input
-                            v-model="searchQuery"
-                            :placeholder="t('truckScale.searchPlaceholder')"
-                            class="pl-9"
-                            @keydown.enter="fetchBookings"
-                          />
-                        </div>
-                        <Button class="w-full" @click="fetchBookings">
-                          {{ t('common.search') }}
-                        </Button>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                <div class="grid gap-1.5 w-full md:w-auto">
-                  <Label class="text-xs font-semibold text-muted-foreground ml-0.5">{{
-                    t('truckScale.rubberType')
-                  }}</Label>
-                  <Tabs v-model="selectedCategory" class="h-10 bg-muted/50 p-1 rounded-lg">
-                    <TabsList class="bg-transparent h-full p-0 flex gap-1">
-                      <TabsTrigger
-                        value="all"
-                        class="h-8 text-[0.7rem] px-3 font-semibold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-md transition-all"
-                      >
-                        ALL
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="cuplump"
-                        class="h-8 text-[0.7rem] px-3 font-semibold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-md transition-all"
-                      >
-                        Cuplump
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="uss"
-                        class="h-8 text-[0.7rem] px-3 font-semibold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-md transition-all"
-                      >
-                        USS
-                      </TabsTrigger>
-                    </TabsList>
-                  </Tabs>
-                </div>
-              </div>
-
-              <!-- Stats Cards Group -->
-              <div
-                class="grid grid-cols-1 md:grid-cols-[200px_200px_200px] gap-3 w-full xl:w-auto mt-4 xl:mt-0"
-              >
-                <div
-                  class="rounded-xl border bg-blue-50/50 border-blue-100 px-4 py-2 flex items-center justify-between shadow-sm w-full min-h-[56px]"
-                >
-                  <div class="flex items-center gap-2">
-                    <Truck class="w-4 h-4 text-blue-600" />
-                    <span
-                      class="text-[0.6875rem] text-blue-600 font-bold uppercase tracking-wider"
-                      >{{ t('truckScale.totalExpected') }}</span
-                    >
-                  </div>
-                  <span class="text-2xl font-black text-blue-950 leading-none">{{
-                    stats.total
-                  }}</span>
-                </div>
-
-                <div
-                  class="rounded-xl border bg-green-50/50 border-green-100 px-4 py-2 flex items-center justify-between shadow-sm w-full min-h-[56px]"
-                >
-                  <div class="flex items-center gap-2">
-                    <CheckCircle class="w-4 h-4 text-green-600" />
-                    <span
-                      class="text-[0.6875rem] text-green-600 font-bold uppercase tracking-wider"
-                      >{{ t('truckScale.stats.checkedIn') }}</span
-                    >
-                  </div>
-                  <span class="text-2xl font-black text-green-950 leading-none">{{
-                    stats.checkedIn
-                  }}</span>
-                </div>
-
-                <div
-                  class="rounded-xl border bg-orange-50/50 border-orange-100 px-4 py-2 flex items-center justify-between shadow-sm w-full min-h-[56px]"
-                >
-                  <div class="flex items-center gap-2">
-                    <Clock class="w-4 h-4 text-orange-600" />
-                    <span
-                      class="text-[0.6875rem] text-orange-600 font-bold uppercase tracking-wider"
-                      >{{ t('truckScale.stats.pending') }}</span
-                    >
-                  </div>
-                  <span class="text-2xl font-black text-orange-950 leading-none">{{
-                    stats.pending
-                  }}</span>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <DataTable :columns="scaleInColumns" :data="filteredBookings" :loading="isLoading" />
+        <DataTable
+          :columns="scaleInColumns"
+          :data="filteredBookings"
+          :loading="isLoading"
+          :auto-reset-page-index="false"
+        />
       </TabsContent>
 
       <TabsContent value="scale-out" class="space-y-6 mt-0">
-        <!-- Controls & Stats (Scale Out) -->
-        <Card class="border-none shadow-sm bg-card/50 backdrop-blur-sm">
-          <CardContent class="p-6 space-y-6">
-            <!-- Scale-Out Filters & Stats -->
-            <div class="flex flex-col xl:flex-row gap-4 items-end justify-start w-full">
-              <!-- Filters Group -->
-              <div class="flex flex-col md:flex-row gap-3 items-end w-full xl:w-auto shrink-0">
-                <div class="grid gap-1.5 w-full md:w-auto">
-                  <Label class="text-xs font-semibold text-muted-foreground ml-0.5">{{
-                    t('booking.selectDate')
-                  }}</Label>
-                  <Popover v-model:open="isDatePopoverOpen">
-                    <PopoverTrigger as-child>
-                      <Button
-                        variant="outline"
-                        :class="
-                          cn(
-                            'w-full md:w-[200px] justify-start text-left font-normal h-10',
-                            !selectedDate && 'text-muted-foreground'
-                          )
-                        "
-                      >
-                        <CalendarIcon class="mr-2 h-4 w-4 text-muted-foreground" />
-                        <span>{{
-                          selectedDate
-                            ? format(new Date(selectedDate), 'dd-MMM-yyyy')
-                            : t('truckScale.pickDate')
-                        }}</span>
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent class="w-auto p-0">
-                      <Calendar
-                        :model-value="selectedDateObject"
-                        @update:model-value="handleDateSelect"
-                        mode="single"
-                        initial-focus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div class="flex items-center">
-                  <Popover>
-                    <PopoverTrigger as-child>
-                      <Button variant="outline" size="icon" class="w-10 h-10 shrink-0">
-                        <Search class="h-4 w-4 text-muted-foreground" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent class="w-80" align="start" side="bottom">
-                      <div class="grid gap-4">
-                        <div class="space-y-2">
-                          <h4 class="font-medium leading-none">
-                            {{ t('truckScale.searchBooking') }}
-                          </h4>
-                          <p class="text-sm text-muted-foreground">
-                            {{ t('truckScale.searchPlaceholder') }}
-                          </p>
-                        </div>
-                        <div class="relative">
-                          <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                          <Input
-                            v-model="searchQuery"
-                            :placeholder="t('truckScale.searchPlaceholder')"
-                            class="pl-9"
-                            @keydown.enter="fetchBookings"
-                          />
-                        </div>
-                        <Button class="w-full" @click="fetchBookings">
-                          {{ t('common.search') }}
-                        </Button>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                <div class="grid gap-1.5 w-full md:w-auto">
-                  <Label class="text-xs font-semibold text-muted-foreground ml-0.5">{{
-                    t('truckScale.rubberType')
-                  }}</Label>
-                  <Tabs v-model="selectedCategory" class="h-10 bg-muted/50 p-1 rounded-lg">
-                    <TabsList class="bg-transparent h-full p-0 flex gap-1">
-                      <TabsTrigger
-                        value="all"
-                        class="h-8 text-[0.7rem] px-3 font-semibold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-md transition-all"
-                      >
-                        ALL
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="cuplump"
-                        class="h-8 text-[0.7rem] px-3 font-semibold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-md transition-all"
-                      >
-                        Cuplump
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="uss"
-                        class="h-8 text-[0.7rem] px-3 font-semibold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-md transition-all"
-                      >
-                        USS
-                      </TabsTrigger>
-                    </TabsList>
-                  </Tabs>
-                </div>
-              </div>
-
-              <!-- Stats Cards Group -->
-              <div
-                class="grid grid-cols-1 md:grid-cols-[200px_200px_200px] gap-3 w-full xl:w-auto mt-4 xl:mt-0"
-              >
-                <div
-                  class="rounded-xl border bg-blue-50/50 border-blue-100 px-4 py-2 flex items-center justify-between shadow-sm w-full min-h-[56px]"
-                >
-                  <div class="flex items-center gap-2">
-                    <Truck class="w-4 h-4 text-blue-600" />
-                    <span
-                      class="text-[0.6875rem] text-blue-600 font-bold uppercase tracking-wider"
-                      >{{ t('truckScale.totalExpected') }}</span
-                    >
-                  </div>
-                  <span class="text-2xl font-black text-blue-950 leading-none">{{
-                    stats.total
-                  }}</span>
-                </div>
-
-                <div
-                  class="rounded-xl border bg-green-50/50 border-green-100 px-4 py-2 flex items-center justify-between shadow-sm w-full min-h-[56px]"
-                >
-                  <div class="flex items-center gap-2">
-                    <CheckCircle class="w-4 h-4 text-green-600" />
-                    <span
-                      class="text-[0.6875rem] text-green-600 font-bold uppercase tracking-wider"
-                      >{{ t('truckScale.stats.checkedIn') }}</span
-                    >
-                  </div>
-                  <span class="text-2xl font-black text-green-950 leading-none">{{
-                    stats.checkedIn
-                  }}</span>
-                </div>
-
-                <div
-                  class="rounded-xl border bg-orange-50/50 border-orange-100 px-4 py-2 flex items-center justify-between shadow-sm w-full min-h-[56px]"
-                >
-                  <div class="flex items-center gap-2">
-                    <Clock class="w-4 h-4 text-orange-600" />
-                    <span
-                      class="text-[0.6875rem] text-orange-600 font-bold uppercase tracking-wider"
-                      >{{ t('truckScale.stats.pending') }}</span
-                    >
-                  </div>
-                  <span class="text-2xl font-black text-orange-950 leading-none">{{
-                    stats.pending
-                  }}</span>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <DataTable :columns="scaleOutColumns" :data="filteredBookings" :loading="isLoading" />
+        <DataTable
+          :columns="scaleOutColumns"
+          :data="filteredBookings"
+          :loading="isLoading"
+          :auto-reset-page-index="false"
+        />
       </TabsContent>
 
       <TabsContent value="dashboard" class="space-y-6 mt-0">
@@ -2207,7 +1928,12 @@ onUnmounted(() => {
           </CardContent>
         </Card>
 
-        <DataTable :columns="dashboardColumns" :data="filteredBookings" :loading="isLoading" />
+        <DataTable
+          :columns="dashboardColumns"
+          :data="filteredBookings"
+          :loading="isLoading"
+          :auto-reset-page-index="false"
+        />
       </TabsContent>
     </Tabs>
 
@@ -2725,8 +2451,7 @@ onUnmounted(() => {
                 <Input
                   v-model="formattedTrailerWeightIn"
                   class="text-lg font-medium"
-                  :placeholder="isSameRubberType ? t('truckScale.sameAsMainTruck') : '0'"
-                  :disabled="isSameRubberType"
+                  placeholder="0"
                   @keydown="(e: any) => handleWeightInputKeydown(e, true)"
                 />
                 <span
