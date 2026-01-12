@@ -70,7 +70,7 @@ export class PlcService implements OnModuleInit, OnModuleDestroy {
             this.conn.readArea(0x84, 54, 0, 94, (err: Error | string | undefined, data: Buffer) => {
                 if (err) {
                     this.logger.error(`Error reading DB54: ${err}`);
-                    reject(err);
+                    resolve(null);
                 } else {
                     const result: Db54Data = {
                         brightness: data.readInt16BE(0),
@@ -142,7 +142,10 @@ export class PlcService implements OnModuleInit, OnModuleDestroy {
         return new Promise<Record<string, boolean>>((resolve, reject) => {
             // Area M at byte 10
             this.conn.readArea(0x83, 0, 10, 1, (err: Error | string | undefined, data: Buffer) => {
-                if (err) reject(err);
+                if (err) {
+                    this.logger.error(`Error reading Line Use: ${err}`);
+                    resolve(null);
+                }
                 else {
                     const byte = data[0];
                     resolve({
