@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, Query, Request, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, ForbiddenException, Get, Param, Patch, Post, Query, Request, UseGuards } from '@nestjs/common';
 import { Permissions } from '../auth/decorators/permissions.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
@@ -67,8 +67,22 @@ export class BookingsController {
     }
 
     @Patch(':id/check-in')
-    @Permissions('bookings:update')
-    checkIn(@Param('id') id: string, @Body() body: any, @Request() req: any) {
+    @Patch(':id/check-in')
+    // @Permissions('bookings:update') <--- Removed strict permission
+    async checkIn(@Param('id') id: string, @Body() body: any, @Request() req: any) {
+        const user = req.user;
+        const hasPermission =
+            user.role === 'ADMIN' ||
+            (user.permissions && (
+                user.permissions.includes('bookings:update') ||
+                user.permissions.includes('truckScale:create') ||
+                user.permissions.includes('truckScale:update')
+            ));
+
+        if (!hasPermission) {
+            throw new ForbiddenException('You do not have permission to Check In (requires bookings:update or truckScale:create/update)');
+        }
+
         return this.bookingsService.checkIn(id, body, req.user);
     }
 
