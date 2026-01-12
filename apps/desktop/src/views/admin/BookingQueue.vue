@@ -44,6 +44,7 @@ const TIME_SLOTS: any[] = [
   { label: '10:00-11:00', value: '10:00-11:00', startTime: '10:00', endTime: '11:00', limit: 4 },
   { label: '11:00-12:00', value: '11:00-12:00', startTime: '11:00', endTime: '12:00', limit: 4 },
   { label: '13:00-14:00', value: '13:00-14:00', startTime: '13:00', endTime: '14:00', limit: null },
+  { label: 'All Day', value: '08:00-17:00', startTime: '08:00', endTime: '17:00', limit: null },
 ];
 
 const RUBBER_TYPE_MAP: Record<string, string> = {
@@ -73,6 +74,7 @@ const SLOT_QUEUE_CONFIG: Record<string, { start: number; limit: number | null }>
   '10:00-11:00': { start: 9, limit: 4 },
   '11:00-12:00': { start: 13, limit: 4 },
   '13:00-14:00': { start: 17, limit: null },
+  '08:00-17:00': { start: 21, limit: null },
 };
 
 // --- State ---
