@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as nodes7 from 'nodes7';
+import nodes7 = require('nodes7');
 
 export interface Db54Data {
     brightness: number;
