@@ -623,22 +623,17 @@ watch(selectedSlot, (newSlot) => {
       >
         <!-- Card Body -->
         <div class="p-4 flex-1 flex flex-col">
-          <!-- Header: Queue (Left) & Status (Right) -->
-          <div class="flex justify-between items-start mb-4">
-            <!-- Left: Queue -->
-            <div class="flex items-center gap-2">
+          <!-- Header: Label/Status (Left) & Number (Right) -->
+          <div class="flex justify-between items-center mb-4">
+            <!-- Left: Label & Status -->
+            <div class="flex items-center gap-3">
               <span
                 class="text-[0.625rem] uppercase tracking-widest text-muted-foreground font-bold"
                 >{{ t('bookingQueue.queueNumber') }}</span
               >
-              <span class="text-3xl font-black text-primary leading-none">{{ queue.queueNo }}</span>
-            </div>
-
-            <!-- Right: Status -->
-            <div class="flex flex-col items-end">
               <div
                 v-if="queue.status === 'APPROVED'"
-                class="flex items-center text-green-600 bg-green-50 px-2.5 py-1 rounded-full border border-green-100 shadow-sm shrink-0"
+                class="flex items-center text-green-600 bg-green-50 px-2 py-0.5 rounded-full border border-green-100 shadow-sm shrink-0"
               >
                 <CheckCircle2 class="h-3 w-3 mr-1" />
                 <span class="text-[0.625rem] font-bold uppercase tracking-tight">{{
@@ -646,6 +641,9 @@ watch(selectedSlot, (newSlot) => {
                 }}</span>
               </div>
             </div>
+
+            <!-- Right: Number -->
+            <span class="text-3xl font-black text-primary leading-none">{{ queue.queueNo }}</span>
           </div>
 
           <!-- Main Info List -->
