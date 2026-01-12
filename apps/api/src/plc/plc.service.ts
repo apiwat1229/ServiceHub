@@ -42,21 +42,28 @@ export class PlcService implements OnModuleInit, OnModuleDestroy {
         if (this.isConnecting || this.isConnected) return;
 
         this.isConnecting = true;
-        this.conn.initiateConnection(
-            { port: 102, host: this.plcIp, rack: this.rack, slot: this.slot },
-            (err: Error | string | undefined) => {
-                this.isConnecting = false;
-                if (err !== undefined) {
-                    this.logger.error(`PLC Connection Failed: ${err}`);
-                    this.isConnected = false;
-                    // Retry later
-                    setTimeout(() => this.connect(), 5000);
-                } else {
-                    this.logger.log('PLC Connected successfully.');
-                    this.isConnected = true;
-                }
-            },
-        );
+        try {
+            this.conn.initiateConnection(
+                { port: 102, host: this.plcIp, rack: this.rack, slot: this.slot },
+                (err: Error | string | undefined) => {
+                    this.isConnecting = false;
+                    if (err !== undefined) {
+                        this.logger.error(`PLC Connection Failed: ${err}`);
+                        this.isConnected = false;
+                        // Retry later
+                        setTimeout(() => this.connect(), 5000);
+                    } else {
+                        this.logger.log('PLC Connected successfully.');
+                        this.isConnected = true;
+                    }
+                },
+            );
+        } catch (err) {
+            this.isConnecting = false;
+            this.logger.error(`PLC Connection Error (sync): ${err}`);
+            this.isConnected = false;
+            setTimeout(() => this.connect(), 5000);
+        }
     }
 
     async readDb54() {
@@ -67,80 +74,87 @@ export class PlcService implements OnModuleInit, OnModuleDestroy {
 
         return new Promise<Db54Data>((resolve, reject) => {
             // Area: DB=0x84, DBNumber: 54, Start: 0, Size: 94
-            this.conn.readArea(0x84, 54, 0, 94, (err: Error | string | undefined, data: Buffer) => {
-                if (err) {
-                    this.logger.error(`Error reading DB54: ${err}`);
-                    resolve(null);
-                } else {
-                    const result: Db54Data = {
-                        brightness: data.readInt16BE(0),
-                        positions: [],
-                    };
+            try {
+                this.conn.readArea(0x84, 54, 0, 94, (err: Error | string | undefined, data: Buffer) => {
+                    if (err) {
+                        this.logger.error(`Error reading DB54: ${err}`);
+                        resolve(null);
+                    } else {
+                        const result: Db54Data = {
+                            brightness: data.readInt16BE(0),
+                            positions: [],
+                        };
 
-                    for (let i = 0; i < 23; i++) {
-                        const baseOffset = 2 + (i * 4);
-                        result.positions.push({
-                            color: data.readInt16BE(baseOffset),
-                            text: data.readInt16BE(baseOffset + 2),
-                        });
+                        for (let i = 0; i < 23; i++) {
+                            const baseOffset = 2 + (i * 4);
+                            result.positions.push({
+                                color: data.readInt16BE(baseOffset),
+                                text: data.readInt16BE(baseOffset + 2),
+                            });
+                        }
+                        resolve(result);
                     }
-                    resolve(result);
-                }
-            });
-        });
-    }
-
-    async writeDb54(values: { brightness: number, positions: { color: number, text: number }[] }) {
-        if (!this.isConnected) {
-            throw new Error('PLC not connected');
-        }
-
-        const buf = Buffer.alloc(94);
-        buf.writeInt16BE(values.brightness, 0);
-
-        values.positions.forEach((pos, i) => {
-            if (i < 23) {
-                const baseOffset = 2 + (i * 4);
-                buf.writeInt16BE(pos.color, baseOffset);
-                buf.writeInt16BE(pos.text, baseOffset + 2);
+                });
+            } catch (syncErr) {
+                this.logger.error(`Error initiating readDb54: ${syncErr}`);
+                resolve(null);
             }
         });
+    });
+}
 
-        return new Promise<void>((resolve, reject) => {
-            this.conn.writeArea(0x84, 54, 0, 94, buf, (err: Error | string | undefined) => {
-                if (err) {
-                    this.logger.error(`Error writing DB54: ${err}`);
-                    reject(err);
-                } else {
-                    this.logger.log('Wrote DB54 successfully. Pulsing M150.0...');
-                    this.pulseM150_0().then(() => resolve()).catch(reject);
-                }
-            });
-        });
+    async writeDb54(values: { brightness: number, positions: { color: number, text: number }[] }) {
+    if (!this.isConnected) {
+        throw new Error('PLC not connected');
     }
+
+    const buf = Buffer.alloc(94);
+    buf.writeInt16BE(values.brightness, 0);
+
+    values.positions.forEach((pos, i) => {
+        if (i < 23) {
+            const baseOffset = 2 + (i * 4);
+            buf.writeInt16BE(pos.color, baseOffset);
+            buf.writeInt16BE(pos.text, baseOffset + 2);
+        }
+    });
+
+    return new Promise<void>((resolve, reject) => {
+        this.conn.writeArea(0x84, 54, 0, 94, buf, (err: Error | string | undefined) => {
+            if (err) {
+                this.logger.error(`Error writing DB54: ${err}`);
+                reject(err);
+            } else {
+                this.logger.log('Wrote DB54 successfully. Pulsing M150.0...');
+                this.pulseM150_0().then(() => resolve()).catch(reject);
+            }
+        });
+    });
+}
 
     private async pulseM150_0() {
-        return new Promise<boolean>((resolve, reject) => {
-            // Write True to M150.0
-            this.conn.writeArea(0x83, 0, 150 * 8 + 0, 1, Buffer.from([1]), async (err: Error | string | undefined) => {
-                if (err) return reject(err);
+    return new Promise<boolean>((resolve, reject) => {
+        // Write True to M150.0
+        this.conn.writeArea(0x83, 0, 150 * 8 + 0, 1, Buffer.from([1]), async (err: Error | string | undefined) => {
+            if (err) return reject(err);
 
-                await new Promise(r => setTimeout(r, 500));
+            await new Promise(r => setTimeout(r, 500));
 
-                // Write False to M150.0
-                this.conn.writeArea(0x83, 0, 150 * 8 + 0, 1, Buffer.from([0]), (err2: Error | string | undefined) => {
-                    if (err2) return reject(err2);
-                    resolve(true);
-                });
+            // Write False to M150.0
+            this.conn.writeArea(0x83, 0, 150 * 8 + 0, 1, Buffer.from([0]), (err2: Error | string | undefined) => {
+                if (err2) return reject(err2);
+                resolve(true);
             });
         });
-    }
+    });
+}
 
     async readLineUse() {
-        if (!this.isConnected) return null;
+    if (!this.isConnected) return null;
 
-        return new Promise<Record<string, boolean>>((resolve, reject) => {
-            // Area M at byte 10
+    return new Promise<Record<string, boolean>>((resolve, reject) => {
+        // Area M at byte 10
+        try {
             this.conn.readArea(0x83, 0, 10, 1, (err: Error | string | undefined, data: Buffer) => {
                 if (err) {
                     this.logger.error(`Error reading Line Use: ${err}`);
@@ -156,26 +170,31 @@ export class PlcService implements OnModuleInit, OnModuleDestroy {
                     });
                 }
             });
-        });
+        } catch (syncErr) {
+            this.logger.error(`Error initiating readLineUse: ${syncErr}`);
+            resolve(null);
+        }
+    });
+});
     }
 
     async writeLineUse(lineIndex: number, value: boolean) {
-        if (!this.isConnected) throw new Error('PLC not connected');
+    if (!this.isConnected) throw new Error('PLC not connected');
 
-        const bitAddress = 10 * 8 + (lineIndex - 1);
+    const bitAddress = 10 * 8 + (lineIndex - 1);
 
-        return new Promise<boolean>((resolve, reject) => {
-            this.conn.writeArea(0x83, 0, bitAddress, 1, Buffer.from([value ? 1 : 0]), (err: Error | string | undefined) => {
-                if (err) reject(err);
-                else resolve(true);
-            });
+    return new Promise<boolean>((resolve, reject) => {
+        this.conn.writeArea(0x83, 0, bitAddress, 1, Buffer.from([value ? 1 : 0]), (err: Error | string | undefined) => {
+            if (err) reject(err);
+            else resolve(true);
         });
-    }
+    });
+}
 
-    getStatus() {
-        return {
-            isConnected: this.isConnected,
-            ip: this.plcIp,
-        };
-    }
+getStatus() {
+    return {
+        isConnected: this.isConnected,
+        ip: this.plcIp,
+    };
+}
 }
