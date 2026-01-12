@@ -44,7 +44,6 @@ const TIME_SLOTS: any[] = [
   { label: '10:00-11:00', value: '10:00-11:00', startTime: '10:00', endTime: '11:00', limit: 4 },
   { label: '11:00-12:00', value: '11:00-12:00', startTime: '11:00', endTime: '12:00', limit: 4 },
   { label: '13:00-14:00', value: '13:00-14:00', startTime: '13:00', endTime: '14:00', limit: null },
-  { label: 'All Day', value: '08:00-17:00', startTime: '08:00', endTime: '17:00', limit: null },
 ];
 
 const RUBBER_TYPE_MAP: Record<string, string> = {
@@ -74,7 +73,6 @@ const SLOT_QUEUE_CONFIG: Record<string, { start: number; limit: number | null }>
   '10:00-11:00': { start: 9, limit: 4 },
   '11:00-12:00': { start: 13, limit: 4 },
   '13:00-14:00': { start: 17, limit: null },
-  '08:00-17:00': { start: 21, limit: null },
 };
 
 // --- State ---
@@ -203,17 +201,6 @@ const slotStats = computed(() => {
 
     let limit = slot.limit;
 
-    // --- NEW LOGIC FOR ALL DAY SUMMARY ---
-    if (slot.value === '08:00-17:00' && queueMode.value === 'Cuplump') {
-      const totalBooked = dailyQueues.value.filter((q) => {
-        const isUSS = q.rubberType && q.rubberType.toUpperCase().includes('USS');
-        return !isUSS;
-      }).length;
-      stats[slot.value] = { booked: totalBooked, limit: null };
-      return;
-    }
-    // -------------------------------------
-
     // Special case Saturday
     if (selectedDateJS.value.getDay() === 6 && slot.value === '10:00-11:00') {
       limit = null;
@@ -258,11 +245,6 @@ async function fetchQueues() {
       queues.value = dailyQueues.value.filter(
         (q) => q.rubberType && q.rubberType.toUpperCase().includes('USS')
       );
-    } else if (selectedSlot.value === '08:00-17:00') {
-      // For Cuplump 'All Day' view, show ALL daily Cuplump bookings
-      queues.value = dailyQueues.value.filter(
-        (q) => !(q.rubberType && q.rubberType.toUpperCase().includes('USS'))
-      );
     } else {
       // For Cuplump specific slot, fetch specific slot bookings
       const resp = await bookingsApi.getAll({
@@ -290,8 +272,8 @@ function handleCreateBooking() {
   }
 
   // For USS, ensure we have a slot value (even if dummy) for the form
-  if (queueMode.value === 'USS') {
-    selectedSlot.value = '08:00-17:00'; // Default daily slot
+  if (queueMode.value === 'USS' && !selectedSlot.value) {
+    selectedSlot.value = '08:00-09:00'; // Default daily slot
   }
 
   editingBooking.value = null;
@@ -512,7 +494,7 @@ watch(selectedSlot, (newSlot) => {
               <TabsList
                 class="grid w-full h-auto flex-wrap gap-1 bg-muted p-1"
                 :style="{
-                  gridTemplateColumns: `repeat(${Math.min(availableSlots.length, 6)}, minmax(0, 1fr))`,
+                  gridTemplateColumns: `repeat(${Math.min(availableSlots.length, 5)}, minmax(0, 1fr))`,
                 }"
               >
                 <TabsTrigger
