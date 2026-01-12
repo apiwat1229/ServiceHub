@@ -623,10 +623,19 @@ watch(selectedSlot, (newSlot) => {
       >
         <!-- Card Body -->
         <div class="p-4 flex-1 flex flex-col">
-          <!-- Header: Status (Left) & Queue (Right) -->
+          <!-- Header: Queue (Left) & Status (Right) -->
           <div class="flex justify-between items-start mb-4">
-            <!-- Left: Status -->
-            <div class="flex flex-col items-start">
+            <!-- Left: Queue -->
+            <div class="flex items-center gap-2">
+              <span
+                class="text-[0.625rem] uppercase tracking-widest text-muted-foreground font-bold"
+                >{{ t('bookingQueue.queueNumber') }}</span
+              >
+              <span class="text-3xl font-black text-primary leading-none">{{ queue.queueNo }}</span>
+            </div>
+
+            <!-- Right: Status -->
+            <div class="flex flex-col items-end">
               <div
                 v-if="queue.status === 'APPROVED'"
                 class="flex items-center text-green-600 bg-green-50 px-2.5 py-1 rounded-full border border-green-100 shadow-sm shrink-0"
@@ -636,16 +645,6 @@ watch(selectedSlot, (newSlot) => {
                   t('booking.deliveryCompleted') || 'Completed'
                 }}</span>
               </div>
-              <!-- Slot Label if not approved? Could add more info here if needed -->
-            </div>
-
-            <!-- Right: Queue -->
-            <div class="flex items-center gap-2">
-              <span
-                class="text-[0.625rem] uppercase tracking-widest text-muted-foreground font-bold"
-                >{{ t('bookingQueue.queueNumber') }}</span
-              >
-              <span class="text-3xl font-black text-primary leading-none">{{ queue.queueNo }}</span>
             </div>
           </div>
 
