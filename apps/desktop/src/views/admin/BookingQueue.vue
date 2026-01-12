@@ -640,16 +640,12 @@ watch(selectedSlot, (newSlot) => {
             </div>
 
             <!-- Right: Queue -->
-            <div class="flex flex-col items-end">
+            <div class="flex items-center gap-2">
               <span
                 class="text-[0.625rem] uppercase tracking-widest text-muted-foreground font-bold"
                 >{{ t('bookingQueue.queueNumber') }}</span
               >
-              <div class="flex items-baseline gap-1">
-                <span class="text-3xl font-black text-primary leading-none">{{
-                  queue.queueNo
-                }}</span>
-              </div>
+              <span class="text-3xl font-black text-primary leading-none">{{ queue.queueNo }}</span>
             </div>
           </div>
 
