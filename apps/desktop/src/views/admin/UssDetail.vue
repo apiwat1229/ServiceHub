@@ -38,7 +38,6 @@ const router = useRouter();
 // Route Params & Query
 const bookingId = route.params.id as string;
 const isTrailer = route.query.isTrailer === 'true';
-const partLabel = (route.query.partLabel as string) || (isTrailer ? 'Trailer' : 'Main Truck');
 
 // State
 const booking = ref<any>(null);
@@ -516,21 +515,6 @@ onMounted(async () => {
 
 <template>
   <div class="p-6 max-w-[1600px] mx-auto space-y-6">
-    <!-- Header with Back Button -->
-    <div class="flex items-center gap-4">
-      <Button variant="outline" size="icon" @click="router.back()">
-        <ArrowLeft class="w-4 h-4" />
-      </Button>
-      <div>
-        <h1 class="text-2xl font-bold tracking-tight">
-          {{ t('uss.detailTitle') || 'USS Details' }}
-        </h1>
-        <p class="text-sm text-muted-foreground" v-if="booking">
-          {{ partLabel }} - Booking #{{ booking.bookingCode }}
-        </p>
-      </div>
-    </div>
-
     <!-- Main Content -->
     <Card class="flex-1 overflow-hidden border-border/50 shadow-sm bg-card/50 backdrop-blur-sm">
       <CardContent class="p-6 h-full flex flex-col">
@@ -1010,6 +994,28 @@ onMounted(async () => {
                     </TableRow>
                   </TableBody>
                 </Table>
+              </div>
+
+              <div class="flex justify-end pt-2 gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  class="h-8 text-xs gap-1.5 px-4"
+                  @click="router.back()"
+                >
+                  <ArrowLeft class="w-3.5 h-3.5" />
+                  {{ t('common.back') }}
+                </Button>
+                <Button
+                  v-if="populatedCount > 0"
+                  size="sm"
+                  class="bg-green-600 hover:bg-green-700 h-8 text-xs gap-1.5 shadow-sm px-4"
+                  :disabled="isSaving"
+                  @click="handleSaveAllSamples"
+                >
+                  <Save class="w-3.5 h-3.5" />
+                  {{ t('common.save') }} ({{ populatedCount }})
+                </Button>
               </div>
             </div>
           </div>

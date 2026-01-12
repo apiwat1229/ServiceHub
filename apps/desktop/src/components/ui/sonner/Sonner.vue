@@ -31,7 +31,8 @@ const delegatedProps = reactiveOmit(props, 'toastOptions', 'position');
         title: '!font-bold !text-white',
         actionButton: '!bg-white !text-black hover:!bg-white/90 font-bold',
         cancelButton: '!bg-white/20 !text-white hover:!bg-white/30',
-        closeButton: '!bg-white/20 !text-white hover:!bg-white/30',
+        closeButton:
+          '!bg-white !text-slate-900 !border !border-slate-200 hover:!bg-slate-100 !opacity-100 !shadow-sm',
       },
     }"
   >
@@ -51,7 +52,7 @@ const delegatedProps = reactiveOmit(props, 'toastOptions', 'position');
       <Loader2Icon class="size-5 text-white animate-spin" />
     </template>
     <template #close-icon>
-      <XIcon class="size-5 text-white" />
+      <XIcon class="size-3.5 text-slate-900" />
     </template>
   </Sonner>
 </template>

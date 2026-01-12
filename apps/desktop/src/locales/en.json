@@ -70,7 +70,8 @@
     "date": "Date",
     "slot": "Slot",
     "supplier": "Supplier",
-    "decimalLimit": "Maximum {n} decimal places"
+    "decimalLimit": "Maximum {n} decimal places",
+    "back": "Back"
   },
   "validation": {
     "required": "This field is required",
@@ -97,8 +98,8 @@
       "description": "Material Requirements Planning for production and inventory."
     },
     "cuplump": {
-      "name": "Cuplump",
-      "description": "Cuplump Management System"
+      "name": "Cuplump Pool",
+      "description": "Cuplump Pool Management System"
     },
     "booking": {
       "name": "Booking Queue",
@@ -1252,10 +1253,10 @@
     }
   },
   "cuplump": {
-    "title": "Cuplump",
-    "detailTitle": "Cuplump Details",
-    "pageTitle": "Cuplump",
-    "pageDescription": "Cuplump Management System",
+    "title": "Cuplump Pool",
+    "detailTitle": "Cuplump Pool Details",
+    "pageTitle": "Cuplump Pool",
+    "pageDescription": "Cuplump Pool Management System",
     "lotNo": "Lot Number",
     "supplier": "Supplier",
     "truck": "Truck",

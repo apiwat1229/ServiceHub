@@ -308,38 +308,6 @@ export class BookingsService {
     async update(id: string, data: any, user?: any) {
         const booking = await this.findOne(id); // Check if exists
 
-        // Permission Check logic
-        const permissions: string[] = user?.roleRecord?.permissions || user?.permissions || [];
-        const canApprove = permissions.includes('bookings:approve') || permissions.includes('bookings:all');
-        const isAdmin = user?.role === 'ADMIN' || user?.role === 'admin' || user?.role === 'SUPER_ADMIN' || canApprove;
-
-        if (!isAdmin && user) {
-            console.log(`[BookingsService] User ${user.displayName} is not admin/approver. Creating approval request for UPDATE.`);
-            const request = await this.approvalsService.createRequest(user.id, {
-                requestType: 'แก้ไขการจอง (Booking Update)',
-                entityType: 'Booking',
-                entityId: id,
-                actionType: 'UPDATE',
-                currentData: booking,
-                proposedData: data,
-                reason: 'แก้ไขรายละเอียดการจอง',
-                sourceApp: 'Booking',
-            });
-
-            // Notify Approvers
-            await this.triggerNotification('Booking', 'APPROVAL_REQUEST', {
-                title: 'Approval Requested: Booking Update',
-                message: `User ${user.displayName} requested to update Booking ${booking.bookingCode}.`,
-                actionUrl: `/admin/approvals/${request.id}`,
-            });
-
-            return {
-                status: 'PENDING_APPROVAL',
-                message: 'คำขอแก้ไขถูกส่งไปยังผู้อนุมัติแล้ว',
-                requestId: request.id
-            };
-        }
-
         const safeFloat = (val: any) => safeParseFloat(val);
 
         const updateData: any = {

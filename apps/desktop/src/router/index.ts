@@ -133,9 +133,9 @@ const routes = [
                 component: () => import('../views/Placeholder.vue'),
             },
             {
-                path: 'cuplump',
+                path: 'cuplump-pool',
                 name: 'Cuplump',
-                component: () => import('../views/admin/Cuplump.vue'),
+                component: () => import('../views/admin/CuplumpPoolManagement.vue'),
             },
             {
                 path: 'cuplump/:id',

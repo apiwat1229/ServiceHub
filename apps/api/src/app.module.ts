@@ -14,6 +14,7 @@ import { MasterModule } from './master/master.module';
 import { MyMachineModule } from './mymachine/mymachine.module';
 import { NotificationGroupsModule } from './notification-groups/notification-groups.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { PlcModule } from './plc/plc.module';
 import { PostsModule } from './posts/posts.module';
 import { PrinterUsageModule } from './printer-usage/printer-usage.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -47,6 +48,7 @@ import { UsersModule } from './users/users.module';
         KnowledgeBooksModule,
         ITAssetsModule,
         MyMachineModule,
+        PlcModule,
         // ServeStaticModule.forRoot({
         //     rootPath: join(process.cwd(), 'uploads'),
         //     serveRoot: '/uploads',

@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/table';
 import { bookingsApi } from '@/services/bookings';
 import { rubberTypesApi } from '@/services/rubberTypes';
-import { AlertTriangle, Check, Pencil, Plus, Save, Trash2 } from 'lucide-vue-next';
+import { Check, Pencil, Plus, Save, Trash2 } from 'lucide-vue-next';
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
@@ -54,7 +54,6 @@ const isSaving = ref(false);
 
 const isDrcOpen = ref(false);
 const isMoistureOpen = ref(false);
-const showSaveConfirm = ref(false);
 const showDeleteConfirm = ref(false);
 const sampleToDeleteId = ref<string | null>(null);
 const isDeleting = ref(false);
@@ -356,7 +355,7 @@ const handleSaveAllSamples = async () => {
     return;
   }
 
-  showSaveConfirm.value = true;
+  await confirmSaveSamples();
 };
 
 const confirmSaveSamples = async () => {
@@ -1341,28 +1340,6 @@ onMounted(async () => {
         </div>
       </div>
     </template>
-
-    <AlertDialog :open="showSaveConfirm" @update:open="showSaveConfirm = $event">
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle class="flex items-center gap-2">
-            <AlertTriangle class="h-5 w-5 text-yellow-500" />
-            {{ t('common.confirm') }}
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            {{ t('cuplump.confirmSaveAll', { count: populatedCount }) }}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel @click="showSaveConfirm = false">{{
-            t('common.cancel')
-          }}</AlertDialogCancel>
-          <AlertDialogAction @click="confirmSaveSamples">{{
-            t('common.confirm')
-          }}</AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
 
     <AlertDialog :open="showDeleteConfirm" @update:open="showDeleteConfirm = $event">
       <AlertDialogContent>

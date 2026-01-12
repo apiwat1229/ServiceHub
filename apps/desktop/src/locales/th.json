@@ -72,7 +72,8 @@
     "date": "วันที่",
     "slot": "ช่วงเวลา",
     "supplier": "ผู้ส่ง/ร้านค้า",
-    "decimalLimit": "กรอกทศนิยมได้ไม่เกิน {n} ตำแหน่ง"
+    "decimalLimit": "กรอกทศนิยมได้ไม่เกิน {n} ตำแหน่ง",
+    "back": "กลับ"
   },
   "validation": {
     "required": "กรุณากรอกข้อมูล",
@@ -99,8 +100,8 @@
       "description": "การวางแผนความต้องการวัสดุสำหรับการผลิตและสินค้าคงคลัง"
     },
     "cuplump": {
-      "name": "ยางก้อนถ้วย",
-      "description": "ระบบจัดการและติดตามยางก้อนถ้วย"
+      "name": "Cuplump Pool",
+      "description": "ระบบจัดการ Cuplump Pool"
     },
     "booking": {
       "name": "คิวการจอง",
@@ -1267,10 +1268,10 @@
     }
   },
   "cuplump": {
-    "title": "ยางก้อนถ้วย",
-    "detailTitle": "รายละเอียดการรับยางก้อนถ้วย",
-    "pageTitle": "ยางก้อนถ้วย",
-    "pageDescription": "ระบบจัดการและติดตามยางก้อนถ้วย",
+    "title": "Cuplump Pool",
+    "detailTitle": "รายละเอียด Cuplump Pool",
+    "pageTitle": "Cuplump Pool",
+    "pageDescription": "ระบบจัดการและติดตาม Cuplump Pool",
     "lotNo": "หมายเลขล็อต",
     "supplier": "ผู้จัดจำหน่าย",
     "truck": "รถบรรทุก",

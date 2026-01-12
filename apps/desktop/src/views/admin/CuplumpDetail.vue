@@ -37,7 +37,6 @@ const router = useRouter();
 // Route Params
 const bookingId = computed(() => route.params.id as string);
 const isTrailer = computed(() => route.query.isTrailer === 'true');
-const partLabel = computed(() => (route.query.partLabel as string) || '');
 
 // State
 const booking = ref<any>(null);
@@ -148,12 +147,30 @@ const focusNextInput = (event: KeyboardEvent) => {
     }
 
     if (nextIndex < inputs.length) {
+      // If the current field is beforeBaking3 AND the next element is not in a table row (e.g. Save button)
+      // we should add a row instead of jumping to the Save button.
+      const dataField = target.getAttribute('data-field');
+      const nextInput = inputs[nextIndex];
+
+      if (dataField === 'beforeBaking3' && (!nextInput || !nextInput.closest('tr'))) {
+        event.preventDefault();
+        addNewSampleRow();
+        return;
+      }
+
       event.preventDefault();
       inputs[nextIndex].focus();
     } else {
-      // If we are at the very last field of the entire form, trigger Save
-      // But only if it's not a button or similar
+      // If we are at the very last field of the entire form
       const isLastField = currentIndex === inputs.length - 1;
+      const dataField = target.getAttribute('data-field');
+
+      if (dataField === 'beforeBaking3') {
+        event.preventDefault();
+        addNewSampleRow();
+        return;
+      }
+
       if (isLastField) {
         event.preventDefault();
         handleSaveAllSamples();
@@ -674,21 +691,6 @@ onMounted(async () => {
 
 <template>
   <div class="h-full flex flex-col p-6 max-w-[1600px] mx-auto space-y-6">
-    <!-- Header with Back Button -->
-    <div class="flex items-center gap-4">
-      <Button variant="outline" size="icon" @click="router.back()">
-        <ArrowLeft class="w-4 h-4" />
-      </Button>
-      <div>
-        <h1 class="text-2xl font-bold tracking-tight">
-          {{ t('cuplump.detailTitle') || 'Cuplump Details' }}
-        </h1>
-        <p class="text-sm text-muted-foreground">
-          {{ partLabel }} - Booking #{{ booking?.bookingCode }}
-        </p>
-      </div>
-    </div>
-
     <!-- Main Content Card -->
     <Card class="flex-1 overflow-hidden border-border/50 shadow-sm bg-card/50 backdrop-blur-sm">
       <CardContent class="p-0 h-full flex flex-col">
@@ -1155,6 +1157,7 @@ onMounted(async () => {
                               : 'bg-slate-50/30 border-transparent cursor-default',
                           ]"
                           @keydown.enter="focusNextInput"
+                          data-field="beforeBaking3"
                           @input="handleNumericInput(sample, 'beforeBaking3', sample.beforeBaking3)"
                         />
                       </TableCell>
@@ -1274,6 +1277,7 @@ onMounted(async () => {
                           placeholder="0.230"
                           class="h-7 w-20 mx-auto p-1 text-center text-xs bg-white border border-slate-100 dark:bg-slate-900 dark:border-slate-800 rounded-sm focus-visible:ring-1 shadow-sm hover:bg-slate-50 transition-all relative z-10 cursor-text"
                           @keydown.enter="focusNextInput"
+                          data-field="beforeBaking3"
                           @input="
                             handleNumericInput(sample, 'beforeBaking3', sample.beforeBaking3)
                           "
@@ -1311,8 +1315,18 @@ onMounted(async () => {
                 </Table>
               </div>
 
-              <div v-if="populatedCount > 0" class="flex justify-end pt-2">
+              <div class="flex justify-end pt-2 gap-2">
                 <Button
+                  variant="outline"
+                  size="sm"
+                  class="h-8 text-xs gap-1.5 px-4"
+                  @click="router.back()"
+                >
+                  <ArrowLeft class="w-3.5 h-3.5" />
+                  {{ t('common.back') }}
+                </Button>
+                <Button
+                  v-if="populatedCount > 0"
                   size="sm"
                   class="bg-green-600 hover:bg-green-700 h-8 text-xs gap-1.5 shadow-sm px-4"
                   :disabled="isSaving"
