@@ -388,6 +388,7 @@ onMounted(async () => {
   }
 
   // Always fetch queues after setting state
+  console.log('[BookingQueue] Component Mounted. TIME_SLOTS:', TIME_SLOTS);
   fetchQueues();
 });
 
@@ -496,7 +497,7 @@ watch(selectedSlot, (newSlot) => {
               <TabsList
                 class="grid w-full h-auto flex-wrap gap-1 bg-muted p-1"
                 :style="{
-                  gridTemplateColumns: `repeat(${Math.min(availableSlots.length, 5)}, minmax(0, 1fr))`,
+                  gridTemplateColumns: `repeat(${Math.min(availableSlots.length, 6)}, minmax(0, 1fr))`,
                 }"
               >
                 <TabsTrigger
