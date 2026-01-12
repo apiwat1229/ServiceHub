@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import DataTable from '@/components/ui/data-table/DataTable.vue';
 import { Dialog } from '@/components/ui/dialog';
@@ -65,14 +64,6 @@ const handleDeleteRepair = (id: string) => {
   if (confirm('Are you sure you want to delete this record?')) {
     deleteRepair(id);
   }
-};
-
-const getStatusStyles = (cost: number) => {
-  // Mocking status based on cost or other logic if status field doesn't exist in data
-  // In a real app, 'status' would be part of the record.
-  // For UI demonstration, we'll assume they are all "Completed" if they have cost > 0
-  if (cost > 10000) return 'bg-blue-50 text-blue-700 border-blue-100'; // Major Repair
-  return 'bg-emerald-50 text-emerald-700 border-emerald-100'; // Standard Service
 };
 
 // DataTable Columns
@@ -163,17 +154,11 @@ const columns: ColumnDef<any>[] = [
     },
     cell: ({ row }) => {
       const amount = parseFloat(row.getValue('totalCost'));
-      return h('div', { class: 'text-right flex items-center justify-end gap-2' }, [
-        h('span', { class: 'font-bold text-slate-900' }, `฿${amount.toLocaleString()}`),
-        h(
-          Badge,
-          {
-            variant: 'outline',
-            class: `px-1.5 py-0 text-[0.5625rem] uppercase font-black ${getStatusStyles(amount)}`,
-          },
-          () => (amount > 10000 ? 'Major' : 'Service')
-        ),
-      ]);
+      return h(
+        'div',
+        { class: 'text-right font-bold text-slate-900' },
+        amount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      );
     },
   },
   {
@@ -231,7 +216,7 @@ const columns: ColumnDef<any>[] = [
 <template>
   <div class="h-full flex flex-col overflow-hidden bg-slate-50">
     <!-- Scrollable Content Area -->
-    <div class="flex-1 overflow-y-auto px-6 pb-6 pt-4">
+    <div class="flex-1 overflow-y-auto px-6 pb-6 pt-1">
       <!-- Header Section -->
       <div class="flex flex-shrink-0 items-center justify-between mb-4">
         <div>

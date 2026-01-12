@@ -224,7 +224,7 @@ const routes = [
         children: [
             {
                 path: '',
-                name: 'MyMachine',
+                name: 'My Machine',
                 component: () => import('../views/admin/MyMachine.vue'),
             },
             {

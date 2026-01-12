@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { DialogContent } from '@/components/ui/dialog';
+import { DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Calendar, ClipboardList, Clock, Package, User } from 'lucide-vue-next';
 
 const props = defineProps<{
@@ -12,9 +12,8 @@ const emit = defineEmits(['close']);
 
 const formatCurrency = (val: number) => {
   return new Intl.NumberFormat('th-TH', {
-    style: 'currency',
-    currency: 'THB',
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(val);
 };
 
@@ -28,6 +27,9 @@ const getStatusColor = (cost: number) => {
   <DialogContent
     class="w-[95vw] sm:max-w-[700px] p-0 overflow-hidden border border-slate-200 shadow-2xl bg-white flex flex-col max-h-[95vh] rounded-sm"
   >
+    <DialogTitle class="sr-only">Repair Detail: {{ repair.machineName }}</DialogTitle>
+    <DialogDescription class="sr-only">Full details of the maintenance record.</DialogDescription>
+
     <!-- Formal Document Header -->
     <div class="p-8 border-b-4 border-slate-900 bg-white">
       <div class="flex items-start justify-between mb-4">

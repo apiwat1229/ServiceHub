@@ -1,257 +1,540 @@
 <script setup lang="ts">
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import DataTable from '@/components/ui/data-table/DataTable.vue';
-import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useMyMachine } from '@/composables/useMyMachine';
-import type { ColumnDef } from '@tanstack/vue-table';
-import { AlertCircle, CheckCircle2, Clock, DollarSign, Search, Wrench } from 'lucide-vue-next';
-import { computed, h, ref } from 'vue';
+import { cn } from '@/lib/utils';
+import type { ApexOptions } from 'apexcharts';
+import { Check, ChevronsUpDown } from 'lucide-vue-next';
+import { computed, ref } from 'vue';
+import VueApexCharts from 'vue3-apexcharts';
+
+const emit = defineEmits<{
+  (e: 'view-detail', id: string): void;
+}>();
 
 const { machines, repairs } = useMyMachine();
-const searchQuery = ref('');
 
-const filteredRepairs = computed(() => {
-  if (!searchQuery.value) return repairs.value;
-  const q = searchQuery.value.toLowerCase();
-  return repairs.value.filter(
-    (r) =>
-      r.machineName.toLowerCase().includes(q) ||
-      (r.issue && r.issue.toLowerCase().includes(q)) ||
-      (r.technician && r.technician.toLowerCase().includes(q))
-  );
-});
+const viewMachineDetail = (id: string) => {
+  emit('view-detail', id);
+};
+
+// --- Data Aggregation for Charts ---
+
+const selectedMachineIds = ref<string[]>(['all']);
+const open = ref(false);
+const topCount = ref('10');
+type Theme = 'indigo' | 'emerald' | 'rose' | 'amber' | 'slate';
+const selectedTheme = ref<Theme>('indigo');
+
+const colorThemes: Record<Theme, string[]> = {
+  indigo: ['#312e81', '#3730a3', '#4338ca', '#4f46e5', '#6366f1', '#818cf8', '#a5b4fc', '#c7d2fe'],
+  emerald: ['#064e3b', '#065f46', '#047857', '#059669', '#10b981', '#34d399', '#6ee7b7', '#a7f3d0'],
+  rose: ['#881337', '#9f1239', '#be123c', '#e11d48', '#f43f5e', '#fb7185', '#fda4af', '#fecdd3'],
+  amber: ['#78350f', '#92400e', '#b45309', '#d97706', '#f59e0b', '#fbbf24', '#fcd34d', '#fde68a'],
+  slate: ['#0f172a', '#1e293b', '#334155', '#475569', '#64748b', '#94a3b8', '#cbd5e1', '#e2e8f0'],
+};
 
 const totalCost = computed(() =>
   repairs.value.reduce((acc, curr) => acc + (Number(curr.totalCost) || 0), 0)
 );
-const totalRepairs = computed(() => repairs.value.length);
-const activeMachines = computed(() => machines.value.filter((m) => m.status === 'Active').length);
 
-const mostRepaired = computed(() => {
-  const machineRepairCounts: Record<string, number> = {};
+// 1. Cost Trend (Monthly)
+const costTrendChart = computed(() => {
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  const isAll = selectedMachineIds.value.includes('all') || selectedMachineIds.value.length === 0;
+
+  const series = [];
+
+  if (isAll) {
+    const data = new Array(12).fill(0);
+    repairs.value.forEach((r) => {
+      const date = new Date(r.date);
+      if (!isNaN(date.getTime())) {
+        data[date.getMonth()] += Number(r.totalCost) || 0;
+      }
+    });
+    series.push({ name: 'Total Maintenance Cost', data });
+  } else {
+    selectedMachineIds.value.forEach((id) => {
+      const machine = machines.value.find((m) => m.id === id);
+      const machineName = machine ? machine.name : 'Unknown Machine';
+      const data = new Array(12).fill(0);
+
+      const machineRepairs = repairs.value.filter((r) => r.machineId === id);
+      machineRepairs.forEach((r) => {
+        const date = new Date(r.date);
+        if (!isNaN(date.getTime())) {
+          data[date.getMonth()] += Number(r.totalCost) || 0;
+        }
+      });
+      series.push({ name: machineName, data });
+    });
+  }
+
+  return {
+    series,
+    options: {
+      chart: { type: 'line', toolbar: { show: false }, zoom: { enabled: false } },
+      // Remove hardcoded colors to allow auto-palette for multiple lines
+      // colors: ['#10b981'],
+      dataLabels: {
+        enabled: true,
+        offsetY: -6, // Move label up
+        style: {
+          fontSize: '10px',
+          colors: ['#475569'], // slate-600
+        },
+        background: {
+          enabled: false, // Remove background box
+        },
+        formatter: (val: number) =>
+          val > 0
+            ? val.toLocaleString('th-TH', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0,
+              })
+            : '',
+      },
+      markers: {
+        size: 4,
+        hover: { size: 6 },
+      },
+      stroke: { curve: 'smooth', width: 2 },
+      xaxis: { categories: months, labels: { style: { colors: '#64748b', fontSize: '10px' } } },
+      yaxis: {
+        labels: {
+          style: { colors: '#64748b', fontSize: '10px' },
+          formatter: (v: number) =>
+            v.toLocaleString('th-TH', {
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 0,
+            }),
+        },
+      },
+      legend: { show: true, position: 'top', horizontalAlign: 'right' },
+      grid: { borderColor: '#f1f5f9' },
+      tooltip: { theme: 'light' },
+    } as ApexOptions,
+  };
+});
+
+// 2. Cost Trend (Monthly) - logic continues...
+
+// 3. Top 5 Costly Machines
+const topCostlyChart = computed(() => {
+  const machineCosts: { [key: string]: number } = {};
   repairs.value.forEach((r) => {
-    machineRepairCounts[r.machineName] = (machineRepairCounts[r.machineName] || 0) + 1;
+    machineCosts[r.machineName] = (machineCosts[r.machineName] || 0) + (Number(r.totalCost) || 0);
   });
-  const sorted = Object.entries(machineRepairCounts).sort((a, b) => b[1] - a[1]);
-  return sorted.length > 0 ? sorted[0] : null;
+
+  const sorted = Object.entries(machineCosts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, Number(topCount.value));
+
+  // Generate colors from dark (indigo-900) to light (indigo-300)
+  // Get base colors from selected theme
+  const baseColors = colorThemes[selectedTheme.value];
+
+  // Interpolate or map colors to match topCount
+  const chartColors = sorted
+    .map((_, i) => {
+      const index = Math.floor((i / sorted.length) * baseColors.length);
+      return baseColors[Math.min(index, baseColors.length - 1)];
+    })
+    .slice(0, Number(topCount.value));
+
+  return {
+    series: [{ name: 'Total Cost', data: sorted.map((s) => s[1]) }],
+    options: {
+      chart: { type: 'bar', toolbar: { show: false } },
+      plotOptions: {
+        bar: {
+          borderRadius: 4,
+          horizontal: true,
+          distributed: true, // Enable individual colors
+          dataLabels: { position: 'center' },
+        },
+      },
+      colors: chartColors,
+      dataLabels: {
+        enabled: true,
+        textAnchor: 'middle',
+        style: {
+          colors: sorted.map((s) => (s[1] < 300 ? '#1e293b' : '#fff')), // Dark text for light bars (< 300), white for others
+          fontSize: '10px',
+          fontWeight: 'bold',
+        },
+        formatter: (val: number) =>
+          val.toLocaleString('th-TH', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+          }),
+        dropShadow: { enabled: false }, // Remove shadow for cleaner look
+      },
+      xaxis: { categories: sorted.map((s) => s[0]), labels: { style: { fontSize: '10px' } } },
+      yaxis: { labels: { style: { fontSize: '10px' } } },
+      legend: { show: false }, // Hide legend as colors are just for visual effect
+      grid: { borderColor: '#f1f5f9' },
+      tooltip: {
+        y: {
+          formatter: (val: number) =>
+            val.toLocaleString('th-TH', {
+              minimumFractionDigits: 1,
+              maximumFractionDigits: 1,
+            }),
+        },
+      },
+    } as ApexOptions,
+  };
+});
+
+const machineCostDetails = computed(() => {
+  const details: {
+    [key: string]: { total: number; count: number; name: string; machineId: string };
+  } = {};
+
+  repairs.value.forEach((r) => {
+    if (!details[r.machineId]) {
+      details[r.machineId] = { total: 0, count: 0, name: r.machineName, machineId: r.machineId };
+    }
+    details[r.machineId].total += Number(r.totalCost) || 0;
+    details[r.machineId].count += 1;
+  });
+
+  return Object.values(details).sort((a, b) => b.total - a.total);
+});
+
+const isTotalMode = computed(
+  () => selectedMachineIds.value.includes('all') || selectedMachineIds.value.length === 0
+);
+
+const repairDetailsList = computed(() => {
+  if (isTotalMode.value) return [];
+  // Filter repairs by selected machines
+  return repairs.value
+    .filter((r) => selectedMachineIds.value.includes(r.machineId))
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+});
+
+const displayedTotalCost = computed(() => {
+  const list = isTotalMode.value ? repairs.value : repairDetailsList.value;
+  return list.reduce((acc, curr) => acc + (Number(curr.totalCost) || 0), 0);
 });
 
 const formatCurrency = (val: number) => {
   return new Intl.NumberFormat('th-TH', {
-    style: 'currency',
-    currency: 'THB',
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(val);
 };
-
-// Define DataTable Columns
-const columns: ColumnDef<any>[] = [
-  {
-    accessorKey: 'machineName',
-    header: 'Machine & Issue',
-    cell: ({ row }) => {
-      const repair = row.original;
-      return h('div', { class: 'flex items-center gap-3' }, [
-        h(
-          'div',
-          {
-            class:
-              'flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center border border-slate-200 bg-gradient-to-br from-white to-slate-50 text-slate-400 hover:text-blue-600 hover:border-blue-200 hover:from-blue-50 hover:to-blue-100 transition-all shadow-sm',
-          },
-          [h(Wrench, { class: 'w-5 h-5' })]
-        ),
-        h('div', { class: 'min-w-0 flex-1' }, [
-          h('div', { class: 'flex items-center gap-2 mb-0.5' }, [
-            h(
-              'span',
-              { class: 'font-bold text-slate-900 hover:text-blue-700 transition-colors truncate' },
-              repair.machineName
-            ),
-            h(
-              'span',
-              {
-                class:
-                  'text-[0.5625rem] font-bold text-slate-400 uppercase tracking-wider px-1.5 py-0.5 bg-slate-100 rounded border border-slate-200 flex-shrink-0',
-              },
-              machines.value.find((m) => m.id === repair.machineId)?.model || 'STD'
-            ),
-          ]),
-          h('p', { class: 'text-xs text-slate-500 truncate' }, repair.issue),
-        ]),
-      ]);
-    },
-  },
-  {
-    accessorKey: 'date',
-    header: 'Date',
-    cell: ({ row }) =>
-      h('div', { class: 'flex items-center gap-1.5 text-xs text-slate-600 font-medium' }, [
-        h(Clock, { class: 'w-3.5 h-3.5 text-slate-400' }),
-        String(row.getValue('date')),
-      ]),
-  },
-  {
-    accessorKey: 'technician',
-    header: 'Technician',
-    cell: ({ row }) =>
-      h(
-        'span',
-        { class: 'text-sm font-medium text-slate-700' },
-        row.getValue('technician') || 'N/A'
-      ),
-  },
-  {
-    id: 'status',
-    header: 'Status',
-    cell: ({ row }) => {
-      const cost = Number(row.original.totalCost);
-      return h(
-        Badge,
-        {
-          variant: 'outline',
-          class: `text-[0.625rem] font-bold uppercase tracking-wide px-2 py-1 ${
-            cost > 10000
-              ? 'bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-700 border-indigo-200'
-              : 'bg-gradient-to-r from-emerald-50 to-green-50 text-emerald-700 border-emerald-200'
-          }`,
-        },
-        () => (cost > 10000 ? 'Major Service' : 'Routine')
-      );
-    },
-  },
-  {
-    accessorKey: 'totalCost',
-    header: () => h('div', { class: 'text-right' }, 'Cost'),
-    cell: ({ row }) => {
-      const amount = Number(row.getValue('totalCost'));
-      return h('div', { class: 'text-right' }, [
-        h(
-          'div',
-          { class: 'text-base font-black text-slate-900 hover:text-blue-700 transition-colors' },
-          formatCurrency(amount)
-        ),
-      ]);
-    },
-  },
-];
 </script>
 
 <template>
-  <div class="h-full flex flex-col overflow-hidden bg-slate-50 pt-4">
-    <!-- Statistics Section (Modern Compact) -->
-    <div class="px-6 py-2 flex-shrink-0">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
-        <Card
-          class="border-slate-200/50 shadow-sm bg-white/80 backdrop-blur-sm hover:shadow-md hover:bg-white/90 transition-all"
-        >
-          <CardContent class="p-3">
-            <div class="flex items-center justify-between">
-              <div class="flex-1">
-                <p class="text-[0.625rem] font-semibold text-slate-500 uppercase tracking-wide">
-                  Total Cost
+  <div class="h-full flex flex-col overflow-hidden bg-slate-50 pt-1">
+    <!-- Charts Section -->
+    <div class="flex-1 overflow-y-auto px-6 pb-6 pt-2">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 pb-6 h-full min-h-[700px]">
+        <!-- Left Column: Charts -->
+        <div class="lg:col-span-2 flex flex-col gap-4 h-full">
+          <!-- Area Chart: Cost Trend -->
+          <Card class="border-slate-200/50 shadow-sm bg-white overflow-hidden">
+            <CardHeader class="pb-1 flex flex-row items-center justify-between">
+              <div>
+                <CardTitle class="text-sm font-bold text-slate-800"
+                  >Maintenance Cost Trend</CardTitle
+                >
+                <p class="text-[0.625rem] text-slate-400 uppercase tracking-widest">
+                  Monthly investment overview
                 </p>
-                <h3 class="text-xl font-bold mt-0.5 text-slate-900">
-                  {{ formatCurrency(totalCost) }}
-                </h3>
-                <p class="text-[0.5625rem] text-slate-400 mt-0.5">Investment in repairs</p>
               </div>
-              <div class="p-1.5 bg-emerald-50 rounded-md">
-                <DollarSign class="w-4 h-4 text-emerald-600" />
+              <div class="flex items-center gap-2">
+                <span class="text-[10px] font-medium text-slate-500 uppercase tracking-wider"
+                  >Filter Asset:</span
+                >
+                <Popover v-model:open="open">
+                  <PopoverTrigger as-child>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      :aria-expanded="open"
+                      class="h-8 w-[200px] justify-between text-xs font-normal border-slate-200"
+                    >
+                      <span class="truncate">
+                        {{
+                          selectedMachineIds.includes('all') || selectedMachineIds.length === 0
+                            ? 'All Machines'
+                            : selectedMachineIds.length === 1
+                              ? machines.find((m) => m.id === selectedMachineIds[0])?.name
+                              : `${selectedMachineIds.length} Selected`
+                        }}
+                      </span>
+                      <ChevronsUpDown class="ml-2 h-3 w-3 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent class="w-[200px] p-0">
+                    <Command>
+                      <CommandInput class="h-8 text-xs" placeholder="Search machine..." />
+                      <CommandEmpty>No machine found.</CommandEmpty>
+                      <CommandList>
+                        <CommandGroup>
+                          <CommandItem
+                            value="all"
+                            @select="
+                              () => {
+                                selectedMachineIds = ['all'];
+                                open = false;
+                              }
+                            "
+                            class="text-xs"
+                          >
+                            <Check
+                              :class="
+                                cn(
+                                  'mr-2 h-3 w-3',
+                                  selectedMachineIds.includes('all') ? 'opacity-100' : 'opacity-0'
+                                )
+                              "
+                            />
+                            All Machines
+                          </CommandItem>
+                          <CommandItem
+                            v-for="machine in machines"
+                            :key="machine.id"
+                            :value="machine.name"
+                            @select="
+                              () => {
+                                if (selectedMachineIds.includes('all')) {
+                                  selectedMachineIds = [machine.id];
+                                } else {
+                                  if (selectedMachineIds.includes(machine.id)) {
+                                    selectedMachineIds = selectedMachineIds.filter(
+                                      (id) => id !== machine.id
+                                    );
+                                    if (selectedMachineIds.length === 0) {
+                                      selectedMachineIds = ['all'];
+                                    }
+                                  } else {
+                                    selectedMachineIds.push(machine.id);
+                                  }
+                                }
+                                // Keep open for multi-select
+                              }
+                            "
+                            class="text-xs"
+                          >
+                            <Check
+                              :class="
+                                cn(
+                                  'mr-2 h-3 w-3',
+                                  selectedMachineIds.includes(machine.id)
+                                    ? 'opacity-100'
+                                    : 'opacity-0'
+                                )
+                              "
+                            />
+                            {{ machine.name }}
+                          </CommandItem>
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardHeader>
+            <CardContent class="p-0">
+              <div class="h-[250px] w-full px-2">
+                <VueApexCharts
+                  height="100%"
+                  width="100%"
+                  :options="costTrendChart.options"
+                  :series="costTrendChart.series"
+                />
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card
-          class="border-slate-200/50 shadow-sm bg-white/80 backdrop-blur-sm hover:shadow-md hover:bg-white/90 transition-all"
-        >
-          <CardContent class="p-3">
-            <div class="flex items-center justify-between">
-              <div class="flex-1">
-                <p class="text-[0.625rem] font-semibold text-slate-500 uppercase tracking-wide">
-                  Active
-                </p>
-                <h3 class="text-xl font-bold mt-0.5 text-slate-900">
-                  {{ activeMachines }} / {{ machines.length }}
-                </h3>
-                <p class="text-[0.5625rem] text-slate-400 mt-0.5">Operational equipment</p>
-              </div>
-              <div class="p-1.5 bg-blue-50 rounded-md">
-                <CheckCircle2 class="w-4 h-4 text-blue-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card
-          class="border-slate-200/50 shadow-sm bg-white/80 backdrop-blur-sm hover:shadow-md hover:bg-white/90 transition-all"
-        >
-          <CardContent class="p-3">
-            <div class="flex items-center justify-between">
-              <div class="flex-1">
-                <p class="text-[0.625rem] font-semibold text-slate-500 uppercase tracking-wide">
-                  Repairs
-                </p>
-                <h3 class="text-xl font-bold mt-0.5 text-slate-900">{{ totalRepairs }}</h3>
-                <p class="text-[0.5625rem] text-slate-400 mt-0.5">Maintenance logs</p>
-              </div>
-              <div class="p-1.5 bg-purple-50 rounded-md">
-                <Wrench class="w-4 h-4 text-purple-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card
-          class="border-slate-200/50 shadow-sm bg-white/80 backdrop-blur-sm hover:shadow-md hover:bg-white/90 transition-all"
-        >
-          <CardContent class="p-3">
-            <div class="flex items-center justify-between">
-              <div class="flex-1">
-                <p class="text-[0.625rem] font-semibold text-slate-500 uppercase tracking-wide">
-                  Critical
-                </p>
-                <h3 class="text-base font-bold mt-0.5 text-slate-900 truncate max-w-[110px]">
-                  {{ mostRepaired ? mostRepaired[0] : '-' }}
-                </h3>
-                <p class="text-[0.5625rem] text-orange-600 mt-0.5">
-                  {{ mostRepaired ? `${mostRepaired[1]} repairs` : 'No repairs' }}
+          <!-- Bar Chart: Top Costly Assets -->
+          <Card
+            class="border-slate-200/50 shadow-sm bg-white overflow-hidden flex flex-col flex-1 min-h-0"
+          >
+            <CardHeader class="pb-1 flex flex-row items-center justify-between flex-shrink-0">
+              <div>
+                <CardTitle class="text-sm font-bold text-slate-800"
+                  >Top {{ topCount }} Maintenance Expenses</CardTitle
+                >
+                <p class="text-[0.625rem] text-slate-400 uppercase tracking-widest">
+                  Assets requiring highest budget
                 </p>
               </div>
-              <div class="p-1.5 bg-orange-50 rounded-md">
-                <AlertCircle class="w-4 h-4 text-orange-600" />
+              <div class="flex items-center gap-2">
+                <Select v-model="selectedTheme">
+                  <SelectTrigger
+                    class="h-6 w-[80px] text-[10px] font-bold border-slate-200 capitalize"
+                  >
+                    <SelectValue placeholder="Theme" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="indigo" class="text-xs">Indigo</SelectItem>
+                    <SelectItem value="emerald" class="text-xs">Emerald</SelectItem>
+                    <SelectItem value="rose" class="text-xs">Rose</SelectItem>
+                    <SelectItem value="amber" class="text-xs">Amber</SelectItem>
+                    <SelectItem value="slate" class="text-xs">Slate</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select v-model="topCount">
+                  <SelectTrigger class="h-6 w-[70px] text-[10px] font-bold border-slate-200">
+                    <SelectValue placeholder="5" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="5" class="text-xs">Top 5</SelectItem>
+                    <SelectItem value="10" class="text-xs">Top 10</SelectItem>
+                    <SelectItem value="15" class="text-xs">Top 15</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-
-    <!-- Scrollable Content Area -->
-    <div class="flex-1 overflow-y-auto px-6 pb-6 pt-3">
-      <!-- Table Header -->
-      <div class="flex items-center justify-between mb-3">
-        <div>
-          <h2 class="text-base font-bold text-slate-900">Recent Maintenance Logs</h2>
-          <p class="text-xs text-slate-500">Latest repairs performed on systems</p>
+            </CardHeader>
+            <CardContent class="p-0 flex-1 min-h-0 overflow-y-auto">
+              <div class="w-full h-full px-4 pb-2">
+                <VueApexCharts
+                  height="100%"
+                  width="100%"
+                  :options="topCostlyChart.options"
+                  :series="topCostlyChart.series"
+                />
+              </div>
+            </CardContent>
+          </Card>
         </div>
-        <div class="relative w-64 flex-shrink-0">
-          <Search class="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
-          <Input
-            v-model="searchQuery"
-            type="search"
-            placeholder="Search logs..."
-            class="pl-8 pr-2 h-9 text-xs bg-white border-slate-200 focus:bg-white transition-all shadow-sm"
-          />
-        </div>
-      </div>
 
-      <!-- DataTable -->
-      <div
-        class="rounded-xl border border-slate-200/50 bg-white/80 backdrop-blur-sm shadow-sm overflow-hidden"
-      >
-        <DataTable :columns="columns" :data="filteredRepairs" />
+        <!-- Right Column: Machine Cost Breakdown -->
+        <Card class="border-slate-200/50 shadow-sm bg-white overflow-hidden flex flex-col h-full">
+          <CardHeader class="pb-2">
+            <div class="flex items-center justify-between">
+              <div>
+                <CardTitle class="text-sm font-bold text-slate-800">
+                  {{ isTotalMode ? 'Cost Breakdown' : 'Repair Details' }}
+                </CardTitle>
+                <p class="text-[0.625rem] text-slate-400 uppercase tracking-widest">
+                  {{ isTotalMode ? 'Per-machine investment' : 'Individual repair records' }}
+                </p>
+              </div>
+              <div class="text-right flex flex-col items-end">
+                <span
+                  class="text-xs font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100 shadow-sm"
+                >
+                  {{ formatCurrency(displayedTotalCost) }}
+                </span>
+                <span class="text-[0.5rem] text-slate-400 font-bold mt-1 uppercase tracking-tighter"
+                  >Total Sum</span
+                >
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent class="flex-1 overflow-y-auto px-4 pb-4">
+            <!-- Mode 1: Aggregate List -->
+            <div v-if="isTotalMode" class="space-y-3">
+              <div
+                v-for="item in machineCostDetails"
+                :key="item.machineId"
+                @click="viewMachineDetail(item.machineId)"
+                class="flex items-center justify-between p-2 rounded-lg bg-slate-50 hover:bg-slate-100 hover:shadow-sm cursor-pointer transition-all group"
+              >
+                <div class="flex-1 min-w-0 mr-2">
+                  <p class="text-xs font-bold text-slate-700 truncate capitalize">
+                    {{ item.name }}
+                  </p>
+                  <p class="text-[0.625rem] text-slate-400">{{ item.count }} incidents</p>
+                </div>
+                <div class="text-right">
+                  <p class="text-xs font-black text-slate-900">{{ formatCurrency(item.total) }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Mode 2: Detailed Repair List -->
+            <div v-else class="space-y-3">
+              <div
+                v-for="(repair, index) in repairDetailsList"
+                :key="index"
+                class="flex flex-col p-3 rounded-lg bg-slate-50 border border-slate-100"
+              >
+                <div class="flex justify-between items-start mb-1">
+                  <p class="text-xs font-bold text-slate-800 line-clamp-2">
+                    {{ repair.issue || 'Maintenance Task' }}
+                  </p>
+                  <span class="text-xs font-black text-slate-900 whitespace-nowrap ml-2">
+                    {{ formatCurrency(Number(repair.totalCost)) }}
+                  </span>
+                </div>
+
+                <!-- Parts List -->
+                <div
+                  v-if="repair.parts && repair.parts.length > 0"
+                  class="mt-2 pt-2 border-t border-slate-100/60"
+                >
+                  <div
+                    v-for="part in repair.parts"
+                    :key="part.id"
+                    class="flex justify-between items-center text-[10px] text-slate-500 mb-0.5"
+                  >
+                    <div class="flex items-center gap-1.5 overflow-hidden">
+                      <span class="w-1 h-1 rounded-full bg-slate-300 shrink-0"></span>
+                      <span class="truncate">{{ part.name }}</span>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                      <span class="text-xs bg-slate-100 px-1 rounded text-slate-600"
+                        >x{{ part.qty }}</span
+                      >
+                      <!-- <span class="font-medium w-[50px] text-right">{{ formatCurrency(part.price * part.qty) }}</span> -->
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  class="flex justify-between items-center mt-2.5 pt-2 border-t border-slate-100"
+                >
+                  <span
+                    class="text-[10px] bg-white px-1.5 py-0.5 rounded border border-slate-200 text-slate-500 font-medium"
+                  >
+                    {{ repair.machineName }}
+                  </span>
+                  <span class="text-[10px] text-slate-400">
+                    {{ new Date(repair.date).toLocaleDateString('th-TH') }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   </div>

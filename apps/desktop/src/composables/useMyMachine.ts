@@ -33,6 +33,8 @@ export interface StockItem {
     id: string;
     code?: string;
     name: string;
+    nameTH?: string;
+    nameEN?: string;
     category?: string;
     location?: string;
     qty: number;
@@ -45,64 +47,108 @@ export interface StockItem {
     image?: string;
 }
 
-// Mock Data
+// Mock Data - Real World Data Imported (High Fidelity v5)
 const mockMachines: Machine[] = [
-    { id: 'm1', name: 'MC-001', model: 'CNC Lathe X1', location: 'Zone A', status: 'Active', createdAt: Date.now() },
-    { id: 'm2', name: 'MC-002', model: 'Milling M200', location: 'Zone A', status: 'Maintenance', createdAt: Date.now() },
-    { id: 'm3', name: 'MC-003', model: 'Drill Press D5', location: 'Zone B', status: 'Active', createdAt: Date.now() },
-    { id: 'm4', name: 'MC-004', model: 'CNC Lathe X2', location: 'Zone A', status: 'Active', createdAt: Date.now() },
-    { id: 'm5', name: 'MC-005', model: 'Grinder G100', location: 'Zone C', status: 'Inactive', createdAt: Date.now() },
-    { id: 'm6', name: 'MC-006', model: 'Welding Robot W1', location: 'Zone D', status: 'Active', createdAt: Date.now() },
-    { id: 'm7', name: 'MC-007', model: 'Packaging Unit P1', location: 'Zone E', status: 'Active', createdAt: Date.now() },
-    { id: 'm8', name: 'MC-008', model: 'Conveyor Belt C1', location: 'Zone E', status: 'Maintenance', createdAt: Date.now() },
-    { id: 'm9', name: 'MC-009', model: 'Forklift F1', location: 'Warehouse', status: 'Active', createdAt: Date.now() },
-    { id: 'm10', name: 'MC-010', model: 'Milling M200', location: 'Zone B', status: 'Active', createdAt: Date.now() },
-    { id: 'm11', name: 'MC-011', model: '3D Printer P500', location: 'Design Lab', status: 'Active', createdAt: Date.now() },
-    { id: 'm12', name: 'MC-012', model: 'Laser Cutter L20', location: 'Zone C', status: 'Inactive', createdAt: Date.now() },
-    { id: 'm13', name: 'MC-013', model: 'Hydraulic Press H50', location: 'Zone D', status: 'Active', createdAt: Date.now() },
-    { id: 'm14', name: 'MC-014', model: 'Air Compressor A1', location: 'Utility', status: 'Active', createdAt: Date.now() },
-    { id: 'm15', name: 'MC-015', model: 'Generator G500', location: 'Utility', status: 'Active', createdAt: Date.now() },
+    { id: 'm1', name: 'Packing', model: 'Packing Station', location: 'Warehouse', status: 'Active', createdAt: Date.now() },
+    { id: 'm2', name: 'BC-5 Mixing', model: 'Batch Mixer', location: 'Mixing Zone', status: 'Active', createdAt: Date.now() },
+    { id: 'm3', name: 'BC-4 Mixing', model: 'Batch Mixer', location: 'Mixing Zone', status: 'Maintenance', createdAt: Date.now() },
+    { id: 'm4', name: 'BC-5 Pre Cleaning', model: 'Batch Cleaner', location: 'Cleaning Bay', status: 'Active', createdAt: Date.now() },
+    { id: 'm5', name: 'VS-1 Pre', model: 'Pre-Processor', location: 'Prep Area', status: 'Inactive', createdAt: Date.now() },
+    { id: 'm6', name: 'SC Jumbo Mixing', model: 'Jumbo Mixer', location: 'Mixing Zone', status: 'Active', createdAt: Date.now() },
+    { id: 'm7', name: 'SC-1 Mixing', model: 'Standard Mixer', location: 'Mixing Zone', status: 'Active', createdAt: Date.now() },
+    { id: 'm8', name: 'ST-1 PPC', model: 'PPC Standard', location: 'Processing', status: 'Active', createdAt: Date.now() },
+    { id: 'm9', name: 'Line Pre Cleaning', model: 'Cleaning Line', location: 'Cleaning Bay', status: 'Active', createdAt: Date.now() },
+    { id: 'm10', name: 'CP-2 Pre', model: 'Compact Pre-Unit', location: 'Prep Area', status: 'Active', createdAt: Date.now() },
+    { id: 'm11', name: 'MK-2 Pre Cleaning', model: 'Pre Cleaning Unit', location: 'Cleaning Bay', status: 'Active', createdAt: Date.now() },
+    { id: 'm12', name: 'RC-4 Mixing', model: 'Rotary Mixer', location: 'Mixing Zone', status: 'Maintenance', createdAt: Date.now() },
+    { id: 'm13', name: 'RC-V.5 Mixing', model: 'Vertical Mixer', location: 'Mixing Zone', status: 'Active', createdAt: Date.now() },
+    { id: 'm14', name: 'TP-1.2 Dryer A,B', model: 'Dryer System', location: 'Drying Zone', status: 'Active', createdAt: Date.now() },
+    { id: 'm15', name: 'Tubule', model: 'Tubule System', location: 'Processing', status: 'Active', createdAt: Date.now() },
 ];
 
 const mockStocks: StockItem[] = [
-    { id: 's1', code: 'IT-LPT-001', name: 'MacBook Pro 14"', category: 'Laptop', location: 'Office 1', qty: 5, price: 59900, unit: 'pcs', minQty: 2, dateReceived: '2024-01-15', receiver: 'apiwat.s' },
-    { id: 's2', code: 'IT-MON-002', name: 'Dell UltraSharp 27"', category: 'Monitor', location: 'Stock Room A', qty: 12, price: 18500, unit: 'pcs', minQty: 5 },
-    { id: 's3', code: 'IT-PER-003', name: 'Keychron K2', category: 'Peripherals', location: 'Stock Room A', qty: 20, price: 3290, unit: 'pcs', minQty: 5 },
-    { id: 's4', code: 'IT-PER-004', name: 'Logitech MX Master 3', category: 'Peripherals', location: 'Stock Room A', qty: 15, price: 3990, unit: 'pcs', minQty: 5 },
-    { id: 's5', code: 'IT-CAB-005', name: 'HDMI Cable 3m', category: 'Accessories', location: 'Bin 5', qty: 50, price: 450, unit: 'pcs', minQty: 10 },
-    { id: 's6', code: 'MT-BRG-001', name: 'Bearing 6204', category: 'Spare Parts', location: 'Cabinet C', qty: 30, price: 120, unit: 'pcs', minQty: 10 },
-    { id: 's7', code: 'MT-VBT-002', name: 'V-Belt A45', category: 'Spare Parts', location: 'Cabinet C', qty: 10, price: 250, unit: 'pcs', minQty: 3 },
-    { id: 's8', code: 'IT-NET-006', name: 'Ubiquiti Switch Pro', category: 'Networking', location: 'Server Room', qty: 2, price: 24500, unit: 'pcs', minQty: 1 },
-    { id: 's9', code: 'IT-COM-007', name: 'Raspberry Pi 5', category: 'Components', location: 'Lab 2', qty: 25, price: 2800, unit: 'pcs', minQty: 5 },
-    { id: 's10', code: 'MT-HYD-003', name: 'Hydraulic Oil 5L', category: 'Consumables', location: 'Zone D', qty: 8, price: 1500, unit: 'can', minQty: 2 },
-    { id: 's11', code: 'IT-LPT-008', name: 'ThinkPad X1 Carbon', category: 'Laptop', location: 'Office 2', qty: 3, price: 65000, unit: 'pcs', minQty: 1 },
-    { id: 's12', code: 'IT-PRT-009', name: 'Epson L3210', category: 'Printer', location: 'Stock Room B', qty: 4, price: 4500, unit: 'pcs', minQty: 2 },
-    { id: 's13', code: 'MT-SEN-004', name: 'Proximity Sensor', category: 'Electrical', location: 'Cabinet E', qty: 15, price: 850, unit: 'pcs', minQty: 5 },
-    { id: 's14', code: 'IT-SRV-010', name: 'Synology DS923+', category: 'Storage', location: 'Server Room', qty: 1, price: 21900, unit: 'pcs', minQty: 0 },
-    { id: 's15', code: 'MT-TOL-005', name: 'Drill Bit Set', category: 'Tooling', location: 'Shelf F', qty: 10, price: 1200, unit: 'set', minQty: 2 },
+    { id: 's1', code: 'SP-WHT', name: 'Spray paint WHITE', nameEN: 'Spray paint WHITE', nameTH: 'สีสเปรย์ สีขาว', category: 'Consumables', location: 'Store A', qty: 50, price: 42.00, unit: 'can', minQty: 10 },
+    { id: 's2', code: 'GW-60x24', name: 'Gear wheel 4 60x24T', nameEN: 'Gear wheel 4 60x24T', nameTH: 'เฟืองขับ 4 60x24T', category: 'Spare Parts', location: 'Shelf B', qty: 2, price: 350.00, unit: 'pcs', minQty: 1 },
+    { id: 's3', code: 'BR-204', name: 'Bearing NTN UCP 204-012', nameEN: 'Bearing NTN UCP 204-012', nameTH: 'ตลับลูกปืน NTN UCP 204-012', category: 'Bearings', location: 'Shelf C', qty: 20, price: 205.00, unit: 'pcs', minQty: 5 },
+    { id: 's4', code: 'NT-58-250', name: 'Nut 1 NC 5/8 x 2 1/2', nameEN: 'Nut 1 NC 5/8 x 2 1/2', nameTH: 'น็อต 1 NC 5/8 x 2 1/2', category: 'Fasteners', location: 'Bin 1', qty: 100, price: 15.00, unit: 'pcs', minQty: 20 },
+    { id: 's5', code: 'NT-STL-150', name: 'Nut STL 5/8 x 1 1/2', nameEN: 'Nut STL 5/8 x 1 1/2', nameTH: 'น็อต STL 5/8 x 1 1/2', category: 'Fasteners', location: 'Bin 3', qty: 100, price: 35.33, unit: 'pcs', minQty: 20 },
+    { id: 's6', code: 'NT-STL-250', name: 'Nut STL 5/8 x 2 1/2', nameEN: 'Nut STL 5/8 x 2 1/2', nameTH: 'น็อต STL 5/8 x 2 1/2', category: 'Fasteners', location: 'Bin 2', qty: 100, price: 26.10, unit: 'pcs', minQty: 20 },
+    { id: 's7', code: 'BR-SKF-630', name: 'Bearing SKF 6308', nameEN: 'Bearing SKF 6308', nameTH: 'ตลับลูกปืน SKF 6308', category: 'Bearings', location: 'Shelf C', qty: 8, price: 121.00, unit: 'pcs', minQty: 4 },
+    { id: 's8', code: 'BM-42x11', name: 'Belt Motor Gear 42x11', nameEN: 'Belt Motor Gear 42x11', nameTH: 'สายพานมอเตอร์เกียร์ 42x11', category: 'Belts', location: 'Shelf B', qty: 5, price: 6860.00, unit: 'pcs', minQty: 1 },
+    { id: 's9', code: 'BR-2311', name: 'Bearing NTN 2311 K', nameEN: 'Bearing NTN 2311 K', nameTH: 'ตลับลูกปืน NTN 2311 K', category: 'Bearings', location: 'Shelf C', qty: 5, price: 698.00, unit: 'pcs', minQty: 1 },
+    { id: 's10', code: 'SB-HE-2311', name: 'Sleeve Bearing HE 2311 K', nameEN: 'Sleeve Bearing HE 2311 K', nameTH: 'ปลอกตลับลูกปืน HE 2311 K', category: 'Bearings', location: 'Shelf C', qty: 5, price: 374.00, unit: 'pcs', minQty: 2 },
+    { id: 's11', code: 'GR-PTT2', name: 'PTT EP Grease # 2', nameEN: 'PTT EP Grease # 2', nameTH: 'จารบี PTT EP เบอร์ 2', category: 'Lubricants', location: 'Chem Store', qty: 10, price: 2400.00, unit: 'pail', minQty: 3 },
+    { id: 's12', code: 'NT-58-2', name: 'Nut NC 5/8 x 2', nameEN: 'Nut NC 5/8 x 2', nameTH: 'น็อต NC 5/8 x 2', category: 'Fasteners', location: 'Bin 1', qty: 100, price: 11.80, unit: 'pcs', minQty: 20 },
+    { id: 's13', code: 'IC-BCD', name: 'IRON COAT P BCD FLOW CHECK', nameEN: 'IRON COAT P BCD FLOW CHECK', nameTH: 'น้ำยาเคลือบเหล็ก P BCD', category: 'Spare Parts', location: 'Shelf E', qty: 2, price: 291.53, unit: 'pcs', minQty: 1 },
+    { id: 's14', code: 'GW-680', name: 'Gear wheel 680x150x 50mm', nameEN: 'Gear wheel 680x150x 50mm', nameTH: 'เฟืองขับ 680x150x 50มม.', category: 'Spare Parts', location: 'Shelf B', qty: 1, price: 1050.00, unit: 'pcs', minQty: 0 },
+    { id: 's15', code: 'CH-80-1R', name: 'Chain 80-1R', nameEN: 'Chain 80-1R', nameTH: 'โซ่ 80-1R', category: 'Spare Parts', location: 'Shelf B', qty: 1, price: 1750.00, unit: 'pcs', minQty: 0 },
+    { id: 's16', code: 'GO-AM', name: 'Gear oil Auto Mat', nameEN: 'Gear oil Auto Mat', nameTH: 'น้ำมันเกียร์ออโต้แมท', category: 'Lubricants', location: 'Chem Store', qty: 20, price: 115.74, unit: 'L', minQty: 5 },
+    { id: 's17', code: 'GW-4MK', name: 'Grinding Wheel 4" Makita', nameEN: 'Grinding Wheel 4" Makita', nameTH: 'ใบเจียร 4 นิ้ว Makita', category: 'Consumables', location: 'Store A', qty: 50, price: 22.56, unit: 'pcs', minQty: 10 },
+    { id: 's18', code: 'STL-34', name: 'Seal TSN 511L', nameEN: 'Seal TSN 511L', nameTH: 'ซีล TSN 511L', category: 'Seals', qty: 10, price: 240.00, unit: 'pcs', minQty: 2 },
+    { id: 's19', code: 'PVC-JP', name: 'Three joint PVC 1x1', nameEN: 'Three joint PVC 1x1', nameTH: 'สามทาง PVC 1x1', category: 'Piping', qty: 20, price: 49.98, unit: 'pcs', minQty: 5 },
+    { id: 's20', code: 'CON-90', name: 'Connector 90 pvc 1"xn', nameEN: 'Connector 90 pvc 1"xn', nameTH: 'ข้องอ 90 PVC 1"', category: 'Piping', qty: 20, price: 9.77, unit: 'pcs', minQty: 10 },
+    { id: 's21', code: 'BV-1', name: 'Ball valve 1"', nameEN: 'Ball valve 1"', nameTH: 'บอลวาล์ว 1"', category: 'Valves', qty: 10, price: 171.01, unit: 'pcs', minQty: 2 },
+    { id: 's22', code: 'PVC-JP-1x1/2', name: 'Three joint PVC 1 x 1/2"', nameEN: 'Three joint PVC 1 x 1/2"', nameTH: 'สามทาง PVC 1x1/2"', category: 'Piping', qty: 10, price: 14.00, unit: 'pcs', minQty: 5 },
+    { id: 's23', code: 'PVC-CON-F', name: 'Pipe connector Female 1"', nameEN: 'Pipe connector Female 1"', nameTH: 'ข้อต่อเกลียวใน 1"', category: 'Piping', qty: 10, price: 13.52, unit: 'pcs', minQty: 5 },
+    { id: 's24', code: 'PVC-CON-M', name: 'Pipe connector Male 1"', nameEN: 'Pipe connector Male 1"', nameTH: 'ข้อต่อเกลียวนอก 1"', category: 'Piping', qty: 0, price: 7.49, unit: 'pcs', minQty: 5 },
+    { id: 's25', code: 'PVC-P-1', name: 'PVC pipe cover 1"', nameEN: 'PVC pipe cover 1"', nameTH: 'ฝาครอบท่อ PVC 1"', category: 'Piping', qty: 15, price: 6.79, unit: 'pcs', minQty: 5 },
+    { id: 's26', code: 'CON-90-1', name: 'Connector 90 x 1"xn', nameEN: 'Connector 90 x 1"xn', nameTH: 'ข้องอ 90 x 1"', category: 'Piping', qty: 15, price: 9.77, unit: 'pcs', minQty: 5 },
 ];
 
 const mockRepairs: Repair[] = [
-    // MC-001 Recurring History (5 entries)
-    { id: 'r1', machineId: 'm1', machineName: 'MC-001', date: '2025-05-10', issue: 'Unusual vibration in spindle', technician: 'Somchai', parts: [{ id: 1, name: 'Bearing 6204', qty: 2, price: 120 }], totalCost: 240, timestamp: Date.now() - 200 * 24 * 60 * 60 * 1000 },
-    { id: 'r1a', machineId: 'm1', machineName: 'MC-001', date: '2025-07-15', issue: 'Spindle motor calibration', technician: 'Suchart', parts: [], totalCost: 0, timestamp: Date.now() - 140 * 24 * 60 * 60 * 1000 },
-    { id: 'r1b', machineId: 'm1', machineName: 'MC-001', date: '2025-09-20', issue: 'Coolant pump failure', technician: 'Wichai', parts: [{ id: 2, name: 'Submersible Pump', qty: 1, price: 2800 }], totalCost: 2800, timestamp: Date.now() - 80 * 24 * 60 * 60 * 1000 },
-    { id: 'r1c', machineId: 'm1', machineName: 'MC-001', date: '2025-11-05', issue: 'Axis limit switch error', technician: 'Somchai', parts: [{ id: 3, name: 'Limit Switch', qty: 1, price: 450 }], totalCost: 450, timestamp: Date.now() - 30 * 24 * 60 * 60 * 1000 },
-    { id: 'r1d', machineId: 'm1', machineName: 'MC-001', date: '2025-12-20', issue: 'Annual major service', technician: 'External Svc', parts: [{ id: 4, name: 'Full Gasket Set', qty: 1, price: 1200 }, { id: 5, name: 'Hydraulic Oil 5L', qty: 2, price: 1500 }], totalCost: 4200, timestamp: Date.now() - 5 * 24 * 60 * 60 * 1000 },
+    // 13/05/2023
+    { id: 'r1', machineId: 'm1', machineName: 'Packing', date: '2023-05-13', issue: 'Maintenance', technician: 'Somchai', parts: [{ id: 1, name: 'Spray paint WHITE', qty: 1, price: 42.00 }], totalCost: 42.00, timestamp: new Date('2023-05-13').getTime() },
+    { id: 'r2', machineId: 'm2', machineName: 'BC-5 Mixing', date: '2023-05-13', issue: 'Gear check', technician: 'Wichai', parts: [{ id: 2, name: 'Gear wheel 4 60x24T', qty: 1, price: 350.00 }], totalCost: 350.00, timestamp: new Date('2023-05-13').getTime() },
 
-    // MC-002 Recurring History (4 entries)
-    { id: 'r2', machineId: 'm2', machineName: 'MC-002', date: '2025-06-12', issue: 'Drill head overheating', technician: 'Suchart', parts: [{ id: 6, name: 'Fan 120mm', qty: 1, price: 350 }], totalCost: 350, timestamp: Date.now() - 180 * 24 * 60 * 60 * 1000 },
-    { id: 'r2a', machineId: 'm2', machineName: 'MC-002', date: '2025-08-22', issue: 'Automatic tool changer jam', technician: 'Somchai', parts: [], totalCost: 0, timestamp: Date.now() - 110 * 24 * 60 * 60 * 1000 },
-    { id: 'r2b', machineId: 'm2', machineName: 'MC-002', date: '2025-10-18', issue: 'Z-axis belt wear', technician: 'Wichai', parts: [{ id: 7, name: 'Timing Belt B12', qty: 1, price: 650 }], totalCost: 650, timestamp: Date.now() - 50 * 24 * 60 * 60 * 1000 },
-    { id: 'r2c', machineId: 'm2', machineName: 'MC-002', date: '2025-12-05', issue: 'Coolant leak check', technician: 'Suchart', parts: [{ id: 8, name: 'Seal Tape', qty: 1, price: 45 }], totalCost: 45, timestamp: Date.now() - 20 * 24 * 60 * 60 * 1000 },
+    // 15/05/2023
+    { id: 'r3', machineId: 'm3', machineName: 'BC-4 Mixing', date: '2023-05-15', issue: 'Bearing replacement', technician: 'Suchart', parts: [{ id: 3, name: 'Bearing NTN UCP 204-012', qty: 2, price: 205.00 }], totalCost: 410.00, timestamp: new Date('2023-05-15').getTime() },
+    { id: 'r4', machineId: 'm4', machineName: 'BC-5 Pre Cleaning', date: '2023-05-15', issue: 'Bearing replacement', technician: 'Somchai', parts: [{ id: 3, name: 'Bearing NTN UCP 204-012', qty: 2, price: 205.00 }], totalCost: 410.00, timestamp: new Date('2023-05-15').getTime() },
+    { id: 'r5', machineId: 'm5', machineName: 'VS-1 Pre', date: '2023-05-15', issue: 'Fasteners', technician: 'Wichai', parts: [{ id: 4, name: 'Nut 1 NC 5/8 x 2 1/2', qty: 2, price: 15.00 }], totalCost: 30.00, timestamp: new Date('2023-05-15').getTime() },
 
-    // Others
-    { id: 'r3', machineId: 'm4', machineName: 'MC-004', date: '2025-10-20', issue: 'Main drive belt slippage', technician: 'Somchai', parts: [{ id: 9, name: 'V-Belt A45', qty: 1, price: 250 }], totalCost: 250, timestamp: Date.now() - 45 * 24 * 60 * 60 * 1000 },
-    { id: 'r5', machineId: 'm3', machineName: 'MC-003', date: '2025-11-05', issue: 'Pneumatic line leak', technician: 'Wichai', parts: [{ id: 10, name: 'Air Hose 8mm', qty: 5, price: 80 }], totalCost: 400, timestamp: Date.now() - 35 * 24 * 60 * 60 * 1000 },
-    { id: 'r8', machineId: 'm8', machineName: 'MC-008', date: '2025-11-15', issue: 'Conveyor motor capacitor', technician: 'Somchai', parts: [{ id: 11, name: 'Capacitor 45uF', qty: 1, price: 180 }], totalCost: 180, timestamp: Date.now() - 25 * 24 * 60 * 60 * 1000 },
-    { id: 'r9', machineId: 'm10', machineName: 'MC-010', date: '2025-11-20', issue: 'Emergency stop failure', technician: 'Suchart', parts: [{ id: 12, name: 'E-Stop Unit', qty: 1, price: 950 }], totalCost: 950, timestamp: Date.now() - 20 * 24 * 60 * 60 * 1000 },
-    { id: 'r13', machineId: 'm7', machineName: 'MC-007', date: '2025-12-12', issue: 'Control panel fuse', technician: 'Suchart', parts: [{ id: 13, name: 'Fuse 5A', qty: 3, price: 15 }], totalCost: 45, timestamp: Date.now() - 10 * 24 * 60 * 60 * 1000 },
-    { id: 'r14', machineId: 'm13', machineName: 'MC-013', date: '2025-12-15', issue: 'Hydraulic pressure drop', technician: 'Somchai', parts: [{ id: 14, name: 'Pressure Gauge', qty: 1, price: 1150 }], totalCost: 1150, timestamp: Date.now() - 8 * 24 * 60 * 60 * 1000 },
+    // 02/06/2023
+    { id: 'r6', machineId: 'm6', machineName: 'SC Jumbo Mixing', date: '2023-06-02', issue: 'Structure repair', technician: 'External', parts: [{ id: 4, name: 'Nut 1 NC 5/8 x 2 1/2', qty: 7, price: 36.35 }], totalCost: 254.43, timestamp: new Date('2023-06-02').getTime() },
+    { id: 'r7', machineId: 'm6', machineName: 'SC Jumbo Mixing', date: '2023-06-02', issue: 'Structure repair', technician: 'External', parts: [{ id: 5, name: 'Nut STL 5/8 x 1 1/2', qty: 3, price: 35.33 }], totalCost: 105.99, timestamp: new Date('2023-06-02').getTime() },
+    { id: 'r8', machineId: 'm6', machineName: 'SC Jumbo Mixing', date: '2023-06-02', issue: 'Structure repair', technician: 'External', parts: [{ id: 6, name: 'Nut STL 5/8 x 2 1/2', qty: 5, price: 26.10 }], totalCost: 130.51, timestamp: new Date('2023-06-02').getTime() },
+
+    // 15/06/2023
+    { id: 'r9', machineId: 'm7', machineName: 'SC-1 Mixing', date: '2023-06-15', issue: 'Bearing check', technician: 'Suchart', parts: [{ id: 7, name: 'Bearing SKF 6308', qty: 1, price: 121.00 }], totalCost: 121.00, timestamp: new Date('2023-06-15').getTime() },
+
+    // 01/07/2023
+    { id: 'r10', machineId: 'm3', machineName: 'BC-4 Mixing', date: '2023-07-01', issue: 'Drive repair', technician: 'Somchai', parts: [{ id: 8, name: 'Belt Motor Gear 42x11', qty: 1, price: 6860.00 }], totalCost: 6860.00, timestamp: new Date('2023-07-01').getTime() },
+    { id: 'r11', machineId: 'm6', machineName: 'SC Jumbo Mixing', date: '2023-07-01', issue: 'Bearing', technician: 'Suchart', parts: [{ id: 9, name: 'Bearing NTN 2311 K', qty: 1, price: 698.00 }], totalCost: 698.00, timestamp: new Date('2023-07-01').getTime() },
+    { id: 'r12', machineId: 'm6', machineName: 'SC Jumbo Mixing', date: '2023-07-01', issue: 'Sleeve', technician: 'Wichai', parts: [{ id: 10, name: 'Sleeve Bearing HE 2311 K', qty: 1, price: 374.00 }], totalCost: 374.00, timestamp: new Date('2023-07-01').getTime() },
+
+    // 07/07/2023
+    { id: 'r13', machineId: 'm8', machineName: 'ST-1 PPC', date: '2023-07-07', issue: 'Chain link', technician: 'Somchai', parts: [], totalCost: 55.74, timestamp: new Date('2023-07-07').getTime() }, // Chain connector
+
+    // 15/07/2023
+    { id: 'r14', machineId: 'm9', machineName: 'Line Pre Cleaning', date: '2023-07-15', issue: 'Greasing', technician: 'Somchai', parts: [{ id: 11, name: 'PTT EP Grease # 2', qty: 1, price: 2400.00 }], totalCost: 2400.00, timestamp: new Date('2023-07-15').getTime() },
+    { id: 'r15', machineId: 'm5', machineName: 'VS-1 Pre', date: '2023-07-15', issue: 'Fasteners', technician: 'Wichai', parts: [{ id: 12, name: 'Nut NC 5/8 x 2', qty: 4, price: 11.80 }], totalCost: 47.20, timestamp: new Date('2023-07-15').getTime() },
+    { id: 'r16', machineId: 'm10', machineName: 'CP-2 Pre', date: '2023-07-15', issue: 'Fasteners', technician: 'Suchart', parts: [{ id: 4, name: 'Nut 1 NC 5/8 x 2 1/2', qty: 6, price: 16.47 }], totalCost: 98.84, timestamp: new Date('2023-07-15').getTime() },
+
+    // 30/07/2023
+    { id: 'r17', machineId: 'm11', machineName: 'MK-2 Pre Cleaning', date: '2023-07-30', issue: 'Valve Check', technician: 'External', parts: [{ id: 13, name: 'IRON COAT P BCD FLOW CHECK', qty: 1, price: 291.53 }], totalCost: 291.53, timestamp: new Date('2023-07-30').getTime() },
+    { id: 'r18', machineId: 'm11', machineName: 'MK-2 Pre Cleaning', date: '2023-07-30', issue: 'Gear wheel', technician: 'External', parts: [{ id: 14, name: 'Gear wheel 680x150x 50mm', qty: 1, price: 1050.00 }], totalCost: 1050.00, timestamp: new Date('2023-07-30').getTime() },
+    { id: 'r19', machineId: 'm11', machineName: 'MK-2 Pre Cleaning', date: '2023-07-30', issue: 'Chain', technician: 'External', parts: [{ id: 15, name: 'Chain 80-1R', qty: 1, price: 1750.00 }], totalCost: 1750.00, timestamp: new Date('2023-07-30').getTime() },
+    { id: 'r20', machineId: 'm11', machineName: 'MK-2 Pre Cleaning', date: '2023-07-30', issue: 'Oil', technician: 'External', parts: [{ id: 16, name: 'Gear oil Auto Mat', qty: 1, price: 115.74 }], totalCost: 115.74, timestamp: new Date('2023-07-30').getTime() },
+
+    // 13/08/2023
+    { id: 'r21', machineId: 'm12', machineName: 'RC-4 Mixing', date: '2023-08-13', issue: 'Grinding', technician: 'Wichai', parts: [{ id: 17, name: 'Grinding Wheel 4" Makita', qty: 2, price: 22.56 }], totalCost: 45.12, timestamp: new Date('2023-08-13').getTime() },
+    { id: 'r22', machineId: 'm12', machineName: 'RC-4 Mixing', date: '2023-08-13', issue: 'Bearing', technician: 'Wichai', parts: [{ id: 3, name: 'Bearing NTN UCP 204-012', qty: 2, price: 205.00 }], totalCost: 410.00, timestamp: new Date('2023-08-13').getTime() },
+    { id: 'r23', machineId: 'm7', machineName: 'SC-1 Mixing', date: '2023-08-13', issue: 'Fasteners', technician: 'Wichai', parts: [{ id: 4, name: 'Nut 1 NC 5/8 x 2 1/2', qty: 6, price: 16.47 }], totalCost: 98.84, timestamp: new Date('2023-08-13').getTime() },
+    { id: 'r24', machineId: 'm10', machineName: 'CP-2 Pre', date: '2023-08-13', issue: 'Fasteners', technician: 'Wichai', parts: [{ id: 4, name: 'Nut 1 NC 5/8 x 2 1/2', qty: 2, price: 13.20 }], totalCost: 26.39, timestamp: new Date('2023-08-13').getTime() },
+
+    // 14/08/2023
+    { id: 'r25', machineId: 'm13', machineName: 'RC-V.5 Mixing', date: '2023-08-14', issue: 'Seal replacement', technician: 'Somchai', parts: [{ id: 18, name: 'Seal TSN 511L', qty: 1, price: 240.00 }], totalCost: 240.00, timestamp: new Date('2023-08-14').getTime() },
+
+    // 15/08/2023
+    { id: 'r26', machineId: 'm5', machineName: 'VS-1 Pre', date: '2023-08-15', issue: 'Bearing', technician: 'Wichai', parts: [{ id: 3, name: 'Bearing NTN UCP 204-012', qty: 1, price: 240.00 }], totalCost: 240.00, timestamp: new Date('2023-08-15').getTime() }, // Price var? Use image value
+    { id: 'r27', machineId: 'm12', machineName: 'RC-4 Mixing', date: '2023-08-15', issue: 'Bearing', technician: 'Somchai', parts: [{ id: 3, name: 'Bearing NTN UCP 204-012', qty: 1, price: 205.00 }], totalCost: 205.00, timestamp: new Date('2023-08-15').getTime() },
+
+    // 11/11/2023
+    { id: 'r28', machineId: 'm6', machineName: 'SC Jumbo Mixing', date: '2023-11-11', issue: 'Pipe work', technician: 'External', parts: [{ id: 19, name: 'Three joint PVC 1x1', qty: 1, price: 49.98 }], totalCost: 49.98, timestamp: new Date('2023-11-11').getTime() },
+    { id: 'r29', machineId: 'm6', machineName: 'SC Jumbo Mixing', date: '2023-11-11', issue: 'Pipe work', technician: 'External', parts: [{ id: 20, name: 'Connector 90 pvc 1"xn', qty: 4, price: 9.77 }], totalCost: 39.10, timestamp: new Date('2023-11-11').getTime() },
+    { id: 'r30', machineId: 'm6', machineName: 'SC Jumbo Mixing', date: '2023-11-11', issue: 'Pipe work', technician: 'External', parts: [{ id: 21, name: 'Ball valve 1"', qty: 1, price: 171.01 }], totalCost: 171.01, timestamp: new Date('2023-11-11').getTime() },
 ];
 
 const machines = ref<Machine[]>([]);
@@ -123,13 +169,13 @@ export function useMyMachine() {
             const storedStocks = localStorage.getItem('mymachine_stocks');
             const simVersion = localStorage.getItem('mymachine_sim_version');
 
-            // Force update for new simulation data (v2)
-            if (simVersion !== 'v2') {
+            // Force update for new simulation data (v6) - Bilingual Stock Support
+            if (simVersion !== 'v6') {
                 machines.value = mockMachines;
                 repairs.value = mockRepairs;
                 stocks.value = mockStocks;
                 saveData();
-                localStorage.setItem('mymachine_sim_version', 'v2');
+                localStorage.setItem('mymachine_sim_version', 'v6');
                 return;
             }
 

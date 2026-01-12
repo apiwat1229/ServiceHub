@@ -23,6 +23,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useMyMachine, type RepairPart } from '@/composables/useMyMachine';
 import { cn } from '@/lib/utils';
+import { CalendarDate, getLocalTimeZone } from '@internationalized/date';
 import { format } from 'date-fns';
 import {
   Calendar as CalendarIcon,
@@ -32,7 +33,7 @@ import {
   Plus,
   Trash2,
 } from 'lucide-vue-next';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 
 const props = defineProps<{
   initialData?: any;
@@ -59,6 +60,20 @@ const form = ref<{
         parts: [],
       }
 );
+
+// Computed property to handle conversion between Date and CalendarDate
+const calendarValue = computed({
+  get: () => {
+    if (!form.value.date) return undefined;
+    const d = form.value.date;
+    return new CalendarDate(d.getFullYear(), d.getMonth() + 1, d.getDate());
+  },
+  set: (v: CalendarDate | undefined) => {
+    if (v) {
+      form.value.date = v.toDate(getLocalTimeZone());
+    }
+  },
+});
 
 const partInput = ref<{
   name: string;
@@ -203,7 +218,7 @@ const handleSubmit = () => {
             </Button>
           </PopoverTrigger>
           <PopoverContent class="w-auto p-0 border-none shadow-xl">
-            <Calendar v-model="form.date as any" mode="single" initial-focus />
+            <Calendar v-model="calendarValue" mode="single" initial-focus />
           </PopoverContent>
         </Popover>
       </div>
@@ -336,10 +351,18 @@ const handleSubmit = () => {
             <TableRow v-for="p in form.parts" :key="p.id">
               <TableCell class="font-medium">{{ p.name }}</TableCell>
               <TableCell class="text-center">{{ p.qty }}</TableCell>
-              <TableCell class="text-right">฿{{ p.price.toLocaleString() }}</TableCell>
-              <TableCell class="text-right font-bold text-slate-700"
-                >฿{{ (p.qty * p.price).toLocaleString() }}</TableCell
-              >
+              <TableCell class="text-right">{{
+                p.price.toLocaleString('th-TH', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })
+              }}</TableCell>
+              <TableCell class="text-right font-bold text-slate-700">{{
+                (p.qty * p.price).toLocaleString('th-TH', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })
+              }}</TableCell>
               <TableCell>
                 <Button
                   variant="ghost"
@@ -357,9 +380,12 @@ const handleSubmit = () => {
                 class="text-right font-bold text-slate-600 uppercase text-xs tracking-wider"
                 >Estimated Total Cost</TableCell
               >
-              <TableCell class="text-right font-black text-blue-600 text-lg"
-                >฿{{ calculateTotal(form.parts).toLocaleString() }}</TableCell
-              >
+              <TableCell class="text-right font-black text-blue-600 text-lg">{{
+                calculateTotal(form.parts).toLocaleString('th-TH', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })
+              }}</TableCell>
               <TableCell></TableCell>
             </TableRow>
           </TableBody>

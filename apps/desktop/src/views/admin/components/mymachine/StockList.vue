@@ -3,14 +3,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import DataTable from '@/components/ui/data-table/DataTable.vue';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -28,7 +20,6 @@ import {
   Edit2,
   Filter,
   MapPin,
-  MoreHorizontal,
   Package,
   Search,
   Tag,
@@ -42,6 +33,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'add-stock'): void;
+  (e: 'edit-stock', item: any): void;
 }>();
 
 const { stocks, deleteStock } = useMyMachine();
@@ -93,9 +85,8 @@ const handleDelete = (id: string) => {
 
 const formatCurrency = (val: number) => {
   return new Intl.NumberFormat('th-TH', {
-    style: 'currency',
-    currency: 'THB',
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(val);
 };
 
@@ -177,7 +168,8 @@ const columns: ColumnDef<any>[] = [
               Badge,
               {
                 variant: 'outline',
-                class: 'bg-red-50 text-red-700 border-red-100 text-[0.5625rem] font-bold px-1.5 py-0',
+                class:
+                  'bg-red-50 text-red-700 border-red-100 text-[0.5625rem] font-bold px-1.5 py-0',
               },
               () => 'LOW STOCK'
             )
@@ -191,44 +183,38 @@ const columns: ColumnDef<any>[] = [
     cell: ({ row }) => {
       const amount = parseFloat(row.getValue('price'));
       return h('div', { class: 'flex flex-col' }, [
-        h('span', { class: 'text-sm font-bold text-slate-900' }, `฿${amount.toLocaleString()}`),
-        h('span', { class: 'text-[0.625rem] text-slate-400' }, 'Unit Price'),
+        h('span', { class: 'text-sm font-bold text-slate-900' }, formatCurrency(amount)),
       ]);
     },
   },
   {
     id: 'actions',
+    header: 'Action',
     enableHiding: false,
     cell: ({ row }) => {
-      return h(
-        DropdownMenu,
-        {},
-        {
-          default: () => [
-            h(DropdownMenuTrigger, { asChild: true }, () =>
-              h(Button, { variant: 'ghost', class: 'h-8 w-8 p-0' }, () =>
-                h(MoreHorizontal, { class: 'h-4 w-4' })
-              )
-            ),
-            h(DropdownMenuContent, { align: 'end', class: 'w-40' }, () => [
-              h(DropdownMenuLabel, () => 'Item Management'),
-              h(DropdownMenuSeparator),
-              h(DropdownMenuItem, { class: 'focus:bg-blue-50' }, () => [
-                h(Edit2, { class: 'mr-2 h-4 w-4' }),
-                'Edit Details',
-              ]),
-              h(
-                DropdownMenuItem,
-                {
-                  class: 'text-red-600 focus:text-red-600 focus:bg-red-50',
-                  onClick: () => handleDelete(row.original.id),
-                },
-                () => [h(Trash2, { class: 'mr-2 h-4 w-4' }), 'Remove Item']
-              ),
-            ]),
-          ],
-        }
-      );
+      const item = row.original;
+      return h('div', { class: 'flex items-center gap-2' }, [
+        h(
+          Button,
+          {
+            variant: 'outline',
+            size: 'icon',
+            class: 'h-8 w-8 text-blue-600 border-blue-100 hover:bg-blue-50 hover:text-blue-700',
+            onClick: () => emit('edit-stock', item),
+          },
+          () => h(Edit2, { class: 'h-4 w-4' })
+        ),
+        h(
+          Button,
+          {
+            variant: 'outline',
+            size: 'icon',
+            class: 'h-8 w-8 text-red-600 border-red-100 hover:bg-red-50 hover:text-red-700',
+            onClick: () => handleDelete(item.id),
+          },
+          () => h(Trash2, { class: 'h-4 w-4' })
+        ),
+      ]);
     },
   },
 ];
@@ -237,7 +223,7 @@ const columns: ColumnDef<any>[] = [
 <template>
   <div class="h-full flex flex-col overflow-hidden bg-slate-50">
     <!-- Scrollable Content Area -->
-    <div class="flex-1 overflow-y-auto px-6 pb-6 pt-4">
+    <div class="flex-1 overflow-y-auto px-6 pb-6 pt-1">
       <!-- Statistics Cards (Modern Compact) -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 flex-shrink-0 pb-4">
         <Card

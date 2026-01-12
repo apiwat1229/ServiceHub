@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { useMyMachine } from '@/composables/useMyMachine';
 import {
   Activity,
+  ArrowLeft,
   Calendar,
   Clock,
   FileText,
@@ -13,20 +14,25 @@ import {
   Wrench,
 } from 'lucide-vue-next';
 import { computed, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
+
+const props = defineProps<{
+  machineId?: string;
+}>();
 
 const route = useRoute();
+const router = useRouter();
 const { machines, repairs, loadData } = useMyMachine();
 
-const machineId = computed(() => route.params.id as string);
+const effectiveMachineId = computed(() => props.machineId || (route.params.id as string));
 
 const machine = computed(() => {
-  return machines.value.find((m) => m.id === machineId.value);
+  return machines.value.find((m) => m.id === effectiveMachineId.value);
 });
 
 const machineRepairs = computed(() => {
   return repairs.value
-    .filter((r) => r.machineId === machineId.value)
+    .filter((r) => r.machineId === effectiveMachineId.value)
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 });
 
@@ -36,9 +42,8 @@ const totalRepairCost = computed(() => {
 
 const formatCurrency = (val: number) => {
   return new Intl.NumberFormat('th-TH', {
-    style: 'currency',
-    currency: 'THB',
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(val);
 };
 
@@ -61,14 +66,50 @@ onMounted(() => {
 </script>
 
 <template>
-  <div v-if="machine" class="h-full bg-slate-100/50 overflow-hidden font-sans">
-    <!-- Centered Scrollable Document Container -->
-    <div class="h-full overflow-y-auto scrolling-touch py-10 px-4">
+  <div
+    v-if="machine"
+    :class="[effectiveMachineId ? '' : 'h-full bg-slate-100/50 overflow-hidden', 'font-sans']"
+  >
+    <!-- Centered Scrollable Document Container (Only for full page) -->
+    <div :class="effectiveMachineId ? '' : 'h-full overflow-y-auto scrolling-touch py-10 px-4'">
       <div
-        class="max-w-4xl mx-auto bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-sm border border-slate-200 overflow-hidden"
+        :class="[
+          effectiveMachineId
+            ? 'border-none shadow-none'
+            : 'max-w-4xl mx-auto bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-sm border border-slate-200',
+          'overflow-hidden',
+        ]"
       >
         <!-- Body Content -->
-        <div class="p-10 space-y-12">
+        <div :class="effectiveMachineId ? 'px-10 py-6 space-y-6' : 'p-10 space-y-12'">
+          <!-- Back Button (Only for full page) -->
+          <div
+            v-if="!effectiveMachineId"
+            class="flex items-center justify-between border-b border-slate-100 pb-6 -mt-2"
+          >
+            <button
+              @click="router.back()"
+              class="group flex items-center gap-2 text-slate-400 hover:text-slate-900 transition-colors"
+            >
+              <div
+                class="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center group-hover:border-slate-900 group-hover:bg-slate-900 group-hover:text-white transition-all shadow-sm"
+              >
+                <ArrowLeft class="w-4 h-4" />
+              </div>
+              <span class="text-[0.625rem] font-black uppercase tracking-[0.2em]"
+                >Back to List</span
+              >
+            </button>
+            <div class="text-right">
+              <p class="text-[0.5rem] font-black text-slate-300 uppercase tracking-widest">
+                Document Ref
+              </p>
+              <p class="text-[0.625rem] font-black text-slate-900 uppercase tracking-tighter">
+                ASSET-{{ machine.id.split('-')[0].toUpperCase() }}
+              </p>
+            </div>
+          </div>
+
           <!-- Section 1: Asset Information Table -->
           <section class="space-y-4">
             <div class="flex items-center gap-2 border-b border-slate-900 pb-3">
@@ -138,7 +179,7 @@ onMounted(() => {
             </div>
 
             <div
-              class="flex items-center gap-12 bg-slate-50/50 p-8 border border-slate-100 rounded-sm"
+              class="flex items-center gap-12 bg-slate-50/50 p-4 border border-slate-100 rounded-sm"
             >
               <div class="flex-1 space-y-1 text-center">
                 <p class="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest">
@@ -159,13 +200,15 @@ onMounted(() => {
                 <p class="text-3xl font-black text-slate-900 tracking-tighter">
                   {{ machineRepairs.length }} Events
                 </p>
-                <p class="text-[0.5625rem] font-bold text-slate-400 uppercase">Confirmed Recorded Logs</p>
+                <p class="text-[0.5625rem] font-bold text-slate-400 uppercase">
+                  Confirmed Recorded Logs
+                </p>
               </div>
             </div>
           </section>
 
           <!-- Section 3: Maintenance Log Book (Expanded Details) -->
-          <section class="space-y-6">
+          <section class="space-y-4">
             <div class="flex items-center justify-between border-b border-slate-900 pb-3">
               <div class="flex items-center gap-3">
                 <div
@@ -182,7 +225,7 @@ onMounted(() => {
               >
             </div>
 
-            <div v-if="machineRepairs.length > 0" class="space-y-12">
+            <div v-if="machineRepairs.length > 0" class="space-y-8">
               <div
                 v-for="repair in machineRepairs"
                 :key="repair.id"
@@ -193,7 +236,7 @@ onMounted(() => {
                   class="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-white border-2 border-slate-900 shadow-sm"
                 ></div>
 
-                <div class="space-y-6">
+                <div class="space-y-4">
                   <!-- Entry Header -->
                   <div class="flex items-start justify-between">
                     <div class="space-y-1">
@@ -214,10 +257,10 @@ onMounted(() => {
                       </div>
                     </div>
                     <div class="text-right">
-                      <p class="text-sm font-black text-slate-900 tracking-tight leading-none mb-1">
+                      <p class="text-lg font-black text-slate-900 tracking-tight leading-none mb-1">
                         {{ formatCurrency(repair.totalCost) }}
                       </p>
-                      <p class="text-[0.5625rem] font-black text-slate-400 uppercase tracking-[0.2em]">
+                      <p class="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">
                         Service Fee
                       </p>
                     </div>
@@ -249,7 +292,9 @@ onMounted(() => {
                   <div v-if="repair.parts && repair.parts.length > 0" class="space-y-3">
                     <div class="flex items-center gap-2">
                       <Package class="w-3.5 h-3.5 text-slate-400" />
-                      <p class="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest">
+                      <p
+                        class="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest"
+                      >
                         Parts & Materials Used
                       </p>
                     </div>
@@ -267,22 +312,20 @@ onMounted(() => {
                           </div>
                           <div>
                             <p
-                              class="text-[0.6875rem] font-black text-slate-900 uppercase tracking-tighter leading-none mb-1"
+                              class="text-sm font-black text-slate-900 uppercase tracking-tighter leading-none mb-1"
                             >
                               {{ part.name }}
                             </p>
-                            <p
-                              class="text-[0.5625rem] font-bold text-slate-400 uppercase tracking-widest"
-                            >
+                            <p class="text-xs font-bold text-slate-500 uppercase tracking-widest">
                               {{ (part as any).code || 'N/A' }}
                             </p>
                           </div>
                         </div>
                         <div class="text-right">
-                          <p class="text-[0.6875rem] font-black text-slate-900 leading-none mb-1">
+                          <p class="text-sm font-black text-slate-900 leading-none mb-1">
                             {{ part.qty }} {{ (part as any).unit || 'Units' }}
                           </p>
-                          <p class="text-[0.5625rem] font-bold text-slate-400 uppercase tracking-tighter">
+                          <p class="text-xs font-black text-blue-600 uppercase tracking-tighter">
                             @ {{ formatCurrency(part.price) }}
                           </p>
                         </div>

@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -11,9 +13,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { FileText, QrCode, X } from 'lucide-vue-next';
+import { CalendarDate, getLocalTimeZone } from '@internationalized/date';
+import { format } from 'date-fns';
+import { Calendar as CalendarIcon, FileText, QrCode, X } from 'lucide-vue-next';
 import QrcodeVue from 'qrcode.vue';
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 
 const props = defineProps<{
@@ -39,21 +43,45 @@ const generateCode = (category: string) => {
 
 const form = ref(
   props.initialData
-    ? { ...props.initialData }
+    ? {
+        ...props.initialData,
+        // Ensure legacy data maps correctly
+        nameTH: props.initialData.nameTH || '',
+        nameEN: props.initialData.nameEN || props.initialData.name,
+        dateReceived: props.initialData.dateReceived
+          ? new Date(props.initialData.dateReceived)
+          : new Date(),
+      }
     : {
         name: '',
+        nameTH: '',
+        nameEN: '',
         code: generateCode(''), // Default SP
         category: '',
         location: '',
         qty: 0,
         minQty: 5,
         price: 0,
-        dateReceived: new Date().toISOString().split('T')[0],
+        dateReceived: new Date(),
         receiver: '',
         description: '',
         autoGenerateCode: true,
       }
 );
+
+// Computed property to handle conversion between Date and CalendarDate
+const calendarValue = computed({
+  get: () => {
+    if (!form.value.dateReceived) return undefined;
+    const d = form.value.dateReceived;
+    return new CalendarDate(d.getFullYear(), d.getMonth() + 1, d.getDate());
+  },
+  set: (v: CalendarDate | undefined) => {
+    if (v) {
+      form.value.dateReceived = v.toDate(getLocalTimeZone());
+    }
+  },
+});
 
 const fileInput = ref<HTMLInputElement | null>(null);
 
@@ -88,7 +116,7 @@ const removeImage = (e: Event) => {
 watch(
   [() => form.value.autoGenerateCode, () => form.value.category],
   ([autoGen, cat]) => {
-    if (autoGen) {
+    if (autoGen && !props.initialData?.code) {
       form.value.code = generateCode(cat);
     }
   },
@@ -96,10 +124,20 @@ watch(
 );
 
 const handleSave = () => {
-  if (!form.value.name) return;
-  const payload = { ...form.value, unit: 'pcs' };
+  if (!form.value.nameEN) {
+    toast.error('Part Name (EN) is required');
+    return;
+  }
+
+  const payload = {
+    ...form.value,
+    name: form.value.nameEN, // Primary display name
+    dateReceived: format(form.value.dateReceived, 'yyyy-MM-dd'),
+    unit: 'pcs',
+  };
   emit('save', payload);
 };
+// Force HMR Update 2
 </script>
 
 <template>
@@ -182,30 +220,39 @@ const handleSave = () => {
     <div class="md:col-span-8 space-y-4">
       <div class="grid grid-cols-2 gap-4">
         <div class="space-y-2">
-          <Label class="text-slate-700 font-semibold">Part Name</Label>
+          <Label class="text-slate-700 font-semibold">Part Name (English)</Label>
           <Input
-            v-model="form.name"
+            v-model="form.nameEN"
             placeholder="e.g. Bearing 6002-ZZ"
             class="bg-white border-slate-200"
           />
         </div>
         <div class="space-y-2">
-          <div class="flex items-center justify-between">
-            <Label class="text-slate-700 font-semibold">Stock Code</Label>
-            <div class="flex items-center space-x-2">
-              <Checkbox id="auto-gen-stock" v-model:checked="form.autoGenerateCode" />
-              <label for="auto-gen-stock" class="text-xs font-medium text-slate-500 cursor-pointer">
-                Auto-gen
-              </label>
-            </div>
-          </div>
+          <Label class="text-slate-700 font-semibold">Part Name (Thai)</Label>
           <Input
-            v-model="form.code"
-            placeholder="e.g. SP-BRG-001"
-            :disabled="form.autoGenerateCode"
+            v-model="form.nameTH"
+            placeholder="e.g. ตลับลูกปืน 6002-ZZ"
             class="bg-white border-slate-200"
           />
         </div>
+      </div>
+
+      <div class="space-y-2">
+        <div class="flex items-center justify-between">
+          <Label class="text-slate-700 font-semibold">Stock Code</Label>
+          <div class="flex items-center space-x-2">
+            <Checkbox id="auto-gen-stock" v-model:checked="form.autoGenerateCode" />
+            <label for="auto-gen-stock" class="text-xs font-medium text-slate-500 cursor-pointer">
+              Auto-gen
+            </label>
+          </div>
+        </div>
+        <Input
+          v-model="form.code"
+          placeholder="e.g. SP-BRG-001"
+          :disabled="form.autoGenerateCode"
+          class="bg-white border-slate-200"
+        />
       </div>
 
       <div class="grid grid-cols-2 gap-4">
@@ -251,7 +298,6 @@ const handleSave = () => {
         <div class="space-y-2">
           <Label class="text-slate-700 font-semibold">Unit Price (THB)</Label>
           <div class="relative">
-            <span class="absolute left-3 top-2.5 text-slate-400 text-sm">฿</span>
             <Input
               class="pl-7 bg-white border-slate-200"
               type="number"
@@ -262,7 +308,21 @@ const handleSave = () => {
         </div>
         <div class="space-y-2">
           <Label class="text-slate-700 font-semibold">Entry Date</Label>
-          <Input type="date" v-model="form.dateReceived" class="bg-white border-slate-200" />
+          <Popover>
+            <PopoverTrigger as-child>
+              <Button
+                variant="outline"
+                class="w-full justify-start text-left font-normal bg-white border-slate-200"
+                :class="!form.dateReceived && 'text-muted-foreground'"
+              >
+                <CalendarIcon class="mr-2 h-4 w-4" />
+                {{ form.dateReceived ? format(form.dateReceived, 'PPP') : 'Pick a date' }}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent class="w-auto p-0 border-none shadow-xl" align="start">
+              <Calendar v-model="calendarValue" mode="single" initial-focus />
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
 
