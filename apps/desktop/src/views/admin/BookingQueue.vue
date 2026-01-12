@@ -623,21 +623,10 @@ watch(selectedSlot, (newSlot) => {
       >
         <!-- Card Body -->
         <div class="p-4 flex-1 flex flex-col">
-          <!-- Header: Queue & Actions -->
+          <!-- Header: Status (Left) & Queue (Right) -->
           <div class="flex justify-between items-start mb-4">
-            <div class="flex flex-col">
-              <span
-                class="text-[0.625rem] uppercase tracking-widest text-muted-foreground font-bold"
-                >{{ t('bookingQueue.queueNumber') }}</span
-              >
-              <div class="flex items-baseline gap-1">
-                <span class="text-3xl font-black text-primary leading-none">{{
-                  queue.queueNo
-                }}</span>
-              </div>
-            </div>
-
-            <div class="flex flex-col gap-1 items-end">
+            <!-- Left: Status -->
+            <div class="flex flex-col items-start">
               <div
                 v-if="queue.status === 'APPROVED'"
                 class="flex items-center text-green-600 bg-green-50 px-2.5 py-1 rounded-full border border-green-100 shadow-sm shrink-0"
@@ -647,29 +636,19 @@ watch(selectedSlot, (newSlot) => {
                   t('booking.deliveryCompleted') || 'Completed'
                 }}</span>
               </div>
+              <!-- Slot Label if not approved? Could add more info here if needed -->
+            </div>
 
-              <div
-                v-if="queue.status !== 'APPROVED'"
-                class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+            <!-- Right: Queue -->
+            <div class="flex flex-col items-end">
+              <span
+                class="text-[0.625rem] uppercase tracking-widest text-muted-foreground font-bold"
+                >{{ t('bookingQueue.queueNumber') }}</span
               >
-                <Button
-                  v-if="authStore.hasPermission('bookings:update')"
-                  variant="secondary"
-                  size="icon"
-                  class="h-8 w-8 rounded-full shadow-sm hover:bg-primary hover:text-white transition-colors"
-                  @click="handleEdit(queue)"
-                >
-                  <Edit2 class="h-3.5 w-3.5" />
-                </Button>
-                <Button
-                  v-if="authStore.hasPermission('bookings:delete')"
-                  variant="secondary"
-                  size="icon"
-                  class="h-8 w-8 rounded-full shadow-sm text-destructive hover:bg-destructive hover:text-white transition-colors"
-                  @click="handleDeleteClick(queue)"
-                >
-                  <Trash2 class="h-3.5 w-3.5" />
-                </Button>
+              <div class="flex items-baseline gap-1">
+                <span class="text-3xl font-black text-primary leading-none">{{
+                  queue.queueNo
+                }}</span>
               </div>
             </div>
           </div>
@@ -744,7 +723,36 @@ watch(selectedSlot, (newSlot) => {
           </div>
 
           <!-- Footer Actions -->
-          <div class="pt-3 flex justify-end mt-auto">
+          <div
+            class="pt-3 flex justify-between items-center mt-auto border-t border-dashed border-border/40"
+          >
+            <!-- Left: Edit/Delete -->
+            <div
+              v-if="queue.status !== 'APPROVED'"
+              class="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              <Button
+                v-if="authStore.hasPermission('bookings:update')"
+                variant="secondary"
+                size="icon"
+                class="h-8 w-8 rounded-full shadow-sm hover:bg-primary hover:text-white transition-colors"
+                @click="handleEdit(queue)"
+              >
+                <Edit2 class="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                v-if="authStore.hasPermission('bookings:delete')"
+                variant="secondary"
+                size="icon"
+                class="h-8 w-8 rounded-full shadow-sm text-destructive hover:bg-destructive hover:text-white transition-colors"
+                @click="handleDeleteClick(queue)"
+              >
+                <Trash2 class="h-3.5 w-3.5" />
+              </Button>
+            </div>
+            <div v-else></div>
+
+            <!-- Right: Ticket Button -->
             <Button
               variant="outline"
               size="sm"
