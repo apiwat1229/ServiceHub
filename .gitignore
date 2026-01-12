@@ -60,3 +60,4 @@ apps/desktop/dist/
 .vercel
 .turbo
 apps/desktop/dist-electron/
+apps/api/uploads/
