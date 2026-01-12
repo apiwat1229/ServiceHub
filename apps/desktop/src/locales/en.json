@@ -631,7 +631,8 @@
     "estimatedWeightTon": "Estimated Weight (Ton)",
     "estimatedWeightPlaceholder": "Enter weight in Kg.",
     "validation": {
-      "estimatedWeightRequired": "Please enter Estimated Weight"
+      "estimatedWeightRequired": "Please enter Estimated Weight",
+      "rubberTypeRequired": "Please select Rubber Type"
     }
   },
   "admin": {

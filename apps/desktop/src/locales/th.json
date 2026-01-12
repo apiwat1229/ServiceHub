@@ -627,7 +627,8 @@
     "estimatedWeightTon": "น้ำหนักโดยประมาณ (ตัน)",
     "estimatedWeightPlaceholder": "ระบุน้ำหนัก (กก.)",
     "validation": {
-      "estimatedWeightRequired": "กรุณาระบุน้ำหนักโดยประมาณ"
+      "estimatedWeightRequired": "กรุณาระบุน้ำหนักโดยประมาณ",
+      "rubberTypeRequired": "กรุณาเลือกประเภทยาง"
     }
   },
   "admin": {
