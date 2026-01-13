@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import {
   Calendar,
   ClipboardList,
+  Pen,
   Plus,
   QrCode,
   Search,
@@ -143,15 +144,6 @@ const columns = computed<ColumnDef<any>[]>(() => [
     header: 'Status',
     cell: ({ row }) => {
       const status = (row.getValue('status') as string) || 'COMPLETED';
-      const variant =
-        status === 'OPEN'
-          ? 'default'
-          : status === 'IN_PROGRESS'
-            ? 'secondary'
-            : status === 'WAITING_PARTS'
-              ? 'outline'
-              : 'success';
-
       const colorClass =
         status === 'OPEN'
           ? 'bg-blue-100 text-blue-700 hover:bg-blue-100'

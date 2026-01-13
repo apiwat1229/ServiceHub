@@ -194,7 +194,9 @@
       "stats": {
         "totalCost": "Total Cost",
         "operational": "Operational",
-        "totalRepairs": "Total Repairs"
+        "totalRepairs": "Total Repairs",
+        "activeCount": "Active Machines",
+        "availableStock": "Available Stock"
       },
       "tabs": {
         "overview": "Overview",
@@ -259,7 +261,7 @@
         }
       },
       "repairs": {
-        "title": "Maintenance History",
+        "title": "Maintenance Jobs",
         "subtitle": "Track all repair and maintenance activities",
         "search": "Search logs...",
         "add": "Add Record",

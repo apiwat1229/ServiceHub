@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import {
   Command,
   CommandEmpty,
@@ -22,9 +23,18 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useMyMachine, type RepairPart } from '@/composables/useMyMachine';
 import { cn } from '@/lib/utils';
+import { CalendarDate, getLocalTimeZone, type DateValue } from '@internationalized/date';
 import { format } from 'date-fns';
-import { Check, ChevronsUpDown, Package, Plus, Trash2, X } from 'lucide-vue-next';
-import { ref } from 'vue';
+import {
+  Calendar as CalendarIcon,
+  Check,
+  ChevronsUpDown,
+  Package,
+  Plus,
+  Trash2,
+  X,
+} from 'lucide-vue-next';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
 
@@ -65,8 +75,18 @@ const form = ref<{
       }
 );
 
-// Computed property to handle conversion between Date and CalendarDate
-// const calendarValue = computed({ ... }); // Removed as not used for Input type="date"
+const repairDateValue = computed({
+  get: () => {
+    if (!form.value.date) return undefined;
+    const d = new Date(form.value.date);
+    return new CalendarDate(d.getFullYear(), d.getMonth() + 1, d.getDate());
+  },
+  set: (val: DateValue | undefined) => {
+    if (val) {
+      form.value.date = val.toDate(getLocalTimeZone());
+    }
+  },
+});
 
 const partInput = ref<{
   name: string;
@@ -153,7 +173,7 @@ const handleSubmit = () => {
 
   const payload = {
     ...form.value,
-    date: format(form.value.date, 'yyyy-MM-dd'),
+    date: form.value.date.toISOString(),
     machineName: selectedMachine ? selectedMachine.name : 'Unknown',
     totalCost: calculateTotal(form.value.parts),
   };
@@ -221,12 +241,25 @@ const handleSubmit = () => {
       <div class="flex gap-4">
         <div class="flex-1 space-y-2 text-slate-700">
           <Label class="font-semibold">{{ t('services.myMachine.forms.repair.date') }}</Label>
-          <Input
-            :value="form.date instanceof Date ? form.date.toISOString().split('T')[0] : form.date"
-            @input="(e: any) => (form.date = new Date(e.target.value))"
-            type="date"
-            class="bg-white border-slate-200"
-          />
+          <Popover>
+            <PopoverTrigger as-child>
+              <Button
+                variant="outline"
+                :class="
+                  cn(
+                    'w-full justify-start text-left font-normal bg-white border-slate-200',
+                    !form.date && 'text-muted-foreground'
+                  )
+                "
+              >
+                <CalendarIcon class="mr-2 h-4 w-4" />
+                {{ form.date ? format(form.date, 'dd/MM/yyyy') : 'Pick a date' }}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent class="w-auto p-0">
+              <Calendar v-model="repairDateValue" mode="single" initial-focus />
+            </PopoverContent>
+          </Popover>
         </div>
         <div class="w-1/3 space-y-2 text-slate-700">
           <Label class="font-semibold">Status</Label>

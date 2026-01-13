@@ -84,11 +84,11 @@ export class MyMachineService {
                 const getRandomMachine = () => machines[Math.floor(Math.random() * machines.length)];
 
                 const mockRepairs = [
-                    { machineId: getRandomMachine().id, machineName: getRandomMachine().name, date: new Date('2023-11-20'), issue: 'Belt replacement', technician: 'Somchai', totalCost: 1200.00 },
-                    { machineId: getRandomMachine().id, machineName: getRandomMachine().name, date: new Date('2023-12-05'), issue: 'Oil leak fix', technician: 'Wichai', totalCost: 450.00 },
-                    { machineId: getRandomMachine().id, machineName: getRandomMachine().name, date: new Date('2024-01-10'), issue: 'Motor servicing', technician: 'Somchai', totalCost: 2500.00 },
-                    { machineId: getRandomMachine().id, machineName: getRandomMachine().name, date: new Date('2024-01-15'), issue: 'Sensor calibration', technician: 'Anon', totalCost: 800.00 },
-                    { machineId: getRandomMachine().id, machineName: getRandomMachine().name, date: new Date('2024-02-01'), issue: 'Emergency stop failure', technician: 'Wichai', totalCost: 3500.00 },
+                    { machineId: getRandomMachine().id, machineName: getRandomMachine().name, date: new Date('2023-11-20'), issue: 'เปลี่ยนสายพาน (Belt replacement)', technician: 'Somchai', totalCost: 1200.00 },
+                    { machineId: getRandomMachine().id, machineName: getRandomMachine().name, date: new Date('2023-12-05'), issue: 'ซ่อมจุดน้ำมันรั่ว (Oil leak)', technician: 'Wichai', totalCost: 450.00 },
+                    { machineId: getRandomMachine().id, machineName: getRandomMachine().name, date: new Date('2024-01-10'), issue: 'ซ่อมบำรุงมอเตอร์ (Motor service)', technician: 'Somchai', totalCost: 2500.00 },
+                    { machineId: getRandomMachine().id, machineName: getRandomMachine().name, date: new Date('2024-01-15'), issue: 'ปรับเทียบเซ็นเซอร์ (Sensor calibration)', technician: 'Anon', totalCost: 800.00 },
+                    { machineId: getRandomMachine().id, machineName: getRandomMachine().name, date: new Date('2024-02-01'), issue: 'ปุ่มหยุดฉุกเฉินขัดข้อง (E-Stop Failure)', technician: 'Wichai', totalCost: 3500.00 },
                 ];
 
                 for (const repair of mockRepairs) {
