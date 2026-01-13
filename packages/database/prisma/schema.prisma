@@ -793,3 +793,30 @@ model GLCode {
 
   @@map("gl_codes")
 }
+
+model StockCategory {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  nameEN    String?  @map("name_en")
+  nameTH    String?  @map("name_th")
+  prefix    String?  // For auto-generating stock codes (e.g., "MECH", "ELEC")
+  
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("stock_categories")
+}
+
+model StorageLocation {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  nameEN    String?  @map("name_en")
+  nameTH    String?  @map("name_th")
+  building  String?  // Optional: Building/Warehouse identifier
+  zone      String?  // Optional: Zone/Area within building
+  
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("storage_locations")
+}

@@ -105,6 +105,53 @@ export class MyMachineService {
             }
         }
 
+        // 4. Seed Stock Categories
+        const categoryCount = await this.prisma.stockCategory.count();
+        if (categoryCount === 0) {
+            const mockCategories = [
+                { name: 'Mechanical', nameEN: 'Mechanical', nameTH: 'เครื่องกล', prefix: 'MECH' },
+                { name: 'Electrical', nameEN: 'Electrical', nameTH: 'ไฟฟ้า', prefix: 'ELEC' },
+                { name: 'Electronic', nameEN: 'Electronic', nameTH: 'อิเล็กทรอนิกส์', prefix: 'ELN' },
+                { name: 'Pneumatic', nameEN: 'Pneumatic', nameTH: 'นิวเมติก', prefix: 'PNEU' },
+                { name: 'Hydraulic', nameEN: 'Hydraulic', nameTH: 'ไฮดรอลิก', prefix: 'HYDR' },
+                { name: 'Consumables', nameEN: 'Consumables', nameTH: 'วัสดุสิ้นเปลือง', prefix: 'CONS' },
+                { name: 'Spare Parts', nameEN: 'Spare Parts', nameTH: 'อะไหล่', prefix: 'PART' },
+                { name: 'Bearings', nameEN: 'Bearings', nameTH: 'ตลับลูกปืน', prefix: 'BEAR' },
+                { name: 'Fasteners', nameEN: 'Fasteners', nameTH: 'ตัวยึด', prefix: 'FAST' },
+                { name: 'Belts', nameEN: 'Belts', nameTH: 'สายพาน', prefix: 'BELT' },
+                { name: 'Lubricants', nameEN: 'Lubricants', nameTH: 'น้ำมันหล่อลื่น', prefix: 'LUBE' },
+                { name: 'Seals', nameEN: 'Seals', nameTH: 'ซีล', prefix: 'SEAL' },
+                { name: 'Piping', nameEN: 'Piping', nameTH: 'ท่อ', prefix: 'PIPE' },
+                { name: 'Valves', nameEN: 'Valves', nameTH: 'วาล์ว', prefix: 'VALV' },
+            ];
+            for (const category of mockCategories) {
+                await this.prisma.stockCategory.create({ data: category });
+            }
+            results['categories'] = `seeded ${mockCategories.length}`;
+        }
+
+        // 5. Seed Storage Locations
+        const locationCount = await this.prisma.storageLocation.count();
+        if (locationCount === 0) {
+            const mockLocations = [
+                { name: 'Main Warehouse', nameEN: 'Main Warehouse', nameTH: 'คลังหลัก', building: 'Building A', zone: 'Zone 1' },
+                { name: 'Production Floor', nameEN: 'Production Floor', nameTH: 'พื้นที่ผลิต', building: 'Building B', zone: 'Zone 2' },
+                { name: 'Maintenance Room', nameEN: 'Maintenance Room', nameTH: 'ห้องซ่อมบำรุง', building: 'Building A', zone: 'Zone 3' },
+                { name: 'Storage A', nameEN: 'Storage A', nameTH: 'คลัง A', building: 'Building A', zone: 'Zone 1' },
+                { name: 'Storage B', nameEN: 'Storage B', nameTH: 'คลัง B', building: 'Building A', zone: 'Zone 2' },
+                { name: 'Shelf A', nameEN: 'Shelf A', nameTH: 'ชั้น A', building: 'Building A', zone: 'Zone 1' },
+                { name: 'Shelf B', nameEN: 'Shelf B', nameTH: 'ชั้น B', building: 'Building A', zone: 'Zone 1' },
+                { name: 'Shelf C', nameEN: 'Shelf C', nameTH: 'ชั้น C', building: 'Building A', zone: 'Zone 1' },
+                { name: 'Bin 1', nameEN: 'Bin 1', nameTH: 'ถัง 1', building: 'Building A', zone: 'Zone 1' },
+                { name: 'Bin 2', nameEN: 'Bin 2', nameTH: 'ถัง 2', building: 'Building A', zone: 'Zone 1' },
+                { name: 'Bin 3', nameEN: 'Bin 3', nameTH: 'ถัง 3', building: 'Building A', zone: 'Zone 1' },
+            ];
+            for (const location of mockLocations) {
+                await this.prisma.storageLocation.create({ data: location });
+            }
+            results['locations'] = `seeded ${mockLocations.length}`;
+        }
+
         return { message: 'Seed execution completed', results };
     }
 

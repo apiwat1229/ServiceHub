@@ -57,27 +57,50 @@ export interface GLCode {
     purpose?: string;
 }
 
+export interface StockCategory {
+    id: string;
+    name: string;
+    nameEN?: string;
+    nameTH?: string;
+    prefix?: string;
+}
+
+export interface StorageLocation {
+    id: string;
+    name: string;
+    nameEN?: string;
+    nameTH?: string;
+    building?: string;
+    zone?: string;
+}
+
 const machines = ref<Machine[]>([]);
 const repairs = ref<Repair[]>([]);
 const stocks = ref<StockItem[]>([]);
 const glCodes = ref<GLCode[]>([]);
+const categories = ref<StockCategory[]>([]);
+const locations = ref<StorageLocation[]>([]);
 
 export function useMyMachine() {
 
     const loadData = async () => {
         try {
             // Fetch all data in parallel
-            const [machinesRes, repairsRes, stocksRes, glCodesRes] = await Promise.all([
+            const [machinesRes, repairsRes, stocksRes, glCodesRes, categoriesRes, locationsRes] = await Promise.all([
                 api.get('/mymachine/machines'),
                 api.get('/mymachine/repairs'),
                 api.get('/mymachine/stocks'),
-                api.get('/mymachine/gl-codes')
+                api.get('/mymachine/gl-codes'),
+                api.get('/mymachine/categories'),
+                api.get('/mymachine/locations'),
             ]);
 
             machines.value = machinesRes.data;
             repairs.value = repairsRes.data;
             stocks.value = stocksRes.data;
             glCodes.value = glCodesRes.data;
+            categories.value = categoriesRes.data;
+            locations.value = locationsRes.data;
 
             // If empty, trigger seed (One-time auto setup)
             // Check if machines are empty as the primary indicator
@@ -88,16 +111,20 @@ export function useMyMachine() {
                 await api.post('/mymachine/seed');
 
                 // Reload after seed
-                const [mRes, rRes, sRes, gRes] = await Promise.all([
+                const [mRes, rRes, sRes, gRes, cRes, lRes] = await Promise.all([
                     api.get('/mymachine/machines'),
                     api.get('/mymachine/repairs'),
                     api.get('/mymachine/stocks'),
-                    api.get('/mymachine/gl-codes')
+                    api.get('/mymachine/gl-codes'),
+                    api.get('/mymachine/categories'),
+                    api.get('/mymachine/locations'),
                 ]);
                 machines.value = mRes.data;
                 repairs.value = rRes.data;
                 stocks.value = sRes.data;
                 glCodes.value = gRes.data;
+                categories.value = cRes.data;
+                locations.value = lRes.data;
             }
 
         } catch (e) {
@@ -108,7 +135,8 @@ export function useMyMachine() {
     const addMachine = async (machine: Omit<Machine, 'id' | 'createdAt'>) => {
         try {
             const res = await api.post('/mymachine/machines', machine);
-            machines.value.push(res.data);
+            // Use array spread to ensure reactivity
+            machines.value = [...machines.value, res.data];
         } catch (e) {
             console.error('Failed to add machine', e);
             throw e;
@@ -130,14 +158,17 @@ export function useMyMachine() {
             // Correct endpoint matching the controller
             await api.post(`/mymachine/machines/${id}/update`, updates);
 
-            // Refetch or update local
+            // Replace the entire array to ensure reactivity
             const index = machines.value.findIndex(m => m.id === id);
             if (index !== -1) {
-                machines.value[index] = { ...machines.value[index], ...updates };
+                const updated = [...machines.value];
+                updated[index] = { ...updated[index], ...updates };
+                machines.value = updated;
             }
 
         } catch (e) {
             console.error('Failed to update machine', e);
+            throw e;
         }
     };
 
@@ -270,11 +301,85 @@ export function useMyMachine() {
         }
     };
 
+    // Stock Category Management
+    const addCategory = async (category: Omit<StockCategory, 'id'>) => {
+        try {
+            const res = await api.post('/mymachine/categories', category);
+            categories.value.push(res.data);
+            return res.data;
+        } catch (e) {
+            console.error('Failed to add category', e);
+            throw e;
+        }
+    };
+
+    const updateCategory = async (id: string, updates: Partial<StockCategory>) => {
+        try {
+            const res = await api.put(`/mymachine/categories/${id}`, updates);
+            const index = categories.value.findIndex(c => c.id === id);
+            if (index !== -1) {
+                categories.value[index] = res.data;
+            }
+            return res.data;
+        } catch (e) {
+            console.error('Failed to update category', e);
+            throw e;
+        }
+    };
+
+    const deleteCategory = async (id: string) => {
+        try {
+            await api.delete(`/mymachine/categories/${id}`);
+            categories.value = categories.value.filter(c => c.id !== id);
+        } catch (e) {
+            console.error('Failed to delete category', e);
+            throw e;
+        }
+    };
+
+    // Storage Location Management
+    const addLocation = async (location: Omit<StorageLocation, 'id'>) => {
+        try {
+            const res = await api.post('/mymachine/locations', location);
+            locations.value.push(res.data);
+            return res.data;
+        } catch (e) {
+            console.error('Failed to add location', e);
+            throw e;
+        }
+    };
+
+    const updateLocation = async (id: string, updates: Partial<StorageLocation>) => {
+        try {
+            const res = await api.put(`/mymachine/locations/${id}`, updates);
+            const index = locations.value.findIndex(l => l.id === id);
+            if (index !== -1) {
+                locations.value[index] = res.data;
+            }
+            return res.data;
+        } catch (e) {
+            console.error('Failed to update location', e);
+            throw e;
+        }
+    };
+
+    const deleteLocation = async (id: string) => {
+        try {
+            await api.delete(`/mymachine/locations/${id}`);
+            locations.value = locations.value.filter(l => l.id !== id);
+        } catch (e) {
+            console.error('Failed to delete location', e);
+            throw e;
+        }
+    };
+
     return {
         machines,
         repairs,
         stocks,
         glCodes,
+        categories,
+        locations,
         loadData,
         addMachine,
         updateMachine,
@@ -288,7 +393,12 @@ export function useMyMachine() {
         deleteStock,
         addGLCode,
         updateGLCode,
-        deleteGLCode
+        deleteGLCode,
+        addCategory,
+        updateCategory,
+        deleteCategory,
+        addLocation,
+        updateLocation,
+        deleteLocation,
     };
 }
-
