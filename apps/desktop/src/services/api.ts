@@ -4,7 +4,7 @@ import { storage } from '../services/storage';
 
 const getBaseUrl = () => {
     // Force local development URL for debugging backend changes
-    return 'http://localhost:3000/api';
+    return 'http://localhost:2530/api';
 
     // Original logic preserved for reference but disabled
     /*
