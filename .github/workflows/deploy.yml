@@ -14,6 +14,7 @@ jobs:
           cd /home/admin/Desktop/Desktop-NestJS
 
           # Pull latest code
+          git checkout package-lock.json
           git pull origin main
 
           # Install dependencies
