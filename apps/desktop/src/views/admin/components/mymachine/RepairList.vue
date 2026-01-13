@@ -1,4 +1,14 @@
 <script setup lang="ts">
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import DataTable from '@/components/ui/data-table/DataTable.vue';
@@ -50,6 +60,9 @@ const selectedRepair = ref<any>(null);
 const isQrModalOpen = ref(false);
 const selectedRepairForQr = ref<any>(null);
 
+// Delete Logic
+const repairToDelete = ref<string | null>(null);
+
 const viewDetails = (repair: any) => {
   selectedRepair.value = repair;
   isDetailModalOpen.value = true;
@@ -74,9 +87,19 @@ const filteredRepairs = computed(() => {
 });
 
 const handleDeleteRepair = (id: string) => {
-  if (confirm(t('services.myMachine.messages.confirmDeleteRepair'))) {
-    deleteRepair(id);
-    toast.success(t('services.myMachine.messages.repairRemoved'));
+  repairToDelete.value = id;
+};
+
+const confirmDelete = async () => {
+  if (repairToDelete.value) {
+    try {
+      await deleteRepair(repairToDelete.value);
+      toast.success(t('services.myMachine.messages.repairRemoved'));
+    } catch (e) {
+      toast.error('Failed to delete repair');
+    } finally {
+      repairToDelete.value = null;
+    }
   }
 };
 
@@ -283,5 +306,26 @@ const columns = computed<ColumnDef<any>[]>(() => [
         @close="isQrModalOpen = false"
       />
     </Dialog>
+
+    <!-- Delete Confirmation Dialog -->
+    <AlertDialog :open="!!repairToDelete" @update:open="(val) => !val && (repairToDelete = null)">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{{ t('services.myMachine.messages.confirmDelete') }}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {{ t('services.myMachine.messages.confirmDeleteRepair') }}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{{ t('common.cancel') }}</AlertDialogCancel>
+          <AlertDialogAction
+            @click="confirmDelete"
+            class="bg-red-600 hover:bg-red-700 text-white border-red-600 focus:ring-red-600"
+          >
+            {{ t('common.delete') }}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   </div>
 </template>

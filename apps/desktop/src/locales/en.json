@@ -383,6 +383,7 @@
         "machineSuccess": "Machine registered successfully",
         "machineRemoved": "Machine removed successfully",
         "repairSuccess": "Maintenance log recorded",
+        "repairUpdated": "Maintenance record updated",
         "repairRemoved": "Maintenance record deleted",
         "stockSuccess": "Inventory updated",
         "stockRemoved": "Stock item removed",

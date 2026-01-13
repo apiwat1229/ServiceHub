@@ -159,18 +159,14 @@ export class MyMachineService {
     }
 
     async createRepair(data: any) {
+        // Sanitize payload
+        const { id, timestamp, createdAt, updatedAt, ...rest } = data;
+
         // 1. Deduct Stock for used parts
-        if (data.parts && Array.isArray(data.parts)) {
-            for (const part of data.parts) {
+        if (rest.parts && Array.isArray(rest.parts)) {
+            for (const part of rest.parts) {
                 if (!part.id) continue;
 
-                // Find stock item (assuming part.id maps to stock id or code, 
-                // but usually in this simple app part.id might be just a number from frontend if not linked.
-                // However, let's assume we try to find by name or code if we can, or if part.id matches stock.id)
-                // In the current mock setup, we might need to rely on name matching or if we passed stock ID.
-                // Let's assume the frontend passes the stock ID as 'id' or we match by Name.
-
-                // Robustness: Try to find stock by Name if ID doesn't match UUID format or just by Name
                 const stockItem = await this.prisma.maintenanceStock.findFirst({
                     where: {
                         OR: [
@@ -190,21 +186,22 @@ export class MyMachineService {
         }
 
         // 2. Set default status if not present
-        const status = data.status || 'IN_PROGRESS';
+        const status = rest.status || 'IN_PROGRESS';
 
         return this.prisma.repairLog.create({
-            data: { ...data, status },
+            data: { ...rest, status },
         });
     }
 
     async updateRepair(id: string, data: any) {
+        // Sanitize payload
+        const { id: _id, timestamp, createdAt, updatedAt, ...rest } = data;
+
         // 1. Get old repair to compare parts
         const oldRepair = await this.prisma.repairLog.findUnique({ where: { id } });
         if (!oldRepair) throw new NotFoundException('Repair not found');
 
         // 2. Calculate Stock Adjustments
-        // We need to revert old usage and apply new usage, OR calculate difference.
-        // Reverting old and applying new is safer and easier to reason about.
 
         // A. Return old parts to stock
         const oldParts = (oldRepair.parts as any[]) || [];
@@ -221,7 +218,7 @@ export class MyMachineService {
         }
 
         // B. Deduct new parts from stock
-        const newParts = (data.parts as any[]) || [];
+        const newParts = (rest.parts as any[]) || [];
         for (const part of newParts) {
             const stockItem = await this.prisma.maintenanceStock.findFirst({
                 where: { OR: [{ name: part.name }, { nameEN: part.name }] }
@@ -237,11 +234,30 @@ export class MyMachineService {
         // 3. Update Repair Log
         return this.prisma.repairLog.update({
             where: { id },
-            data,
+            data: rest,
         });
     }
 
     async deleteRepair(id: string) {
+        // 1. Get repair to restore stock
+        const repair = await this.prisma.repairLog.findUnique({ where: { id } });
+        if (!repair) throw new NotFoundException('Repair not found');
+
+        // 2. Restore parts to stock
+        const parts = (repair.parts as any[]) || [];
+        for (const part of parts) {
+            const stockItem = await this.prisma.maintenanceStock.findFirst({
+                where: { OR: [{ name: part.name }, { nameEN: part.name }] }
+            });
+            if (stockItem) {
+                await this.prisma.maintenanceStock.update({
+                    where: { id: stockItem.id },
+                    data: { qty: { increment: part.qty } }
+                });
+            }
+        }
+
+        // 3. Delete
         return this.prisma.repairLog.delete({
             where: { id },
         });
