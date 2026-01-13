@@ -35,21 +35,6 @@ const { stocks, deleteStock } = useMyMachine();
 const localSearch = ref('');
 const categoryFilter = ref('ALL');
 
-// Computed Stats
-const stockStats = computed(() => {
-  const totalItems = stocks.value.length;
-  const lowStockItems = stocks.value.filter((s) => s.qty <= s.minQty).length;
-  const totalValue = stocks.value.reduce((sum, s) => sum + s.price * s.qty, 0);
-  const totalCategories = new Set(stocks.value.map((s) => s.category)).size;
-
-  return {
-    totalItems,
-    lowStockItems,
-    totalValue,
-    totalCategories,
-  };
-});
-
 const filteredStocks = computed(() => {
   let result = stocks.value;
 
