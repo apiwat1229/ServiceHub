@@ -129,7 +129,7 @@ onMounted(() => {
 
 <template>
   <div
-    class="h-screen flex flex-col bg-slate-50 overflow-hidden transition-all duration-300"
+    class="h-full flex flex-col bg-slate-50 overflow-hidden transition-all duration-300"
     :style="{
       fontFamily: themeStore.fontFamilies[themeStore.fontFamily],
       fontSize: themeStore.fontSizes[themeStore.fontSize],
@@ -137,7 +137,7 @@ onMounted(() => {
   >
     <!-- Modern Compact Header - Sticky -->
     <div
-      class="sticky top-0 z-10 bg-white/80 backdrop-blur-md border border-slate-200/50 flex-shrink-0 shadow-sm rounded-xl mx-6 mt-0 mb-0 overflow-hidden"
+      class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border border-slate-200/50 flex-shrink-0 shadow-sm rounded-xl mx-6 mt-0 mb-0 overflow-hidden"
     >
       <div class="px-6 py-2.5 flex flex-col lg:flex-row items-center justify-between gap-6">
         <!-- Left: Title Group & Stats -->

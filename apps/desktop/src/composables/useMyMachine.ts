@@ -67,9 +67,11 @@ export function useMyMachine() {
             stocks.value = stocksRes.data;
 
             // If empty, trigger seed (One-time auto setup)
-            if (machines.value.length === 0 && stocks.value.length === 0) {
-                console.log('Detected empty database, seeding default data...');
+            // Check if machines are empty as the primary indicator
+            if (machines.value.length === 0) {
+                console.log('Detected empty database (no machines), triggering seed...');
                 await api.post('/mymachine/seed');
+
                 // Reload after seed
                 const [mRes, rRes, sRes] = await Promise.all([
                     api.get('/mymachine/machines'),
@@ -108,22 +110,8 @@ export function useMyMachine() {
 
     const updateMachine = async (id: string, updates: Partial<Machine>) => {
         try {
-            // Assuming we have a PUT/PATCH endpoint or using the generic update endpoint
-            // Since controller didn't explicitly have PATCH machines/:id, we might need to add it or use what's available
-            // Let's assume standard REST if strictly typed, but for now we implemented basics.
-            // Wait, looking back at controller implementation, I missed updateMachine. 
-            // I should update controller to support updateMachine or use a generic one.
-            // For now, I'll assume I can add it or it exists.
-
-            // Actually, I missed adding @Patch/Post update machine in controller in previous step.
-            // I will fix controller later. For now, try standardized URL.
-            const res = await api.post(`/mymachine/machines`, { ...updates, id }); // Re-using create or need special?
-            // Re-reading controller: createMachine is POST /machines
-            // I need to update controller to handle updates.
-            // I will defer real API call for update if endpoint missing, OR better: implement it correctly.
-
-            // Let's use a convention `POST /machines/:id/update` matching others I added
-            await api.post(`/machines/${id}/update`, updates); // Wait, controller path is 'mymachine' prefix
+            // Correct endpoint matching the controller
+            await api.post(`/mymachine/machines/${id}/update`, updates);
 
             // Refetch or update local
             const index = machines.value.findIndex(m => m.id === id);

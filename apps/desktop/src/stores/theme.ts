@@ -2,7 +2,6 @@ import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
 import { storage } from '../services/storage';
 import { usersApi } from '../services/users';
-import { useAuthStore } from './auth';
 
 export const useThemeStore = defineStore('theme', () => {
     const themeColor = ref(storage.get('theme_color') || 'zinc');
@@ -113,8 +112,9 @@ export const useThemeStore = defineStore('theme', () => {
 
     // Debounced save function to avoid API spam
     const saveToBackend = async () => {
-        const authStore = useAuthStore();
-        if (!authStore.user?.id) return;
+        // Use storage directly to avoid circular dependency with AuthStore
+        const user = storage.get('user');
+        if (!user?.id) return;
 
         const preferences = {
             themeColor: themeColor.value,
@@ -124,11 +124,12 @@ export const useThemeStore = defineStore('theme', () => {
         };
 
         try {
-            await usersApi.update(authStore.user.id, { preferences });
-            // Also update the user object in store to reflect latest changes locally
-            if (authStore.user) {
-                authStore.user.preferences = preferences;
-            }
+            await usersApi.update(user.id, { preferences });
+
+            // Update user in storage to persist changes for next reload
+            user.preferences = preferences;
+            storage.set('user', user);
+
         } catch (error) {
             console.error('Failed to save theme preferences:', error);
         }

@@ -27,6 +27,11 @@ export class MyMachineController {
         return this.myMachineService.deleteMachine(id);
     }
 
+    @Post('machines/:id/update')
+    updateMachine(@Param('id') id: string, @Body() data: any) {
+        return this.myMachineService.updateMachine(id, data);
+    }
+
     // Repair Logs
     @Get('repairs')
     findAllRepairs() {
