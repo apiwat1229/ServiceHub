@@ -9,3 +9,5 @@ interface Window {
         };
     };
 }
+
+declare module 'vue3-barcode';

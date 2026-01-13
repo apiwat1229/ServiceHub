@@ -29,20 +29,6 @@ const { glCodes } = useMyMachine();
 const tagMode = ref<'qr' | 'barcode'>('qr');
 const showGLSettings = ref(false);
 
-const glCodeOptions = computed(() =>
-  glCodes.value.map((item) => ({
-    label: `${item.transactionId} - ${item.code}`,
-    value: item.code,
-  }))
-);
-
-const selectedGLCodes = computed({
-  get: () => (form.value.glCode ? form.value.glCode.split(',').map((s: string) => s.trim()) : []),
-  set: (val: string[]) => {
-    form.value.glCode = val.join(', ');
-  },
-});
-
 const props = defineProps<{
   initialData?: any;
 }>();
@@ -92,6 +78,20 @@ const form = ref(
         autoGenerateCode: true,
       }
 );
+
+const glCodeOptions = computed(() =>
+  glCodes.value.map((item) => ({
+    label: `${item.transactionId} - ${item.code}`,
+    value: item.code,
+  }))
+);
+
+const selectedGLCodes = computed({
+  get: () => (form.value.glCode ? form.value.glCode.split(',').map((s: string) => s.trim()) : []),
+  set: (val: string[]) => {
+    form.value.glCode = val.join(', ');
+  },
+});
 
 // Computed property to handle conversion between Date and CalendarDate
 const calendarValue = computed({
