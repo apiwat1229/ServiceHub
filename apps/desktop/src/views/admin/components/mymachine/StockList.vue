@@ -1,22 +1,12 @@
 <script setup lang="ts">
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import DataTable from '@/components/ui/data-table/DataTable.vue';
 import { Input } from '@/components/ui/input';
 import { SelectContent, SelectItem } from '@/components/ui/select';
 import { useMyMachine } from '@/composables/useMyMachine';
 import type { ColumnDef } from '@tanstack/vue-table';
-import {
-  AlertTriangle,
-  DollarSign,
-  Edit2,
-  Filter,
-  Package,
-  Plus,
-  Search,
-  Trash2,
-} from 'lucide-vue-next';
+import { Edit2, Package, Plus, Search, Trash2 } from 'lucide-vue-next';
 import { computed, h, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
@@ -225,102 +215,6 @@ const columns = computed<ColumnDef<any>[]>(() => [
   <div class="h-full flex flex-col overflow-hidden bg-slate-50">
     <!-- Scrollable Content Area -->
     <div class="flex-1 overflow-y-auto px-6 pb-6 pt-1">
-      <!-- Statistics Cards (Modern Compact) -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 flex-shrink-0 pb-4">
-        <Card
-          class="border-slate-200/50 shadow-sm bg-white/80 backdrop-blur-sm overflow-hidden group hover:shadow-md transition-all"
-        >
-          <CardContent class="p-3">
-            <div class="flex items-center justify-between">
-              <div class="space-y-1">
-                <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-wider">
-                  {{ t('services.myMachine.stock.stats.value') }}
-                </span>
-                <h3 class="text-2xl font-black text-slate-900">
-                  {{ formatCurrency(stockStats.totalValue) }}
-                </h3>
-              </div>
-              <div
-                class="p-3 bg-blue-50 text-blue-600 rounded-xl group-hover:scale-110 transition-transform"
-              >
-                <DollarSign class="w-5 h-5" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card
-          class="border-slate-200/50 shadow-sm bg-white/80 backdrop-blur-sm overflow-hidden group hover:shadow-md transition-all"
-        >
-          <CardContent class="p-3">
-            <div class="flex items-center justify-between">
-              <div class="space-y-1">
-                <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-wider">
-                  {{ t('services.myMachine.stock.stats.items') }}
-                </span>
-                <h3 class="text-2xl font-black text-slate-900">{{ stockStats.totalItems }}</h3>
-              </div>
-              <div
-                class="p-3 bg-indigo-50 text-indigo-600 rounded-xl group-hover:scale-110 transition-transform"
-              >
-                <Package class="w-5 h-5" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card
-          class="border-slate-200/50 shadow-sm bg-white/80 backdrop-blur-sm overflow-hidden group hover:shadow-md transition-all"
-          :class="stockStats.lowStockItems > 0 ? 'border-red-200/50 ring-1 ring-red-100/50' : ''"
-        >
-          <CardContent class="p-3">
-            <div class="flex items-center justify-between">
-              <div class="space-y-1">
-                <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-wider">
-                  {{ t('services.myMachine.stock.stats.lowStock') }}
-                </span>
-                <h3
-                  class="text-2xl font-black"
-                  :class="stockStats.lowStockItems > 0 ? 'text-red-600' : 'text-slate-900'"
-                >
-                  {{ stockStats.lowStockItems }}
-                </h3>
-              </div>
-              <div
-                class="p-3 rounded-xl group-hover:scale-110 transition-transform"
-                :class="
-                  stockStats.lowStockItems > 0
-                    ? 'bg-red-50 text-red-600'
-                    : 'bg-slate-50 text-slate-400'
-                "
-              >
-                <AlertTriangle class="w-5 h-5" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card
-          class="border-slate-200/50 shadow-sm bg-white/80 backdrop-blur-sm overflow-hidden group hover:shadow-md transition-all"
-        >
-          <CardContent class="p-3">
-            <div class="flex items-center justify-between">
-              <div class="space-y-1">
-                <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-wider">
-                  {{ t('services.myMachine.stock.stats.inventory') }}
-                </span>
-                <h3 class="text-2xl font-black text-slate-900">{{ stockStats.totalCategories }}</h3>
-              </div>
-              <div
-                class="p-3 bg-emerald-50 text-emerald-600 rounded-xl group-hover:scale-110 transition-transform"
-              >
-                <Filter class="w-5 h-5" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       <!-- Filter & Table -->
       <div class="flex flex-col space-y-4">
         <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 flex-shrink-0">
