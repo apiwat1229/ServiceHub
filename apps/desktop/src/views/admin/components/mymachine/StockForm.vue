@@ -6,11 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useMyMachine } from '@/composables/useMyMachine';
@@ -22,12 +22,12 @@ import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
 import VueBarcode from 'vue3-barcode';
-import GLCodeSettingsModal from './GLCodeSettingsModal.vue';
 
 const { t } = useI18n();
-const { glCodes } = useMyMachine();
+const { categories, locations } = useMyMachine();
 const tagMode = ref<'qr' | 'barcode'>('qr');
-const showGLSettings = ref(false);
+const showCategorySettings = ref(false);
+const showLocationSettings = ref(false);
 
 const props = defineProps<{
   initialData?: any;
@@ -35,18 +35,10 @@ const props = defineProps<{
 
 const emit = defineEmits(['save', 'cancel']);
 
-const CATEGORY_PREFIXES: Record<string, string> = {
-  Mechanical: 'MECH',
-  Electrical: 'ELEC',
-  Electronic: 'ELN',
-  Pneumatic: 'PNEU',
-  Hydraulic: 'HYDR',
-  Consumables: 'CONS',
-  'Spare Parts': 'PART',
-};
-
 const generateCode = (category: string) => {
-  const prefix = CATEGORY_PREFIXES[category] || 'SP';
+  // Try to find category in managed list first
+  const cat = categories.value.find((c) => c.name === category);
+  const prefix = cat?.prefix || 'SP';
   return `${prefix}-${Math.floor(1000 + Math.random() * 9000)}`;
 };
 
@@ -66,7 +58,6 @@ const form = ref(
         nameTH: '',
         nameEN: '',
         code: generateCode(''), // Default SP
-        glCode: '',
         category: '',
         location: '',
         qty: 0,
@@ -78,20 +69,6 @@ const form = ref(
         autoGenerateCode: true,
       }
 );
-
-const glCodeOptions = computed(() =>
-  glCodes.value.map((item) => ({
-    label: `${item.transactionId} - ${item.code}`,
-    value: item.code,
-  }))
-);
-
-const selectedGLCodes = computed({
-  get: () => (form.value.glCode ? form.value.glCode.split(',').map((s: string) => s.trim()) : []),
-  set: (val: string[]) => {
-    form.value.glCode = val.join(', ');
-  },
-});
 
 // Computed property to handle conversion between Date and CalendarDate
 const calendarValue = computed({
@@ -343,94 +320,70 @@ const handleSave = () => {
               </label>
             </div>
           </div>
-          <div class="flex items-center justify-between">
-            <Label class="text-slate-700 font-semibold">GL-Code</Label>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              class="h-5 w-5 text-slate-400 hover:text-blue-600 p-0"
-              @click="showGLSettings = true"
-            >
-              <Settings class="w-3.5 h-3.5" />
-            </Button>
-          </div>
         </div>
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 gap-4">
           <Input
             v-model="form.code"
             :placeholder="t('services.myMachine.forms.machine.tagPlaceholder')"
             :disabled="form.autoGenerateCode"
             class="bg-white border-slate-200"
           />
-          <MultiSelect
-            v-model="selectedGLCodes"
-            :options="glCodeOptions"
-            placeholder="e.g. A-ASST, F-FUEL"
-          />
         </div>
       </div>
 
       <div class="grid grid-cols-2 gap-4">
         <div class="space-y-2">
-          <Label class="text-slate-700 font-semibold">{{
-            t('services.myMachine.forms.stock.category')
-          }}</Label>
+          <div class="flex items-center justify-between">
+            <Label class="text-slate-700 font-semibold">{{
+              t('services.myMachine.forms.stock.category')
+            }}</Label>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              class="h-5 w-5 text-slate-400 hover:text-blue-600 p-0"
+              @click="showCategorySettings = true"
+            >
+              <Settings class="w-3.5 h-3.5" />
+            </Button>
+          </div>
           <Select v-model="form.category">
             <SelectTrigger class="bg-white border-slate-200">
               <SelectValue :placeholder="t('services.myMachine.filterPlaceholder')" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Mechanical">{{
-                t('services.myMachine.categories.mechanical')
-              }}</SelectItem>
-              <SelectItem value="Electrical">{{
-                t('services.myMachine.categories.electrical')
-              }}</SelectItem>
-              <SelectItem value="Electronic">{{
-                t('services.myMachine.categories.electronic')
-              }}</SelectItem>
-              <SelectItem value="Pneumatic">{{
-                t('services.myMachine.categories.pneumatic')
-              }}</SelectItem>
-              <SelectItem value="Hydraulic">{{
-                t('services.myMachine.categories.hydraulic')
-              }}</SelectItem>
-              <SelectItem value="Bearings">{{
-                t('services.myMachine.categories.bearings')
-              }}</SelectItem>
-              <SelectItem value="Fasteners">{{
-                t('services.myMachine.categories.fasteners')
-              }}</SelectItem>
-              <SelectItem value="Belts">{{ t('services.myMachine.categories.belts') }}</SelectItem>
-              <SelectItem value="Lubricants">{{
-                t('services.myMachine.categories.lubricants')
-              }}</SelectItem>
-              <SelectItem value="Seals">{{ t('services.myMachine.categories.seals') }}</SelectItem>
-              <SelectItem value="Piping">{{
-                t('services.myMachine.categories.piping')
-              }}</SelectItem>
-              <SelectItem value="Valves">{{
-                t('services.myMachine.categories.valves')
-              }}</SelectItem>
-              <SelectItem value="Consumables">{{
-                t('services.myMachine.categories.consumables')
-              }}</SelectItem>
-              <SelectItem value="Spare Parts">{{
-                t('services.myMachine.categories.spareparts')
-              }}</SelectItem>
+              <SelectItem v-for="cat in categories" :key="cat.id" :value="cat.name">
+                {{ cat.nameEN || cat.name }}
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
         <div class="space-y-2">
-          <Label class="text-slate-700 font-semibold">{{
-            t('services.myMachine.forms.stock.location')
-          }}</Label>
-          <Input
-            v-model="form.location"
-            :placeholder="t('services.myMachine.forms.machine.locationPlaceholder')"
-            class="bg-white border-slate-200"
-          />
+          <div class="flex items-center justify-between">
+            <Label class="text-slate-700 font-semibold">{{
+              t('services.myMachine.forms.stock.location')
+            }}</Label>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              class="h-5 w-5 text-slate-400 hover:text-blue-600 p-0"
+              @click="showLocationSettings = true"
+            >
+              <Settings class="w-3.5 h-3.5" />
+            </Button>
+          </div>
+          <Select v-model="form.location">
+            <SelectTrigger class="bg-white border-slate-200">
+              <SelectValue :placeholder="t('services.myMachine.forms.machine.locationPlaceholder')" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem v-for="loc in locations" :key="loc.id" :value="loc.name">
+                {{ loc.nameEN || loc.name }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         </div>
       </div>
 
@@ -531,5 +484,12 @@ const handleSave = () => {
     </div>
   </div>
 
-  <GLCodeSettingsModal v-model:open="showGLSettings" />
+  <!-- Management Modals -->
+  <Dialog v-model:open="showCategorySettings">
+    <CategorySettingsModal />
+  </Dialog>
+
+  <Dialog v-model:open="showLocationSettings">
+    <LocationSettingsModal />
+  </Dialog>
 </template>
