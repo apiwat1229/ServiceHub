@@ -69,8 +69,14 @@ const columns = computed<ColumnDef<any>[]>(() => [
     header: t('services.myMachine.stock.columns.partCategory'),
     cell: ({ row }) => {
       const part = row.original;
-      const displayName =
-        locale.value === 'th' ? part.nameTH || part.name : part.nameEN || part.name;
+      // Better fallback: use locale-specific name if available, otherwise use default name
+      let displayName = part.name;
+      if (locale.value === 'th' && part.nameTH) {
+        displayName = part.nameTH;
+      } else if (locale.value === 'en' && part.nameEN) {
+        displayName = part.nameEN;
+      }
+
       return h('div', { class: 'flex items-center gap-3' }, [
         h(
           'div',
