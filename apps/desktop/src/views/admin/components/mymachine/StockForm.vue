@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { useMyMachine } from '@/composables/useMyMachine';
 import { CalendarDate, getLocalTimeZone } from '@internationalized/date';
 import { format } from 'date-fns';
 import { Barcode, Calendar as CalendarIcon, FileText, QrCode, Settings, X } from 'lucide-vue-next';
@@ -24,8 +25,23 @@ import VueBarcode from 'vue3-barcode';
 import GLCodeSettingsModal from './GLCodeSettingsModal.vue';
 
 const { t } = useI18n();
+const { glCodes } = useMyMachine();
 const tagMode = ref<'qr' | 'barcode'>('qr');
 const showGLSettings = ref(false);
+
+const glCodeOptions = computed(() =>
+  glCodes.value.map((item) => ({
+    label: `${item.transactionId} - ${item.code}`,
+    value: item.code,
+  }))
+);
+
+const selectedGLCodes = computed({
+  get: () => (form.value.glCode ? form.value.glCode.split(',').map((s: string) => s.trim()) : []),
+  set: (val: string[]) => {
+    form.value.glCode = val.join(', ');
+  },
+});
 
 const props = defineProps<{
   initialData?: any;
@@ -347,10 +363,10 @@ const handleSave = () => {
             :disabled="form.autoGenerateCode"
             class="bg-white border-slate-200"
           />
-          <Input
-            v-model="form.glCode"
+          <MultiSelect
+            v-model="selectedGLCodes"
+            :options="glCodeOptions"
             placeholder="e.g. A-ASST, F-FUEL"
-            class="bg-white border-slate-200"
           />
         </div>
       </div>
