@@ -59,7 +59,7 @@ const form = ref<{
 }>(
   props.initialData
     ? {
-        ...props.initialData,
+        ...JSON.parse(JSON.stringify(props.initialData)),
         date: new Date(props.initialData.date),
         images: props.initialData.images || [],
         status: props.initialData.status || 'OPEN',
