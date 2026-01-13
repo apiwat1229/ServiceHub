@@ -27,6 +27,7 @@ export interface Repair {
     parts: RepairPart[];
     totalCost: number;
     images?: string[];
+    status?: string;
     timestamp: number;
 }
 
@@ -129,20 +130,36 @@ export function useMyMachine() {
 
     const addRepair = async (repair: Omit<Repair, 'id' | 'timestamp'>) => {
         try {
-            // Backend should handle stock deduction ideally, but if logic is complex, we might do it here?
-            // No, backend service createRepair should handle it if logic existed. 
-            // In previous service step, I commented "Handle Stock Deduction logic if applicable".
-            // For now, just create repair.
             const res = await api.post('/mymachine/repairs', repair);
             repairs.value.unshift(res.data);
 
-            // Deduction simulation on frontend or re-fetch stocks?
             // Best to re-fetch stocks to get updated quantities
             const sRes = await api.get('/mymachine/stocks');
             stocks.value = sRes.data;
 
         } catch (e) {
             console.error('Failed to add repair', e);
+            throw e;
+        }
+    };
+
+    const updateRepair = async (id: string, updates: Partial<Repair>) => {
+        try {
+            // Use same endpoint convention usually, but check controller. 
+            // Usually POST /mymachine/repairs/:id/update based on patterns seen.
+            await api.post(`/mymachine/repairs/${id}/update`, updates);
+
+            // Update local state
+            const index = repairs.value.findIndex(r => r.id === id);
+            if (index !== -1) {
+                repairs.value[index] = { ...repairs.value[index], ...updates };
+            }
+            // Refetch stocks as parts might have changed
+            const sRes = await api.get('/mymachine/stocks');
+            stocks.value = sRes.data;
+
+        } catch (e) {
+            console.error('Failed to update repair', e);
             throw e;
         }
     };
@@ -207,6 +224,7 @@ export function useMyMachine() {
         updateMachine,
         deleteMachine,
         addRepair,
+        updateRepair,
         deleteRepair,
         getMachineStats,
         addStock,

@@ -2,6 +2,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
+import { format } from 'date-fns';
 import { Calendar, ClipboardList, Clock, Image, Package, User } from 'lucide-vue-next';
 import { useI18n } from 'vue-i18n';
 
@@ -18,6 +19,15 @@ const formatCurrency = (val: number) => {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(val);
+};
+
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return '-';
+  try {
+    return format(new Date(dateStr), 'dd-MMM-yyyy , HH:mm');
+  } catch (e) {
+    return dateStr;
+  }
 };
 
 const getStatusColor = (cost: number) => {
@@ -58,7 +68,7 @@ const getStatusColor = (cost: number) => {
         <div class="flex items-center gap-2">
           <Calendar class="w-3.5 h-3.5 text-slate-400" />
           <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">{{
-            repair.date
+            formatDate(repair.date)
           }}</span>
         </div>
         <span class="text-slate-200">•</span>
@@ -104,7 +114,7 @@ const getStatusColor = (cost: number) => {
             </h3>
           </div>
           <div class="space-y-1">
-            <p class="text-sm font-black text-slate-900">{{ repair.date }}</p>
+            <p class="text-sm font-black text-slate-900">{{ formatDate(repair.date) }}</p>
             <p class="text-[0.625rem] text-slate-400 font-bold uppercase tracking-widest">
               {{ t('services.myMachine.recordedDateOfService') }}
             </p>

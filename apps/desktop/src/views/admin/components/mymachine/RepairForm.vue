@@ -45,12 +45,14 @@ const form = ref<{
   technician: string;
   parts: RepairPart[];
   images: string[];
+  status: string;
 }>(
   props.initialData
     ? {
         ...props.initialData,
         date: new Date(props.initialData.date),
         images: props.initialData.images || [],
+        status: props.initialData.status || 'OPEN',
       }
     : {
         machineId: '',
@@ -59,6 +61,7 @@ const form = ref<{
         technician: '',
         parts: [],
         images: [],
+        status: 'OPEN',
       }
 );
 
@@ -215,14 +218,30 @@ const handleSubmit = () => {
         </Popover>
       </div>
 
-      <div class="space-y-2 text-slate-700">
-        <Label class="font-semibold">{{ t('services.myMachine.forms.repair.date') }}</Label>
-        <Input
-          :value="form.date instanceof Date ? form.date.toISOString().split('T')[0] : form.date"
-          @input="(e: any) => (form.date = new Date(e.target.value))"
-          type="date"
-          class="bg-white border-slate-200"
-        />
+      <div class="flex gap-4">
+        <div class="flex-1 space-y-2 text-slate-700">
+          <Label class="font-semibold">{{ t('services.myMachine.forms.repair.date') }}</Label>
+          <Input
+            :value="form.date instanceof Date ? form.date.toISOString().split('T')[0] : form.date"
+            @input="(e: any) => (form.date = new Date(e.target.value))"
+            type="date"
+            class="bg-white border-slate-200"
+          />
+        </div>
+        <div class="w-1/3 space-y-2 text-slate-700">
+          <Label class="font-semibold">Status</Label>
+          <Select v-model="form.status">
+            <SelectTrigger class="bg-white border-slate-200">
+              <SelectValue placeholder="Select status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="OPEN">Open</SelectItem>
+              <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+              <SelectItem value="WAITING_PARTS">Waiting Parts</SelectItem>
+              <SelectItem value="COMPLETED">Completed</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
     </div>
 

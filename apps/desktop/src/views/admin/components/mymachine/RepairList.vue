@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import DataTable from '@/components/ui/data-table/DataTable.vue';
 import { Dialog } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { useMyMachine } from '@/composables/useMyMachine';
 import type { ColumnDef } from '@tanstack/vue-table';
+import { format } from 'date-fns';
 import {
   Calendar,
   ClipboardList,
@@ -36,6 +38,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'add-repair'): void;
+  (e: 'edit-repair', repair: any): void;
 }>();
 
 const { repairs, deleteRepair } = useMyMachine();
@@ -82,7 +85,8 @@ const columns = computed<ColumnDef<any>[]>(() => [
     accessorKey: 'date',
     header: t('services.myMachine.repairs.columns.date'),
     cell: ({ row }) => {
-      const date = row.getValue('date') as string;
+      const val = row.getValue('date');
+      const date = val ? format(new Date(val as string), 'dd-MMM-yyyy , HH:mm') : '-';
       return h('div', { class: 'flex items-center gap-2.5 py-1' }, [
         h(
           'div',
@@ -135,6 +139,32 @@ const columns = computed<ColumnDef<any>[]>(() => [
     },
   },
   {
+    accessorKey: 'status',
+    header: 'Status',
+    cell: ({ row }) => {
+      const status = (row.getValue('status') as string) || 'COMPLETED';
+      const variant =
+        status === 'OPEN'
+          ? 'default'
+          : status === 'IN_PROGRESS'
+            ? 'secondary'
+            : status === 'WAITING_PARTS'
+              ? 'outline'
+              : 'success';
+
+      const colorClass =
+        status === 'OPEN'
+          ? 'bg-blue-100 text-blue-700 hover:bg-blue-100'
+          : status === 'IN_PROGRESS'
+            ? 'bg-amber-100 text-amber-700 hover:bg-amber-100'
+            : status === 'WAITING_PARTS'
+              ? 'bg-orange-100 text-orange-700 hover:bg-orange-100'
+              : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100';
+
+      return h(Badge, { class: `border-none ${colorClass}` }, () => status.replace('_', ' '));
+    },
+  },
+  {
     accessorKey: 'totalCost',
     header: t('services.myMachine.repairs.columns.cost'),
     cell: ({ row }) => {
@@ -164,6 +194,16 @@ const columns = computed<ColumnDef<any>[]>(() => [
               onClick: () => viewDetails(repair),
             },
             () => h(ClipboardList, { class: 'w-4 h-4' })
+          ),
+          h(
+            Button,
+            {
+              variant: 'ghost',
+              size: 'icon',
+              class: 'h-8 w-8 text-slate-400 hover:text-amber-600 hover:bg-amber-50',
+              onClick: () => emit('edit-repair', repair),
+            },
+            () => h(Pen, { class: 'w-4 h-4' })
           ),
           h(
             Button,

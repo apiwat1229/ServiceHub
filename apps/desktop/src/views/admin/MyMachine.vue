@@ -33,8 +33,17 @@ import RepairList from './components/mymachine/RepairList.vue';
 import StockForm from './components/mymachine/StockForm.vue';
 import StockList from './components/mymachine/StockList.vue';
 
-const { machines, repairs, loadData, addMachine, updateMachine, addRepair, addStock, updateStock } =
-  useMyMachine();
+const {
+  machines,
+  repairs,
+  loadData,
+  addMachine,
+  updateMachine,
+  addRepair,
+  updateRepair,
+  addStock,
+  updateStock,
+} = useMyMachine();
 
 const totalCost = computed(() =>
   repairs.value.reduce((acc, curr) => acc + (Number(curr.totalCost) || 0), 0)
@@ -60,6 +69,7 @@ watch(activeTab, (newTab) => {
 const isMachineDialogOpen = ref(false);
 const editingMachine = ref(null as any);
 const isRepairDialogOpen = ref(false);
+const editingRepair = ref(null as any);
 
 // Detail Modal State
 const isDetailDialogOpen = ref(false);
@@ -72,7 +82,7 @@ const handleViewDetail = (id: string) => {
 
 // Stock Modal State
 const isStockDialogOpen = ref(false);
-const editingStock = ref<any>(null); // State for editing stock
+const editingStock = ref<any>(null);
 
 const handleMachineSave = (data: any) => {
   if (editingMachine.value) {
@@ -95,10 +105,25 @@ const closeMachineDialog = () => {
   editingMachine.value = null;
 };
 
-const handleRepairSave = (data: any) => {
-  addRepair(data);
+const handleEditRepair = (repair: any) => {
+  editingRepair.value = repair;
+  isRepairDialogOpen.value = true;
+};
+
+const closeRepairDialog = () => {
   isRepairDialogOpen.value = false;
-  toast.success(t('services.myMachine.messages.repairSuccess'));
+  editingRepair.value = null;
+};
+
+const handleRepairSave = (data: any) => {
+  if (editingRepair.value) {
+    updateRepair(editingRepair.value.id, data);
+    toast.success(t('services.myMachine.messages.repairUpdated'));
+  } else {
+    addRepair(data);
+    toast.success(t('services.myMachine.messages.repairSuccess'));
+  }
+  closeRepairDialog();
 };
 
 const handleEditStock = (item: any) => {
@@ -275,7 +300,11 @@ onMounted(() => {
       </div>
 
       <div v-show="activeTab === 'repairs'" class="h-full overflow-hidden">
-        <RepairList :search-query="searchQuery" @add-repair="isRepairDialogOpen = true" />
+        <RepairList
+          :search-query="searchQuery"
+          @add-repair="isRepairDialogOpen = true"
+          @edit-repair="handleEditRepair"
+        />
       </div>
 
       <div v-show="activeTab === 'stock'" class="h-full overflow-hidden">
@@ -323,7 +352,11 @@ onMounted(() => {
             t('services.myMachine.forms.repair.description')
           }}</DialogDescription>
         </DialogHeader>
-        <RepairForm @save="handleRepairSave" @cancel="isRepairDialogOpen = false" />
+        <RepairForm
+          :initial-data="editingRepair"
+          @save="handleRepairSave"
+          @cancel="closeRepairDialog"
+        />
       </DialogContent>
     </Dialog>
 
