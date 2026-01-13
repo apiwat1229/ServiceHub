@@ -182,14 +182,11 @@ const columns = computed<ColumnDef<any>[]>(() => [
     header: t('services.myMachine.stock.columns.value'),
     cell: ({ row }) => {
       const value = Number(row.original.qty) * Number(row.original.price);
-      return h('div', { class: 'flex flex-col' }, [
-        h('span', { class: 'font-mono font-bold text-blue-600 text-xs' }, formatCurrency(value)),
-        h(
-          'span',
-          { class: 'text-[9px] text-slate-400 uppercase tracking-tighter' },
-          t('services.myMachine.stock.columns.value')
-        ),
-      ]);
+      return h(
+        'span',
+        { class: 'font-mono font-bold text-blue-600 text-sm' },
+        formatCurrency(value)
+      );
     },
   },
   {
