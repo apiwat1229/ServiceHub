@@ -23,9 +23,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { useMyMachine, type RepairPart } from '@/composables/useMyMachine';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { Check, ChevronsUpDown, Package, Plus, Trash2 } from 'lucide-vue-next';
+import { Check, ChevronsUpDown, Package, Plus, Trash2, X } from 'lucide-vue-next';
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { toast } from 'vue-sonner';
 
 const { t } = useI18n();
 
@@ -43,15 +44,21 @@ const form = ref<{
   issue: string;
   technician: string;
   parts: RepairPart[];
+  images: string[];
 }>(
   props.initialData
-    ? { ...props.initialData, date: new Date(props.initialData.date) }
+    ? {
+        ...props.initialData,
+        date: new Date(props.initialData.date),
+        images: props.initialData.images || [],
+      }
     : {
         machineId: '',
         date: new Date(),
         issue: '',
         technician: '',
         parts: [],
+        images: [],
       }
 );
 
@@ -101,6 +108,40 @@ const removePart = (id: number) => {
 
 const calculateTotal = (parts: RepairPart[]) => {
   return parts.reduce((acc, p) => acc + p.qty * p.price, 0);
+};
+
+// Image Handling
+const fileInput = ref<HTMLInputElement | null>(null);
+
+const triggerFileInput = () => {
+  fileInput.value?.click();
+};
+
+const handleFileChange = (e: Event) => {
+  const target = e.target as HTMLInputElement;
+  if (!target.files) return;
+
+  Array.from(target.files).forEach((file) => {
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('File too large (Max 5MB)');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (e.target?.result) {
+        form.value.images.push(e.target.result as string);
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // Reset input
+  target.value = '';
+};
+
+const removeImage = (index: number) => {
+  form.value.images.splice(index, 1);
 };
 
 const handleSubmit = () => {
@@ -203,15 +244,53 @@ const handleSubmit = () => {
             >({{ t('services.myMachine.forms.repair.attachmentNote') }})</span
           ></Label
         >
-        <div class="flex items-center gap-2">
-          <Button variant="outline" class="flex-1 bg-white border-slate-200 gap-2 h-9 text-xs">
-            <Plus class="w-3.5 h-3.5" />
-            {{ t('services.myMachine.forms.repair.takePhoto') }}
-          </Button>
-          <Button variant="outline" class="flex-1 bg-white border-slate-200 gap-2 h-9 text-xs">
-            <Plus class="w-3.5 h-3.5" />
-            {{ t('services.myMachine.forms.repair.attachFile') }}
-          </Button>
+        <div class="flex flex-col gap-3">
+          <input
+            type="file"
+            ref="fileInput"
+            class="hidden"
+            multiple
+            accept="image/*"
+            @change="handleFileChange"
+          />
+          <div class="flex items-center gap-2">
+            <Button
+              @click="triggerFileInput"
+              variant="outline"
+              type="button"
+              class="flex-1 bg-white border-slate-200 gap-2 h-9 text-xs"
+            >
+              <Plus class="w-3.5 h-3.5" />
+              {{ t('services.myMachine.forms.repair.takePhoto') }}
+            </Button>
+            <Button
+              @click="triggerFileInput"
+              variant="outline"
+              type="button"
+              class="flex-1 bg-white border-slate-200 gap-2 h-9 text-xs"
+            >
+              <Plus class="w-3.5 h-3.5" />
+              {{ t('services.myMachine.forms.repair.attachFile') }}
+            </Button>
+          </div>
+
+          <!-- Image Preview Grid -->
+          <div v-if="form.images.length > 0" class="grid grid-cols-4 gap-2">
+            <div
+              v-for="(img, idx) in form.images"
+              :key="idx"
+              class="relative group aspect-square rounded-lg overflow-hidden border border-slate-200 bg-slate-50"
+            >
+              <img :src="img" class="w-full h-full object-cover" />
+              <button
+                @click="removeImage(idx)"
+                type="button"
+                class="absolute top-1 right-1 w-5 h-5 bg-black/50 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500"
+              >
+                <X class="w-3 h-3" />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

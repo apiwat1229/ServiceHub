@@ -126,6 +126,7 @@
     "myMachine": {
       "name": "My Machine",
       "description": "ระบบจัดการเครื่องจักรแบบครบวงจร",
+      "filterPlaceholder": "เลือกหมวดหมู่",
       "assetSpecifications": "ข้อมูลจำเพาะของทรัพย์สิน",
       "assetName": "ชื่อทรัพย์สิน",
       "registerId": "หมายเลขทะเบียน",
@@ -187,6 +188,7 @@
       "timestamp": "วันที่และเวลา",
       "recordedDateOfService": "วันที่บันทึกการซ่อมบำรุง",
       "descriptionOfIssueDetail": "รายละเอียดปัญหา / การซ่อมบำรุง",
+      "evidenceAttachments": "หลักฐาน / ไฟล์แนบ",
       "resourcesMaterialsInventory": "รายการอะไหล่และอุปกรณ์ที่ใช้",
       "materialCodeDescription": "รหัสวัสดุ / รายละเอียด",
       "quantity": "จำนวน",

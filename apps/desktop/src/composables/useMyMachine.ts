@@ -26,6 +26,7 @@ export interface Repair {
     technician: string;
     parts: RepairPart[];
     totalCost: number;
+    images?: string[];
     timestamp: number;
 }
 
@@ -68,8 +69,10 @@ export function useMyMachine() {
 
             // If empty, trigger seed (One-time auto setup)
             // Check if machines are empty as the primary indicator
-            if (machines.value.length === 0) {
-                console.log('Detected empty database (no machines), triggering seed...');
+            // If empty, trigger seed (One-time auto setup)
+            // Check if any main data is empty. Backend handles partial seeding safely.
+            if (machines.value.length === 0 || repairs.value.length === 0 || stocks.value.length === 0) {
+                console.log('Detected missing data (machines, repairs, or stocks), triggering seed check...');
                 await api.post('/mymachine/seed');
 
                 // Reload after seed

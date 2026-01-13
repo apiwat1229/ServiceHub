@@ -120,6 +120,7 @@
     "myMachine": {
       "name": "My Machine",
       "description": "Centralized management for machines",
+      "filterPlaceholder": "Select category",
       "assetSpecifications": "Asset Specifications",
       "assetName": "Asset Name",
       "registerId": "Register ID",
@@ -181,6 +182,7 @@
       "timestamp": "Timestamp",
       "recordedDateOfService": "Recorded Date of Service",
       "descriptionOfIssueDetail": "Description of Issue / Detail",
+      "evidenceAttachments": "Evidence / Attachments",
       "resourcesMaterialsInventory": "Resources & Materials Inventory",
       "materialCodeDescription": "Material Code / Description",
       "quantity": "Quantity",

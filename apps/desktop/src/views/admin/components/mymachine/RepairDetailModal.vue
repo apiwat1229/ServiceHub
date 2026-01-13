@@ -2,7 +2,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
-import { Calendar, ClipboardList, Clock, Package, User } from 'lucide-vue-next';
+import { Calendar, ClipboardList, Clock, Image, Package, User } from 'lucide-vue-next';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
@@ -127,7 +127,29 @@ const getStatusColor = (cost: number) => {
         </div>
       </section>
 
-      <!-- Section 3: Resource Inventory -->
+      <!-- Section 3: Evidence (Images) -->
+      <section v-if="repair.images && repair.images.length > 0" class="space-y-4">
+        <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
+          <Image class="w-3.5 h-3.5 text-slate-900" />
+          <h3 class="text-[0.625rem] font-black uppercase tracking-widest text-slate-900">
+            {{ t('services.myMachine.evidenceAttachments') || 'EVIDENCE / ATTACHMENTS' }}
+          </h3>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+          <div
+            v-for="(img, idx) in repair.images"
+            :key="idx"
+            class="relative group aspect-square rounded-sm overflow-hidden bg-slate-50 border border-slate-100"
+          >
+            <img
+              :src="img"
+              class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 4: Resource Inventory -->
       <section class="space-y-4">
         <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
           <Package class="w-3.5 h-3.5 text-slate-900" />

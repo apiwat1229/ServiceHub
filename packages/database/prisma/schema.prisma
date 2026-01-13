@@ -751,6 +751,7 @@ model RepairLog {
   technician  String
   parts       Json?    @default("[]")
   totalCost   Float    @default(0) @map("total_cost")
+  images      String[] @default([])
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
