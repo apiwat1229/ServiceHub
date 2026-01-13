@@ -115,15 +115,19 @@ const closeRepairDialog = () => {
   editingRepair.value = null;
 };
 
-const handleRepairSave = (data: any) => {
-  if (editingRepair.value) {
-    updateRepair(editingRepair.value.id, data);
-    toast.success(t('services.myMachine.messages.repairUpdated'));
-  } else {
-    addRepair(data);
-    toast.success(t('services.myMachine.messages.repairSuccess'));
+const handleRepairSave = async (data: any) => {
+  try {
+    if (editingRepair.value) {
+      await updateRepair(editingRepair.value.id, data);
+      toast.success(t('services.myMachine.messages.repairUpdated'));
+    } else {
+      await addRepair(data);
+      toast.success(t('services.myMachine.messages.repairSuccess'));
+    }
+    closeRepairDialog();
+  } catch (e) {
+    toast.error('Failed to save repair record');
   }
-  closeRepairDialog();
 };
 
 const handleEditStock = (item: any) => {

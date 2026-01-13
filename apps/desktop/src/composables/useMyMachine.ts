@@ -147,12 +147,12 @@ export function useMyMachine() {
         try {
             // Use same endpoint convention usually, but check controller. 
             // Usually POST /mymachine/repairs/:id/update based on patterns seen.
-            await api.post(`/mymachine/repairs/${id}/update`, updates);
+            const res = await api.post(`/mymachine/repairs/${id}/update`, updates);
 
-            // Update local state
+            // Update local state with the actual response from backend
             const index = repairs.value.findIndex(r => r.id === id);
             if (index !== -1) {
-                repairs.value[index] = { ...repairs.value[index], ...updates };
+                repairs.value[index] = res.data;
             }
             // Refetch stocks as parts might have changed
             const sRes = await api.get('/mymachine/stocks');

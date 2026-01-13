@@ -194,8 +194,12 @@ export class MyMachineService {
     }
 
     async updateRepair(id: string, data: any) {
+        console.log('updateRepair called for ID:', id);
+        console.log('Incoming Data:', JSON.stringify(data, null, 2));
+
         // Sanitize payload
         const { id: _id, timestamp, createdAt, updatedAt, ...rest } = data;
+        console.log('Sanitized Payload (rest):', JSON.stringify(rest, null, 2));
 
         // 1. Get old repair to compare parts
         const oldRepair = await this.prisma.repairLog.findUnique({ where: { id } });
@@ -232,10 +236,12 @@ export class MyMachineService {
         }
 
         // 3. Update Repair Log
-        return this.prisma.repairLog.update({
+        const result = await this.prisma.repairLog.update({
             where: { id },
             data: rest,
         });
+        console.log('Update Result:', result);
+        return result;
     }
 
     async deleteRepair(id: string) {

@@ -60,9 +60,6 @@ const selectedRepair = ref<any>(null);
 const isQrModalOpen = ref(false);
 const selectedRepairForQr = ref<any>(null);
 
-// Delete Logic
-const repairToDelete = ref<string | null>(null);
-
 const viewDetails = (repair: any) => {
   selectedRepair.value = repair;
   isDetailModalOpen.value = true;
@@ -86,20 +83,35 @@ const filteredRepairs = computed(() => {
   );
 });
 
+// Delete Logic
+const repairToDelete = ref<string | null>(null);
+const isDeleteDialogOpen = ref(false);
+
 const handleDeleteRepair = (id: string) => {
   repairToDelete.value = id;
+  isDeleteDialogOpen.value = true;
 };
 
 const confirmDelete = async () => {
-  if (repairToDelete.value) {
+  const idToDelete = repairToDelete.value;
+  console.log('Confirm delete clicked for ID:', idToDelete);
+
+  if (idToDelete) {
     try {
-      await deleteRepair(repairToDelete.value);
+      await deleteRepair(idToDelete);
       toast.success(t('services.myMachine.messages.repairRemoved'));
     } catch (e) {
+      console.error('Delete failed', e);
       toast.error('Failed to delete repair');
     } finally {
-      repairToDelete.value = null;
+      isDeleteDialogOpen.value = false;
+      // Clear ID after animation frame to ensure robust execution
+      setTimeout(() => {
+        repairToDelete.value = null;
+      }, 300);
     }
+  } else {
+    console.warn('No repair ID selected for deletion');
   }
 };
 
@@ -308,7 +320,7 @@ const columns = computed<ColumnDef<any>[]>(() => [
     </Dialog>
 
     <!-- Delete Confirmation Dialog -->
-    <AlertDialog :open="!!repairToDelete" @update:open="(val) => !val && (repairToDelete = null)">
+    <AlertDialog :open="isDeleteDialogOpen" @update:open="(val) => (isDeleteDialogOpen = val)">
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{{ t('services.myMachine.messages.confirmDelete') }}</AlertDialogTitle>
@@ -319,7 +331,7 @@ const columns = computed<ColumnDef<any>[]>(() => [
         <AlertDialogFooter>
           <AlertDialogCancel>{{ t('common.cancel') }}</AlertDialogCancel>
           <AlertDialogAction
-            @click="confirmDelete"
+            @click.prevent="confirmDelete"
             class="bg-red-600 hover:bg-red-700 text-white border-red-600 focus:ring-red-600"
           >
             {{ t('common.delete') }}
