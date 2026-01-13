@@ -143,20 +143,25 @@ const columns = computed<ColumnDef<any>[]>(() => [
         style = 'bg-amber-50 text-amber-700 border-amber-100';
       }
 
-      return h('div', { class: 'flex flex-col gap-1' }, [
-        h(
-          Badge,
-          {
-            variant: 'outline',
-            class: `w-fit text-[10px] h-4 px-1.5 uppercase font-bold ${style}`,
-          },
-          () => status
-        ),
-        h(
-          'span',
-          { class: 'text-[9px] text-slate-400 font-medium' },
-          `${qty} ${row.original.unit || t('services.myMachine.units')} ${t('services.myMachine.available')}`
-        ),
+      return h(
+        Badge,
+        {
+          variant: 'outline',
+          class: `w-fit text-[10px] h-4 px-1.5 uppercase font-bold ${style}`,
+        },
+        () => status
+      );
+    },
+  },
+  {
+    id: 'quantity',
+    header: t('services.myMachine.stock.columns.quantity'),
+    cell: ({ row }) => {
+      const qty = row.original.qty;
+      const unit = row.original.unit || t('services.myMachine.units');
+      return h('div', { class: 'flex flex-col' }, [
+        h('span', { class: 'font-mono font-bold text-slate-900 text-sm' }, qty.toString()),
+        h('span', { class: 'text-[9px] text-slate-400 uppercase tracking-tighter' }, unit),
       ]);
     },
   },

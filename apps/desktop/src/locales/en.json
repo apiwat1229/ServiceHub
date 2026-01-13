@@ -291,6 +291,7 @@
         },
         "columns": {
           "partCategory": "Part & Category",
+          "quantity": "Quantity",
           "unitPrice": "Unit Price",
           "value": "Value"
         }

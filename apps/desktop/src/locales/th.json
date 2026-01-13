@@ -297,6 +297,7 @@
         },
         "columns": {
           "partCategory": "อะไหล่และหมวดหมู่",
+          "quantity": "จำนวน",
           "unitPrice": "ราคาต่อหน่วย",
           "value": "มูลค่ารวม"
         }
