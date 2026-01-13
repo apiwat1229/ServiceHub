@@ -54,4 +54,42 @@ export class MyMachineController {
     deleteRepair(@Param('id') id: string) {
         return this.myMachineService.deleteRepair(id);
     }
+
+    @Post('repairs/:id/update') // Using Post for update if Frontend prefers, or Patch
+    updateRepair(@Param('id') id: string, @Body() data: any) {
+        return this.myMachineService.updateRepair(id, data);
+    }
+
+    // Stocks
+    @Get('stocks')
+    findAllStocks() {
+        return this.myMachineService.findAllStocks();
+    }
+
+    @Get('stocks/:id')
+    findStockById(@Param('id') id: string) {
+        return this.myMachineService.findStockById(id);
+    }
+
+    @Post('stocks')
+    createStock(@Body() data: any) {
+        return this.myMachineService.createStock(data);
+    }
+
+    @Post('stocks/:id/update')
+    updateStock(@Param('id') id: string, @Body() data: any) {
+        return this.myMachineService.updateStock(id, data);
+    }
+
+    @Delete('stocks/:id')
+    deleteStock(@Param('id') id: string) {
+        return this.myMachineService.deleteStock(id);
+    }
+
+    // Seed Data
+    @Public()
+    @Post('seed')
+    seedData() {
+        return this.myMachineService.seed();
+    }
 }

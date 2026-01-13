@@ -757,3 +757,24 @@ model RepairLog {
 
   @@map("repair_logs")
 }
+
+model MaintenanceStock {
+  id          String   @id @default(uuid())
+  code        String?  @unique
+  name        String
+  nameTH      String?  @map("name_th")
+  nameEN      String?  @map("name_en")
+  category    String?
+  location    String?
+  qty         Int      @default(0)
+  price       Float    @default(0)
+  unit        String
+  minQty      Int      @default(0) @map("min_qty")
+  description String?
+  image       String?
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("maintenance_stocks")
+}
