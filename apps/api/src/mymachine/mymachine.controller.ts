@@ -1,5 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
 import { Public } from '../auth/decorators/public.decorator';
+import { CreateRepairDto } from './dto/create-repair.dto';
+import { UpdateRepairDto } from './dto/update-repair.dto';
 import { MyMachineService } from './mymachine.service';
 
 @Controller('mymachine')
@@ -51,7 +53,7 @@ export class MyMachineController {
     }
 
     @Post('repairs')
-    createRepair(@Body() data: any) {
+    createRepair(@Body() data: CreateRepairDto) {
         return this.myMachineService.createRepair(data);
     }
 
@@ -61,7 +63,7 @@ export class MyMachineController {
     }
 
     @Post('repairs/:id/update') // Using Post for update if Frontend prefers, or Patch
-    updateRepair(@Param('id') id: string, @Body() data: any) {
+    updateRepair(@Param('id') id: string, @Body() data: UpdateRepairDto) {
         return this.myMachineService.updateRepair(id, data);
     }
 
