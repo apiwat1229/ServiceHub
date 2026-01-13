@@ -2,15 +2,16 @@
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useMyMachine } from '@/composables/useMyMachine';
@@ -22,6 +23,8 @@ import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
 import VueBarcode from 'vue3-barcode';
+import CategorySettingsModal from './CategorySettingsModal.vue';
+import LocationSettingsModal from './LocationSettingsModal.vue';
 
 const { t } = useI18n();
 const { categories, locations } = useMyMachine();
@@ -375,7 +378,9 @@ const handleSave = () => {
           </div>
           <Select v-model="form.location">
             <SelectTrigger class="bg-white border-slate-200">
-              <SelectValue :placeholder="t('services.myMachine.forms.machine.locationPlaceholder')" />
+              <SelectValue
+                :placeholder="t('services.myMachine.forms.machine.locationPlaceholder')"
+              />
             </SelectTrigger>
             <SelectContent>
               <SelectItem v-for="loc in locations" :key="loc.id" :value="loc.name">
@@ -384,103 +389,102 @@ const handleSave = () => {
             </SelectContent>
           </Select>
         </div>
-        </div>
       </div>
+    </div>
 
-      <div class="grid grid-cols-3 gap-4">
-        <div class="space-y-2">
-          <Label class="text-slate-700 font-semibold">{{
-            t('services.myMachine.forms.stock.qty')
-          }}</Label>
-          <Input type="number" v-model="form.qty" min="0" class="bg-white border-slate-200" />
-        </div>
-        <div class="space-y-2">
-          <Label class="text-slate-700 font-semibold">{{
-            t('services.myMachine.forms.stock.minQty')
-          }}</Label>
-          <Input type="number" v-model="form.minQty" min="0" class="bg-white border-slate-200" />
-        </div>
-        <div class="space-y-2">
-          <Label class="text-slate-700 font-semibold">{{
-            t('services.myMachine.forms.stock.price')
-          }}</Label>
-          <div class="relative">
-            <Input
-              class="pl-7 bg-white border-slate-200"
-              type="number"
-              v-model="form.price"
-              min="0"
-            />
-          </div>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-2 gap-4">
-        <div class="space-y-2">
-          <Label class="text-slate-700 font-semibold">{{
-            t('services.myMachine.forms.repair.date')
-          }}</Label>
-          <Popover>
-            <PopoverTrigger as-child>
-              <Button
-                variant="outline"
-                class="w-full justify-start text-left font-normal bg-white border-slate-200"
-                :class="!form.dateReceived && 'text-muted-foreground'"
-              >
-                <CalendarIcon class="mr-2 h-4 w-4" />
-                {{
-                  form.dateReceived
-                    ? format(form.dateReceived, 'PPP')
-                    : t('services.myMachine.forms.stock.pickDate')
-                }}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent class="w-auto p-0 border-none shadow-xl" align="start">
-              <Calendar v-model="calendarValue" mode="single" initial-focus />
-            </PopoverContent>
-          </Popover>
-        </div>
-      </div>
-
+    <div class="grid grid-cols-3 gap-4">
       <div class="space-y-2">
         <Label class="text-slate-700 font-semibold">{{
-          t('services.myMachine.forms.stock.recordedBy')
+          t('services.myMachine.forms.stock.qty')
         }}</Label>
-        <Input
-          v-model="form.receiver"
-          :placeholder="t('services.myMachine.forms.stock.staffIdentifier')"
-          class="bg-white border-slate-200"
-        />
+        <Input type="number" v-model="form.qty" min="0" class="bg-white border-slate-200" />
       </div>
-
       <div class="space-y-2">
         <Label class="text-slate-700 font-semibold">{{
-          t('services.myMachine.forms.machine.notes')
+          t('services.myMachine.forms.stock.minQty')
         }}</Label>
-        <Textarea
-          v-model="form.description"
-          :placeholder="t('services.myMachine.forms.stock.specsPlaceholder')"
-          class="min-h-[120px] bg-white border-slate-200"
-        />
+        <Input type="number" v-model="form.minQty" min="0" class="bg-white border-slate-200" />
       </div>
+      <div class="space-y-2">
+        <Label class="text-slate-700 font-semibold">{{
+          t('services.myMachine.forms.stock.price')
+        }}</Label>
+        <div class="relative">
+          <Input
+            class="pl-7 bg-white border-slate-200"
+            type="number"
+            v-model="form.price"
+            min="0"
+          />
+        </div>
+      </div>
+    </div>
 
-      <div class="flex justify-end gap-3 pt-6 mt-8">
-        <Button
-          type="button"
-          variant="outline"
-          @click="emit('cancel')"
-          class="h-10 px-6 border-slate-200 text-slate-600 font-bold"
-        >
-          {{ t('services.myMachine.forms.common.cancel') }}
-        </Button>
-        <Button
-          type="submit"
-          @click="handleSave"
-          class="h-10 px-8 bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-100 text-white font-black uppercase tracking-widest text-[10px]"
-        >
-          {{ t('services.myMachine.forms.stock.submit') }}
-        </Button>
+    <div class="grid grid-cols-2 gap-4">
+      <div class="space-y-2">
+        <Label class="text-slate-700 font-semibold">{{
+          t('services.myMachine.forms.repair.date')
+        }}</Label>
+        <Popover>
+          <PopoverTrigger as-child>
+            <Button
+              variant="outline"
+              class="w-full justify-start text-left font-normal bg-white border-slate-200"
+              :class="!form.dateReceived && 'text-muted-foreground'"
+            >
+              <CalendarIcon class="mr-2 h-4 w-4" />
+              {{
+                form.dateReceived
+                  ? format(form.dateReceived, 'PPP')
+                  : t('services.myMachine.forms.stock.pickDate')
+              }}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent class="w-auto p-0 border-none shadow-xl" align="start">
+            <Calendar v-model="calendarValue" mode="single" initial-focus />
+          </PopoverContent>
+        </Popover>
       </div>
+    </div>
+
+    <div class="space-y-2">
+      <Label class="text-slate-700 font-semibold">{{
+        t('services.myMachine.forms.stock.recordedBy')
+      }}</Label>
+      <Input
+        v-model="form.receiver"
+        :placeholder="t('services.myMachine.forms.stock.staffIdentifier')"
+        class="bg-white border-slate-200"
+      />
+    </div>
+
+    <div class="space-y-2">
+      <Label class="text-slate-700 font-semibold">{{
+        t('services.myMachine.forms.machine.notes')
+      }}</Label>
+      <Textarea
+        v-model="form.description"
+        :placeholder="t('services.myMachine.forms.stock.specsPlaceholder')"
+        class="min-h-[120px] bg-white border-slate-200"
+      />
+    </div>
+
+    <div class="flex justify-end gap-3 pt-6 mt-8">
+      <Button
+        type="button"
+        variant="outline"
+        @click="emit('cancel')"
+        class="h-10 px-6 border-slate-200 text-slate-600 font-bold"
+      >
+        {{ t('services.myMachine.forms.common.cancel') }}
+      </Button>
+      <Button
+        type="submit"
+        @click="handleSave"
+        class="h-10 px-8 bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-100 text-white font-black uppercase tracking-widest text-[10px]"
+      >
+        {{ t('services.myMachine.forms.stock.submit') }}
+      </Button>
     </div>
   </div>
 
