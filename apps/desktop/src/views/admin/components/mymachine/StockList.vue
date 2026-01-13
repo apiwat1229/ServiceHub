@@ -194,7 +194,7 @@ const columns = computed<ColumnDef<any>[]>(() => [
     header: t('services.myMachine.stock.columns.actions'),
     cell: ({ row }) => {
       const part = row.original;
-      return h('div', { class: 'flex items-center justify-end gap-1' }, [
+      return h('div', { class: 'flex items-center justify-center gap-1' }, [
         h(
           Button,
           {
