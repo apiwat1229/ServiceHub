@@ -3,20 +3,16 @@ import router from '../router';
 import { storage } from '../services/storage';
 
 const getBaseUrl = () => {
-    // Force local development URL for debugging backend changes
-    return 'http://localhost:2530/api';
-
-    // Original logic preserved for reference but disabled
-    /*
     let url = import.meta.env.VITE_API_URL || 'http://localhost:2530';
+    // Remove trailing slash if present
     if (url.endsWith('/')) {
         url = url.slice(0, -1);
     }
+    // Append /api if not already present
     if (!url.endsWith('/api')) {
         url += '/api';
     }
     return url;
-    */
 };
 
 const baseURL = getBaseUrl();
