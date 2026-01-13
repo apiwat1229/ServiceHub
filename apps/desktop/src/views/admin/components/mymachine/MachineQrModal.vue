@@ -10,7 +10,10 @@ import {
 import { Copy, Download, ExternalLink, Monitor, QrCode } from 'lucide-vue-next';
 import QrcodeVue from 'qrcode.vue';
 import { ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
+
+const { t } = useI18n();
 
 const props = defineProps<{
   machine: any;
@@ -22,7 +25,7 @@ const publicUrl = ref(`https://app.ytrc.co.th/#/public/machine/${props.machine.i
 
 const copyToClipboard = () => {
   navigator.clipboard.writeText(publicUrl.value);
-  toast.success('Link copied to clipboard');
+  toast.success(t('services.myMachine.messages.copySuccess'));
 };
 
 const downloadQr = () => {
@@ -32,7 +35,7 @@ const downloadQr = () => {
   link.download = `QR-${props.machine.name}.png`;
   link.href = canvas.toDataURL();
   link.click();
-  toast.success('QR Code downloaded');
+  toast.success(t('services.myMachine.messages.downloadSuccess'));
 };
 </script>
 
@@ -44,9 +47,11 @@ const downloadQr = () => {
           <Monitor class="h-5 w-5 text-blue-600" />
         </div>
         <div>
-          <DialogTitle class="text-lg sm:text-xl">Asset QR Code</DialogTitle>
+          <DialogTitle class="text-lg sm:text-xl">{{
+            t('services.myMachine.forms.machine.assetTag')
+          }}</DialogTitle>
           <DialogDescription class="text-[0.625rem] sm:text-xs">
-            Scannable link for external asset status tracking.
+            {{ t('services.myMachine.qrDescription') }}
           </DialogDescription>
         </div>
       </div>
@@ -75,15 +80,15 @@ const downloadQr = () => {
       <!-- Info Card -->
       <div class="w-full bg-slate-50 rounded-xl p-4 border border-slate-100 mb-6">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-[0.625rem] font-semibold text-slate-500 uppercase tracking-wider"
-            >Public Asset Link</span
-          >
+          <span class="text-[0.625rem] font-semibold text-slate-500 uppercase tracking-wider">{{
+            t('services.myMachine.publicAssetLink')
+          }}</span>
           <button
             @click="copyToClipboard"
             class="flex items-center gap-1.5 text-[0.625rem] text-blue-600 font-bold hover:text-blue-700 transition-colors"
           >
             <Copy class="h-3 w-3" />
-            Copy
+            {{ t('services.myMachine.copy') }}
           </button>
         </div>
         <div
@@ -98,14 +103,16 @@ const downloadQr = () => {
       <div class="grid grid-cols-2 gap-3 w-full">
         <div class="bg-white border border-slate-100 rounded-lg p-2.5 sm:p-3 text-center">
           <p class="text-[0.5625rem] sm:text-[0.625rem] text-slate-400 uppercase font-bold mb-0.5">
-            Asset Name
+            {{ t('services.myMachine.assetName') }}
           </p>
           <p class="text-xs sm:text-sm font-semibold text-slate-700 truncate px-1">
             {{ machine.name }}
           </p>
         </div>
         <div class="bg-white border border-slate-100 rounded-lg p-2.5 sm:p-3 text-center">
-          <p class="text-[0.5625rem] sm:text-[0.625rem] text-slate-400 uppercase font-bold mb-0.5">Model</p>
+          <p class="text-[0.5625rem] sm:text-[0.625rem] text-slate-400 uppercase font-bold mb-0.5">
+            {{ t('services.myMachine.modelName') }}
+          </p>
           <p class="text-xs sm:text-sm font-semibold text-slate-700 truncate px-1">
             {{ machine.model }}
           </p>
@@ -119,14 +126,14 @@ const downloadQr = () => {
         class="flex-1 h-10 font-bold text-slate-600 order-2 sm:order-1"
         @click="emit('close')"
       >
-        Close
+        {{ t('services.myMachine.forms.common.cancel') }}
       </Button>
       <Button
         class="flex-1 bg-blue-600 hover:bg-blue-700 h-10 shadow-md order-1 sm:order-2"
         @click="downloadQr"
       >
         <Download class="h-4 w-4 mr-2" />
-        Download Image
+        {{ t('services.myMachine.downloadImage') }}
       </Button>
     </DialogFooter>
   </DialogContent>

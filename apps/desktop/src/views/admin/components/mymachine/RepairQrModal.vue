@@ -9,7 +9,10 @@ import {
 } from '@/components/ui/dialog';
 import { Copy, Download, ExternalLink, QrCode, Wrench } from 'lucide-vue-next';
 import QrcodeVue from 'qrcode.vue';
+import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
+
+const { t } = useI18n();
 
 const props = defineProps<{
   repair: any;
@@ -22,18 +25,17 @@ const publicUrl = `https://app.ytrc.co.th/#/public/log/${props.repair.id}`;
 
 const copyLink = () => {
   navigator.clipboard.writeText(publicUrl);
-  toast.success('Log link copied to clipboard');
+  toast.success(t('services.myMachine.messages.copySuccess'));
 };
 
 const downloadQr = () => {
   const canvas = document.querySelector('.repair-qr-container canvas') as HTMLCanvasElement;
-  if (canvas) {
-    const link = document.createElement('a');
-    link.download = `Log-${props.repair.machineName}-${props.repair.date}.png`;
-    link.href = canvas.toDataURL();
-    link.click();
-    toast.success('QR Code downloaded');
-  }
+  if (!canvas) return;
+  const link = document.createElement('a');
+  link.download = `LOG-${props.repair.id}.png`;
+  link.href = canvas.toDataURL();
+  link.click();
+  toast.success(t('services.myMachine.messages.downloadSuccess'));
 };
 </script>
 
@@ -45,9 +47,11 @@ const downloadQr = () => {
           <Wrench class="h-5 w-5 text-blue-600" />
         </div>
         <div>
-          <DialogTitle class="text-xl">Repair Log QR</DialogTitle>
-          <DialogDescription>
-            Scannable link for this specific maintenance record.
+          <DialogTitle class="text-xl">{{
+            t('services.myMachine.maintenanceLogBook')
+          }}</DialogTitle>
+          <DialogDescription class="text-xs">
+            {{ t('services.myMachine.qrDescription') }}
           </DialogDescription>
         </div>
       </div>
@@ -73,15 +77,18 @@ const downloadQr = () => {
       </div>
 
       <!-- Info Card -->
-      <div class="w-full bg-slate-50 rounded-xl p-4 border border-slate-100 mb-6">
+      <div class="w-full bg-slate-50 rounded-xl p-4 border border-slate-100 mb-6 font-sans">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider"
-            >Public Log Link</span
+          <span class="text-[0.625rem] font-semibold text-slate-500 uppercase tracking-wider">{{
+            t('services.myMachine.publicAssetLink')
+          }}</span>
+          <button
+            @click="copyLink"
+            class="flex items-center gap-1.5 text-[0.625rem] text-blue-600 font-bold hover:text-blue-700 transition-colors"
           >
-          <Button variant="ghost" size="sm" class="h-7 px-2 text-blue-600" @click="copyLink">
-            <Copy class="h-3 w-3 mr-1" />
-            Copy
-          </Button>
+            <Copy class="h-3 w-3" />
+            {{ t('services.myMachine.copy') }}
+          </button>
         </div>
         <div class="flex items-center gap-2 text-sm text-slate-600 break-all font-medium">
           <ExternalLink class="h-4 w-4 flex-shrink-0 text-slate-400" />
@@ -102,11 +109,20 @@ const downloadQr = () => {
       </div>
     </div>
 
-    <DialogFooter class="flex sm:justify-between gap-2">
-      <Button variant="outline" class="flex-1" @click="emit('close')"> Close </Button>
-      <Button class="flex-1 bg-blue-600 hover:bg-blue-700" @click="downloadQr">
+    <DialogFooter class="flex flex-col sm:flex-row gap-2 border-t p-4">
+      <Button
+        variant="outline"
+        class="flex-1 h-10 font-bold text-slate-600 order-2 sm:order-1"
+        @click="emit('close')"
+      >
+        {{ t('services.myMachine.forms.common.cancel') }}
+      </Button>
+      <Button
+        class="flex-1 bg-blue-600 hover:bg-blue-700 h-10 shadow-md order-1 sm:order-2"
+        @click="downloadQr"
+      >
         <Download class="h-4 w-4 mr-2" />
-        Download Image
+        {{ t('services.myMachine.downloadImage') }}
       </Button>
     </DialogFooter>
   </DialogContent>

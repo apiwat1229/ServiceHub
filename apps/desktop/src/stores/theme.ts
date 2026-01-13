@@ -190,6 +190,8 @@ export const useThemeStore = defineStore('theme', () => {
         fontSize,
         fontFamily,
         colors,
+        fontFamilies,
+        fontSizes,
         isDark,
         toggleDark: () => (isDark.value = !isDark.value),
         loadFromUser,

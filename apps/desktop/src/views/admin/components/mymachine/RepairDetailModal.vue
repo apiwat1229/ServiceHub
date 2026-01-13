@@ -3,6 +3,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Calendar, ClipboardList, Clock, Package, User } from 'lucide-vue-next';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 const props = defineProps<{
   repair: any;
@@ -37,7 +40,7 @@ const getStatusColor = (cost: number) => {
           <p
             class="text-[0.625rem] font-black text-slate-400 uppercase tracking-[0.3em] leading-none mb-1"
           >
-            Official Maintenance Record
+            {{ t('services.myMachine.officialMaintenanceRecord') }}
           </p>
           <h2 class="text-3xl font-black tracking-tighter text-slate-900 leading-none">
             {{ repair.machineName }}
@@ -63,7 +66,11 @@ const getStatusColor = (cost: number) => {
           <Badge
             :class="`rounded-sm font-black uppercase tracking-tight text-[0.5625rem] px-2 py-0 border ${getStatusColor(repair.totalCost)}`"
           >
-            {{ repair.totalCost > 10000 ? 'Major Repair' : 'Routine Service' }}
+            {{
+              repair.totalCost > 10000
+                ? t('services.myMachine.majorRepair')
+                : t('services.myMachine.routineService')
+            }}
           </Badge>
         </div>
       </div>
@@ -76,15 +83,15 @@ const getStatusColor = (cost: number) => {
           <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
             <User class="w-3.5 h-3.5 text-slate-900" />
             <h3 class="text-[0.625rem] font-black uppercase tracking-widest text-slate-900">
-              Personnel in Charge
+              {{ t('services.myMachine.personnelInCharge') }}
             </h3>
           </div>
           <div class="space-y-1">
             <p class="text-sm font-black text-slate-900">
-              {{ repair.technician || 'Not assigned' }}
+              {{ repair.technician || t('services.myMachine.notAssigned') }}
             </p>
             <p class="text-[0.625rem] text-slate-400 font-bold uppercase tracking-widest">
-              Certified Technical Lead
+              {{ t('services.myMachine.certifiedTechnicalLead') }}
             </p>
           </div>
         </div>
@@ -93,13 +100,13 @@ const getStatusColor = (cost: number) => {
           <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
             <Clock class="w-3.5 h-3.5 text-slate-900" />
             <h3 class="text-[0.625rem] font-black uppercase tracking-widest text-slate-900">
-              Timestamp
+              {{ t('services.myMachine.timestamp') }}
             </h3>
           </div>
           <div class="space-y-1">
             <p class="text-sm font-black text-slate-900">{{ repair.date }}</p>
             <p class="text-[0.625rem] text-slate-400 font-bold uppercase tracking-widest">
-              Recorded Date of Service
+              {{ t('services.myMachine.recordedDateOfService') }}
             </p>
           </div>
         </div>
@@ -110,7 +117,7 @@ const getStatusColor = (cost: number) => {
         <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
           <ClipboardList class="w-3.5 h-3.5 text-slate-900" />
           <h3 class="text-[0.625rem] font-black uppercase tracking-widest text-slate-900">
-            Description of Issue / Detail
+            {{ t('services.myMachine.descriptionOfIssueDetail') }}
           </h3>
         </div>
         <div class="bg-slate-50 border border-slate-100 p-6 rounded-sm">
@@ -125,7 +132,7 @@ const getStatusColor = (cost: number) => {
         <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
           <Package class="w-3.5 h-3.5 text-slate-900" />
           <h3 class="text-[0.625rem] font-black uppercase tracking-widest text-slate-900">
-            Resources & Materials Inventory
+            {{ t('services.myMachine.resourcesMaterialsInventory') }}
           </h3>
         </div>
 
@@ -138,9 +145,9 @@ const getStatusColor = (cost: number) => {
               class="bg-slate-50 border-b border-slate-100 text-[0.5625rem] font-black text-slate-400 uppercase tracking-[0.2em]"
             >
               <tr>
-                <th class="px-4 py-3">Material Code / Description</th>
-                <th class="px-4 py-3 text-right">Quantity</th>
-                <th class="px-4 py-3 text-right">Unit Price</th>
+                <th class="px-4 py-3">{{ t('services.myMachine.materialCodeDescription') }}</th>
+                <th class="px-4 py-3 text-right">{{ t('services.myMachine.quantity') }}</th>
+                <th class="px-4 py-3 text-right">{{ t('services.myMachine.unitPrice') }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-50">
@@ -154,13 +161,13 @@ const getStatusColor = (cost: number) => {
                     {{ part.name }}
                   </p>
                   <p class="text-[0.5625rem] font-bold text-slate-400 uppercase tracking-widest">
-                    {{ part.code || 'N/A' }}
+                    {{ part.code || t('services.myMachine.notApplicable') }}
                   </p>
                 </td>
                 <td class="px-4 py-4 text-right">
                   <span class="text-xs font-black text-slate-900">{{ part.qty }}</span>
                   <span class="text-[0.625rem] font-bold text-slate-400 ml-1 uppercase">{{
-                    part.unit || 'Units'
+                    part.unit || t('services.myMachine.units')
                   }}</span>
                 </td>
                 <td class="px-4 py-4 text-right">
@@ -177,7 +184,7 @@ const getStatusColor = (cost: number) => {
           class="text-center py-10 bg-slate-50 rounded-sm border border-slate-100 border-dashed"
         >
           <p class="text-slate-400 text-[0.625rem] font-black uppercase tracking-widest">
-            No replacement materials utilized during this session.
+            {{ t('services.myMachine.noReplacementMaterialsUtilized') }}
           </p>
         </div>
       </section>
@@ -189,7 +196,7 @@ const getStatusColor = (cost: number) => {
     >
       <div class="text-center sm:text-left">
         <p class="text-[0.5625rem] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">
-          Total Economic Valuation
+          {{ t('services.myMachine.totalEconomicValuation') }}
         </p>
         <p class="text-3xl font-black text-slate-900 tracking-tighter">
           {{ formatCurrency(repair.totalCost) }}
@@ -201,13 +208,13 @@ const getStatusColor = (cost: number) => {
           class="h-10 px-6 font-black text-[0.625rem] uppercase tracking-widest text-slate-500 hover:text-slate-900"
           @click="emit('close')"
         >
-          Cancel
+          {{ t('services.myMachine.forms.common.cancel') }}
         </Button>
         <Button
           class="h-10 px-10 rounded-sm bg-slate-900 text-white font-black text-[0.625rem] uppercase tracking-widest hover:bg-slate-800 shadow-sm"
           @click="emit('close')"
         >
-          Close Record
+          {{ t('services.myMachine.closeRecord') }}
         </Button>
       </div>
     </div>

@@ -18,7 +18,10 @@ import { format } from 'date-fns';
 import { Calendar as CalendarIcon, FileText, QrCode, X } from 'lucide-vue-next';
 import QrcodeVue from 'qrcode.vue';
 import { computed, ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
+
+const { t } = useI18n();
 
 const props = defineProps<{
   initialData?: any;
@@ -145,7 +148,9 @@ const handleSave = () => {
     <!-- Left Column: Image & QR Code -->
     <div class="md:col-span-4 space-y-6">
       <div>
-        <Label class="mb-2 block text-slate-700 font-semibold">Part / Asset Image</Label>
+        <Label class="mb-2 block text-slate-700 font-semibold">{{
+          t('services.myMachine.forms.machine.image')
+        }}</Label>
         <input
           type="file"
           ref="fileInput"
@@ -168,7 +173,7 @@ const handleSave = () => {
                 class="h-8 text-xs font-bold"
                 @click.stop="handleFileClick"
               >
-                Change Photo
+                {{ t('services.myMachine.forms.stock.changePhoto') }}
               </Button>
               <Button variant="destructive" size="icon" class="h-8 w-8" @click="removeImage">
                 <X class="w-4 h-4" />
@@ -181,8 +186,12 @@ const handleSave = () => {
             >
               <FileText :size="24" />
             </div>
-            <p class="font-bold text-sm text-slate-900 mb-1">Upload Photo</p>
-            <p class="text-xs text-slate-500 text-center text-balance px-4">Max 2MB. JPG or PNG.</p>
+            <p class="font-bold text-sm text-slate-900 mb-1">
+              {{ t('services.myMachine.forms.machine.upload') }}
+            </p>
+            <p class="text-xs text-slate-500 text-center text-balance px-4">
+              {{ t('services.myMachine.forms.stock.uploadLimit') }}
+            </p>
           </template>
         </div>
       </div>
@@ -190,7 +199,7 @@ const handleSave = () => {
       <div class="pt-4 border-t border-slate-100">
         <Label class="mb-3 text-slate-700 font-semibold flex items-center gap-2">
           <QrCode class="w-4 h-4 text-blue-600" />
-          Asset QR Code
+          {{ t('services.myMachine.forms.machine.assetTag') }}
         </Label>
         <div
           class="bg-white border rounded-xl p-4 flex flex-col items-center justify-center shadow-sm border-slate-200"
@@ -205,7 +214,7 @@ const handleSave = () => {
             />
           </div>
           <p class="text-[0.625rem] font-black uppercase tracking-widest text-slate-400 mb-1">
-            Encoded Data
+            {{ t('services.myMachine.forms.stock.encodedData') }}
           </p>
           <code
             class="text-xs font-mono font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded truncate max-w-full"
@@ -220,7 +229,9 @@ const handleSave = () => {
     <div class="md:col-span-8 space-y-4">
       <div class="grid grid-cols-2 gap-4">
         <div class="space-y-2">
-          <Label class="text-slate-700 font-semibold">Part Name (English)</Label>
+          <Label class="text-slate-700 font-semibold">{{
+            t('services.myMachine.forms.stock.nameEN')
+          }}</Label>
           <Input
             v-model="form.nameEN"
             placeholder="e.g. Bearing 6002-ZZ"
@@ -228,7 +239,9 @@ const handleSave = () => {
           />
         </div>
         <div class="space-y-2">
-          <Label class="text-slate-700 font-semibold">Part Name (Thai)</Label>
+          <Label class="text-slate-700 font-semibold">{{
+            t('services.myMachine.forms.stock.nameTH')
+          }}</Label>
           <Input
             v-model="form.nameTH"
             placeholder="e.g. ตลับลูกปืน 6002-ZZ"
@@ -239,17 +252,19 @@ const handleSave = () => {
 
       <div class="space-y-2">
         <div class="flex items-center justify-between">
-          <Label class="text-slate-700 font-semibold">Stock Code</Label>
+          <Label class="text-slate-700 font-semibold">{{
+            t('services.myMachine.forms.stock.code')
+          }}</Label>
           <div class="flex items-center space-x-2">
             <Checkbox id="auto-gen-stock" v-model:checked="form.autoGenerateCode" />
             <label for="auto-gen-stock" class="text-xs font-medium text-slate-500 cursor-pointer">
-              Auto-gen
+              {{ t('services.myMachine.forms.stock.autoGen') }}
             </label>
           </div>
         </div>
         <Input
           v-model="form.code"
-          placeholder="e.g. SP-BRG-001"
+          :placeholder="t('services.myMachine.forms.machine.tagPlaceholder')"
           :disabled="form.autoGenerateCode"
           class="bg-white border-slate-200"
         />
@@ -257,27 +272,62 @@ const handleSave = () => {
 
       <div class="grid grid-cols-2 gap-4">
         <div class="space-y-2">
-          <Label class="text-slate-700 font-semibold">Category</Label>
+          <Label class="text-slate-700 font-semibold">{{
+            t('services.myMachine.forms.stock.category')
+          }}</Label>
           <Select v-model="form.category">
             <SelectTrigger class="bg-white border-slate-200">
-              <SelectValue placeholder="Select category" />
+              <SelectValue :placeholder="t('services.myMachine.filterPlaceholder')" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Mechanical">Mechanical</SelectItem>
-              <SelectItem value="Electrical">Electrical</SelectItem>
-              <SelectItem value="Electronic">Electronic</SelectItem>
-              <SelectItem value="Pneumatic">Pneumatic</SelectItem>
-              <SelectItem value="Hydraulic">Hydraulic</SelectItem>
-              <SelectItem value="Consumables">Consumables</SelectItem>
-              <SelectItem value="Spare Parts">General Spare Parts</SelectItem>
+              <SelectItem value="Mechanical">{{
+                t('services.myMachine.categories.mechanical')
+              }}</SelectItem>
+              <SelectItem value="Electrical">{{
+                t('services.myMachine.categories.electrical')
+              }}</SelectItem>
+              <SelectItem value="Electronic">{{
+                t('services.myMachine.categories.electronic')
+              }}</SelectItem>
+              <SelectItem value="Pneumatic">{{
+                t('services.myMachine.categories.pneumatic')
+              }}</SelectItem>
+              <SelectItem value="Hydraulic">{{
+                t('services.myMachine.categories.hydraulic')
+              }}</SelectItem>
+              <SelectItem value="Bearings">{{
+                t('services.myMachine.categories.bearings')
+              }}</SelectItem>
+              <SelectItem value="Fasteners">{{
+                t('services.myMachine.categories.fasteners')
+              }}</SelectItem>
+              <SelectItem value="Belts">{{ t('services.myMachine.categories.belts') }}</SelectItem>
+              <SelectItem value="Lubricants">{{
+                t('services.myMachine.categories.lubricants')
+              }}</SelectItem>
+              <SelectItem value="Seals">{{ t('services.myMachine.categories.seals') }}</SelectItem>
+              <SelectItem value="Piping">{{
+                t('services.myMachine.categories.piping')
+              }}</SelectItem>
+              <SelectItem value="Valves">{{
+                t('services.myMachine.categories.valves')
+              }}</SelectItem>
+              <SelectItem value="Consumables">{{
+                t('services.myMachine.categories.consumables')
+              }}</SelectItem>
+              <SelectItem value="Spare Parts">{{
+                t('services.myMachine.categories.spareparts')
+              }}</SelectItem>
             </SelectContent>
           </Select>
         </div>
         <div class="space-y-2">
-          <Label class="text-slate-700 font-semibold">Storage Location</Label>
+          <Label class="text-slate-700 font-semibold">{{
+            t('services.myMachine.forms.stock.location')
+          }}</Label>
           <Input
             v-model="form.location"
-            placeholder="e.g. Rack B, Section 4"
+            :placeholder="t('services.myMachine.forms.machine.locationPlaceholder')"
             class="bg-white border-slate-200"
           />
         </div>
@@ -285,18 +335,24 @@ const handleSave = () => {
 
       <div class="grid grid-cols-2 gap-4">
         <div class="space-y-2">
-          <Label class="text-slate-700 font-semibold">Stock Balance</Label>
+          <Label class="text-slate-700 font-semibold">{{
+            t('services.myMachine.forms.stock.qty')
+          }}</Label>
           <Input type="number" v-model="form.qty" min="0" class="bg-white border-slate-200" />
         </div>
         <div class="space-y-2">
-          <Label class="text-slate-700 font-semibold">Safety Stock (Min)</Label>
+          <Label class="text-slate-700 font-semibold">{{
+            t('services.myMachine.forms.stock.minQty')
+          }}</Label>
           <Input type="number" v-model="form.minQty" min="0" class="bg-white border-slate-200" />
         </div>
       </div>
 
       <div class="grid grid-cols-2 gap-4">
         <div class="space-y-2">
-          <Label class="text-slate-700 font-semibold">Unit Price (THB)</Label>
+          <Label class="text-slate-700 font-semibold">{{
+            t('services.myMachine.forms.stock.price')
+          }}</Label>
           <div class="relative">
             <Input
               class="pl-7 bg-white border-slate-200"
@@ -307,7 +363,9 @@ const handleSave = () => {
           </div>
         </div>
         <div class="space-y-2">
-          <Label class="text-slate-700 font-semibold">Entry Date</Label>
+          <Label class="text-slate-700 font-semibold">{{
+            t('services.myMachine.forms.repair.date')
+          }}</Label>
           <Popover>
             <PopoverTrigger as-child>
               <Button
@@ -316,7 +374,11 @@ const handleSave = () => {
                 :class="!form.dateReceived && 'text-muted-foreground'"
               >
                 <CalendarIcon class="mr-2 h-4 w-4" />
-                {{ form.dateReceived ? format(form.dateReceived, 'PPP') : 'Pick a date' }}
+                {{
+                  form.dateReceived
+                    ? format(form.dateReceived, 'PPP')
+                    : t('services.myMachine.forms.stock.pickDate')
+                }}
               </Button>
             </PopoverTrigger>
             <PopoverContent class="w-auto p-0 border-none shadow-xl" align="start">
@@ -327,16 +389,31 @@ const handleSave = () => {
       </div>
 
       <div class="space-y-2">
-        <Label class="text-slate-700 font-semibold">Recorded By</Label>
+        <Label class="text-slate-700 font-semibold">{{
+          t('services.myMachine.forms.stock.recordedBy')
+        }}</Label>
         <Input
           v-model="form.receiver"
-          placeholder="Staff identifier"
+          :placeholder="t('services.myMachine.forms.stock.staffIdentifier')"
           class="bg-white border-slate-200"
         />
       </div>
 
       <div class="space-y-2">
-        <Label class="text-slate-700 font-semibold">Item Description / Technical Specs</Label>
+        <Label class="text-slate-700 font-semibold">{{
+          t('services.myMachine.forms.machine.notes')
+        }}</Label>
+        <Textarea
+          v-model="form.description"
+          :placeholder="t('services.myMachine.forms.stock.specsPlaceholder')"
+          class="min-h-[100px] bg-white border-slate-200 resize-none"
+        />
+      </div>
+
+      <div class="space-y-2">
+        <Label class="text-slate-700 font-semibold">{{
+          t('services.myMachine.forms.stock.itemSpecs')
+        }}</Label>
         <Textarea
           v-model="form.description"
           class="min-h-[80px] resize-none bg-white border-slate-200"
@@ -345,10 +422,22 @@ const handleSave = () => {
     </div>
   </div>
 
-  <div class="flex justify-end gap-3 pt-6 border-t mt-4">
-    <Button variant="outline" @click="emit('cancel')" class="border-slate-200">Cancel</Button>
-    <Button @click="handleSave" class="bg-blue-600 hover:bg-blue-700 shadow-md"
-      >Save Spare Part</Button
+  <div class="flex justify-end gap-3 pt-6 border-t mt-8">
+    <Button
+      type="button"
+      variant="outline"
+      @click="emit('cancel')"
+      class="h-10 px-6 border-slate-200 text-slate-600 font-bold"
     >
+      {{ t('services.myMachine.forms.common.cancel') }}
+    </Button>
+    <Button
+      type="submit"
+      @click="handleSave"
+      class="h-10 px-8 bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-100 text-white font-black uppercase tracking-widest text-[10px]"
+    >
+      {{ t('services.myMachine.forms.stock.submit') }}
+    </Button>
   </div>
 </template>
+```

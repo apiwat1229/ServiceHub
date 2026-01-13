@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
 import {
   Command,
   CommandEmpty,
@@ -23,17 +22,12 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useMyMachine, type RepairPart } from '@/composables/useMyMachine';
 import { cn } from '@/lib/utils';
-import { CalendarDate, getLocalTimeZone } from '@internationalized/date';
 import { format } from 'date-fns';
-import {
-  Calendar as CalendarIcon,
-  Check,
-  ChevronsUpDown,
-  Package,
-  Plus,
-  Trash2,
-} from 'lucide-vue-next';
-import { computed, ref } from 'vue';
+import { Check, ChevronsUpDown, Package, Plus, Trash2 } from 'lucide-vue-next';
+import { ref } from 'vue';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 const props = defineProps<{
   initialData?: any;
@@ -62,18 +56,7 @@ const form = ref<{
 );
 
 // Computed property to handle conversion between Date and CalendarDate
-const calendarValue = computed({
-  get: () => {
-    if (!form.value.date) return undefined;
-    const d = form.value.date;
-    return new CalendarDate(d.getFullYear(), d.getMonth() + 1, d.getDate());
-  },
-  set: (v: CalendarDate | undefined) => {
-    if (v) {
-      form.value.date = v.toDate(getLocalTimeZone());
-    }
-  },
-});
+// const calendarValue = computed({ ... }); // Removed as not used for Input type="date"
 
 const partInput = ref<{
   name: string;
@@ -137,54 +120,52 @@ const handleSubmit = () => {
 <template>
   <div class="space-y-6 py-4">
     <!-- Main Info -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div class="flex flex-col gap-2">
-        <Label class="text-slate-700 font-semibold"
-          >Machine <span class="text-red-500">*</span></Label
-        >
+    <div class="grid grid-cols-2 gap-4">
+      <div class="space-y-2">
+        <Label class="text-slate-700 font-semibold">{{
+          t('services.myMachine.forms.repair.machine')
+        }}</Label>
         <Popover v-model:open="openMachineCombo">
           <PopoverTrigger as-child>
             <Button
               variant="outline"
               role="combobox"
               :aria-expanded="openMachineCombo"
-              class="justify-between bg-white border-slate-200"
+              class="w-full justify-between bg-white border-slate-200"
             >
               {{
                 form.machineId
                   ? machines.find((m) => m.id === form.machineId)?.name
-                  : 'Select target machine...'
+                  : t('services.myMachine.forms.repair.selectMachine')
               }}
               <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
           <PopoverContent class="w-[300px] p-0">
             <Command>
-              <CommandInput placeholder="Search machine..." />
-              <CommandEmpty>No machine found.</CommandEmpty>
+              <CommandInput :placeholder="t('services.myMachine.forms.repair.searchMachine')" />
               <CommandList>
+                <CommandEmpty>{{
+                  t('services.myMachine.forms.repair.noMachineFound')
+                }}</CommandEmpty>
                 <CommandGroup>
                   <CommandItem
-                    v-for="machine in machines"
-                    :key="machine.id"
-                    :value="machine.name"
+                    v-for="m in machines"
+                    :key="m.id"
+                    :value="m.name"
                     @select="
                       () => {
-                        form.machineId = machine.id;
+                        form.machineId = m.id;
                         openMachineCombo = false;
                       }
                     "
                   >
                     <Check
                       :class="
-                        cn(
-                          'mr-2 h-4 w-4 text-blue-600',
-                          form.machineId === machine.id ? 'opacity-100' : 'opacity-0'
-                        )
+                        cn('mr-2 h-4 w-4', form.machineId === m.id ? 'opacity-100' : 'opacity-0')
                       "
                     />
-                    {{ machine.name }}
-                    <span class="ml-2 text-xs text-muted-foreground">({{ machine.model }})</span>
+                    {{ m.name }}
                   </CommandItem>
                 </CommandGroup>
               </CommandList>
@@ -193,96 +174,127 @@ const handleSubmit = () => {
         </Popover>
       </div>
 
-      <div class="flex flex-col gap-2">
-        <Label class="text-slate-700 font-semibold">Responsible Technician</Label>
+      <div class="space-y-2 text-slate-700">
+        <Label class="font-semibold">{{ t('services.myMachine.forms.repair.date') }}</Label>
         <Input
-          v-model="form.technician"
-          placeholder="Technician Name"
+          :value="form.date instanceof Date ? form.date.toISOString().split('T')[0] : form.date"
+          @input="(e: any) => (form.date = new Date(e.target.value))"
+          type="date"
           class="bg-white border-slate-200"
         />
       </div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div class="flex flex-col gap-2">
-        <Label class="text-slate-700 font-semibold">Maintenance Date</Label>
-        <Popover>
-          <PopoverTrigger as-child>
-            <Button
-              variant="outline"
-              class="justify-start text-left font-normal bg-white border-slate-200"
-              :class="!form.date && 'text-muted-foreground'"
-            >
-              <CalendarIcon class="mr-2 h-4 w-4" />
-              {{ form.date ? format(form.date, 'PPP') : 'Pick a date' }}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent class="w-auto p-0 border-none shadow-xl">
-            <Calendar v-model="calendarValue" mode="single" initial-focus />
-          </PopoverContent>
-        </Popover>
+    <div class="grid grid-cols-2 gap-4">
+      <div class="space-y-2">
+        <Label class="text-slate-700 font-semibold">{{
+          t('services.myMachine.forms.repair.technician')
+        }}</Label>
+        <Input
+          v-model="form.technician"
+          :placeholder="t('services.myMachine.forms.repair.techPlaceholder')"
+          class="bg-white border-slate-200"
+        />
+      </div>
+      <div class="space-y-2">
+        <Label class="text-slate-700 font-semibold"
+          >{{ t('services.myMachine.forms.repair.attachment') }}
+          <span class="text-xs font-normal text-slate-500"
+            >({{ t('services.myMachine.forms.repair.attachmentNote') }})</span
+          ></Label
+        >
+        <div class="flex items-center gap-2">
+          <Button variant="outline" class="flex-1 bg-white border-slate-200 gap-2 h-9 text-xs">
+            <Plus class="w-3.5 h-3.5" />
+            {{ t('services.myMachine.forms.repair.takePhoto') }}
+          </Button>
+          <Button variant="outline" class="flex-1 bg-white border-slate-200 gap-2 h-9 text-xs">
+            <Plus class="w-3.5 h-3.5" />
+            {{ t('services.myMachine.forms.repair.attachFile') }}
+          </Button>
+        </div>
       </div>
     </div>
 
-    <div class="flex flex-col gap-2">
-      <Label class="text-slate-700 font-semibold">Issue Description & Remarks</Label>
+    <div class="space-y-2">
+      <Label class="text-slate-700 font-semibold">{{
+        t('services.myMachine.forms.repair.issue')
+      }}</Label>
       <Textarea
         v-model="form.issue"
-        placeholder="Describe the findings and actions taken..."
-        class="bg-white border-slate-200 min-h-[80px]"
+        :placeholder="t('services.myMachine.forms.repair.issuePlaceholder')"
+        class="min-h-[80px] bg-white border-slate-200 resize-none"
       />
     </div>
 
     <!-- Parts Section -->
     <div class="space-y-4 border rounded-xl p-6 bg-slate-50/50 border-slate-200">
-      <div class="flex items-center gap-2 mb-2">
-        <div class="p-1.5 bg-blue-50 text-blue-500 rounded-md">
-          <Package :size="18" />
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="p-2 bg-blue-100 text-blue-600 rounded-lg">
+            <Package class="w-4 h-4" />
+          </div>
+          <h3 class="font-bold text-slate-900 uppercase text-xs tracking-wider">
+            {{ t('services.myMachine.forms.repair.partsResources') }}
+          </h3>
         </div>
-        <h3 class="font-bold text-slate-900">Spare Parts Utilization</h3>
+        <Button
+          size="sm"
+          variant="outline"
+          class="h-8 border-blue-200 text-blue-600 hover:bg-blue-50"
+          @click="addPartToForm"
+        >
+          <Plus class="w-3.5 h-3.5 mr-1" />
+          {{ t('services.myMachine.forms.repair.addPart') }}
+        </Button>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-        <div class="md:col-span-4 flex flex-col gap-2">
-          <Label class="text-xs font-semibold text-slate-500">Search Stock</Label>
+      <div class="grid grid-cols-12 gap-3 items-end">
+        <div class="col-span-12 md:col-span-5 space-y-1.5">
+          <Label class="text-[10px] uppercase font-bold text-slate-400">{{
+            t('services.myMachine.forms.repair.itemName')
+          }}</Label>
           <Popover v-model:open="openStockCombo">
             <PopoverTrigger as-child>
               <Button
                 variant="outline"
                 role="combobox"
                 :aria-expanded="openStockCombo"
-                class="justify-between w-full bg-white border-slate-200 h-9"
+                class="w-full justify-between bg-white border-slate-200 h-9"
               >
-                <span class="truncate">{{
-                  partInput.isStock ? partInput.name : 'Select from inventory...'
-                }}</span>
+                {{ partInput.name || t('services.myMachine.forms.repair.selectStock') }}
                 <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent class="w-[300px] p-0 shadow-xl">
+            <PopoverContent class="w-[300px] p-0">
               <Command>
-                <CommandInput placeholder="Search parts..." />
-                <CommandEmpty>No parts found.</CommandEmpty>
+                <CommandInput :placeholder="t('services.myMachine.forms.repair.searchStock')" />
                 <CommandList>
+                  <CommandEmpty>{{
+                    t('services.myMachine.forms.repair.noStockFound')
+                  }}</CommandEmpty>
                   <CommandGroup>
                     <CommandItem
                       v-for="stock in stocks"
                       :key="stock.id"
                       :value="stock.name"
-                      @select="handleStockSelect(stock.id)"
+                      @select="() => handleStockSelect(stock.id)"
                     >
                       <Check
                         :class="
                           cn(
-                            'mr-2 h-4 w-4 text-blue-600',
+                            'mr-2 h-4 w-4',
                             partInput.name === stock.name ? 'opacity-100' : 'opacity-0'
                           )
                         "
                       />
-                      {{ stock.name }}
-                      <span class="ml-auto text-xs text-muted-foreground"
-                        >Available: {{ stock.qty }}</span
-                      >
+                      <div class="flex flex-col">
+                        <span>{{ stock.name }}</span>
+                        <span class="text-[10px] text-muted-foreground"
+                          >{{ stock.qty }} {{ stock.unit || t('services.myMachine.units') }}
+                          {{ t('services.myMachine.forms.repair.remaining') }}</span
+                        >
+                      </div>
                     </CommandItem>
                   </CommandGroup>
                 </CommandList>
@@ -290,45 +302,19 @@ const handleSubmit = () => {
             </PopoverContent>
           </Popover>
         </div>
-
-        <div class="md:col-span-4 flex flex-col gap-2">
-          <Label class="text-xs font-semibold text-slate-500">Part Name (Manual)</Label>
-          <Input
-            v-model="partInput.name"
-            placeholder="Enter name"
-            class="bg-white border-slate-200 h-9"
-          />
+        <div class="col-span-4 md:col-span-2 space-y-1.5">
+          <Label class="text-[10px] uppercase font-bold text-slate-400">{{
+            t('services.myMachine.forms.repair.qty')
+          }}</Label>
+          <Input v-model="partInput.qty" type="number" class="bg-white border-slate-200 h-9" />
         </div>
-
-        <div class="md:col-span-1 flex flex-col gap-2">
-          <Label class="text-xs font-semibold text-slate-500">Quantity</Label>
-          <Input
-            type="number"
-            min="1"
-            v-model="partInput.qty"
-            class="bg-white border-slate-200 h-9"
-          />
-        </div>
-
-        <div class="md:col-span-2 flex flex-col gap-2">
-          <Label class="text-xs font-semibold text-slate-500">Price (EA)</Label>
-          <Input
-            type="number"
-            min="0"
-            v-model="partInput.price"
-            class="bg-white border-slate-200 h-9"
-          />
-        </div>
-
-        <div class="md:col-span-1">
-          <Button
-            @click="addPartToForm"
-            size="icon"
-            variant="secondary"
-            class="w-full h-9 bg-slate-200 hover:bg-slate-300"
-          >
-            <Plus :size="16" />
-          </Button>
+        <div class="col-span-8 md:col-span-5 space-y-1.5">
+          <Label class="text-[10px] uppercase font-bold text-slate-400">{{
+            t('services.myMachine.forms.repair.unitPrice')
+          }}</Label>
+          <div class="flex gap-2">
+            <Input v-model="partInput.price" type="number" class="bg-white border-slate-200 h-9" />
+          </div>
         </div>
       </div>
 
@@ -340,10 +326,15 @@ const handleSubmit = () => {
         <Table>
           <TableHeader class="bg-slate-50/50">
             <TableRow>
-              <TableHead class="font-bold text-slate-700">Part Description</TableHead>
-              <TableHead class="text-center font-bold text-slate-700">Qty</TableHead>
-              <TableHead class="text-right font-bold text-slate-700">Unit Price</TableHead>
-              <TableHead class="text-right font-bold text-slate-700">Total</TableHead>
+              <TableHead class="text-[10px] font-black uppercase text-slate-500">{{
+                t('services.myMachine.forms.repair.resource')
+              }}</TableHead>
+              <TableHead class="text-[10px] font-black uppercase text-slate-500 text-center">{{
+                t('services.myMachine.forms.repair.qty')
+              }}</TableHead>
+              <TableHead class="text-[10px] font-black uppercase text-slate-500 text-right">{{
+                t('services.myMachine.forms.repair.cost')
+              }}</TableHead>
               <TableHead class="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
@@ -352,52 +343,46 @@ const handleSubmit = () => {
               <TableCell class="font-medium">{{ p.name }}</TableCell>
               <TableCell class="text-center">{{ p.qty }}</TableCell>
               <TableCell class="text-right">{{
-                p.price.toLocaleString('th-TH', {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })
-              }}</TableCell>
-              <TableCell class="text-right font-bold text-slate-700">{{
-                (p.qty * p.price).toLocaleString('th-TH', {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })
+                (p.qty * p.price).toLocaleString('th-TH')
               }}</TableCell>
               <TableCell>
                 <Button
                   variant="ghost"
                   size="icon"
-                  class="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                  class="h-7 w-7 text-red-400 hover:text-red-600"
                   @click="removePart(p.id)"
                 >
-                  <Trash2 :size="14" />
+                  <Trash2 class="w-3.5 h-3.5" />
                 </Button>
               </TableCell>
             </TableRow>
-            <TableRow class="bg-slate-50/30">
-              <TableCell
-                colspan="3"
-                class="text-right font-bold text-slate-600 uppercase text-xs tracking-wider"
-                >Estimated Total Cost</TableCell
-              >
-              <TableCell class="text-right font-black text-blue-600 text-lg">{{
-                calculateTotal(form.parts).toLocaleString('th-TH', {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })
-              }}</TableCell>
-              <TableCell></TableCell>
-            </TableRow>
           </TableBody>
         </Table>
+
+        <div class="p-3 bg-slate-50/30 flex justify-between items-center border-t border-slate-100">
+          <TableCell class="text-[10px] font-black uppercase text-slate-400">{{
+            t('services.myMachine.forms.repair.estimatedTotal')
+          }}</TableCell>
+          <TableCell class="text-right font-black text-blue-600 text-lg">{{
+            calculateTotal(form.parts).toLocaleString('th-TH', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })
+          }}</TableCell>
+        </div>
       </div>
     </div>
   </div>
 
-  <div class="flex justify-end gap-3 pt-6 border-t mt-4">
-    <Button variant="outline" @click="emit('cancel')" class="border-slate-200">Cancel</Button>
-    <Button @click="handleSubmit" class="bg-blue-600 hover:bg-blue-700 shadow-md"
-      >Submit Maintenance Log</Button
+  <div class="flex justify-end gap-3 pt-4 border-t mt-4">
+    <Button variant="outline" @click="emit('cancel')" class="border-slate-200">{{
+      t('services.myMachine.forms.common.cancel')
+    }}</Button>
+    <Button
+      @click="handleSubmit"
+      class="bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-200 h-9 px-6 rounded-lg font-bold"
     >
+      {{ t('services.myMachine.forms.repair.submit') }}
+    </Button>
   </div>
 </template>

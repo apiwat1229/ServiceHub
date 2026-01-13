@@ -1,5 +1,4 @@
 import { ref } from 'vue';
-import { toast } from 'vue-sonner';
 
 export interface Machine {
     id: string;
@@ -201,13 +200,11 @@ export function useMyMachine() {
         };
         machines.value.push(newMachine);
         saveData();
-        toast.success('Machine added successfully');
     };
 
     const deleteMachine = (id: string) => {
         machines.value = machines.value.filter(m => m.id !== id);
         saveData();
-        toast.success('Machine removed');
     };
 
     const updateMachine = (id: string, updates: Partial<Machine>) => {
@@ -215,7 +212,6 @@ export function useMyMachine() {
         if (index !== -1) {
             machines.value[index] = { ...machines.value[index], ...updates };
             saveData();
-            toast.success('Machine updated');
         }
     };
 
@@ -236,13 +232,11 @@ export function useMyMachine() {
         });
 
         saveData();
-        toast.success('Maintenance log recorded');
     };
 
     const deleteRepair = (id: string) => {
         repairs.value = repairs.value.filter(r => r.id !== id);
         saveData();
-        toast.success('Maintenance record deleted');
     };
 
     const getMachineStats = (machineId: string) => {
@@ -260,7 +254,6 @@ export function useMyMachine() {
         };
         stocks.value.push(newStock);
         saveData();
-        toast.success('Stock item added');
     };
 
     const updateStock = (id: string, updates: Partial<StockItem>) => {
@@ -274,7 +267,6 @@ export function useMyMachine() {
     const deleteStock = (id: string) => {
         stocks.value = stocks.value.filter(s => s.id !== id);
         saveData();
-        toast.success('Stock item removed');
     };
 
     return {

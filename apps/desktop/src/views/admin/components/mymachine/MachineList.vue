@@ -5,10 +5,22 @@ import DataTable from '@/components/ui/data-table/DataTable.vue';
 import { Dialog } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { useMyMachine } from '@/composables/useMyMachine';
+import { cn } from '@/lib/utils';
 import type { ColumnDef } from '@tanstack/vue-table';
 import { Edit2, Monitor, QrCode, Search, Settings, Trash2 } from 'lucide-vue-next';
 import { computed, h, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { toast } from 'vue-sonner';
 import MachineQrModal from './MachineQrModal.vue';
+
+const { t } = useI18n();
+
+const formatCurrency = (val: number) => {
+  return val.toLocaleString('th-TH', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+};
 
 const props = defineProps<{
   searchQuery?: string;
@@ -47,8 +59,9 @@ const filteredMachines = computed(() => {
 });
 
 const handleDeleteMachine = (id: string) => {
-  if (confirm('Are you sure you want to delete this machine? Repairs history will remain.')) {
+  if (confirm(t('services.myMachine.messages.confirmDeleteMachine'))) {
     deleteMachine(id);
+    toast.success(t('services.myMachine.messages.machineRemoved'));
   }
 };
 
@@ -66,10 +79,10 @@ const getStatusStyles = (status: string) => {
 };
 
 // Define Machines Columns
-const columns: ColumnDef<any>[] = [
+const columns = computed<ColumnDef<any>[]>(() => [
   {
     accessorKey: 'name',
-    header: 'Machine & Model',
+    header: t('services.myMachine.machines.columns.machineModel'),
     cell: ({ row }) => {
       const machine = row.original;
       return h('div', { class: 'flex items-center gap-3 group/name' }, [
@@ -92,14 +105,18 @@ const columns: ColumnDef<any>[] = [
               machine.name
             ),
           ]),
-          h('p', { class: 'text-xs text-slate-500 truncate' }, machine.location || 'Not assigned'),
+          h(
+            'p',
+            { class: 'text-xs text-slate-500 truncate' },
+            machine.location || t('services.myMachine.notAssigned')
+          ),
         ]),
       ]);
     },
   },
   {
     accessorKey: 'status',
-    header: 'Status',
+    header: t('services.myMachine.machines.columns.status'),
     cell: ({ row }) => {
       const status = row.getValue('status') as string;
       const stats = getMachineStats(row.original.id);
@@ -108,117 +125,117 @@ const columns: ColumnDef<any>[] = [
           Badge,
           {
             variant: 'outline',
-            class: `text-[0.625rem] font-bold uppercase tracking-wide px-2 py-1 ${getStatusStyles(status)}`,
+            class: cn('w-fit text-[10px] h-4 px-1.5 uppercase font-bold', getStatusStyles(status)),
           },
-          () => status
+          () => t(`services.myMachine.forms.machine.status${status}`)
         ),
-        h('span', { class: 'text-[0.625rem] text-slate-400' }, `${stats.count} repairs logged`),
+        h(
+          'span',
+          { class: 'text-[9px] text-slate-400 font-medium' },
+          `${stats.count} ${t('services.myMachine.entriesRecorded')}`
+        ),
       ]);
     },
   },
   {
-    id: 'utilization',
-    header: () => h('div', { class: 'text-right pr-4' }, 'Total Cost'),
+    accessorKey: 'totalCost',
+    header: t('services.myMachine.machines.columns.cost'),
     cell: ({ row }) => {
       const stats = getMachineStats(row.original.id);
-      return h('div', { class: 'text-right pr-4' }, [
-        h(
-          'div',
-          {
-            class:
-              'text-base font-black text-slate-900 group-hover/name:text-blue-700 transition-colors',
-          },
-          stats.cost.toLocaleString('th-TH', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })
-        ),
+      const cost = stats.cost;
+      return h('div', { class: 'flex flex-col' }, [
+        h('span', { class: 'font-mono font-bold text-slate-900' }, formatCurrency(cost)),
+        h('span', { class: 'text-[10px] text-slate-400' }, t('services.myMachine.stats.totalCost')),
       ]);
     },
   },
   {
     id: 'actions',
-    header: () => h('div', { class: 'text-right pr-4 font-bold' }, 'Actions'),
     enableHiding: false,
     cell: ({ row }) => {
       const machine = row.original;
-
-      return h(
-        'div',
-        { class: 'flex items-center justify-end gap-1 pr-2', onClick: (e) => e.stopPropagation() },
-        [
-          h(
-            Button,
-            {
-              variant: 'ghost',
-              size: 'icon',
-              class: 'h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 transition-colors',
-              title: 'Edit Machine',
-              onClick: () => emit('edit-machine', machine),
+      return h('div', { class: 'flex items-center justify-end gap-1.5' }, [
+        h(
+          Button,
+          {
+            variant: 'ghost',
+            size: 'icon',
+            class: 'h-8 w-8 text-slate-400 hover:text-blue-600 hover:bg-blue-50',
+            onClick: (e: Event) => {
+              e.stopPropagation();
+              emit('edit-machine', machine);
             },
-            () => h(Edit2, { class: 'h-3.5 w-3.5' })
-          ),
-          h(
-            Button,
-            {
-              variant: 'ghost',
-              size: 'icon',
-              class: 'h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 transition-colors',
-              title: 'Generate Asset QR',
-              onClick: () => generateQr(machine),
+          },
+          () => h(Edit2, { class: 'w-4 h-4' })
+        ),
+        h(
+          Button,
+          {
+            variant: 'ghost',
+            size: 'icon',
+            class: 'h-8 w-8 text-slate-400 hover:text-blue-600 hover:bg-blue-50',
+            onClick: (e: Event) => {
+              e.stopPropagation();
+              generateQr(machine);
             },
-            () => h(QrCode, { class: 'h-4 w-4' })
-          ),
-          h(
-            Button,
-            {
-              variant: 'ghost',
-              size: 'icon',
-              class: 'h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors',
-              title: 'Remove Asset',
-              onClick: () => handleDeleteMachine(machine.id),
+          },
+          () => h(QrCode, { class: 'w-4 h-4' })
+        ),
+        h(
+          Button,
+          {
+            variant: 'ghost',
+            size: 'icon',
+            class: 'h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50',
+            onClick: (e: Event) => {
+              e.stopPropagation();
+              handleDeleteMachine(machine.id);
             },
-            () => h(Trash2, { class: 'h-4 w-4' })
-          ),
-        ]
-      );
+          },
+          () => h(Trash2, { class: 'w-4 h-4' })
+        ),
+      ]);
     },
   },
-];
+]);
 </script>
 
 <template>
   <div class="h-full flex flex-col overflow-hidden bg-slate-50">
     <div class="flex-1 overflow-y-auto px-6 pb-6 pt-1">
       <!-- Header Section -->
-      <div class="flex flex-shrink-0 items-center justify-between mb-4">
-        <div>
-          <h2 class="text-base font-bold text-slate-900">Registered Assets</h2>
-          <p class="text-xs text-slate-500">Manage and monitor your industrial equipment</p>
+      <div class="flex items-center justify-between gap-4">
+        <div class="space-y-1">
+          <h2 class="text-xl font-bold tracking-tight text-slate-900 group flex items-center gap-2">
+            <Monitor class="w-5 h-5 text-blue-600" />
+            {{ t('services.myMachine.machines.title') }}
+          </h2>
+          <p class="text-sm text-slate-500 font-medium">
+            {{ t('services.myMachine.machines.subtitle') }}
+          </p>
         </div>
-        <div class="flex items-center gap-2">
-          <div class="relative w-64 flex-shrink-0">
-            <Search class="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
+        <div class="flex items-center gap-3">
+          <div class="relative w-64">
+            <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <Input
               v-model="localSearch"
-              type="search"
-              placeholder="Search assets..."
-              class="pl-8 pr-2 h-9 text-xs bg-white border-slate-200 focus:bg-white transition-all shadow-sm"
+              :placeholder="t('services.myMachine.machines.search')"
+              class="pl-9 bg-white/50 border-slate-200/50 h-9 text-sm rounded-lg focus:ring-blue-500/20"
             />
           </div>
           <Button
-            class="gap-2 bg-blue-600 hover:bg-blue-700 shadow-md h-9"
             @click="emit('add-machine')"
+            class="bg-blue-600 hover:bg-blue-700 text-white h-9 px-4 rounded-lg shadow-sm shadow-blue-200 flex items-center gap-2"
           >
             <Settings class="w-4 h-4" />
-            Add Machine
+            {{ t('services.myMachine.machines.add') }}
           </Button>
         </div>
       </div>
 
       <!-- Assets Table -->
       <div
-        class="rounded-xl border border-slate-200/50 bg-white/80 backdrop-blur-sm shadow-sm overflow-hidden"
+        class="mt-6 rounded-xl border border-slate-200/50 bg-white/80 backdrop-blur-sm shadow-sm overflow-hidden"
       >
         <DataTable :columns="columns" :data="filteredMachines" @rowClick="viewDetail" />
       </div>

@@ -7,6 +7,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useMyMachine } from '@/composables/useMyMachine';
+import { useThemeStore } from '@/stores/theme';
 import {
   CheckCircle2,
   ClipboardList,
@@ -17,7 +18,11 @@ import {
   Wrench,
 } from 'lucide-vue-next';
 import { computed, onMounted, ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
+
+const { t } = useI18n();
+const themeStore = useThemeStore();
 
 import MachineDashboard from './components/mymachine/MachineDashboard.vue';
 import MachineDetail from './components/mymachine/MachineDetail.vue';
@@ -53,7 +58,7 @@ watch(activeTab, (newTab) => {
 
 // Modal States
 const isMachineDialogOpen = ref(false);
-const editingMachine = ref<any>(null);
+const editingMachine = ref(null as any);
 const isRepairDialogOpen = ref(false);
 
 // Detail Modal State
@@ -72,9 +77,10 @@ const editingStock = ref<any>(null); // State for editing stock
 const handleMachineSave = (data: any) => {
   if (editingMachine.value) {
     updateMachine(editingMachine.value.id, data);
+    toast.success(t('services.myMachine.messages.machineSuccess'));
   } else {
     addMachine(data);
-    toast.success('Machine registered successfully');
+    toast.success(t('services.myMachine.messages.machineSuccess'));
   }
   closeMachineDialog();
 };
@@ -92,7 +98,7 @@ const closeMachineDialog = () => {
 const handleRepairSave = (data: any) => {
   addRepair(data);
   isRepairDialogOpen.value = false;
-  toast.success('Maintenance log recorded');
+  toast.success(t('services.myMachine.messages.repairSuccess'));
 };
 
 const handleEditStock = (item: any) => {
@@ -103,7 +109,7 @@ const handleEditStock = (item: any) => {
 const handleStockSave = (data: any) => {
   if (editingStock.value) {
     updateStock(editingStock.value.id, data);
-    toast.success('Inventory updated');
+    toast.success(t('services.myMachine.messages.stockSuccess'));
   } else {
     addStock(data);
     // Toast already in addStock
@@ -122,76 +128,84 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="h-screen flex flex-col bg-slate-50 font-sans overflow-hidden">
+  <div
+    class="h-screen flex flex-col bg-slate-50 overflow-hidden transition-all duration-300"
+    :style="{
+      fontFamily: themeStore.fontFamilies[themeStore.fontFamily],
+      fontSize: themeStore.fontSizes[themeStore.fontSize],
+    }"
+  >
     <!-- Modern Compact Header - Sticky -->
     <div
       class="sticky top-0 z-10 bg-white/80 backdrop-blur-md border border-slate-200/50 flex-shrink-0 shadow-sm rounded-xl mx-6 mt-0 mb-0 overflow-hidden"
     >
-      <div class="relative px-6 py-1.5 flex items-center justify-between gap-4">
-        <!-- Left: Title -->
-        <div>
-          <h1 class="text-lg font-bold text-slate-900 leading-tight">My Machine</h1>
-          <p class="text-[0.625rem] text-slate-500">Centralized management for machines</p>
+      <div class="px-6 py-2.5 flex flex-col lg:flex-row items-center justify-between gap-6">
+        <!-- Left: Title Group & Stats -->
+        <div class="flex items-center gap-6 min-w-0 w-full lg:w-auto">
+          <div class="flex-shrink-0">
+            <h1 class="text-lg font-bold text-slate-900 leading-tight">
+              {{ t('services.myMachine.name') }}
+            </h1>
+            <p class="text-[0.625rem] text-slate-500">{{ t('services.myMachine.description') }}</p>
+          </div>
+
+          <!-- Stats Group (Integrated after title) -->
+          <div class="hidden xl:flex items-center gap-6 border-l border-slate-100 pl-6">
+            <!-- Stat: Total Cost -->
+            <div class="flex items-center gap-2.5 group">
+              <div
+                class="p-1.5 bg-emerald-50 rounded-lg border border-emerald-100/50 group-hover:bg-emerald-100 transition-colors"
+              >
+                <DollarSign class="w-3.5 h-3.5 text-emerald-600" />
+              </div>
+              <div class="flex flex-col">
+                <span class="text-[0.5rem] font-black text-slate-400 uppercase tracking-tighter">{{
+                  t('services.myMachine.stats.totalCost')
+                }}</span>
+                <span class="text-[0.8rem] font-black text-slate-900 leading-none mt-0.5">
+                  {{ formatCurrency(totalCost) }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Stat: Operational -->
+            <div class="flex items-center gap-2.5 group">
+              <div
+                class="p-1.5 bg-blue-50 rounded-lg border border-blue-100/50 group-hover:bg-blue-100 transition-colors"
+              >
+                <CheckCircle2 class="w-3.5 h-3.5 text-blue-600" />
+              </div>
+              <div class="flex flex-col">
+                <span class="text-[0.5rem] font-black text-slate-400 uppercase tracking-tighter">{{
+                  t('services.myMachine.stats.operational')
+                }}</span>
+                <span class="text-[0.8rem] font-black text-slate-900 leading-none mt-0.5">
+                  {{ activeMachines }} / {{ machines.length }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Stat: Total Repairs -->
+            <div class="flex items-center gap-2.5 group">
+              <div
+                class="p-1.5 bg-purple-50 rounded-lg border border-purple-100/50 group-hover:bg-purple-100 transition-colors"
+              >
+                <Wrench class="w-3.5 h-3.5 text-purple-600" />
+              </div>
+              <div class="flex flex-col">
+                <span class="text-[0.5rem] font-black text-slate-400 uppercase tracking-tighter">{{
+                  t('services.myMachine.stats.totalRepairs')
+                }}</span>
+                <span class="text-[0.8rem] font-black text-slate-900 leading-none mt-0.5">
+                  {{ totalRepairs }}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <!-- Center: Global Stats Group -->
-        <div
-          class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden lg:flex items-center gap-6"
-        >
-          <!-- Stat: Total Cost -->
-          <div class="flex items-center gap-2.5 group">
-            <div
-              class="p-1.5 bg-emerald-50 rounded-lg border border-emerald-100/50 group-hover:bg-emerald-100 transition-colors"
-            >
-              <DollarSign class="w-3.5 h-3.5 text-emerald-600" />
-            </div>
-            <div class="flex flex-col">
-              <span class="text-[0.5rem] font-black text-slate-400 uppercase tracking-tighter"
-                >Total Cost</span
-              >
-              <span class="text-[0.8rem] font-black text-slate-900 leading-none mt-0.5">
-                {{ formatCurrency(totalCost) }}
-              </span>
-            </div>
-          </div>
-
-          <!-- Stat: Operational -->
-          <div class="flex items-center gap-2.5 group">
-            <div
-              class="p-1.5 bg-blue-50 rounded-lg border border-blue-100/50 group-hover:bg-blue-100 transition-colors"
-            >
-              <CheckCircle2 class="w-3.5 h-3.5 text-blue-600" />
-            </div>
-            <div class="flex flex-col">
-              <span class="text-[0.5rem] font-black text-slate-400 uppercase tracking-tighter"
-                >Operational</span
-              >
-              <span class="text-[0.8rem] font-black text-slate-900 leading-none mt-0.5">
-                {{ activeMachines }} / {{ machines.length }}
-              </span>
-            </div>
-          </div>
-
-          <!-- Stat: Total Repairs -->
-          <div class="flex items-center gap-2.5 group">
-            <div
-              class="p-1.5 bg-purple-50 rounded-lg border border-purple-100/50 group-hover:bg-purple-100 transition-colors"
-            >
-              <Wrench class="w-3.5 h-3.5 text-purple-600" />
-            </div>
-            <div class="flex flex-col">
-              <span class="text-[0.5rem] font-black text-slate-400 uppercase tracking-tighter"
-                >Total Repairs</span
-              >
-              <span class="text-[0.8rem] font-black text-slate-900 leading-none mt-0.5">
-                {{ totalRepairs }}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Center: Navigation Tabs -->
-        <nav class="flex items-center gap-1 bg-slate-100 p-0.5 rounded-md">
+        <!-- Right: Navigation Tabs -->
+        <nav class="flex items-center gap-1 bg-slate-100 p-0.5 rounded-md flex-shrink-0">
           <button
             @click="activeTab = 'dashboard'"
             :class="[
@@ -202,7 +216,7 @@ onMounted(() => {
             ]"
           >
             <LayoutDashboard class="w-3 h-3" />
-            <span>Overview</span>
+            <span>{{ t('services.myMachine.tabs.overview') }}</span>
           </button>
           <button
             @click="activeTab = 'machines'"
@@ -214,7 +228,7 @@ onMounted(() => {
             ]"
           >
             <Settings class="w-3 h-3" />
-            <span>Machines</span>
+            <span>{{ t('services.myMachine.tabs.machines') }}</span>
           </button>
           <button
             @click="activeTab = 'repairs'"
@@ -226,7 +240,7 @@ onMounted(() => {
             ]"
           >
             <ClipboardList class="w-3 h-3" />
-            <span>Repairs</span>
+            <span>{{ t('services.myMachine.tabs.repairs') }}</span>
           </button>
           <button
             @click="activeTab = 'stock'"
@@ -238,14 +252,14 @@ onMounted(() => {
             ]"
           >
             <Package class="w-3 h-3" />
-            <span>Parts</span>
+            <span>{{ t('services.myMachine.tabs.parts') }}</span>
           </button>
         </nav>
       </div>
     </div>
 
     <!-- Main Content Area -->
-    <div class="flex-1 min-h-0 overflow-hidden">
+    <div class="flex-1 min-h-0 overflow-hidden pt-4">
       <!-- Tab Contents -->
       <div v-show="activeTab === 'dashboard'" class="h-full overflow-hidden">
         <MachineDashboard @view-detail="handleViewDetail" />
@@ -274,15 +288,22 @@ onMounted(() => {
     </div>
 
     <!-- Dialogs -->
-    <Dialog :open="isMachineDialogOpen" @update:open="(val) => !val && closeMachineDialog()">
+    <Dialog
+      :open="isMachineDialogOpen"
+      @update:open="(val: boolean) => !val && closeMachineDialog()"
+    >
       <DialogContent class="max-w-4xl max-h-[90vh] overflow-y-auto font-sans">
         <DialogHeader class="border-b pb-4 mb-2">
-          <DialogTitle>{{ editingMachine ? 'Edit Machine Info' : 'Add New Machine' }}</DialogTitle>
+          <DialogTitle>{{
+            editingMachine
+              ? t('services.myMachine.forms.machine.editTitle')
+              : t('services.myMachine.forms.machine.title')
+          }}</DialogTitle>
           <DialogDescription>
             {{
               editingMachine
-                ? 'Update machine details and operational status.'
-                : 'Register a new machine to the system database.'
+                ? t('services.myMachine.forms.machine.editDescription')
+                : t('services.myMachine.forms.machine.description')
             }}
           </DialogDescription>
         </DialogHeader>
@@ -297,20 +318,26 @@ onMounted(() => {
     <Dialog v-model:open="isRepairDialogOpen">
       <DialogContent class="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader class="border-b pb-4 mb-2">
-          <DialogTitle>New Maintenance Record</DialogTitle>
-          <DialogDescription>Document technical issues and parts utilization.</DialogDescription>
+          <DialogTitle>{{ t('services.myMachine.forms.repair.title') }}</DialogTitle>
+          <DialogDescription>{{
+            t('services.myMachine.forms.repair.description')
+          }}</DialogDescription>
         </DialogHeader>
         <RepairForm @save="handleRepairSave" @cancel="isRepairDialogOpen = false" />
       </DialogContent>
     </Dialog>
 
-    <Dialog :open="isStockDialogOpen" @update:open="(val) => !val && closeStockDialog()">
+    <Dialog :open="isStockDialogOpen" @update:open="(val: boolean) => !val && closeStockDialog()">
       <DialogContent class="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader class="border-b pb-4 mb-2">
           <DialogTitle>{{
-            editingStock ? 'Edit Inventory Stock' : 'Add Inventory Stock'
+            editingStock
+              ? t('services.myMachine.forms.stock.editTitle')
+              : t('services.myMachine.forms.stock.title')
           }}</DialogTitle>
-          <DialogDescription>Update spare parts availability and pricing.</DialogDescription>
+          <DialogDescription>{{
+            t('services.myMachine.forms.stock.description')
+          }}</DialogDescription>
         </DialogHeader>
         <StockForm
           :initial-data="editingStock"
@@ -326,8 +353,8 @@ onMounted(() => {
         class="max-w-screen-xl max-h-[95vh] overflow-y-auto p-0 border-none shadow-2xl rounded-sm"
       >
         <DialogHeader class="sr-only">
-          <DialogTitle>Machine Specifications</DialogTitle>
-          <DialogDescription>Full technical details and maintenance history.</DialogDescription>
+          <DialogTitle>{{ t('services.myMachine.assetSpecifications') }}</DialogTitle>
+          <DialogDescription>{{ t('services.myMachine.qrDescription') }}</DialogDescription>
         </DialogHeader>
         <div class="bg-white px-12 py-6 relative">
           <MachineDetail v-if="detailMachineId" :machine-id="detailMachineId" />

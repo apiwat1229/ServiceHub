@@ -14,7 +14,10 @@ import {
   Wrench,
 } from 'lucide-vue-next';
 import { computed, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
+
+const { t } = useI18n();
 
 const props = defineProps<{
   machineId?: string;
@@ -96,13 +99,13 @@ onMounted(() => {
               >
                 <ArrowLeft class="w-4 h-4" />
               </div>
-              <span class="text-[0.625rem] font-black uppercase tracking-[0.2em]"
-                >Back to List</span
-              >
+              <span class="text-[0.625rem] font-black uppercase tracking-[0.2em]">{{
+                t('services.myMachine.backToList')
+              }}</span>
             </button>
             <div class="text-right">
               <p class="text-[0.5rem] font-black text-slate-300 uppercase tracking-widest">
-                Document Ref
+                {{ t('services.myMachine.documentRef') }}
               </p>
               <p class="text-[0.625rem] font-black text-slate-900 uppercase tracking-tighter">
                 ASSET-{{ machine.id.split('-')[0].toUpperCase() }}
@@ -115,55 +118,84 @@ onMounted(() => {
             <div class="flex items-center gap-2 border-b border-slate-900 pb-3">
               <FileText class="w-4 h-4 text-slate-900" />
               <h2 class="text-sm font-black text-slate-900 uppercase tracking-[0.2em]">
-                Asset Specifications
+                {{ t('services.myMachine.assetSpecifications') }}
               </h2>
             </div>
 
+            <!-- Header: Summary Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+              <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">
+                  {{ t('services.myMachine.stats.totalCost') }}
+                </p>
+                <p class="text-xl font-black text-slate-900">
+                  {{ formatCurrency(totalRepairCost) }}
+                </p>
+              </div>
+              <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">
+                  {{ t('services.myMachine.stats.totalRepairs') }}
+                </p>
+                <p class="text-xl font-black text-slate-900">{{ machineRepairs.length }}</p>
+              </div>
+              <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">
+                  {{ t('services.myMachine.stats.activeCount') }}
+                </p>
+                <p class="text-xl font-black text-slate-900">3</p>
+              </div>
+              <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">
+                  {{ t('services.myMachine.stats.availableStock') }}
+                </p>
+                <p class="text-xl font-black text-slate-900">12</p>
+              </div>
+            </div>
             <div class="grid grid-cols-2 gap-x-12 gap-y-6">
               <!-- Top Identity Info integrated into specs -->
               <div class="flex justify-between items-end border-b border-slate-50 pb-2">
-                <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest"
-                  >Asset Name</span
-                >
+                <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest">{{
+                  t('services.myMachine.assetName')
+                }}</span>
                 <span class="text-sm font-black text-slate-900">{{ machine.name }}</span>
               </div>
               <div class="flex justify-between items-end border-b border-slate-50 pb-2">
-                <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest"
-                  >Register ID</span
-                >
+                <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest">{{
+                  t('services.myMachine.registerId')
+                }}</span>
                 <span class="text-sm font-black text-slate-900"
                   >#{{ machine.id.toUpperCase() }}</span
                 >
               </div>
 
               <div class="flex justify-between items-end border-b border-slate-50 pb-2">
-                <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest"
-                  >Model Name</span
-                >
+                <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest">{{
+                  t('services.myMachine.modelName')
+                }}</span>
                 <span class="text-sm font-black text-slate-900">{{ machine.model }}</span>
               </div>
               <div class="flex justify-between items-end border-b border-slate-50 pb-2">
-                <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest"
-                  >Location Zone</span
-                >
+                <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest">{{
+                  t('services.myMachine.locationZone')
+                }}</span>
                 <span class="text-sm font-black text-slate-900">{{ machine.location }}</span>
               </div>
               <div class="flex justify-between items-end border-b border-slate-50 pb-2">
-                <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest"
-                  >Commission Date</span
-                >
+                <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest">{{
+                  t('services.myMachine.commissionDate')
+                }}</span>
                 <span class="text-sm font-black text-slate-900">{{
                   new Date(machine.createdAt).toLocaleDateString('th-TH')
                 }}</span>
               </div>
               <div class="flex justify-between items-end border-b border-slate-50 pb-2">
-                <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest"
-                  >Status</span
-                >
+                <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest">{{
+                  t('services.myMachine.status')
+                }}</span>
                 <Badge
                   :class="`rounded-sm font-black uppercase tracking-widest text-[0.5625rem] px-2 py-0.5 border ${getStatusColor(machine.status)}`"
                 >
-                  {{ machine.status }}
+                  {{ t(`services.myMachine.forms.machine.status${machine.status}`) }}
                 </Badge>
               </div>
             </div>
@@ -174,7 +206,7 @@ onMounted(() => {
             <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
               <Activity class="w-4 h-4 text-slate-900" />
               <h2 class="text-xs font-black text-slate-900 uppercase tracking-[0.2em]">
-                Performance Summary
+                {{ t('services.myMachine.performanceSummary') }}
               </h2>
             </div>
 
@@ -183,25 +215,25 @@ onMounted(() => {
             >
               <div class="flex-1 space-y-1 text-center">
                 <p class="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest">
-                  Lifetime Cost
+                  {{ t('services.myMachine.lifetimeCost') }}
                 </p>
                 <p class="text-3xl font-black text-slate-900 tracking-tighter">
                   {{ formatCurrency(totalRepairCost) }}
                 </p>
                 <p class="text-[0.5625rem] font-bold text-slate-400 uppercase">
-                  Total Maintenance Expenditure
+                  {{ t('services.myMachine.totalMaintenanceExpenditure') }}
                 </p>
               </div>
               <div class="w-px h-12 bg-slate-200"></div>
               <div class="flex-1 space-y-1 text-center">
                 <p class="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest">
-                  Maintenance Frequency
+                  {{ t('services.myMachine.maintenanceFrequency') }}
                 </p>
                 <p class="text-3xl font-black text-slate-900 tracking-tighter">
-                  {{ machineRepairs.length }} Events
+                  {{ machineRepairs.length }} {{ t('services.myMachine.events') }}
                 </p>
                 <p class="text-[0.5625rem] font-bold text-slate-400 uppercase">
-                  Confirmed Recorded Logs
+                  {{ t('services.myMachine.confirmedRecordedLogs') }}
                 </p>
               </div>
             </div>
@@ -217,11 +249,11 @@ onMounted(() => {
                   <History class="w-4 h-4" />
                 </div>
                 <h2 class="text-sm font-black text-slate-900 uppercase tracking-[0.2em]">
-                  Maintenance Log Book
+                  {{ t('services.myMachine.maintenanceLogBook') }}
                 </h2>
               </div>
               <span class="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest"
-                >{{ machineRepairs.length }} entries recorded</span
+                >{{ machineRepairs.length }} {{ t('services.myMachine.entriesRecorded') }}</span
               >
             </div>
 
@@ -252,7 +284,7 @@ onMounted(() => {
                           class="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"
                         >
                           <User class="w-3.5 h-3.5 text-slate-300" />
-                          TECH: {{ repair.technician || 'N/A' }}
+                          {{ t('services.myMachine.technician') }}: {{ repair.technician || 'N/A' }}
                         </span>
                       </div>
                     </div>
@@ -261,7 +293,7 @@ onMounted(() => {
                         {{ formatCurrency(repair.totalCost) }}
                       </p>
                       <p class="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">
-                        Service Fee
+                        {{ t('services.myMachine.serviceFee') }}
                       </p>
                     </div>
                   </div>
@@ -279,7 +311,7 @@ onMounted(() => {
                         <p
                           class="text-[0.625rem] font-black text-blue-600 uppercase tracking-widest leading-none"
                         >
-                          Maintenance Description / Detail
+                          {{ t('services.myMachine.maintenanceDescription') }}
                         </p>
                       </div>
                       <p class="text-sm font-bold text-slate-800 leading-relaxed">
@@ -295,7 +327,7 @@ onMounted(() => {
                       <p
                         class="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest"
                       >
-                        Parts & Materials Used
+                        {{ t('services.myMachine.partsMaterialsUsed') }}
                       </p>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -323,7 +355,7 @@ onMounted(() => {
                         </div>
                         <div class="text-right">
                           <p class="text-sm font-black text-slate-900 leading-none mb-1">
-                            {{ part.qty }} {{ (part as any).unit || 'Units' }}
+                            {{ part.qty }} {{ (part as any).unit || t('services.myMachine.units') }}
                           </p>
                           <p class="text-xs font-black text-blue-600 uppercase tracking-tighter">
                             @ {{ formatCurrency(part.price) }}
@@ -344,12 +376,12 @@ onMounted(() => {
                 <Wrench class="w-10 h-10 text-slate-200 mx-auto" />
                 <div class="space-y-1">
                   <p class="text-xs font-black text-slate-900 uppercase tracking-widest">
-                    Clean Log Book
+                    {{ t('services.myMachine.cleanLogBook') }}
                   </p>
                   <p
                     class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest max-w-[200px] mx-auto leading-relaxed"
                   >
-                    No official maintenance history recorded for this asset.
+                    {{ t('services.myMachine.noHistory') }}
                   </p>
                 </div>
               </div>
@@ -360,24 +392,26 @@ onMounted(() => {
           <footer class="pt-8 border-t-2 border-slate-100 flex items-center justify-between">
             <div class="space-y-1">
               <p class="text-[0.5625rem] font-black text-slate-400 uppercase tracking-[0.2em]">
-                Generated By System
+                {{ t('services.myMachine.systemCertificate') }}
               </p>
-              <div class="flex items-center gap-2">
-                <Layout class="w-3.5 h-3.5 text-slate-300" />
-                <p class="text-[0.625rem] font-bold text-slate-500 uppercase tracking-widest">
-                  Asset Management Module v1.0
+              <p class="text-[0.5rem] font-bold text-slate-300">
+                DATE: {{ new Date().toLocaleString() }}
+              </p>
+            </div>
+            <div class="flex items-center gap-3">
+              <div
+                class="w-10 h-10 border border-slate-200 rounded-lg flex items-center justify-center"
+              >
+                <Layout class="w-5 h-5 text-slate-200" />
+              </div>
+              <div class="text-right">
+                <p class="text-[0.625rem] font-black text-slate-900 uppercase leading-tight">
+                  ANTIGRAVITY SYSTEMS
+                </p>
+                <p class="text-[0.5rem] font-bold text-slate-400 uppercase tracking-widest">
+                  Industrial Intelligence
                 </p>
               </div>
-            </div>
-            <div class="text-right">
-              <p class="text-[0.5625rem] font-black text-slate-300 uppercase tracking-widest">
-                Official Record
-              </p>
-              <p
-                class="text-[0.625rem] font-black text-slate-900 uppercase tracking-tighter leading-none"
-              >
-                DO NOT REMOVE
-              </p>
             </div>
           </footer>
         </div>
@@ -395,7 +429,7 @@ onMounted(() => {
         <FileText class="w-8 h-8 text-slate-400" />
       </div>
       <p class="text-slate-400 font-black uppercase text-[0.625rem] tracking-[0.3em] text-center">
-        Pulling Official Records...
+        {{ t('services.myMachine.pullingRecords') }}
       </p>
     </div>
   </div>

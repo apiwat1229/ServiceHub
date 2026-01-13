@@ -22,7 +22,10 @@ import { cn } from '@/lib/utils';
 import type { ApexOptions } from 'apexcharts';
 import { Check, ChevronsUpDown } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import VueApexCharts from 'vue3-apexcharts';
+
+const { t, locale } = useI18n();
 
 const emit = defineEmits<{
   (e: 'view-detail', id: string): void;
@@ -50,25 +53,21 @@ const colorThemes: Record<Theme, string[]> = {
   slate: ['#0f172a', '#1e293b', '#334155', '#475569', '#64748b', '#94a3b8', '#cbd5e1', '#e2e8f0'],
 };
 
-const totalCost = computed(() =>
-  repairs.value.reduce((acc, curr) => acc + (Number(curr.totalCost) || 0), 0)
-);
-
 // 1. Cost Trend (Monthly)
 const costTrendChart = computed(() => {
   const months = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
+    t('services.myMachine.dashboard.months.jan'),
+    t('services.myMachine.dashboard.months.feb'),
+    t('services.myMachine.dashboard.months.mar'),
+    t('services.myMachine.dashboard.months.apr'),
+    t('services.myMachine.dashboard.months.may'),
+    t('services.myMachine.dashboard.months.jun'),
+    t('services.myMachine.dashboard.months.jul'),
+    t('services.myMachine.dashboard.months.aug'),
+    t('services.myMachine.dashboard.months.sep'),
+    t('services.myMachine.dashboard.months.oct'),
+    t('services.myMachine.dashboard.months.nov'),
+    t('services.myMachine.dashboard.months.dec'),
   ];
   const isAll = selectedMachineIds.value.includes('all') || selectedMachineIds.value.length === 0;
 
@@ -82,11 +81,11 @@ const costTrendChart = computed(() => {
         data[date.getMonth()] += Number(r.totalCost) || 0;
       }
     });
-    series.push({ name: 'Total Maintenance Cost', data });
+    series.push({ name: t('services.myMachine.dashboard.totalMaintenanceCost'), data });
   } else {
     selectedMachineIds.value.forEach((id) => {
       const machine = machines.value.find((m) => m.id === id);
-      const machineName = machine ? machine.name : 'Unknown Machine';
+      const machineName = machine ? machine.name : t('services.myMachine.dashboard.unknownMachine');
       const data = new Array(12).fill(0);
 
       const machineRepairs = repairs.value.filter((r) => r.machineId === id);
@@ -173,7 +172,9 @@ const topCostlyChart = computed(() => {
     .slice(0, Number(topCount.value));
 
   return {
-    series: [{ name: 'Total Cost', data: sorted.map((s) => s[1]) }],
+    series: [
+      { name: t('services.myMachine.dashboard.totalSumLabel'), data: sorted.map((s) => s[1]) },
+    ],
     options: {
       chart: { type: 'bar', toolbar: { show: false } },
       plotOptions: {
@@ -267,19 +268,19 @@ const formatCurrency = (val: number) => {
         <div class="lg:col-span-2 flex flex-col gap-4 h-full">
           <!-- Area Chart: Cost Trend -->
           <Card class="border-slate-200/50 shadow-sm bg-white overflow-hidden">
-            <CardHeader class="pb-1 flex flex-row items-center justify-between">
-              <div>
-                <CardTitle class="text-sm font-bold text-slate-800"
-                  >Maintenance Cost Trend</CardTitle
-                >
-                <p class="text-[0.625rem] text-slate-400 uppercase tracking-widest">
-                  Monthly investment overview
+            <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+              <div class="space-y-1">
+                <CardTitle class="text-sm font-bold tracking-tight text-slate-900">
+                  {{ t('services.myMachine.dashboard.costTrend') }}
+                </CardTitle>
+                <p class="text-[0.625rem] text-slate-500">
+                  {{ t('services.myMachine.dashboard.costTrendSub') }}
                 </p>
               </div>
               <div class="flex items-center gap-2">
-                <span class="text-[10px] font-medium text-slate-500 uppercase tracking-wider"
-                  >Filter Asset:</span
-                >
+                <span class="text-[10px] font-medium text-slate-500 uppercase tracking-wider">{{
+                  t('services.myMachine.dashboard.filterAsset')
+                }}</span>
                 <Popover v-model:open="open">
                   <PopoverTrigger as-child>
                     <Button
@@ -291,10 +292,10 @@ const formatCurrency = (val: number) => {
                       <span class="truncate">
                         {{
                           selectedMachineIds.includes('all') || selectedMachineIds.length === 0
-                            ? 'All Machines'
+                            ? t('services.myMachine.dashboard.allMachines')
                             : selectedMachineIds.length === 1
                               ? machines.find((m) => m.id === selectedMachineIds[0])?.name
-                              : `${selectedMachineIds.length} Selected`
+                              : `${selectedMachineIds.length} ${t('services.myMachine.dashboard.assetsSelected')}`
                         }}
                       </span>
                       <ChevronsUpDown class="ml-2 h-3 w-3 shrink-0 opacity-50" />
@@ -302,8 +303,13 @@ const formatCurrency = (val: number) => {
                   </PopoverTrigger>
                   <PopoverContent class="w-[200px] p-0">
                     <Command>
-                      <CommandInput class="h-8 text-xs" placeholder="Search machine..." />
-                      <CommandEmpty>No machine found.</CommandEmpty>
+                      <CommandInput
+                        class="h-8 text-xs"
+                        :placeholder="t('services.myMachine.dashboard.searchMachine')"
+                      />
+                      <CommandEmpty>{{
+                        t('services.myMachine.dashboard.noMachineFound')
+                      }}</CommandEmpty>
                       <CommandList>
                         <CommandGroup>
                           <CommandItem
@@ -324,7 +330,7 @@ const formatCurrency = (val: number) => {
                                 )
                               "
                             />
-                            All Machines
+                            {{ t('services.myMachine.dashboard.allMachines') }}
                           </CommandItem>
                           <CommandItem
                             v-for="machine in machines"
@@ -388,11 +394,11 @@ const formatCurrency = (val: number) => {
           >
             <CardHeader class="pb-1 flex flex-row items-center justify-between flex-shrink-0">
               <div>
-                <CardTitle class="text-sm font-bold text-slate-800"
-                  >Top {{ topCount }} Maintenance Expenses</CardTitle
-                >
+                <CardTitle class="text-sm font-bold text-slate-800">{{
+                  t('services.myMachine.dashboard.topExpenses', { count: topCount })
+                }}</CardTitle>
                 <p class="text-[0.625rem] text-slate-400 uppercase tracking-widest">
-                  Assets requiring highest budget
+                  {{ t('services.myMachine.dashboard.assetsHighestBudget') }}
                 </p>
               </div>
               <div class="flex items-center gap-2">
@@ -400,14 +406,24 @@ const formatCurrency = (val: number) => {
                   <SelectTrigger
                     class="h-6 w-[80px] text-[10px] font-bold border-slate-200 capitalize"
                   >
-                    <SelectValue placeholder="Theme" />
+                    <SelectValue :placeholder="t('services.myMachine.dashboard.theme')" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="indigo" class="text-xs">Indigo</SelectItem>
-                    <SelectItem value="emerald" class="text-xs">Emerald</SelectItem>
-                    <SelectItem value="rose" class="text-xs">Rose</SelectItem>
-                    <SelectItem value="amber" class="text-xs">Amber</SelectItem>
-                    <SelectItem value="slate" class="text-xs">Slate</SelectItem>
+                    <SelectItem value="indigo" class="text-xs">{{
+                      t('services.myMachine.dashboard.themes.indigo')
+                    }}</SelectItem>
+                    <SelectItem value="emerald" class="text-xs">{{
+                      t('services.myMachine.dashboard.themes.emerald')
+                    }}</SelectItem>
+                    <SelectItem value="rose" class="text-xs">{{
+                      t('services.myMachine.dashboard.themes.rose')
+                    }}</SelectItem>
+                    <SelectItem value="amber" class="text-xs">{{
+                      t('services.myMachine.dashboard.themes.amber')
+                    }}</SelectItem>
+                    <SelectItem value="slate" class="text-xs">{{
+                      t('services.myMachine.dashboard.themes.slate')
+                    }}</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select v-model="topCount">
@@ -415,9 +431,15 @@ const formatCurrency = (val: number) => {
                     <SelectValue placeholder="5" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="5" class="text-xs">Top 5</SelectItem>
-                    <SelectItem value="10" class="text-xs">Top 10</SelectItem>
-                    <SelectItem value="15" class="text-xs">Top 15</SelectItem>
+                    <SelectItem value="5" class="text-xs">{{
+                      t('services.myMachine.dashboard.topCount', { count: 5 })
+                    }}</SelectItem>
+                    <SelectItem value="10" class="text-xs">{{
+                      t('services.myMachine.dashboard.topCount', { count: 10 })
+                    }}</SelectItem>
+                    <SelectItem value="15" class="text-xs">{{
+                      t('services.myMachine.dashboard.topCount', { count: 15 })
+                    }}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -441,10 +463,18 @@ const formatCurrency = (val: number) => {
             <div class="flex items-center justify-between">
               <div>
                 <CardTitle class="text-sm font-bold text-slate-800">
-                  {{ isTotalMode ? 'Cost Breakdown' : 'Repair Details' }}
+                  {{
+                    isTotalMode
+                      ? t('services.myMachine.dashboard.costBreakdown')
+                      : t('services.myMachine.dashboard.repairDetails')
+                  }}
                 </CardTitle>
                 <p class="text-[0.625rem] text-slate-400 uppercase tracking-widest">
-                  {{ isTotalMode ? 'Per-machine investment' : 'Individual repair records' }}
+                  {{
+                    isTotalMode
+                      ? t('services.myMachine.dashboard.perMachineInv')
+                      : t('services.myMachine.dashboard.indivRepair')
+                  }}
                 </p>
               </div>
               <div class="text-right flex flex-col items-end">
@@ -453,9 +483,11 @@ const formatCurrency = (val: number) => {
                 >
                   {{ formatCurrency(displayedTotalCost) }}
                 </span>
-                <span class="text-[0.5rem] text-slate-400 font-bold mt-1 uppercase tracking-tighter"
-                  >Total Sum</span
+                <span
+                  class="text-[0.5rem] text-slate-400 font-bold mt-1 uppercase tracking-tighter"
                 >
+                  {{ t('services.myMachine.dashboard.totalSum') }}
+                </span>
               </div>
             </div>
           </CardHeader>
@@ -472,7 +504,9 @@ const formatCurrency = (val: number) => {
                   <p class="text-xs font-bold text-slate-700 truncate capitalize">
                     {{ item.name }}
                   </p>
-                  <p class="text-[0.625rem] text-slate-400">{{ item.count }} incidents</p>
+                  <p class="text-[0.625rem] text-slate-400">
+                    {{ item.count }} {{ t('services.myMachine.dashboard.incidents') }}
+                  </p>
                 </div>
                 <div class="text-right">
                   <p class="text-xs font-black text-slate-900">{{ formatCurrency(item.total) }}</p>
@@ -489,7 +523,7 @@ const formatCurrency = (val: number) => {
               >
                 <div class="flex justify-between items-start mb-1">
                   <p class="text-xs font-bold text-slate-800 line-clamp-2">
-                    {{ repair.issue || 'Maintenance Task' }}
+                    {{ repair.issue || t('services.myMachine.dashboard.maintenanceTask') }}
                   </p>
                   <span class="text-xs font-black text-slate-900 whitespace-nowrap ml-2">
                     {{ formatCurrency(Number(repair.totalCost)) }}
@@ -528,7 +562,9 @@ const formatCurrency = (val: number) => {
                     {{ repair.machineName }}
                   </span>
                   <span class="text-[10px] text-slate-400">
-                    {{ new Date(repair.date).toLocaleDateString('th-TH') }}
+                    {{
+                      new Date(repair.date).toLocaleDateString(locale === 'th' ? 'th-TH' : 'en-US')
+                    }}
                   </span>
                 </div>
               </div>
