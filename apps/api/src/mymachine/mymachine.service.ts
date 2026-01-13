@@ -159,8 +159,12 @@ export class MyMachineService {
     }
 
     async createRepair(data: any) {
+        console.log('createRepair called');
+        console.log('Incoming Data:', JSON.stringify(data, null, 2));
+
         // Sanitize payload
         const { id, timestamp, createdAt, updatedAt, ...rest } = data;
+        console.log('Sanitized payload (rest):', JSON.stringify(rest, null, 2));
 
         // 1. Deduct Stock for used parts
         if (rest.parts && Array.isArray(rest.parts)) {
@@ -188,9 +192,11 @@ export class MyMachineService {
         // 2. Set default status if not present
         const status = rest.status || 'IN_PROGRESS';
 
-        return this.prisma.repairLog.create({
+        const result = await this.prisma.repairLog.create({
             data: { ...rest, status },
         });
+        console.log('Create Result:', JSON.stringify(result, null, 2));
+        return result;
     }
 
     async updateRepair(id: string, data: any) {
