@@ -6,12 +6,13 @@ import { Input } from '@/components/ui/input';
 import { SelectContent, SelectItem } from '@/components/ui/select';
 import { useMyMachine } from '@/composables/useMyMachine';
 import type { ColumnDef } from '@tanstack/vue-table';
-import { Edit2, Package, Plus, Search, Trash2 } from 'lucide-vue-next';
+import { Package, Plus, Search } from 'lucide-vue-next';
 import { computed, h, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { toast } from 'vue-sonner';
+import { useRouter } from 'vue-router';
 
 const { t, locale } = useI18n();
+const router = useRouter();
 
 const formatCurrency = (val: number) => {
   return val.toLocaleString('th-TH', {
@@ -24,12 +25,7 @@ const props = defineProps<{
   searchQuery?: string;
 }>();
 
-const emit = defineEmits<{
-  (e: 'add-stock'): void;
-  (e: 'edit-stock', item: any): void;
-}>();
-
-const { stocks, deleteStock } = useMyMachine();
+const { stocks } = useMyMachine();
 
 // Filters
 const localSearch = ref('');
@@ -54,13 +50,6 @@ const filteredStocks = computed(() => {
 
   return result;
 });
-
-const handleDeleteStock = (id: string) => {
-  if (confirm(t('services.myMachine.messages.confirmDeletePart'))) {
-    deleteStock(id);
-    toast.success(t('services.myMachine.messages.stockRemoved'));
-  }
-};
 
 // Define Stock Columns
 const columns = computed<ColumnDef<any>[]>(() => [
@@ -170,35 +159,6 @@ const columns = computed<ColumnDef<any>[]>(() => [
       );
     },
   },
-  {
-    id: 'actions',
-    header: t('services.myMachine.stock.columns.actions'),
-    cell: ({ row }) => {
-      const part = row.original;
-      return h('div', { class: 'flex items-center justify-center gap-1' }, [
-        h(
-          Button,
-          {
-            variant: 'ghost',
-            size: 'icon',
-            class: 'h-8 w-8 text-slate-400 hover:text-blue-600 hover:bg-blue-50',
-            onClick: () => emit('edit-stock', part),
-          },
-          () => h(Edit2, { class: 'w-4 h-4' })
-        ),
-        h(
-          Button,
-          {
-            variant: 'ghost',
-            size: 'icon',
-            class: 'h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50/50',
-            onClick: () => handleDeleteStock(part.id),
-          },
-          () => h(Trash2, { class: 'w-4 h-4' })
-        ),
-      ]);
-    },
-  },
 ]);
 </script>
 
@@ -282,7 +242,7 @@ const columns = computed<ColumnDef<any>[]>(() => [
               </SelectContent>
             </Select>
             <Button
-              @click="emit('add-stock')"
+              @click="router.push('/my-machine/stock/add')"
               class="bg-blue-600 hover:bg-blue-700 text-white h-9 px-4 rounded-lg shadow-sm shadow-blue-200 flex items-center gap-2"
             >
               <Plus class="w-4 h-4" />

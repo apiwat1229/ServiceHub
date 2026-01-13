@@ -49,24 +49,35 @@ export interface StockItem {
     image?: string;
 }
 
+export interface GLCode {
+    id: string;
+    transactionId: string;
+    description: string;
+    code: string;
+    purpose?: string;
+}
+
 const machines = ref<Machine[]>([]);
 const repairs = ref<Repair[]>([]);
 const stocks = ref<StockItem[]>([]);
+const glCodes = ref<GLCode[]>([]);
 
 export function useMyMachine() {
 
     const loadData = async () => {
         try {
             // Fetch all data in parallel
-            const [machinesRes, repairsRes, stocksRes] = await Promise.all([
+            const [machinesRes, repairsRes, stocksRes, glCodesRes] = await Promise.all([
                 api.get('/mymachine/machines'),
                 api.get('/mymachine/repairs'),
-                api.get('/mymachine/stocks')
+                api.get('/mymachine/stocks'),
+                api.get('/mymachine/gl-codes')
             ]);
 
             machines.value = machinesRes.data;
             repairs.value = repairsRes.data;
             stocks.value = stocksRes.data;
+            glCodes.value = glCodesRes.data;
 
             // If empty, trigger seed (One-time auto setup)
             // Check if machines are empty as the primary indicator
@@ -77,14 +88,16 @@ export function useMyMachine() {
                 await api.post('/mymachine/seed');
 
                 // Reload after seed
-                const [mRes, rRes, sRes] = await Promise.all([
+                const [mRes, rRes, sRes, gRes] = await Promise.all([
                     api.get('/mymachine/machines'),
                     api.get('/mymachine/repairs'),
-                    api.get('/mymachine/stocks')
+                    api.get('/mymachine/stocks'),
+                    api.get('/mymachine/gl-codes')
                 ]);
                 machines.value = mRes.data;
                 repairs.value = rRes.data;
                 stocks.value = sRes.data;
+                glCodes.value = gRes.data;
             }
 
         } catch (e) {
@@ -221,10 +234,47 @@ export function useMyMachine() {
         }
     };
 
+    // GL-Code Management
+    const addGLCode = async (glCode: Omit<GLCode, 'id'>) => {
+        try {
+            const res = await api.post('/mymachine/gl-codes', glCode);
+            glCodes.value.push(res.data);
+            return res.data;
+        } catch (e) {
+            console.error('Failed to add GL-Code', e);
+            throw e;
+        }
+    };
+
+    const updateGLCode = async (id: string, updates: Partial<GLCode>) => {
+        try {
+            const res = await api.put(`/mymachine/gl-codes/${id}`, updates);
+            const index = glCodes.value.findIndex(g => g.id === id);
+            if (index !== -1) {
+                glCodes.value[index] = res.data;
+            }
+            return res.data;
+        } catch (e) {
+            console.error('Failed to update GL-Code', e);
+            throw e;
+        }
+    };
+
+    const deleteGLCode = async (id: string) => {
+        try {
+            await api.delete(`/mymachine/gl-codes/${id}`);
+            glCodes.value = glCodes.value.filter(g => g.id !== id);
+        } catch (e) {
+            console.error('Failed to delete GL-Code', e);
+            throw e;
+        }
+    };
+
     return {
         machines,
         repairs,
         stocks,
+        glCodes,
         loadData,
         addMachine,
         updateMachine,
@@ -235,7 +285,10 @@ export function useMyMachine() {
         getMachineStats,
         addStock,
         updateStock,
-        deleteStock
+        deleteStock,
+        addGLCode,
+        updateGLCode,
+        deleteGLCode
     };
 }
 

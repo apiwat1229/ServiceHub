@@ -228,6 +228,11 @@ const routes = [
                 component: () => import('../views/admin/MyMachine.vue'),
             },
             {
+                path: 'stock/add',
+                name: 'AddStock',
+                component: () => import('../views/admin/StockFormPage.vue'),
+            },
+            {
                 path: ':id',
                 name: 'MachineDetail',
                 component: () => import('../views/admin/components/mymachine/MachineDetail.vue'),

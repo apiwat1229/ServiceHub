@@ -15,13 +15,17 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { CalendarDate, getLocalTimeZone } from '@internationalized/date';
 import { format } from 'date-fns';
-import { Calendar as CalendarIcon, FileText, QrCode, X } from 'lucide-vue-next';
+import { Barcode, Calendar as CalendarIcon, FileText, QrCode, Settings, X } from 'lucide-vue-next';
 import QrcodeVue from 'qrcode.vue';
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
+import VueBarcode from 'vue3-barcode';
+import GLCodeSettingsModal from './GLCodeSettingsModal.vue';
 
 const { t } = useI18n();
+const tagMode = ref<'qr' | 'barcode'>('qr');
+const showGLSettings = ref(false);
 
 const props = defineProps<{
   initialData?: any;
@@ -60,6 +64,7 @@ const form = ref(
         nameTH: '',
         nameEN: '',
         code: generateCode(''), // Default SP
+        glCode: '',
         category: '',
         location: '',
         qty: 0,
@@ -145,82 +150,141 @@ const handleSave = () => {
 
 <template>
   <div class="grid grid-cols-1 md:grid-cols-12 gap-6 py-4">
-    <!-- Left Column: Image & QR Code -->
-    <div class="md:col-span-4 space-y-6">
-      <div>
-        <Label class="mb-2 block text-slate-700 font-semibold">{{
-          t('services.myMachine.forms.machine.image')
-        }}</Label>
-        <input
-          type="file"
-          ref="fileInput"
-          class="hidden"
-          accept="image/*"
-          @change="handleFileChange"
-        />
-        <div
-          @click="handleFileClick"
-          class="border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center h-[200px] bg-slate-50/50 hover:bg-slate-50 transition-colors cursor-pointer group relative overflow-hidden"
-        >
-          <template v-if="form.image">
-            <img :src="form.image" class="w-full h-full object-cover" />
-            <div
-              class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2"
-            >
-              <Button
-                variant="secondary"
-                size="sm"
-                class="h-8 text-xs font-bold"
-                @click.stop="handleFileClick"
-              >
-                {{ t('services.myMachine.forms.stock.changePhoto') }}
-              </Button>
-              <Button variant="destructive" size="icon" class="h-8 w-8" @click="removeImage">
-                <X class="w-4 h-4" />
-              </Button>
-            </div>
-          </template>
-          <template v-else>
-            <div
-              class="bg-blue-50 text-blue-500 p-4 rounded-full mb-3 group-hover:scale-110 transition-transform"
-            >
-              <FileText :size="24" />
-            </div>
-            <p class="font-bold text-sm text-slate-900 mb-1">
-              {{ t('services.myMachine.forms.machine.upload') }}
-            </p>
-            <p class="text-xs text-slate-500 text-center text-balance px-4">
-              {{ t('services.myMachine.forms.stock.uploadLimit') }}
-            </p>
-          </template>
-        </div>
-      </div>
-
-      <div class="pt-4 border-t border-slate-100">
-        <Label class="mb-3 text-slate-700 font-semibold flex items-center gap-2">
-          <QrCode class="w-4 h-4 text-blue-600" />
-          {{ t('services.myMachine.forms.machine.assetTag') }}
-        </Label>
-        <div
-          class="bg-white border rounded-xl p-4 flex flex-col items-center justify-center shadow-sm border-slate-200"
-        >
-          <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 mb-3">
-            <QrcodeVue
-              :value="form.code || 'NO-CODE-ASSIGNED'"
-              :size="120"
-              level="H"
-              render-as="svg"
-              class="mx-auto"
-            />
-          </div>
-          <p class="text-[0.625rem] font-black uppercase tracking-widest text-slate-400 mb-1">
-            {{ t('services.myMachine.forms.stock.encodedData') }}
-          </p>
-          <code
-            class="text-xs font-mono font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded truncate max-w-full"
+    <!-- Left Column: Image, QR & Barcode in a single card -->
+    <div class="md:col-span-4">
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-8">
+        <!-- Machine Image -->
+        <div>
+          <Label class="mb-3 block text-slate-700 font-semibold text-sm">{{
+            t('services.myMachine.forms.machine.image')
+          }}</Label>
+          <input
+            type="file"
+            ref="fileInput"
+            class="hidden"
+            accept="image/*"
+            @change="handleFileChange"
+          />
+          <div
+            @click="handleFileClick"
+            class="border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center h-[180px] bg-slate-50/50 hover:bg-slate-50 transition-colors cursor-pointer group relative overflow-hidden"
           >
-            {{ form.code || 'NULL' }}
-          </code>
+            <template v-if="form.image">
+              <img :src="form.image" class="w-full h-full object-cover" />
+              <div
+                class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2"
+              >
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  class="h-8 text-xs font-bold"
+                  @click.stop="handleFileClick"
+                >
+                  {{ t('services.myMachine.forms.stock.changePhoto') }}
+                </Button>
+                <Button variant="destructive" size="icon" class="h-8 w-8" @click="removeImage">
+                  <X class="w-4 h-4" />
+                </Button>
+              </div>
+            </template>
+            <template v-else>
+              <div
+                class="bg-blue-50 text-blue-500 p-3 rounded-full mb-2 group-hover:scale-110 transition-transform"
+              >
+                <FileText :size="20" />
+              </div>
+              <p class="font-bold text-xs text-slate-900 mb-1">
+                {{ t('services.myMachine.forms.machine.upload') }}
+              </p>
+              <p class="text-[10px] text-slate-500 text-center text-balance px-4">
+                {{ t('services.myMachine.forms.stock.uploadLimit') }}
+              </p>
+            </template>
+          </div>
+        </div>
+
+        <!-- Asset Tag / Barcode Toggle Section -->
+        <div class="space-y-4 pt-4 border-t border-slate-100">
+          <div class="flex items-center justify-between">
+            <Label class="text-slate-700 font-semibold text-sm flex items-center gap-2">
+              <QrCode v-if="tagMode === 'qr'" class="w-4 h-4 text-blue-600" />
+              <Barcode v-else class="w-4 h-4 text-green-600" />
+              {{ tagMode === 'qr' ? t('services.myMachine.forms.machine.assetTag') : 'Barcode' }}
+            </Label>
+            <div class="flex bg-slate-100 p-1 rounded-lg">
+              <button
+                type="button"
+                @click="tagMode = 'qr'"
+                class="px-3 py-1 text-[10px] font-bold rounded-md transition-all"
+                :class="
+                  tagMode === 'qr'
+                    ? 'bg-white shadow-sm text-blue-600'
+                    : 'text-slate-500 hover:text-slate-700'
+                "
+              >
+                QR Code
+              </button>
+              <button
+                type="button"
+                @click="tagMode = 'barcode'"
+                class="px-3 py-1 text-[10px] font-bold rounded-md transition-all"
+                :class="
+                  tagMode === 'barcode'
+                    ? 'bg-white shadow-sm text-green-600'
+                    : 'text-slate-500 hover:text-slate-700'
+                "
+              >
+                Barcode
+              </button>
+            </div>
+          </div>
+
+          <div class="flex flex-col items-center justify-center min-h-[180px]">
+            <template v-if="tagMode === 'qr'">
+              <div
+                class="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-3 w-full flex justify-center"
+              >
+                <QrcodeVue
+                  :value="form.code || 'NO-CODE-ASSIGNED'"
+                  :size="120"
+                  level="H"
+                  render-as="svg"
+                />
+              </div>
+              <p class="text-[0.625rem] font-black uppercase tracking-widest text-slate-400 mb-1">
+                {{ t('services.myMachine.forms.stock.encodedData') }}
+              </p>
+              <code
+                class="text-xs font-mono font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded truncate max-w-full"
+              >
+                {{ form.code || 'NULL' }}
+              </code>
+            </template>
+
+            <template v-else>
+              <div
+                class="bg-slate-50 p-6 rounded-xl border border-slate-100 mb-3 w-full flex items-center justify-center overflow-x-auto min-h-[152px]"
+              >
+                <div class="min-w-0">
+                  <VueBarcode
+                    :value="form.code || 'NO-CODE'"
+                    format="CODE128"
+                    :width="1.5"
+                    :height="50"
+                    :displayValue="false"
+                  />
+                </div>
+              </div>
+              <p class="text-[0.625rem] font-black uppercase tracking-widest text-slate-400 mb-1">
+                BARCODE DATA
+              </p>
+              <code
+                class="text-xs font-mono font-bold text-green-600 bg-green-50 px-2 py-1 rounded truncate max-w-full"
+              >
+                {{ form.code || 'NULL' }}
+              </code>
+            </template>
+          </div>
         </div>
       </div>
     </div>
@@ -251,23 +315,44 @@ const handleSave = () => {
       </div>
 
       <div class="space-y-2">
-        <div class="flex items-center justify-between">
-          <Label class="text-slate-700 font-semibold">{{
-            t('services.myMachine.forms.stock.code')
-          }}</Label>
-          <div class="flex items-center space-x-2">
-            <Checkbox id="auto-gen-stock" v-model:checked="form.autoGenerateCode" />
-            <label for="auto-gen-stock" class="text-xs font-medium text-slate-500 cursor-pointer">
-              {{ t('services.myMachine.forms.stock.autoGen') }}
-            </label>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="flex items-center justify-between">
+            <Label class="text-slate-700 font-semibold">{{
+              t('services.myMachine.forms.stock.code')
+            }}</Label>
+            <div class="flex items-center space-x-2">
+              <Checkbox id="auto-gen-stock" v-model:checked="form.autoGenerateCode" />
+              <label for="auto-gen-stock" class="text-xs font-medium text-slate-500 cursor-pointer">
+                {{ t('services.myMachine.forms.stock.autoGen') }}
+              </label>
+            </div>
+          </div>
+          <div class="flex items-center justify-between">
+            <Label class="text-slate-700 font-semibold">GL-Code</Label>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              class="h-5 w-5 text-slate-400 hover:text-blue-600 p-0"
+              @click="showGLSettings = true"
+            >
+              <Settings class="w-3.5 h-3.5" />
+            </Button>
           </div>
         </div>
-        <Input
-          v-model="form.code"
-          :placeholder="t('services.myMachine.forms.machine.tagPlaceholder')"
-          :disabled="form.autoGenerateCode"
-          class="bg-white border-slate-200"
-        />
+        <div class="grid grid-cols-2 gap-4">
+          <Input
+            v-model="form.code"
+            :placeholder="t('services.myMachine.forms.machine.tagPlaceholder')"
+            :disabled="form.autoGenerateCode"
+            class="bg-white border-slate-200"
+          />
+          <Input
+            v-model="form.glCode"
+            placeholder="e.g. A-ASST, F-FUEL"
+            class="bg-white border-slate-200"
+          />
+        </div>
       </div>
 
       <div class="grid grid-cols-2 gap-4">
@@ -333,7 +418,7 @@ const handleSave = () => {
         </div>
       </div>
 
-      <div class="grid grid-cols-2 gap-4">
+      <div class="grid grid-cols-3 gap-4">
         <div class="space-y-2">
           <Label class="text-slate-700 font-semibold">{{
             t('services.myMachine.forms.stock.qty')
@@ -346,9 +431,6 @@ const handleSave = () => {
           }}</Label>
           <Input type="number" v-model="form.minQty" min="0" class="bg-white border-slate-200" />
         </div>
-      </div>
-
-      <div class="grid grid-cols-2 gap-4">
         <div class="space-y-2">
           <Label class="text-slate-700 font-semibold">{{
             t('services.myMachine.forms.stock.price')
@@ -362,6 +444,9 @@ const handleSave = () => {
             />
           </div>
         </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
         <div class="space-y-2">
           <Label class="text-slate-700 font-semibold">{{
             t('services.myMachine.forms.repair.date')
@@ -406,38 +491,29 @@ const handleSave = () => {
         <Textarea
           v-model="form.description"
           :placeholder="t('services.myMachine.forms.stock.specsPlaceholder')"
-          class="min-h-[100px] bg-white border-slate-200 resize-none"
+          class="min-h-[120px] bg-white border-slate-200"
         />
       </div>
 
-      <div class="space-y-2">
-        <Label class="text-slate-700 font-semibold">{{
-          t('services.myMachine.forms.stock.itemSpecs')
-        }}</Label>
-        <Textarea
-          v-model="form.description"
-          class="min-h-[80px] resize-none bg-white border-slate-200"
-        />
+      <div class="flex justify-end gap-3 pt-6 mt-8">
+        <Button
+          type="button"
+          variant="outline"
+          @click="emit('cancel')"
+          class="h-10 px-6 border-slate-200 text-slate-600 font-bold"
+        >
+          {{ t('services.myMachine.forms.common.cancel') }}
+        </Button>
+        <Button
+          type="submit"
+          @click="handleSave"
+          class="h-10 px-8 bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-100 text-white font-black uppercase tracking-widest text-[10px]"
+        >
+          {{ t('services.myMachine.forms.stock.submit') }}
+        </Button>
       </div>
     </div>
   </div>
 
-  <div class="flex justify-end gap-3 pt-6 border-t mt-8">
-    <Button
-      type="button"
-      variant="outline"
-      @click="emit('cancel')"
-      class="h-10 px-6 border-slate-200 text-slate-600 font-bold"
-    >
-      {{ t('services.myMachine.forms.common.cancel') }}
-    </Button>
-    <Button
-      type="submit"
-      @click="handleSave"
-      class="h-10 px-8 bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-100 text-white font-black uppercase tracking-widest text-[10px]"
-    >
-      {{ t('services.myMachine.forms.stock.submit') }}
-    </Button>
-  </div>
+  <GLCodeSettingsModal v-model:open="showGLSettings" />
 </template>
-```

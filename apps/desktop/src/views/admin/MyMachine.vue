@@ -8,16 +8,8 @@ import {
 } from '@/components/ui/dialog';
 import { useMyMachine } from '@/composables/useMyMachine';
 import { useThemeStore } from '@/stores/theme';
-import {
-  CheckCircle2,
-  ClipboardList,
-  DollarSign,
-  LayoutDashboard,
-  Package,
-  Settings,
-  Wrench,
-} from 'lucide-vue-next';
-import { computed, onMounted, ref, watch } from 'vue';
+import { ClipboardList, LayoutDashboard, Package, Settings } from 'lucide-vue-next';
+import { onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
 
@@ -30,33 +22,10 @@ import MachineForm from './components/mymachine/MachineForm.vue';
 import MachineList from './components/mymachine/MachineList.vue';
 import RepairForm from './components/mymachine/RepairForm.vue';
 import RepairList from './components/mymachine/RepairList.vue';
-import StockForm from './components/mymachine/StockForm.vue';
 import StockList from './components/mymachine/StockList.vue';
 
-const {
-  machines,
-  repairs,
-  loadData,
-  addMachine,
-  updateMachine,
-  addRepair,
-  updateRepair,
-  addStock,
-  updateStock,
-} = useMyMachine();
-
-const totalCost = computed(() =>
-  repairs.value.reduce((acc, curr) => acc + (Number(curr.totalCost) || 0), 0)
-);
-const totalRepairs = computed(() => repairs.value.length);
-const activeMachines = computed(() => machines.value.filter((m) => m.status === 'Active').length);
-
-const formatCurrency = (val: number) => {
-  return new Intl.NumberFormat('th-TH', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(val);
-};
+const { machines, repairs, loadData, addMachine, updateMachine, addRepair, updateRepair } =
+  useMyMachine();
 
 const searchQuery = ref('');
 const activeTab = ref(localStorage.getItem('mymachine_active_tab') || 'dashboard');
@@ -79,10 +48,6 @@ const handleViewDetail = (id: string) => {
   detailMachineId.value = id;
   isDetailDialogOpen.value = true;
 };
-
-// Stock Modal State
-const isStockDialogOpen = ref(false);
-const editingStock = ref<any>(null);
 
 const handleMachineSave = (data: any) => {
   if (editingMachine.value) {
@@ -130,27 +95,6 @@ const handleRepairSave = async (data: any) => {
   }
 };
 
-const handleEditStock = (item: any) => {
-  editingStock.value = item;
-  isStockDialogOpen.value = true;
-};
-
-const handleStockSave = (data: any) => {
-  if (editingStock.value) {
-    updateStock(editingStock.value.id, data);
-    toast.success(t('services.myMachine.messages.stockSuccess'));
-  } else {
-    addStock(data);
-    // Toast already in addStock
-  }
-  closeStockDialog();
-};
-
-const closeStockDialog = () => {
-  isStockDialogOpen.value = false;
-  editingStock.value = null;
-};
-
 onMounted(() => {
   loadData();
 });
@@ -169,67 +113,13 @@ onMounted(() => {
       class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border border-slate-200/50 flex-shrink-0 shadow-sm rounded-xl mx-6 mt-0 mb-0 overflow-hidden"
     >
       <div class="px-6 py-2.5 flex flex-col lg:flex-row items-center justify-between gap-6">
-        <!-- Left: Title Group & Stats -->
+        <!-- Left: Title Group -->
         <div class="flex items-center gap-6 min-w-0 w-full lg:w-auto">
           <div class="flex-shrink-0">
             <h1 class="text-lg font-bold text-slate-900 leading-tight">
               {{ t('services.myMachine.name') }}
             </h1>
             <p class="text-[0.625rem] text-slate-500">{{ t('services.myMachine.description') }}</p>
-          </div>
-
-          <!-- Stats Group (Integrated after title) -->
-          <div class="hidden xl:flex items-center gap-6 border-l border-slate-100 pl-6">
-            <!-- Stat: Total Cost -->
-            <div class="flex items-center gap-2.5 group">
-              <div
-                class="p-1.5 bg-emerald-50 rounded-lg border border-emerald-100/50 group-hover:bg-emerald-100 transition-colors"
-              >
-                <DollarSign class="w-3.5 h-3.5 text-emerald-600" />
-              </div>
-              <div class="flex flex-col">
-                <span class="text-[0.5rem] font-black text-slate-400 uppercase tracking-tighter">{{
-                  t('services.myMachine.stats.totalCost')
-                }}</span>
-                <span class="text-[0.8rem] font-black text-slate-900 leading-none mt-0.5">
-                  {{ formatCurrency(totalCost) }}
-                </span>
-              </div>
-            </div>
-
-            <!-- Stat: Operational -->
-            <div class="flex items-center gap-2.5 group">
-              <div
-                class="p-1.5 bg-blue-50 rounded-lg border border-blue-100/50 group-hover:bg-blue-100 transition-colors"
-              >
-                <CheckCircle2 class="w-3.5 h-3.5 text-blue-600" />
-              </div>
-              <div class="flex flex-col">
-                <span class="text-[0.5rem] font-black text-slate-400 uppercase tracking-tighter">{{
-                  t('services.myMachine.stats.operational')
-                }}</span>
-                <span class="text-[0.8rem] font-black text-slate-900 leading-none mt-0.5">
-                  {{ activeMachines }} / {{ machines.length }}
-                </span>
-              </div>
-            </div>
-
-            <!-- Stat: Total Repairs -->
-            <div class="flex items-center gap-2.5 group">
-              <div
-                class="p-1.5 bg-purple-50 rounded-lg border border-purple-100/50 group-hover:bg-purple-100 transition-colors"
-              >
-                <Wrench class="w-3.5 h-3.5 text-purple-600" />
-              </div>
-              <div class="flex flex-col">
-                <span class="text-[0.5rem] font-black text-slate-400 uppercase tracking-tighter">{{
-                  t('services.myMachine.stats.totalRepairs')
-                }}</span>
-                <span class="text-[0.8rem] font-black text-slate-900 leading-none mt-0.5">
-                  {{ totalRepairs }}
-                </span>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -312,11 +202,7 @@ onMounted(() => {
       </div>
 
       <div v-show="activeTab === 'stock'" class="h-full overflow-hidden">
-        <StockList
-          :search-query="searchQuery"
-          @add-stock="isStockDialogOpen = true"
-          @edit-stock="handleEditStock"
-        />
+        <StockList :search-query="searchQuery" />
       </div>
     </div>
 
@@ -360,26 +246,6 @@ onMounted(() => {
           :initial-data="editingRepair"
           @save="handleRepairSave"
           @cancel="closeRepairDialog"
-        />
-      </DialogContent>
-    </Dialog>
-
-    <Dialog :open="isStockDialogOpen" @update:open="(val: boolean) => !val && closeStockDialog()">
-      <DialogContent class="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader class="border-b pb-4 mb-2">
-          <DialogTitle>{{
-            editingStock
-              ? t('services.myMachine.forms.stock.editTitle')
-              : t('services.myMachine.forms.stock.title')
-          }}</DialogTitle>
-          <DialogDescription>{{
-            t('services.myMachine.forms.stock.description')
-          }}</DialogDescription>
-        </DialogHeader>
-        <StockForm
-          :initial-data="editingStock"
-          @save="handleStockSave"
-          @cancel="closeStockDialog"
         />
       </DialogContent>
     </Dialog>

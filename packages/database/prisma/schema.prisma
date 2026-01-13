@@ -780,3 +780,16 @@ model MaintenanceStock {
 
   @@map("maintenance_stocks")
 }
+
+model GLCode {
+  id            String   @id @default(uuid())
+  transactionId String   @map("transaction_id")
+  description   String
+  code          String
+  purpose       String?
+  
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("gl_codes")
+}

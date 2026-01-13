@@ -1,39 +1,14 @@
 <script setup lang="ts">
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import DataTable from '@/components/ui/data-table/DataTable.vue';
-import { Dialog } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { useMyMachine } from '@/composables/useMyMachine';
 import type { ColumnDef } from '@tanstack/vue-table';
 import { format } from 'date-fns';
-import {
-  Calendar,
-  ClipboardList,
-  Pen,
-  Plus,
-  QrCode,
-  Search,
-  Trash2,
-  User,
-  Wrench,
-} from 'lucide-vue-next';
+import { Calendar, ClipboardList, Plus, Search, User, Wrench } from 'lucide-vue-next';
 import { computed, h, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { toast } from 'vue-sonner';
-import RepairDetailModal from './RepairDetailModal.vue';
-import RepairQrModal from './RepairQrModal.vue';
-
 const { t } = useI18n();
 
 const formatCurrency = (val: number) => {
@@ -49,26 +24,9 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'add-repair'): void;
-  (e: 'edit-repair', repair: any): void;
 }>();
 
-const { repairs, deleteRepair } = useMyMachine();
-
-const isDetailModalOpen = ref(false);
-const selectedRepair = ref<any>(null);
-
-const isQrModalOpen = ref(false);
-const selectedRepairForQr = ref<any>(null);
-
-const viewDetails = (repair: any) => {
-  selectedRepair.value = repair;
-  isDetailModalOpen.value = true;
-};
-
-const generateQr = (repair: any) => {
-  selectedRepairForQr.value = repair;
-  isQrModalOpen.value = true;
-};
+const { repairs } = useMyMachine();
 
 const localSearch = ref('');
 
@@ -82,38 +40,6 @@ const filteredRepairs = computed(() => {
       (r.technician && r.technician.toLowerCase().includes(q))
   );
 });
-
-// Delete Logic
-const repairToDelete = ref<string | null>(null);
-const isDeleteDialogOpen = ref(false);
-
-const handleDeleteRepair = (id: string) => {
-  repairToDelete.value = id;
-  isDeleteDialogOpen.value = true;
-};
-
-const confirmDelete = async () => {
-  const idToDelete = repairToDelete.value;
-  console.log('Confirm delete clicked for ID:', idToDelete);
-
-  if (idToDelete) {
-    try {
-      await deleteRepair(idToDelete);
-      toast.success(t('services.myMachine.messages.repairRemoved'));
-    } catch (e) {
-      console.error('Delete failed', e);
-      toast.error('Failed to delete repair');
-    } finally {
-      isDeleteDialogOpen.value = false;
-      // Clear ID after animation frame to ensure robust execution
-      setTimeout(() => {
-        repairToDelete.value = null;
-      }, 300);
-    }
-  } else {
-    console.warn('No repair ID selected for deletion');
-  }
-};
 
 // Define Repairs Columns
 const columns = computed<ColumnDef<any>[]>(() => [
@@ -203,59 +129,6 @@ const columns = computed<ColumnDef<any>[]>(() => [
       );
     },
   },
-  {
-    id: 'actions',
-    enableHiding: false,
-    cell: ({ row }) => {
-      const repair = row.original;
-      return h(
-        'div',
-        { class: 'flex items-center justify-end gap-1', onClick: (e) => e.stopPropagation() },
-        [
-          h(
-            Button,
-            {
-              variant: 'ghost',
-              size: 'icon',
-              class: 'h-8 w-8 text-slate-400 hover:text-blue-600 hover:bg-blue-50',
-              onClick: () => viewDetails(repair),
-            },
-            () => h(ClipboardList, { class: 'w-4 h-4' })
-          ),
-          h(
-            Button,
-            {
-              variant: 'ghost',
-              size: 'icon',
-              class: 'h-8 w-8 text-slate-400 hover:text-amber-600 hover:bg-amber-50',
-              onClick: () => emit('edit-repair', repair),
-            },
-            () => h(Pen, { class: 'w-4 h-4' })
-          ),
-          h(
-            Button,
-            {
-              variant: 'ghost',
-              size: 'icon',
-              class: 'h-8 w-8 text-slate-400 hover:text-blue-600 hover:bg-blue-50',
-              onClick: () => generateQr(repair),
-            },
-            () => h(QrCode, { class: 'w-4 h-4' })
-          ),
-          h(
-            Button,
-            {
-              variant: 'ghost',
-              size: 'icon',
-              class: 'h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50',
-              onClick: () => handleDeleteRepair(repair.id),
-            },
-            () => h(Trash2, { class: 'w-4 h-4' })
-          ),
-        ]
-      );
-    },
-  },
 ]);
 </script>
 
@@ -300,44 +173,5 @@ const columns = computed<ColumnDef<any>[]>(() => [
         <DataTable :columns="columns" :data="filteredRepairs" />
       </div>
     </div>
-
-    <!-- Detail Modal -->
-    <Dialog v-model:open="isDetailModalOpen">
-      <RepairDetailModal
-        v-if="selectedRepair"
-        :repair="selectedRepair"
-        @close="isDetailModalOpen = false"
-      />
-    </Dialog>
-
-    <!-- QR Modal -->
-    <Dialog v-model:open="isQrModalOpen">
-      <RepairQrModal
-        v-if="selectedRepairForQr"
-        :repair="selectedRepairForQr"
-        @close="isQrModalOpen = false"
-      />
-    </Dialog>
-
-    <!-- Delete Confirmation Dialog -->
-    <AlertDialog :open="isDeleteDialogOpen" @update:open="(val) => (isDeleteDialogOpen = val)">
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{{ t('services.myMachine.messages.confirmDelete') }}</AlertDialogTitle>
-          <AlertDialogDescription>
-            {{ t('services.myMachine.messages.confirmDeleteRepair') }}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>{{ t('common.cancel') }}</AlertDialogCancel>
-          <AlertDialogAction
-            @click.prevent="confirmDelete"
-            class="bg-red-600 hover:bg-red-700 text-white border-red-600 focus:ring-red-600"
-          >
-            {{ t('common.delete') }}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
   </div>
 </template>
