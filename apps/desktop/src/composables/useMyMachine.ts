@@ -130,8 +130,14 @@ export function useMyMachine() {
 
     const addRepair = async (repair: Omit<Repair, 'id' | 'timestamp'>) => {
         try {
+            console.log('[addRepair] Sending repair data:', repair);
             const res = await api.post('/mymachine/repairs', repair);
-            repairs.value.unshift(res.data);
+            console.log('[addRepair] Received response:', res.data);
+
+            // Refetch all repairs to ensure UI is in sync
+            const repairsRes = await api.get('/mymachine/repairs');
+            repairs.value = repairsRes.data;
+            console.log('[addRepair] Refetched repairs, total:', repairs.value.length);
 
             // Best to re-fetch stocks to get updated quantities
             const sRes = await api.get('/mymachine/stocks');
