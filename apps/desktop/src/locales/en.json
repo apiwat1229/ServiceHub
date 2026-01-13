@@ -293,7 +293,8 @@
           "partCategory": "Part & Category",
           "quantity": "Quantity",
           "unitPrice": "Unit Price",
-          "value": "Value"
+          "value": "Value",
+          "actions": "Action"
         }
       },
       "forms": {
