@@ -311,27 +311,23 @@ const handleSave = () => {
       </div>
 
       <div class="space-y-2">
-        <div class="grid grid-cols-2 gap-4">
-          <div class="flex items-center justify-between">
-            <Label class="text-slate-700 font-semibold">{{
-              t('services.myMachine.forms.stock.code')
-            }}</Label>
-            <div class="flex items-center space-x-2">
-              <Checkbox id="auto-gen-stock" v-model:checked="form.autoGenerateCode" />
-              <label for="auto-gen-stock" class="text-xs font-medium text-slate-500 cursor-pointer">
-                {{ t('services.myMachine.forms.stock.autoGen') }}
-              </label>
-            </div>
+        <div class="flex items-center justify-between">
+          <Label class="text-slate-700 font-semibold">{{
+            t('services.myMachine.forms.stock.code')
+          }}</Label>
+          <div class="flex items-center space-x-2">
+            <Checkbox id="auto-gen-stock" v-model:checked="form.autoGenerateCode" />
+            <label for="auto-gen-stock" class="text-xs font-medium text-slate-500 cursor-pointer">
+              {{ t('services.myMachine.forms.stock.autoGen') }}
+            </label>
           </div>
         </div>
-        <div class="grid grid-cols-1 gap-4">
-          <Input
-            v-model="form.code"
-            :placeholder="t('services.myMachine.forms.machine.tagPlaceholder')"
-            :disabled="form.autoGenerateCode"
-            class="bg-white border-slate-200"
-          />
-        </div>
+        <Input
+          v-model="form.code"
+          :placeholder="t('services.myMachine.forms.machine.tagPlaceholder')"
+          :disabled="form.autoGenerateCode"
+          class="bg-white border-slate-200"
+        />
       </div>
 
       <div class="grid grid-cols-2 gap-4">
