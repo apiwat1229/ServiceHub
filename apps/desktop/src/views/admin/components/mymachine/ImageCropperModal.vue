@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { ref } from 'vue';
-import { Cropper, RectangleStencil } from 'vue-advanced-cropper';
+import { Cropper } from 'vue-advanced-cropper';
 import 'vue-advanced-cropper/dist/style.css';
 import { useI18n } from 'vue-i18n';
 
@@ -50,19 +50,24 @@ const handleCancel = () => {
       </DialogHeader>
 
       <div class="px-6 py-2">
-        <div class="overflow-hidden rounded-xl border border-slate-200 bg-slate-100 h-[450px]">
+        <div
+          class="overflow-hidden rounded-xl border border-slate-200 bg-slate-100 h-[450px] relative"
+        >
           <Cropper
+            v-if="open && image"
             ref="cropper"
             class="h-full w-full"
             :src="image"
-            :stencil-component="RectangleStencil"
             :stencil-props="{
               aspectRatio: 1 / 1,
             }"
-            image-restriction="stencil"
-            :default-size="{
-              width: 600,
-              height: 600,
+            image-restriction="fit-area"
+            :auto-zoom="true"
+            :canvas="{
+              minHeight: 400,
+              minWidth: 400,
+              maxHeight: 1200,
+              maxWidth: 1200,
             }"
           />
         </div>
