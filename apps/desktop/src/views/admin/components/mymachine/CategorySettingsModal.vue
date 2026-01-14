@@ -20,7 +20,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useMyMachine, type StockCategory } from '@/composables/useMyMachine';
 import { Plus, Search } from 'lucide-vue-next';
-import { ref, watch } from 'vue';
+import { ref } from 'vue';
 import { toast } from 'vue-sonner';
 import CategoryDataTable from './CategoryDataTable.vue';
 
@@ -32,45 +32,28 @@ const { categories, addCategory, updateCategory, deleteCategory } = useMyMachine
 const form = ref({
   nameEN: '',
   nameTH: '',
-  prefix: '',
 });
 
 const editingId = ref<string | null>(null);
-
-watch(
-  () => form.value.nameEN,
-  (newVal: string) => {
-    if (!editingId.value && newVal) {
-      // Generate 4-char prefix: take first 4 alphanumeric chars and uppercase
-      const suggested = newVal
-        .trim()
-        .replace(/[^a-zA-Z0-9]/g, '')
-        .substring(0, 4)
-        .toUpperCase();
-      form.value.prefix = suggested;
-    }
-  }
-);
 
 const resetForm = () => {
   form.value = {
     nameEN: '',
     nameTH: '',
-    prefix: '',
   };
   editingId.value = null;
   isFormVisible.value = false;
 };
 
 const handleAdd = async () => {
-  if (!form.value.nameEN && !form.value.prefix) {
-    toast.error('Name (EN) or Prefix is required');
+  if (!form.value.nameEN) {
+    toast.error('Name (EN) is required');
     return;
   }
 
   const payload = {
     ...form.value,
-    name: form.value.nameEN || form.value.prefix || 'Unnamed Category',
+    name: form.value.nameEN || 'Unnamed Category',
   };
 
   try {
@@ -94,7 +77,6 @@ const startEdit = (category: StockCategory) => {
   form.value = {
     nameEN: category.nameEN || '',
     nameTH: category.nameTH || '',
-    prefix: category.prefix || '',
   };
   editingId.value = category.id;
   isFormVisible.value = true;
@@ -166,16 +148,7 @@ const executeDelete = async () => {
             Cancel Edit
           </Button>
         </div>
-        <div class="grid grid-cols-3 gap-3">
-          <div class="space-y-1.5">
-            <Label class="text-xs font-medium">Code Prefix</Label>
-            <Input
-              v-model="form.prefix"
-              placeholder="e.g. MECH"
-              class="h-9 text-sm uppercase"
-              maxlength="4"
-            />
-          </div>
+        <div class="grid grid-cols-2 gap-3">
           <div class="space-y-1.5">
             <Label class="text-xs font-medium">Name (EN)</Label>
             <Input v-model="form.nameEN" placeholder="e.g. Mechanical" class="h-9 text-sm" />

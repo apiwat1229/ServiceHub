@@ -35,17 +35,6 @@ const globalFilter = computed(() => props.searchQuery || '');
 
 const columns = computed<ColumnDef<StockCategory>[]>(() => [
   {
-    accessorKey: 'prefix',
-    header: 'Code Prefix',
-    size: 100,
-    cell: ({ row }) =>
-      h(
-        'code',
-        { class: 'px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs font-mono font-bold' },
-        row.getValue('prefix') || '-'
-      ),
-  },
-  {
     accessorKey: 'nameEN',
     header: 'Name (EN)',
     cell: ({ row }) =>
