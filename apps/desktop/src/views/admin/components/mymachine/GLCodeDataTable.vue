@@ -22,6 +22,7 @@ import {
 } from '@tanstack/vue-table';
 import { Edit2, Search, Trash2 } from 'lucide-vue-next';
 import { ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 
 interface Props {
   data: GLCode[];
@@ -30,13 +31,14 @@ interface Props {
 const props = defineProps<Props>();
 const emit = defineEmits(['edit', 'delete']);
 
+const { t } = useI18n();
 const sorting = ref<SortingState>([]);
 const globalFilter = ref('');
 
 const columns: ColumnDef<GLCode>[] = [
   {
     accessorKey: 'transactionId',
-    header: 'Transaction-ID',
+    header: () => t('services.myMachine.glCodes.transactionId'),
     cell: ({ row }) => {
       return h(
         'span',
@@ -47,14 +49,14 @@ const columns: ColumnDef<GLCode>[] = [
   },
   {
     accessorKey: 'description',
-    header: 'Description',
+    header: () => t('services.myMachine.glCodes.description'),
     cell: ({ row }) => {
       return h('span', { class: 'text-xs text-slate-600' }, row.getValue('description'));
     },
   },
   {
     accessorKey: 'code',
-    header: () => h('div', { class: 'text-center' }, 'GL-Code'),
+    header: () => h('div', { class: 'text-center' }, t('services.myMachine.glCodes.code')),
     cell: ({ row }) => {
       return h(
         'div',
@@ -72,7 +74,7 @@ const columns: ColumnDef<GLCode>[] = [
   },
   {
     accessorKey: 'purpose',
-    header: 'วัตถุประสงค์การซ่อมแซม',
+    header: () => t('services.myMachine.glCodes.purpose'),
     cell: ({ row }) => {
       return h('span', { class: 'text-xs text-slate-600' }, row.getValue('purpose') || '-');
     },
@@ -155,7 +157,7 @@ const table = useVueTable({
       <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
       <Input
         v-model="globalFilter"
-        placeholder="Search GL-Codes..."
+        :placeholder="t('services.myMachine.glCodes.searchPlaceholder')"
         class="pl-9 h-9 text-xs bg-white border-slate-200"
       />
     </div>
@@ -202,7 +204,7 @@ const table = useVueTable({
           </template>
           <TableRow v-else>
             <TableCell colspan="5" class="h-32 text-center text-slate-400 text-xs italic">
-              No results found.
+              {{ t('common.table.noResults') }}
             </TableCell>
           </TableRow>
         </TableBody>
@@ -231,7 +233,7 @@ const table = useVueTable({
           :disabled="!table.getCanPreviousPage()"
           @click="table.previousPage()"
         >
-          Previous
+          {{ t('common.previous') }}
         </Button>
         <Button
           variant="outline"
@@ -240,7 +242,7 @@ const table = useVueTable({
           :disabled="!table.getCanNextPage()"
           @click="table.nextPage()"
         >
-          Next
+          {{ t('common.next') }}
         </Button>
       </div>
     </div>

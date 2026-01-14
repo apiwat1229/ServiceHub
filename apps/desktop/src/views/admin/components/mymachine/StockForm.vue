@@ -27,7 +27,7 @@ import CategorySettingsModal from './CategorySettingsModal.vue';
 import GLCodeSettingsModal from './GLCodeSettingsModal.vue';
 import LocationSettingsModal from './LocationSettingsModal.vue';
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const { categories, locations, glCodes } = useMyMachine();
 const tagMode = ref<'qr' | 'barcode'>('qr');
 const showCategorySettings = ref(false);
@@ -357,7 +357,9 @@ const handleSave = () => {
               <SelectItem v-for="gl in glCodes" :key="gl.id" :value="gl.code">
                 <div class="flex flex-col">
                   <span class="font-bold text-slate-900">{{ gl.code }}</span>
-                  <span class="text-[10px] text-slate-500">{{ gl.description }}</span>
+                  <span class="text-[10px] text-slate-500">{{
+                    locale === 'th' ? gl.purpose || gl.description : gl.description
+                  }}</span>
                 </div>
               </SelectItem>
             </SelectContent>

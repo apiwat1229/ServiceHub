@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { useMyMachine, type GLCode } from '@/composables/useMyMachine';
 import { Plus } from 'lucide-vue-next';
 import { onMounted, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
 import GLCodeDataTable from './GLCodeDataTable.vue';
 
@@ -15,6 +16,7 @@ const props = defineProps<{
 
 const emit = defineEmits(['update:open']);
 
+const { t } = useI18n();
 const { glCodes, addGLCode, updateGLCode, deleteGLCode, loadData } = useMyMachine();
 
 const isAdding = ref(false);
@@ -88,10 +90,10 @@ const handleDelete = async (id: string) => {
       >
         <div>
           <DialogTitle class="text-xl font-bold flex items-center gap-2">
-            Management GL-Codes
+            {{ t('services.myMachine.glCodes.title') }}
           </DialogTitle>
           <p class="text-sm text-slate-500 mt-1">
-            Manage your general ledger codes for maintenance transactions.
+            {{ t('services.myMachine.glCodes.subtitle') }}
           </p>
         </div>
         <Button
@@ -101,7 +103,7 @@ const handleDelete = async (id: string) => {
           class="bg-blue-600 hover:bg-blue-700 text-white gap-1 h-8 text-xs shrink-0"
         >
           <Plus class="w-3 h-3" />
-          Add New
+          {{ t('services.myMachine.glCodes.add') }}
         </Button>
       </DialogHeader>
 
@@ -111,10 +113,16 @@ const handleDelete = async (id: string) => {
           v-if="isAdding"
           class="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6 space-y-4"
         >
-          <h3 class="font-bold text-sm text-slate-700">Add New GL-Code</h3>
+          <h3 class="font-bold text-sm text-slate-700">
+            {{
+              editingId ? t('services.myMachine.glCodes.edit') : t('services.myMachine.glCodes.add')
+            }}
+          </h3>
           <div class="grid grid-cols-12 gap-3">
             <div class="space-y-1 col-span-2">
-              <Label class="text-[10px] uppercase text-slate-500 font-bold">Transaction-ID</Label>
+              <Label class="text-[10px] uppercase text-slate-500 font-bold">{{
+                t('services.myMachine.glCodes.transactionId')
+              }}</Label>
               <Input
                 v-model="form.transactionId"
                 placeholder="e.g. A-ASST"
@@ -122,7 +130,9 @@ const handleDelete = async (id: string) => {
               />
             </div>
             <div class="space-y-1 col-span-4">
-              <Label class="text-[10px] uppercase text-slate-500 font-bold">Description</Label>
+              <Label class="text-[10px] uppercase text-slate-500 font-bold">{{
+                t('services.myMachine.glCodes.description')
+              }}</Label>
               <Input
                 v-model="form.description"
                 placeholder="e.g. Repair assets"
@@ -130,11 +140,15 @@ const handleDelete = async (id: string) => {
               />
             </div>
             <div class="space-y-1 col-span-2">
-              <Label class="text-[10px] uppercase text-slate-500 font-bold">GL-Code</Label>
-              <Input v-model="form.code" placeholder="e.g. 6000-42" class="bg-white h-9 text-xs" />
+              <Label class="text-[10px] uppercase text-slate-500 font-bold">{{
+                t('services.myMachine.glCodes.code')
+              }}</Label>
+              <Input v-model="form.code" placeholder="6000-42" class="bg-white h-9 text-xs" />
             </div>
             <div class="space-y-1 col-span-4">
-              <Label class="text-[10px] uppercase text-slate-500 font-bold">Purpose (TH)</Label>
+              <Label class="text-[10px] uppercase text-slate-500 font-bold">{{
+                t('services.myMachine.glCodes.purpose')
+              }}</Label>
               <Input
                 v-model="form.purpose"
                 placeholder="วัตถุประสงค์"
@@ -143,13 +157,19 @@ const handleDelete = async (id: string) => {
             </div>
           </div>
           <div class="flex justify-end gap-2">
-            <Button variant="ghost" size="sm" @click="cancelAdd" class="text-xs h-8">Cancel</Button>
+            <Button variant="ghost" size="sm" @click="cancelAdd" class="text-xs h-8">{{
+              t('services.myMachine.glCodes.cancel')
+            }}</Button>
             <Button
               size="sm"
               @click="handleAdd"
               class="bg-blue-600 hover:bg-blue-700 text-white text-xs h-8"
             >
-              {{ editingId ? 'Update Entry' : 'Save Entry' }}
+              {{
+                editingId
+                  ? t('services.myMachine.glCodes.update')
+                  : t('services.myMachine.glCodes.save')
+              }}
             </Button>
           </div>
         </div>

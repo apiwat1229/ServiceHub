@@ -253,12 +253,21 @@
         "title": "Registered Assets",
         "subtitle": "Manage and monitor your industrial equipment",
         "search": "Search assets...",
-        "add": "Add Machine",
-        "columns": {
-          "machineModel": "Machine & Model",
-          "status": "Status",
-          "cost": "Total Cost"
-        }
+        "add": "Add Machine"
+      },
+      "glCodes": {
+        "title": "Management GL-Codes",
+        "subtitle": "Manage your general ledger codes for maintenance transactions.",
+        "add": "Add New GL-Code",
+        "edit": "Edit GL-Code",
+        "transactionId": "Transaction-ID",
+        "description": "Description (EN)",
+        "code": "GL-Code",
+        "purpose": "Purpose (TH)",
+        "save": "Save Entry",
+        "update": "Update Entry",
+        "cancel": "Cancel",
+        "searchPlaceholder": "Search GL-Codes..."
       },
       "repairs": {
         "title": "Maintenance Jobs",
