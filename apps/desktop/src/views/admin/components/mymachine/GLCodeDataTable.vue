@@ -56,16 +56,16 @@ const columns: ColumnDef<GLCode>[] = [
   },
   {
     accessorKey: 'code',
-    header: () => h('div', { class: 'text-center' }, t('services.myMachine.glCodes.code')),
+    header: () => h('div', { class: 'text-left' }, t('services.myMachine.glCodes.code')),
     cell: ({ row }) => {
       return h(
         'div',
-        { class: 'flex justify-center' },
+        { class: 'flex justify-start' },
         h(
           'span',
           {
             class:
-              'font-mono text-xs text-blue-600 font-bold bg-blue-50/50 rounded px-2 py-0.5 min-w-[80px] text-center',
+              'font-mono text-xs text-blue-600 font-bold bg-blue-50/50 rounded px-2 py-0.5 min-w-[80px] text-left',
           },
           row.getValue('code')
         )

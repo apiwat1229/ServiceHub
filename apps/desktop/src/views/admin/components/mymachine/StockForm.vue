@@ -355,7 +355,7 @@ const handleSave = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem v-for="gl in glCodes" :key="gl.id" :value="gl.code">
-                <div class="flex flex-col">
+                <div class="flex flex-col items-start text-left">
                   <span class="font-bold text-slate-900">{{ gl.code }}</span>
                   <span class="text-[10px] text-slate-500">{{
                     locale === 'th' ? gl.purpose || gl.description : gl.description
