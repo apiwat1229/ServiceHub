@@ -291,6 +291,7 @@
         },
         "columns": {
           "partCategory": "Part & Category",
+          "glCode": "GL-Code",
           "quantity": "Quantity",
           "unitPrice": "Unit Price",
           "value": "Value",
@@ -360,6 +361,7 @@
           "nameEN": "Name (EN)",
           "nameTH": "Name (TH)",
           "category": "Category",
+          "glCode": "GL-Code",
           "qty": "Current Quantity",
           "minQty": "Min Stock Level",
           "price": "Unit Price (THB)",

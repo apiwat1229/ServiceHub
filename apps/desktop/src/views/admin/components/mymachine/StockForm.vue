@@ -27,7 +27,7 @@ import CategorySettingsModal from './CategorySettingsModal.vue';
 import LocationSettingsModal from './LocationSettingsModal.vue';
 
 const { t } = useI18n();
-const { categories, locations } = useMyMachine();
+const { categories, locations, glCodes } = useMyMachine();
 const tagMode = ref<'qr' | 'barcode'>('qr');
 const showCategorySettings = ref(false);
 const showLocationSettings = ref(false);
@@ -63,6 +63,7 @@ const form = ref(
         code: generateCode(''), // Default SP
         category: '',
         location: '',
+        glCode: '',
         qty: 0,
         minQty: 5,
         price: 0,
@@ -385,6 +386,25 @@ const handleSave = () => {
             </SelectContent>
           </Select>
         </div>
+      </div>
+
+      <div class="space-y-2">
+        <Label class="text-slate-700 font-semibold">{{
+          t('services.myMachine.forms.stock.glCode')
+        }}</Label>
+        <Select v-model="form.glCode">
+          <SelectTrigger class="bg-white border-slate-200">
+            <SelectValue :placeholder="t('services.myMachine.forms.stock.glCode')" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem v-for="gl in glCodes" :key="gl.id" :value="gl.code">
+              <div class="flex flex-col">
+                <span class="font-bold text-slate-900">{{ gl.code }}</span>
+                <span class="text-[10px] text-slate-500">{{ gl.description }}</span>
+              </div>
+            </SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div class="grid grid-cols-3 gap-4">

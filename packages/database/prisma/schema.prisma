@@ -768,6 +768,7 @@ model MaintenanceStock {
   nameEN      String?  @map("name_en")
   category    String?
   location    String?
+  glCode      String?  @map("gl_code")
   qty         Int      @default(0)
   price       Float    @default(0)
   unit        String

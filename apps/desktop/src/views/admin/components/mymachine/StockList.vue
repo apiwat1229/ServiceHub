@@ -97,6 +97,18 @@ const columns = computed<ColumnDef<any>[]>(() => [
     },
   },
   {
+    accessorKey: 'glCode',
+    header: t('services.myMachine.stock.columns.glCode'),
+    cell: ({ row }) =>
+      h(
+        'code',
+        {
+          class: 'px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-mono font-bold',
+        },
+        row.getValue('glCode') || '-'
+      ),
+  },
+  {
     accessorKey: 'qty',
     header: t('services.myMachine.machines.columns.status'),
     cell: ({ row }) => {

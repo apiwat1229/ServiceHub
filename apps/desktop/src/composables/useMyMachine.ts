@@ -39,6 +39,7 @@ export interface StockItem {
     nameEN?: string;
     category?: string;
     location?: string;
+    glCode?: string;
     qty: number;
     price: number;
     unit: string;
