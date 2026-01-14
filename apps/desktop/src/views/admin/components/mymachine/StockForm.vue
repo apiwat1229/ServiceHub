@@ -386,32 +386,32 @@ const handleSave = () => {
           </Select>
         </div>
       </div>
-    </div>
 
-    <div class="grid grid-cols-3 gap-4">
-      <div class="space-y-2">
-        <Label class="text-slate-700 font-semibold">{{
-          t('services.myMachine.forms.stock.qty')
-        }}</Label>
-        <Input type="number" v-model="form.qty" min="0" class="bg-white border-slate-200" />
-      </div>
-      <div class="space-y-2">
-        <Label class="text-slate-700 font-semibold">{{
-          t('services.myMachine.forms.stock.minQty')
-        }}</Label>
-        <Input type="number" v-model="form.minQty" min="0" class="bg-white border-slate-200" />
-      </div>
-      <div class="space-y-2">
-        <Label class="text-slate-700 font-semibold">{{
-          t('services.myMachine.forms.stock.price')
-        }}</Label>
-        <div class="relative">
-          <Input
-            class="pl-7 bg-white border-slate-200"
-            type="number"
-            v-model="form.price"
-            min="0"
-          />
+      <div class="grid grid-cols-3 gap-4">
+        <div class="space-y-2">
+          <Label class="text-slate-700 font-semibold">{{
+            t('services.myMachine.forms.stock.qty')
+          }}</Label>
+          <Input type="number" v-model="form.qty" min="0" class="bg-white border-slate-200" />
+        </div>
+        <div class="space-y-2">
+          <Label class="text-slate-700 font-semibold">{{
+            t('services.myMachine.forms.stock.minQty')
+          }}</Label>
+          <Input type="number" v-model="form.minQty" min="0" class="bg-white border-slate-200" />
+        </div>
+        <div class="space-y-2">
+          <Label class="text-slate-700 font-semibold">{{
+            t('services.myMachine.forms.stock.price')
+          }}</Label>
+          <div class="relative">
+            <Input
+              class="pl-7 bg-white border-slate-200"
+              type="number"
+              v-model="form.price"
+              min="0"
+            />
+          </div>
         </div>
       </div>
 
