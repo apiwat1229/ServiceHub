@@ -87,13 +87,20 @@ const handleDelete = async (id: string) => {
 <template>
   <DialogContent class="max-w-5xl max-h-[90vh] flex flex-col p-0">
     <DialogHeader class="px-6 pt-6 pb-4 flex-shrink-0">
-      <div class="flex items-start justify-between">
-        <div class="space-y-1.5">
+      <div class="flex items-center justify-between pr-8">
+        <div class="space-y-0.5">
           <DialogTitle class="text-xl font-bold">Storage Locations</DialogTitle>
-          <DialogDescription class="text-sm">
+          <DialogDescription class="text-sm text-slate-500">
             Manage storage locations for stock items
           </DialogDescription>
         </div>
+        <Button
+          @click="handleAdd"
+          class="h-9 px-4 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm"
+        >
+          <Plus class="w-3.5 h-3.5 mr-1.5" />
+          {{ editingId ? 'Update Location' : 'Add Location' }}
+        </Button>
       </div>
     </DialogHeader>
 
@@ -126,13 +133,6 @@ const handleDelete = async (id: string) => {
             <Input v-model="form.zone" placeholder="e.g. Zone 1" class="h-9 text-sm" />
           </div>
         </div>
-        <Button
-          @click="handleAdd"
-          class="mt-3 h-8 px-4 bg-blue-600 hover:bg-blue-700 text-white text-xs"
-        >
-          <Plus class="w-3.5 h-3.5 mr-1.5" />
-          {{ editingId ? 'Update Location' : 'Add Location' }}
-        </Button>
       </div>
 
       <!-- Locations Table -->
