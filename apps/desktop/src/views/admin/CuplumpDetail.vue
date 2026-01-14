@@ -287,10 +287,10 @@ const calculatePercentCp = (sample: any) => {
 
   // Get moisture value from header, default to 32% if not set (based on RECEIVE CL formula)
   const moisture = isTrailer.value
-    ? booking.value?.trailerMoisture
+    ? booking.value?.trailerMoisture !== undefined && booking.value?.trailerMoisture !== null
       ? parseFloat(booking.value.trailerMoisture)
       : 32
-    : booking.value?.moisture
+    : booking.value?.moisture !== undefined && booking.value?.moisture !== null
       ? parseFloat(booking.value.moisture)
       : 32;
 
@@ -375,16 +375,21 @@ const fetchData = async () => {
     originalLotNo.value = booking.value.lotNo;
     samples.value = samplesData
       .filter((s: any) => s.isTrailer === isTrailer.value)
-      .map((s: any) => ({
-        ...s,
-        beforePress: s.beforePress?.toString() || '',
-        basket: s.basketWeight?.toString() || '1.4',
-        afterPress: s.afterPress?.toString() || '',
-        percentCp: s.percentCp?.toString() || '',
-        beforeBaking1: s.beforeBaking1?.toString() || '',
-        beforeBaking2: s.beforeBaking2?.toString() || '',
-        beforeBaking3: s.beforeBaking3?.toString() || '',
-      }));
+      .map((s: any) => {
+        const mapped = {
+          ...s,
+          beforePress: s.beforePress?.toString() || '',
+          basket: s.basketWeight?.toString() || '1.4',
+          afterPress: s.afterPress?.toString() || '',
+          percentCp: s.percentCp?.toString() || '',
+          beforeBaking1: s.beforeBaking1?.toString() || '',
+          beforeBaking2: s.beforeBaking2?.toString() || '',
+          beforeBaking3: s.beforeBaking3?.toString() || '',
+        };
+        calculatePercentCp(mapped);
+        return mapped;
+      });
+
     rubberTypes.value = typesData;
   } catch (error) {
     console.error('Failed to load data:', error);
@@ -707,7 +712,8 @@ const handleSaveMoisture = async () => {
       booking.value.moisture = moistureVal;
     }
 
-    // Recalculate %CP for all new samples
+    // Recalculate %CP for all samples
+    samples.value.forEach((s) => calculatePercentCp(s));
     newSamples.value.forEach((s) => calculatePercentCp(s));
 
     toast.success(t('common.saved'));

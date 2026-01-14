@@ -14,8 +14,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { bookingsApi } from '@/services/bookings';
 import { rubberTypesApi } from '@/services/rubberTypes';
-import { Plus, Save, Trash2, X } from 'lucide-vue-next';
-import { computed, onMounted, ref } from 'vue';
+import { Save } from 'lucide-vue-next';
+import { computed, nextTick, onMounted, ref } from 'vue';
 import { toast } from 'vue-sonner';
 
 // No translation functions needed in this scope currently
@@ -37,8 +37,7 @@ const showDeleteConfirm = ref(false);
 const sampleToDeleteId = ref<string | null>(null);
 const isDeleting = ref(false);
 
-// New Sample Form
-const newSamples = ref<any[]>([]);
+// New Samples are disabled for QA
 
 const fetchData = async () => {
   if (!props.bookingId) return;
@@ -70,17 +69,7 @@ const fetchData = async () => {
   }
 };
 
-const addNewSampleRow = () => {
-  const tempId = 'temp-' + Date.now();
-  newSamples.value.push({
-    id: tempId,
-    beforePress: '',
-    afterPress: '',
-    p0: '',
-    p30: '',
-    pri: '',
-  });
-};
+// addNewSampleRow removed to prevent manual adding in QA
 
 const calculatePri = (sample: any) => {
   const p0 = parseFloat(sample.p0);
@@ -107,9 +96,7 @@ const handleNumericInput = (sample: any, field: string, value: string) => {
 const saveAll = async () => {
   isSaving.value = true;
   try {
-    const all = [...samples.value, ...newSamples.value].filter(
-      (s) => s.beforePress || s.afterPress || s.p0 || s.p30
-    );
+    const all = samples.value.filter((s) => s.beforePress || s.afterPress || s.p0 || s.p30);
 
     for (const s of all) {
       await bookingsApi.saveSample(props.bookingId, {
@@ -124,14 +111,33 @@ const saveAll = async () => {
     }
 
     toast.success('Data saved successfully');
-    newSamples.value = [];
     fetchData();
     emit('update');
+    emit('close');
   } catch (error) {
     console.error('Failed to save:', error);
     toast.error('Failed to save data');
   } finally {
     isSaving.value = false;
+  }
+};
+const handleEnter = (e: KeyboardEvent) => {
+  if (e.key !== 'Enter') return;
+  const target = e.target as HTMLInputElement;
+
+  const form = target.closest('div.overflow-y-auto');
+  if (!form) return;
+
+  const inputs = Array.from(
+    form.querySelectorAll('input:not([readonly]):not([disabled])')
+  ) as HTMLInputElement[];
+  const index = inputs.indexOf(target);
+
+  if (index > -1 && index < inputs.length - 1) {
+    inputs[index + 1].focus();
+    inputs[index + 1].select();
+  } else if (index === inputs.length - 1) {
+    saveAll();
   }
 };
 
@@ -152,6 +158,18 @@ const deleteSample = async () => {
   }
 };
 
+const focusFirstInput = () => {
+  nextTick(() => {
+    const firstInput = document.querySelector(
+      '.overflow-y-auto input:not([readonly]):not([disabled])'
+    ) as HTMLInputElement;
+    if (firstInput) {
+      firstInput.focus();
+      firstInput.select();
+    }
+  });
+};
+
 const displayRubberType = computed(() => {
   if (!booking.value) return '-';
   const code = props.isTrailer ? booking.value.trailerRubberType : booking.value.rubberType;
@@ -166,8 +184,9 @@ const displayNetWeight = computed(() => {
   return Math.max(0, inW - outW).toLocaleString();
 });
 
-onMounted(() => {
-  fetchData();
+onMounted(async () => {
+  await fetchData();
+  focusFirstInput();
 });
 </script>
 
@@ -241,7 +260,7 @@ onMounted(() => {
     <!-- Samples List -->
     <div class="flex-1 overflow-y-auto p-6 space-y-4 bg-white">
       <div
-        v-for="(sample, index) in [...samples, ...newSamples]"
+        v-for="(sample, index) in samples"
         :key="sample.id"
         class="group relative flex items-center gap-4 p-4 rounded-xl border border-slate-100 bg-slate-50/30 hover:bg-white hover:shadow-md transition-all"
       >
@@ -260,9 +279,11 @@ onMounted(() => {
             <div class="flex items-center gap-2">
               <Input
                 v-model="sample.beforePress"
-                class="h-9 bg-white border-slate-200 font-bold text-slate-700"
+                readonly
+                class="h-9 bg-slate-100 border-slate-200 font-bold text-slate-500 cursor-not-allowed"
                 @input="handleNumericInput(sample, 'beforePress', $event.target.value)"
               />
+
               <span class="text-xs font-bold text-slate-400">kg</span>
             </div>
           </div>
@@ -272,9 +293,11 @@ onMounted(() => {
             <div class="flex items-center gap-2">
               <Input
                 v-model="sample.afterPress"
-                class="h-9 bg-white border-slate-200 font-bold text-slate-700"
+                readonly
+                class="h-9 bg-slate-100 border-slate-200 font-bold text-slate-500 cursor-not-allowed"
                 @input="handleNumericInput(sample, 'afterPress', $event.target.value)"
               />
+
               <span class="text-xs font-bold text-slate-400">kg</span>
             </div>
           </div>
@@ -286,6 +309,7 @@ onMounted(() => {
               class="h-9 bg-white border-slate-200 font-bold text-slate-700"
               placeholder="PO"
               @input="handleNumericInput(sample, 'p0', $event.target.value)"
+              @keydown="handleEnter"
             />
           </div>
 
@@ -296,6 +320,7 @@ onMounted(() => {
               class="h-9 bg-white border-slate-200 font-bold text-slate-700"
               placeholder="P30"
               @input="handleNumericInput(sample, 'p30', $event.target.value)"
+              @keydown="handleEnter"
             />
           </div>
 
@@ -309,37 +334,10 @@ onMounted(() => {
           </div>
         </div>
 
-        <Button
-          v-if="!sample.id.toString().startsWith('temp')"
-          variant="ghost"
-          size="icon"
-          class="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
-          @click="
-            sampleToDeleteId = sample.id;
-            showDeleteConfirm = true;
-          "
-        >
-          <Trash2 class="w-4 h-4" />
-        </Button>
-        <Button
-          v-else
-          variant="ghost"
-          size="icon"
-          class="text-slate-400 hover:text-slate-600"
-          @click="newSamples.splice(newSamples.indexOf(sample), 1)"
-        >
-          <X class="w-4 h-4" />
-        </Button>
+        <!-- Deleted Trash/X Buttons as editing/deleting is disabled in QA -->
       </div>
 
-      <Button
-        variant="outline"
-        class="w-full border-dashed border-slate-300 h-12 text-slate-500 hover:text-primary hover:border-primary transition-all rounded-xl"
-        @click="addNewSampleRow"
-      >
-        <Plus class="w-4 h-4 mr-2" />
-        Add Sample
-      </Button>
+      <!-- Add Sample button removed as requested -->
     </div>
 
     <!-- Footer Action -->

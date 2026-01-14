@@ -23,9 +23,11 @@ const statusFilter = ref('ALL');
 // Detail Dialog
 const isDialogOpen = ref(false);
 const selectedBookingId = ref<string | null>(null);
+const selectedIsTrailer = ref(false);
 
-const handleOpenDetail = (bookingId: string) => {
+const handleOpenDetail = (bookingId: string, isTrailer = false) => {
   selectedBookingId.value = bookingId;
+  selectedIsTrailer.value = isTrailer;
   isDialogOpen.value = true;
 };
 
@@ -75,13 +77,94 @@ const getRubberTypeName = (code: string) => {
 };
 
 // Computed Data for Stats
+const processedBookings = computed(() => {
+  const result: any[] = [];
+  bookings.value.forEach((b: any) => {
+    // 1. Main Part
+    const bSamplesMain = b.labSamples?.filter((s: any) => !s.isTrailer) || [];
+    const validPoMain = bSamplesMain.filter((s: any) => s.p0 && s.p0 > 0);
+    const validPriMain = bSamplesMain.filter((s: any) => s.pri && s.pri > 0);
+
+    const avgPoMain =
+      validPoMain.length > 0
+        ? validPoMain.reduce((sum: number, s: any) => sum + s.p0, 0) / validPoMain.length
+        : 0;
+    const avgPriMain =
+      validPriMain.length > 0
+        ? validPriMain.reduce((sum: number, s: any) => sum + s.pri, 0) / validPriMain.length
+        : 0;
+
+    const grossMain = Math.max(0, (b.weightIn || 0) - (b.weightOut || 0));
+    const drcMain = b.drcActual || 0;
+    const netWeightMain = drcMain > 0 ? Math.round(grossMain * (drcMain / 100)) : 0;
+
+    result.push({
+      ...b,
+      id: b.id + '-main',
+      originalId: b.id,
+      isTrailerPart: false,
+      partLabel: 'Main Truck',
+      displayRubberType: getRubberTypeName(b.rubberType),
+      displayWeightIn: grossMain,
+      displayNetWeight: netWeightMain,
+      avgPo: avgPoMain,
+      avgPri: avgPriMain,
+      lotNo: b.lotNo || b.bookingCode || '-',
+    });
+
+    // 2. Trailer Part
+    const hasTrailer =
+      (b.trailerWeightIn && b.trailerWeightIn > 0) || (b.trailerRubberType && b.trailerRubberType);
+    if (hasTrailer) {
+      const bSamplesTrailer = b.labSamples?.filter((s: any) => s.isTrailer) || [];
+      const validPoTrailer = bSamplesTrailer.filter((s: any) => s.p0 && s.p0 > 0);
+      const validPriTrailer = bSamplesTrailer.filter((s: any) => s.pri && s.pri > 0);
+
+      const avgPoTrailer =
+        validPoTrailer.length > 0
+          ? validPoTrailer.reduce((sum: number, s: any) => sum + s.p0, 0) / validPoTrailer.length
+          : 0;
+      const avgPriTrailer =
+        validPriTrailer.length > 0
+          ? validPriTrailer.reduce((sum: number, s: any) => sum + s.pri, 0) / validPriTrailer.length
+          : 0;
+
+      const grossTrailer = Math.max(0, (b.trailerWeightIn || 0) - (b.trailerWeightOut || 0));
+      const drcTrailer = b.trailerDrcActual || 0;
+      const netWeightTrailer = drcTrailer > 0 ? Math.round(grossTrailer * (drcTrailer / 100)) : 0;
+
+      result.push({
+        ...b,
+        id: b.id + '-trailer',
+        originalId: b.id,
+        isTrailerPart: true,
+        partLabel: 'Trailer',
+        displayRubberType: getRubberTypeName(b.trailerRubberType || b.rubberType),
+        displayWeightIn: grossTrailer,
+        displayNetWeight: netWeightTrailer,
+        avgPo: avgPoTrailer,
+        avgPri: avgPriTrailer,
+        lotNo: b.lotNo || b.bookingCode || '-',
+      });
+    }
+  });
+  return result;
+});
+
+const stats = computed(() => {
+  const total = processedBookings.value.length;
+  const complete = processedBookings.value.filter((b: any) => b.avgPo > 0 || b.avgPri > 0).length;
+  const incomplete = total - complete;
+  return { total, complete, incomplete };
+});
+
 const filteredBookings = computed(() => {
-  let result = bookings.value;
+  let result = processedBookings.value;
 
   if (statusFilter.value === 'COMPLETE') {
-    // Logic for complete
+    result = result.filter((b: any) => b.avgPo > 0 || b.avgPri > 0);
   } else if (statusFilter.value === 'INCOMPLETE') {
-    // Logic for incomplete
+    result = result.filter((b: any) => !(b.avgPo > 0 || b.avgPri > 0));
   }
 
   if (searchQuery.value) {
@@ -90,27 +173,12 @@ const filteredBookings = computed(() => {
       (b) =>
         b.bookingCode?.toLowerCase().includes(query) ||
         b.supplierName?.toLowerCase().includes(query) ||
-        b.truckRegister?.toLowerCase().includes(query)
+        b.truckRegister?.toLowerCase().includes(query) ||
+        b.lotNo?.toLowerCase().includes(query)
     );
   }
 
   return result;
-});
-
-const stats = computed(() => {
-  const total = bookings.value.length;
-  // Temporary: assuming a placeholder 'isComplete' property for now or checking moisture
-  const complete = bookings.value.filter((b: any) => (b.moisture || 0) > 0).length;
-  const incomplete = total - complete;
-  return { total, complete, incomplete };
-});
-
-const totalNetWeight = computed(() => {
-  return filteredBookings.value.reduce((sum, b) => {
-    const inW = b.weightIn || 0;
-    const outW = b.weightOut || 0;
-    return sum + Math.max(0, inW - outW);
-  }, 0);
 });
 
 // Column Definitions
@@ -121,10 +189,10 @@ const columns: ColumnDef<any>[] = [
     cell: ({ row }) => {
       const booking = row.original;
       return h('div', { class: 'flex flex-col' }, [
-        h('span', { class: 'font-bold text-sm' }, booking.bookingCode),
+        h('span', { class: 'font-bold text-sm' }, booking.lotNo),
         h(
           'span',
-          { class: 'text-xs text-muted-foreground' },
+          { class: 'text-[10px] text-muted-foreground' },
           new Date(booking.date).toLocaleDateString('en-GB', {
             day: '2-digit',
             month: 'short',
@@ -154,8 +222,12 @@ const columns: ColumnDef<any>[] = [
     cell: ({ row }) => {
       const booking = row.original;
       return h('div', { class: 'flex flex-col' }, [
-        h('span', { class: 'font-bold text-sm' }, booking.truckRegister),
-        h('span', { class: 'text-xs text-muted-foreground' }, booking.truckType || '-'),
+        h('span', { class: 'font-bold text-sm capitalize' }, booking.truckRegister),
+        h(
+          'span',
+          { class: 'text-[10px] text-muted-foreground' },
+          booking.isTrailerPart ? 'Trailer' : booking.truckType || 'Main Truck'
+        ),
       ]);
     },
   },
@@ -165,8 +237,8 @@ const columns: ColumnDef<any>[] = [
     cell: ({ row }) => {
       const booking = row.original;
       return h('div', { class: 'flex flex-col' }, [
-        h('span', { class: 'font-medium text-sm' }, getRubberTypeName(booking.rubberType)),
-        h('span', { class: 'text-xs text-muted-foreground' }, booking.location || '-'),
+        h('span', { class: 'font-medium text-sm' }, booking.displayRubberType),
+        h('span', { class: 'text-[10px] text-muted-foreground' }, booking.location || '-'),
       ]);
     },
   },
@@ -182,13 +254,10 @@ const columns: ColumnDef<any>[] = [
         'AVG PO'
       ),
     cell: ({ row }) => {
-      const samples = row.original.labSamples || [];
-      const validPo = samples.filter((s: any) => s.p0 && s.p0 > 0);
-      if (validPo.length === 0)
+      const val = row.original.avgPo;
+      if (!val || val === 0)
         return h('div', { class: 'text-center text-muted-foreground/30' }, '-');
-
-      const avg = validPo.reduce((sum: number, s: any) => sum + s.p0, 0) / validPo.length;
-      return h('div', { class: 'text-center font-bold text-slate-600' }, avg.toFixed(2));
+      return h('div', { class: 'text-center font-bold text-slate-600' }, val.toFixed(2));
     },
   },
   {
@@ -203,22 +272,19 @@ const columns: ColumnDef<any>[] = [
         'AVG PRI'
       ),
     cell: ({ row }) => {
-      const samples = row.original.labSamples || [];
-      const validPri = samples.filter((s: any) => s.pri && s.pri > 0);
-      if (validPri.length === 0)
+      const val = row.original.avgPri;
+      if (!val || val === 0)
         return h('div', { class: 'text-center text-muted-foreground/30' }, '-');
-
-      const avg = validPri.reduce((sum: number, s: any) => sum + s.pri, 0) / validPri.length;
-      return h('div', { class: 'text-center font-bold text-slate-600' }, avg.toFixed(2));
+      return h('div', { class: 'text-center font-bold text-slate-600' }, val.toFixed(2));
     },
   },
   {
     accessorKey: 'netWeight',
     header: () => h('div', { class: 'text-right' }, 'Net Weight'),
     cell: ({ row }) => {
-      const val = row.original.netWeight;
+      const val = row.original.displayNetWeight;
       return h('div', { class: 'text-right' }, [
-        val
+        val > 0
           ? h('span', { class: 'font-bold text-green-600' }, `${val.toLocaleString()} Kg.`)
           : h('span', { class: 'text-green-600/30 font-bold' }, '-'),
       ]);
@@ -239,7 +305,7 @@ const columns: ColumnDef<any>[] = [
             size: 'sm',
             onClick: (e: Event) => {
               e.stopPropagation();
-              handleOpenDetail(booking.id);
+              handleOpenDetail(booking.originalId, booking.isTrailerPart);
             },
             class: 'h-8 w-8 p-0 text-slate-400 hover:text-blue-600 hover:bg-blue-50',
           },
@@ -251,7 +317,7 @@ const columns: ColumnDef<any>[] = [
 ];
 
 const handleRowClick = (row: any) => {
-  handleOpenDetail(row.id);
+  handleOpenDetail(row.originalId, row.isTrailerPart);
 };
 
 onMounted(() => {
@@ -369,16 +435,6 @@ onMounted(() => {
           </Button>
         </div>
       </div>
-
-      <div class="flex items-center gap-8 px-4">
-        <div class="text-right">
-          <p class="text-xs text-muted-foreground font-medium">Net Weight</p>
-          <p class="text-xl font-bold font-mono text-green-600">
-            {{ totalNetWeight.toLocaleString() }}
-            <span class="text-sm font-normal text-muted-foreground">Kg.</span>
-          </p>
-        </div>
-      </div>
     </div>
 
     <!-- Data Table -->
@@ -395,6 +451,7 @@ onMounted(() => {
     <ClPoPriDialog
       v-model:open="isDialogOpen"
       :booking-id="selectedBookingId"
+      :is-trailer="selectedIsTrailer"
       @update="fetchData"
     />
   </div>
