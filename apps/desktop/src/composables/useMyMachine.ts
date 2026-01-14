@@ -305,10 +305,11 @@ export function useMyMachine() {
     const addCategory = async (category: Omit<StockCategory, 'id'>) => {
         try {
             const res = await api.post('/mymachine/categories', category);
-            categories.value.push(res.data);
+            categories.value = [...categories.value, res.data];
             return res.data;
-        } catch (e: any) {
-            console.error('Failed to add category:', e.response?.data || e.message);
+        } catch (e: unknown) {
+            const err = e as any;
+            console.error('Failed to add category:', err.response?.data || err.message);
             throw e;
         }
     };
@@ -316,10 +317,7 @@ export function useMyMachine() {
     const updateCategory = async (id: string, updates: Partial<StockCategory>) => {
         try {
             const res = await api.put(`/mymachine/categories/${id}`, updates);
-            const index = categories.value.findIndex(c => c.id === id);
-            if (index !== -1) {
-                categories.value[index] = res.data;
-            }
+            categories.value = categories.value.map((c) => (c.id === id ? res.data : c));
             return res.data;
         } catch (e) {
             console.error('Failed to update category', e);
@@ -341,10 +339,11 @@ export function useMyMachine() {
     const addLocation = async (location: Omit<StorageLocation, 'id'>) => {
         try {
             const res = await api.post('/mymachine/locations', location);
-            locations.value.push(res.data);
+            locations.value = [...locations.value, res.data];
             return res.data;
-        } catch (e: any) {
-            console.error('Failed to add location:', e.response?.data || e.message);
+        } catch (e: unknown) {
+            const err = e as any;
+            console.error('Failed to add location:', err.response?.data || err.message);
             throw e;
         }
     };
@@ -352,10 +351,7 @@ export function useMyMachine() {
     const updateLocation = async (id: string, updates: Partial<StorageLocation>) => {
         try {
             const res = await api.put(`/mymachine/locations/${id}`, updates);
-            const index = locations.value.findIndex(l => l.id === id);
-            if (index !== -1) {
-                locations.value[index] = res.data;
-            }
+            locations.value = locations.value.map((l) => (l.id === id ? res.data : l));
             return res.data;
         } catch (e) {
             console.error('Failed to update location', e);

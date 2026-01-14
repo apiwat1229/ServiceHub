@@ -1,4 +1,14 @@
 <script setup lang="ts">
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import {
   DialogContent,
@@ -90,13 +100,24 @@ const startEdit = (category: StockCategory) => {
   isFormVisible.value = true;
 };
 
-const handleDelete = async (id: string) => {
-  if (confirm('Are you sure you want to delete this category?')) {
+const isDeleteDialogOpen = ref(false);
+const itemToDelete = ref<string | null>(null);
+
+const confirmDelete = (id: string) => {
+  itemToDelete.value = id;
+  isDeleteDialogOpen.value = true;
+};
+
+const executeDelete = async () => {
+  if (itemToDelete.value) {
     try {
-      await deleteCategory(id);
+      await deleteCategory(itemToDelete.value);
       toast.success('Category deleted successfully');
     } catch (e) {
       toast.error('Failed to delete category');
+    } finally {
+      itemToDelete.value = null;
+      isDeleteDialogOpen.value = false;
     }
   }
 };
@@ -182,8 +203,27 @@ const handleDelete = async (id: string) => {
         :data="categories"
         :search-query="searchQuery"
         @edit="startEdit"
-        @delete="handleDelete"
+        @delete="confirmDelete"
       />
     </div>
+
+    <!-- Delete Confirmation Dialog -->
+    <AlertDialog :open="isDeleteDialogOpen" @update:open="isDeleteDialogOpen = $event">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This action cannot be undone. This will permanently delete the category and may affect
+            stock items using it.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction @click="executeDelete" class="bg-red-600 hover:bg-red-700">
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   </DialogContent>
 </template>

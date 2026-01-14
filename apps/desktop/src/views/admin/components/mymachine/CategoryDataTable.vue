@@ -144,9 +144,9 @@ const table = useVueTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          <template v-if="table.getRowModel().rows?.length">
+          <template v-if="table.getPaginationRowModel().rows?.length">
             <TableRow
-              v-for="row in table.getRowModel().rows"
+              v-for="row in table.getPaginationRowModel().rows"
               :key="row.id"
               class="hover:bg-slate-50 transition-colors"
             >
