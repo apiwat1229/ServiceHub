@@ -49,9 +49,9 @@ const handleCancel = () => {
         </DialogDescription>
       </DialogHeader>
 
-      <div class="px-6 py-2">
+      <div class="px-6 py-2 pb-6">
         <div
-          class="overflow-hidden rounded-xl border border-slate-200 bg-slate-100 h-[450px] relative"
+          class="overflow-hidden rounded-xl border border-slate-200 bg-slate-100 max-h-[60vh] h-[400px] flex items-center justify-center"
         >
           <Cropper
             v-if="open && image"
@@ -61,17 +61,11 @@ const handleCancel = () => {
             :stencil-props="{
               aspectRatio: 1 / 1,
             }"
-            image-restriction="fit-area"
+            image-restriction="fill-area"
             :auto-zoom="true"
-            :canvas="{
-              minHeight: 400,
-              minWidth: 400,
-              maxHeight: 1200,
-              maxWidth: 1200,
-            }"
           />
         </div>
-        <p class="text-[10px] text-slate-500 mt-2 text-center underline animate-pulse">
+        <p class="text-[10px] text-slate-500 mt-2 text-center">
           {{ t('services.myMachine.forms.image.uploadLimit') }}
         </p>
       </div>
