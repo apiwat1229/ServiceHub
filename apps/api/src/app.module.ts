@@ -10,6 +10,7 @@ import { BookingsModule } from './bookings/bookings.module';
 import { ITAssetsModule } from './it-assets/it-assets.module';
 import { ITTicketsModule } from './it-tickets/it-tickets.module';
 import { KnowledgeBooksModule } from './knowledge-books/knowledge-books.module';
+import { MaintenanceModule } from './maintenance/maintenance.module';
 import { MasterModule } from './master/master.module';
 import { MyMachineModule } from './mymachine/mymachine.module';
 import { NotificationGroupsModule } from './notification-groups/notification-groups.module';
