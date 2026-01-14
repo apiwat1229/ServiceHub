@@ -9,10 +9,12 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useMyMachine, type StockCategory } from '@/composables/useMyMachine';
-import { Plus } from 'lucide-vue-next';
+import { Plus, Search } from 'lucide-vue-next';
 import { ref } from 'vue';
 import { toast } from 'vue-sonner';
 import CategoryDataTable from './CategoryDataTable.vue';
+
+const searchQuery = ref('');
 
 const { categories, addCategory, updateCategory, deleteCategory } = useMyMachine();
 
@@ -91,13 +93,24 @@ const handleDelete = async (id: string) => {
             Manage categories for stock items and auto-code generation
           </DialogDescription>
         </div>
-        <Button
-          @click="handleAdd"
-          class="h-9 px-4 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm"
-        >
-          <Plus class="w-3.5 h-3.5 mr-1.5" />
-          {{ editingId ? 'Update Category' : 'Add Category' }}
-        </Button>
+        <div class="flex items-center gap-3">
+          <!-- Search -->
+          <div class="relative w-48 lg:w-64">
+            <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+            <Input
+              v-model="searchQuery"
+              placeholder="Search categories..."
+              class="pl-9 h-9 text-xs bg-slate-50 border-slate-200 focus:bg-white transition-colors"
+            />
+          </div>
+          <Button
+            @click="handleAdd"
+            class="h-9 px-4 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm"
+          >
+            <Plus class="w-3.5 h-3.5 mr-1.5" />
+            {{ editingId ? 'Update' : 'Add' }}
+          </Button>
+        </div>
       </div>
     </DialogHeader>
 
@@ -134,7 +147,12 @@ const handleDelete = async (id: string) => {
       </div>
 
       <!-- Categories Table -->
-      <CategoryDataTable :data="categories" @edit="startEdit" @delete="handleDelete" />
+      <CategoryDataTable
+        :data="categories"
+        :search-query="searchQuery"
+        @edit="startEdit"
+        @delete="handleDelete"
+      />
     </div>
   </DialogContent>
 </template>

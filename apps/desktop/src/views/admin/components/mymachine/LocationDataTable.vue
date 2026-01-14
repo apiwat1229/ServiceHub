@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   Table,
   TableBody,
@@ -19,11 +18,12 @@ import {
   useVueTable,
   type ColumnDef,
 } from '@tanstack/vue-table';
-import { Edit2, Search, Trash2 } from 'lucide-vue-next';
-import { computed, h, ref } from 'vue';
+import { Edit2, Trash2 } from 'lucide-vue-next';
+import { computed, h } from 'vue';
 
 const props = defineProps<{
   data: StorageLocation[];
+  searchQuery?: string;
 }>();
 
 const emit = defineEmits<{
@@ -31,7 +31,7 @@ const emit = defineEmits<{
   delete: [id: string];
 }>();
 
-const globalFilter = ref('');
+const globalFilter = computed(() => props.searchQuery || '');
 
 const columns = computed<ColumnDef<StorageLocation>[]>(() => [
   {
@@ -103,8 +103,8 @@ const table = useVueTable({
       return globalFilter.value;
     },
   },
-  onGlobalFilterChange: (value) => {
-    globalFilter.value = value;
+  onGlobalFilterChange: (_value) => {
+    // Shared state from props
   },
   initialState: {
     pagination: {
@@ -115,13 +115,7 @@ const table = useVueTable({
 </script>
 
 <template>
-  <div class="space-y-3">
-    <!-- Search -->
-    <div class="relative w-64">
-      <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-      <Input v-model="globalFilter" placeholder="Search locations..." class="pl-9 h-9 text-sm" />
-    </div>
-
+  <div class="space-y-4">
     <!-- Table -->
     <div class="border rounded-lg overflow-hidden">
       <Table>
