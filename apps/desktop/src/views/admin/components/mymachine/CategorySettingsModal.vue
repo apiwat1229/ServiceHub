@@ -15,6 +15,7 @@ import { toast } from 'vue-sonner';
 import CategoryDataTable from './CategoryDataTable.vue';
 
 const searchQuery = ref('');
+const isFormVisible = ref(false);
 
 const { categories, addCategory, updateCategory, deleteCategory } = useMyMachine();
 
@@ -33,6 +34,7 @@ const resetForm = () => {
     prefix: '',
   };
   editingId.value = null;
+  isFormVisible.value = false;
 };
 
 const handleAdd = async () => {
@@ -55,6 +57,7 @@ const handleAdd = async () => {
       // Add new
       await addCategory(payload);
       toast.success('Category added successfully');
+      isFormVisible.value = false;
     }
     resetForm();
   } catch (e) {
@@ -69,6 +72,7 @@ const startEdit = (category: StockCategory) => {
     prefix: category.prefix || '',
   };
   editingId.value = category.id;
+  isFormVisible.value = true;
 };
 
 const handleDelete = async (id: string) => {
@@ -104,11 +108,12 @@ const handleDelete = async (id: string) => {
             />
           </div>
           <Button
-            @click="handleAdd"
+            @click="isFormVisible = !isFormVisible"
+            :variant="isFormVisible ? 'secondary' : 'default'"
             class="h-9 px-4 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm"
           >
             <Plus class="w-3.5 h-3.5 mr-1.5" />
-            {{ editingId ? 'Update' : 'Add' }}
+            {{ editingId ? 'Editing' : 'Add' }}
           </Button>
         </div>
       </div>
@@ -116,7 +121,7 @@ const handleDelete = async (id: string) => {
 
     <div class="flex-1 overflow-y-auto px-6">
       <!-- Add/Edit Form -->
-      <div class="bg-slate-50 rounded-lg p-4 mb-4">
+      <div v-if="isFormVisible || editingId" class="bg-slate-50 rounded-lg p-4 mb-4">
         <div class="flex items-center justify-between mb-3">
           <h3 class="font-semibold text-sm text-slate-700">
             {{ editingId ? 'Edit Category' : 'Add New Category' }}
@@ -143,6 +148,14 @@ const handleDelete = async (id: string) => {
             <Label class="text-xs font-medium">Name (TH)</Label>
             <Input v-model="form.nameTH" placeholder="e.g. เครื่องกล" class="h-9 text-sm" />
           </div>
+        </div>
+        <div class="flex justify-end mt-4">
+          <Button
+            @click="handleAdd"
+            class="h-8 px-6 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold"
+          >
+            {{ editingId ? 'Update Category' : 'Save Category' }}
+          </Button>
         </div>
       </div>
 
