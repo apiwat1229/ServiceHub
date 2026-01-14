@@ -31,6 +31,7 @@ const { categories, locations, glCodes } = useMyMachine();
 const tagMode = ref<'qr' | 'barcode'>('qr');
 const showCategorySettings = ref(false);
 const showLocationSettings = ref(false);
+const showGLCodeSettings = ref(false);
 
 const props = defineProps<{
   initialData?: any;
@@ -311,24 +312,56 @@ const handleSave = () => {
         </div>
       </div>
 
-      <div class="space-y-2">
-        <div class="flex items-center justify-between">
-          <Label class="text-slate-700 font-semibold">{{
-            t('services.myMachine.forms.stock.code')
-          }}</Label>
-          <div class="flex items-center space-x-2">
-            <Checkbox id="auto-gen-stock" v-model:checked="form.autoGenerateCode" />
-            <label for="auto-gen-stock" class="text-xs font-medium text-slate-500 cursor-pointer">
-              {{ t('services.myMachine.forms.stock.autoGen') }}
-            </label>
+      <div class="grid grid-cols-2 gap-4">
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <Label class="text-slate-700 font-semibold">{{
+              t('services.myMachine.forms.stock.code')
+            }}</Label>
+            <div class="flex items-center space-x-2">
+              <Checkbox id="auto-gen-stock" v-model:checked="form.autoGenerateCode" />
+              <label for="auto-gen-stock" class="text-xs font-medium text-slate-500 cursor-pointer">
+                {{ t('services.myMachine.forms.stock.autoGen') }}
+              </label>
+            </div>
           </div>
+          <Input
+            v-model="form.code"
+            :placeholder="t('services.myMachine.forms.machine.tagPlaceholder')"
+            :disabled="form.autoGenerateCode"
+            class="bg-white border-slate-200"
+          />
         </div>
-        <Input
-          v-model="form.code"
-          :placeholder="t('services.myMachine.forms.machine.tagPlaceholder')"
-          :disabled="form.autoGenerateCode"
-          class="bg-white border-slate-200"
-        />
+
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <Label class="text-slate-700 font-semibold">{{
+              t('services.myMachine.forms.stock.glCode')
+            }}</Label>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              class="h-5 w-5 text-slate-400 hover:text-blue-600 p-0"
+              @click="showGLCodeSettings = true"
+            >
+              <Settings class="w-3.5 h-3.5" />
+            </Button>
+          </div>
+          <Select v-model="form.glCode">
+            <SelectTrigger class="bg-white border-slate-200">
+              <SelectValue :placeholder="t('services.myMachine.forms.stock.glCode')" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem v-for="gl in glCodes" :key="gl.id" :value="gl.code">
+                <div class="flex flex-col">
+                  <span class="font-bold text-slate-900">{{ gl.code }}</span>
+                  <span class="text-[10px] text-slate-500">{{ gl.description }}</span>
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div class="grid grid-cols-2 gap-4">
@@ -386,25 +419,6 @@ const handleSave = () => {
             </SelectContent>
           </Select>
         </div>
-      </div>
-
-      <div class="space-y-2">
-        <Label class="text-slate-700 font-semibold">{{
-          t('services.myMachine.forms.stock.glCode')
-        }}</Label>
-        <Select v-model="form.glCode">
-          <SelectTrigger class="bg-white border-slate-200">
-            <SelectValue :placeholder="t('services.myMachine.forms.stock.glCode')" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem v-for="gl in glCodes" :key="gl.id" :value="gl.code">
-              <div class="flex flex-col">
-                <span class="font-bold text-slate-900">{{ gl.code }}</span>
-                <span class="text-[10px] text-slate-500">{{ gl.description }}</span>
-              </div>
-            </SelectItem>
-          </SelectContent>
-        </Select>
       </div>
 
       <div class="grid grid-cols-3 gap-4">
@@ -512,4 +526,9 @@ const handleSave = () => {
   <Dialog v-model:open="showLocationSettings">
     <LocationSettingsModal />
   </Dialog>
+
+  <GLCodeSettingsModal
+    v-model:open="showGLCodeSettings"
+    @update:open="showGLCodeSettings = $event"
+  />
 </template>
