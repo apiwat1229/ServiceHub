@@ -47,7 +47,7 @@ const handleCancel = () => {
 
       <div class="px-6 py-2">
         <div class="overflow-hidden rounded-xl border border-slate-200 bg-slate-950 h-[400px]">
-          <cropper
+          <Cropper
             ref="cropper"
             class="h-full w-full"
             :src="image"

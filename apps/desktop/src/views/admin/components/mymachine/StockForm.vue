@@ -18,7 +18,7 @@ import { useMyMachine } from '@/composables/useMyMachine';
 import { useAuthStore } from '@/stores/auth';
 import { CalendarDate, getLocalTimeZone } from '@internationalized/date';
 import { format } from 'date-fns';
-import { Barcode, FileText, QrCode, Settings, X } from 'lucide-vue-next';
+import { Barcode, Calendar as CalendarIcon, FileText, QrCode, Settings, X } from 'lucide-vue-next';
 import QrcodeVue from 'qrcode.vue';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
