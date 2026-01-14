@@ -151,7 +151,10 @@ const handleDelete = async (id: string) => {
             <Input v-model="form.zone" placeholder="e.g. Zone 1" class="h-9 text-sm" />
           </div>
         </div>
-        <div class="flex justify-end mt-4">
+        <div class="flex justify-end items-center gap-2 mt-4">
+          <Button variant="ghost" size="sm" @click="resetForm" class="h-8 text-xs text-slate-500">
+            Cancel
+          </Button>
           <Button
             @click="handleAdd"
             class="h-8 px-6 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold"
