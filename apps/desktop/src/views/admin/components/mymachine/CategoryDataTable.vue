@@ -35,21 +35,6 @@ const globalFilter = ref('');
 
 const columns = computed<ColumnDef<StockCategory>[]>(() => [
   {
-    accessorKey: 'name',
-    header: 'Category Name',
-    cell: ({ row }) => h('span', { class: 'font-medium' }, row.getValue('name')),
-  },
-  {
-    accessorKey: 'nameEN',
-    header: 'Name (EN)',
-    cell: ({ row }) => h('span', { class: 'text-slate-600' }, row.getValue('nameEN') || '-'),
-  },
-  {
-    accessorKey: 'nameTH',
-    header: 'Name (TH)',
-    cell: ({ row }) => h('span', { class: 'text-slate-600' }, row.getValue('nameTH') || '-'),
-  },
-  {
     accessorKey: 'prefix',
     header: 'Code Prefix',
     cell: ({ row }) =>
@@ -58,6 +43,17 @@ const columns = computed<ColumnDef<StockCategory>[]>(() => [
         { class: 'px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs font-mono font-bold' },
         row.getValue('prefix') || '-'
       ),
+  },
+  {
+    accessorKey: 'nameEN',
+    header: 'Name (EN)',
+    cell: ({ row }) =>
+      h('span', { class: 'text-slate-600 font-medium' }, row.getValue('nameEN') || '-'),
+  },
+  {
+    accessorKey: 'nameTH',
+    header: 'Name (TH)',
+    cell: ({ row }) => h('span', { class: 'text-slate-600' }, row.getValue('nameTH') || '-'),
   },
   {
     id: 'actions',
@@ -165,7 +161,7 @@ const table = useVueTable({
     </div>
 
     <!-- Pagination -->
-    <div class="flex items-center justify-between px-2">
+    <div class="flex items-center justify-between px-2 pt-2 pb-6">
       <div class="text-sm text-slate-600">
         Showing
         {{ table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1 }}

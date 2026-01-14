@@ -17,7 +17,6 @@ import LocationDataTable from './LocationDataTable.vue';
 const { locations, addLocation, updateLocation, deleteLocation } = useMyMachine();
 
 const form = ref({
-  name: '',
   nameEN: '',
   nameTH: '',
   building: '',
@@ -28,7 +27,6 @@ const editingId = ref<string | null>(null);
 
 const resetForm = () => {
   form.value = {
-    name: '',
     nameEN: '',
     nameTH: '',
     building: '',
@@ -38,19 +36,24 @@ const resetForm = () => {
 };
 
 const handleAdd = async () => {
-  if (!form.value.name) {
-    toast.error('Location name is required');
+  if (!form.value.nameEN && !form.value.building) {
+    toast.error('Name (EN) or Building is required');
     return;
   }
+
+  const payload = {
+    ...form.value,
+    name: form.value.nameEN || form.value.building || 'Unnamed Location',
+  };
 
   try {
     if (editingId.value) {
       // Update existing
-      await updateLocation(editingId.value, form.value);
+      await updateLocation(editingId.value, payload);
       toast.success('Location updated successfully');
     } else {
       // Add new
-      await addLocation(form.value);
+      await addLocation(payload);
       toast.success('Location added successfully');
     }
     resetForm();
@@ -61,7 +64,6 @@ const handleAdd = async () => {
 
 const startEdit = (location: StorageLocation) => {
   form.value = {
-    name: location.name,
     nameEN: location.nameEN || '',
     nameTH: location.nameTH || '',
     building: location.building || '',
@@ -106,11 +108,7 @@ const handleDelete = async (id: string) => {
             Cancel Edit
           </Button>
         </div>
-        <div class="grid grid-cols-5 gap-3">
-          <div class="space-y-1.5">
-            <Label class="text-xs font-medium">Name *</Label>
-            <Input v-model="form.name" placeholder="e.g. Main Warehouse" class="h-9 text-sm" />
-          </div>
+        <div class="grid grid-cols-4 gap-3">
           <div class="space-y-1.5">
             <Label class="text-xs font-medium">Name (EN)</Label>
             <Input v-model="form.nameEN" placeholder="e.g. Main Warehouse" class="h-9 text-sm" />

@@ -17,7 +17,6 @@ import CategoryDataTable from './CategoryDataTable.vue';
 const { categories, addCategory, updateCategory, deleteCategory } = useMyMachine();
 
 const form = ref({
-  name: '',
   nameEN: '',
   nameTH: '',
   prefix: '',
@@ -27,7 +26,6 @@ const editingId = ref<string | null>(null);
 
 const resetForm = () => {
   form.value = {
-    name: '',
     nameEN: '',
     nameTH: '',
     prefix: '',
@@ -36,19 +34,24 @@ const resetForm = () => {
 };
 
 const handleAdd = async () => {
-  if (!form.value.name) {
-    toast.error('Category name is required');
+  if (!form.value.nameEN && !form.value.prefix) {
+    toast.error('Name (EN) or Prefix is required');
     return;
   }
+
+  const payload = {
+    ...form.value,
+    name: form.value.nameEN || form.value.prefix || 'Unnamed Category',
+  };
 
   try {
     if (editingId.value) {
       // Update existing
-      await updateCategory(editingId.value, form.value);
+      await updateCategory(editingId.value, payload);
       toast.success('Category updated successfully');
     } else {
       // Add new
-      await addCategory(form.value);
+      await addCategory(payload);
       toast.success('Category added successfully');
     }
     resetForm();
@@ -59,7 +62,6 @@ const handleAdd = async () => {
 
 const startEdit = (category: StockCategory) => {
   form.value = {
-    name: category.name,
     nameEN: category.nameEN || '',
     nameTH: category.nameTH || '',
     prefix: category.prefix || '',
@@ -103,19 +105,7 @@ const handleDelete = async (id: string) => {
             Cancel Edit
           </Button>
         </div>
-        <div class="grid grid-cols-4 gap-3">
-          <div class="space-y-1.5">
-            <Label class="text-xs font-medium">Name *</Label>
-            <Input v-model="form.name" placeholder="e.g. Mechanical" class="h-9 text-sm" />
-          </div>
-          <div class="space-y-1.5">
-            <Label class="text-xs font-medium">Name (EN)</Label>
-            <Input v-model="form.nameEN" placeholder="e.g. Mechanical" class="h-9 text-sm" />
-          </div>
-          <div class="space-y-1.5">
-            <Label class="text-xs font-medium">Name (TH)</Label>
-            <Input v-model="form.nameTH" placeholder="e.g. เครื่องกล" class="h-9 text-sm" />
-          </div>
+        <div class="grid grid-cols-3 gap-3">
           <div class="space-y-1.5">
             <Label class="text-xs font-medium">Code Prefix</Label>
             <Input
@@ -124,6 +114,14 @@ const handleDelete = async (id: string) => {
               class="h-9 text-sm uppercase"
               maxlength="4"
             />
+          </div>
+          <div class="space-y-1.5">
+            <Label class="text-xs font-medium">Name (EN)</Label>
+            <Input v-model="form.nameEN" placeholder="e.g. Mechanical" class="h-9 text-sm" />
+          </div>
+          <div class="space-y-1.5">
+            <Label class="text-xs font-medium">Name (TH)</Label>
+            <Input v-model="form.nameTH" placeholder="e.g. เครื่องกล" class="h-9 text-sm" />
           </div>
         </div>
         <Button

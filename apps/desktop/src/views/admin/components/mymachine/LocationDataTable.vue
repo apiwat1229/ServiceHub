@@ -35,14 +35,10 @@ const globalFilter = ref('');
 
 const columns = computed<ColumnDef<StorageLocation>[]>(() => [
   {
-    accessorKey: 'name',
-    header: 'Location Name',
-    cell: ({ row }) => h('span', { class: 'font-medium' }, row.getValue('name')),
-  },
-  {
     accessorKey: 'nameEN',
     header: 'Name (EN)',
-    cell: ({ row }) => h('span', { class: 'text-slate-600' }, row.getValue('nameEN') || '-'),
+    cell: ({ row }) =>
+      h('span', { class: 'text-slate-700 font-medium' }, row.getValue('nameEN') || '-'),
   },
   {
     accessorKey: 'nameTH',
@@ -52,7 +48,8 @@ const columns = computed<ColumnDef<StorageLocation>[]>(() => [
   {
     accessorKey: 'building',
     header: 'Building',
-    cell: ({ row }) => h('span', { class: 'text-slate-600' }, row.getValue('building') || '-'),
+    cell: ({ row }) =>
+      h('span', { class: 'text-slate-600 font-medium' }, row.getValue('building') || '-'),
   },
   {
     accessorKey: 'zone',
@@ -165,7 +162,7 @@ const table = useVueTable({
     </div>
 
     <!-- Pagination -->
-    <div class="flex items-center justify-between px-2">
+    <div class="flex items-center justify-between px-2 pt-2 pb-6">
       <div class="text-sm text-slate-600">
         Showing
         {{ table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1 }}
