@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -39,32 +40,29 @@ const handleCancel = () => {
 <template>
   <Dialog :open="open" @update:open="emit('update:open', $event)">
     <DialogContent class="sm:max-w-[600px] p-0 overflow-hidden border-none shadow-2xl bg-white">
-      <DialogHeader class="px-6 pt-6 pb-2">
+      <DialogHeader class="px-6 pt-6 pb-2 text-left">
         <DialogTitle class="text-xl font-bold text-slate-900 flex items-center gap-2">
           {{ t('services.myMachine.forms.image.cropTitle') }}
         </DialogTitle>
+        <DialogDescription class="text-slate-500 text-sm">
+          {{ t('services.myMachine.forms.image.uploadLimit') }}
+        </DialogDescription>
       </DialogHeader>
 
       <div class="px-6 py-2">
-        <div class="overflow-hidden rounded-xl border border-slate-200 bg-slate-950 h-[400px]">
+        <div class="overflow-hidden rounded-xl border border-slate-200 bg-slate-100 h-[400px]">
           <Cropper
             ref="cropper"
             class="h-full w-full"
             :src="image"
             :stencil-props="{
               aspectRatio: 1 / 1,
-              class: 'stencil',
             }"
-            :canvas="{
-              minHeight: 400,
-              minWidth: 400,
-              maxHeight: 1200,
-              maxWidth: 1200,
-            }"
+            :auto-zoom="true"
           />
         </div>
-        <p class="text-[10px] text-slate-500 mt-2 text-center italic">
-          Tip: Drag corners to resize. Move the image to position.
+        <p class="text-[10px] text-slate-500 mt-2 text-center underline animate-pulse">
+          {{ t('services.myMachine.forms.image.uploadLimit') }}
         </p>
       </div>
 
@@ -85,12 +83,16 @@ const handleCancel = () => {
 </template>
 
 <style scoped>
-.stencil {
-  border: 4px solid white;
-  box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.6);
+:deep(.vue-advanced-cropper__background) {
+  background: #f1f5f9 !important; /* slate-100 */
 }
 
-:deep(.vue-advanced-cropper__background) {
-  background: transparent !important;
+:deep(.vue-advanced-cropper__foreground) {
+  background: rgba(0, 0, 0, 0.45) !important;
+}
+
+:deep(.vue-simple-handler) {
+  background: #3b82f6 !important; /* blue-500 */
+  border: 2px solid white;
 }
 </style>
