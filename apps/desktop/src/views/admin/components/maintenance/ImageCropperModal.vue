@@ -302,7 +302,7 @@ onMounted(() => {
     <DialogContent class="sm:max-w-[650px] p-0 overflow-hidden border-none shadow-2xl bg-white">
       <DialogHeader class="px-6 pt-6 pb-3 text-left">
         <DialogTitle class="text-xl font-bold text-slate-900">
-          {{ t('services.myMachine.forms.image.cropTitle') }}
+          {{ t('services.maintenance.forms.image.cropTitle') }}
         </DialogTitle>
         <DialogDescription class="text-slate-500 text-sm">
           Drag the crop area to adjust. Use mouse wheel to zoom. Max 2MB.
@@ -348,14 +348,14 @@ onMounted(() => {
 
       <DialogFooter class="px-6 py-4 bg-slate-50 flex items-center justify-end gap-2">
         <Button variant="ghost" size="sm" @click="handleCancel" class="text-slate-500 font-bold">
-          {{ t('services.myMachine.forms.common.cancel') }}
+          {{ t('services.maintenance.forms.common.cancel') }}
         </Button>
         <Button
           size="sm"
           @click="handleCrop"
           class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6"
         >
-          {{ t('services.myMachine.forms.image.cropAction') }}
+          {{ t('services.maintenance.forms.image.cropAction') }}
         </Button>
       </DialogFooter>
     </DialogContent>

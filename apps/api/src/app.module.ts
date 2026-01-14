@@ -48,6 +48,7 @@ import { UsersModule } from './users/users.module';
         KnowledgeBooksModule,
         ITAssetsModule,
         MyMachineModule,
+        MaintenanceModule,
         PlcModule,
         // ServeStaticModule.forRoot({
         //     rootPath: join(process.cwd(), 'uploads'),

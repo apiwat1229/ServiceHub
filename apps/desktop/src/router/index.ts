@@ -240,6 +240,23 @@ const routes = [
         ]
     },
     {
+        path: '/maintenance',
+        component: () => import('@/components/layout/MainLayout.vue'),
+        meta: { requiresAuth: true },
+        children: [
+            {
+                path: '',
+                name: 'Maintenance',
+                component: () => import('../views/admin/Maintenance.vue'),
+            },
+            {
+                path: ':id',
+                name: 'MaintenanceDetail',
+                component: () => import('../views/admin/components/maintenance/MachineDetail.vue'),
+            }
+        ]
+    },
+    {
         path: '/admin/contracts',
         component: () => import('@/components/layout/NavbarOnlyLayout.vue'),
         meta: { requiresAuth: true },

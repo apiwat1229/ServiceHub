@@ -15,7 +15,6 @@ import {
   Droplets,
   FileText,
   Headset,
-  Settings,
   Truck,
   Wrench,
   type LucideIcon,
@@ -91,7 +90,7 @@ const modules = computed<ServiceModule[]>(() => [
     color: 'text-red-500',
     bgColor: 'bg-red-50/50 group-hover:bg-red-100/50',
     hoverBorder: 'group-hover:border-red-500',
-    route: '/admin/maintenance',
+    route: '/maintenance',
   },
   {
     id: 'it-helpdesk',
@@ -112,16 +111,6 @@ const modules = computed<ServiceModule[]>(() => [
     bgColor: 'bg-indigo-50/50 group-hover:bg-indigo-100/50',
     hoverBorder: 'group-hover:border-indigo-500',
     route: '/admin/project-timeline',
-  },
-  {
-    id: 'my-machine',
-    title: t('services.myMachine.name'),
-    description: t('services.myMachine.description'),
-    icon: Settings,
-    color: 'text-pink-600',
-    bgColor: 'bg-pink-50/50 group-hover:bg-pink-100/50',
-    hoverBorder: 'group-hover:border-pink-500',
-    route: '/my-machine',
   },
   {
     id: 'contracts',
