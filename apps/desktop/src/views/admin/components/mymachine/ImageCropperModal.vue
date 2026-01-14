@@ -51,7 +51,7 @@ const handleCancel = () => {
 
       <div class="px-6 py-2 pb-6">
         <div
-          class="overflow-hidden rounded-xl border border-slate-200 bg-slate-100 max-h-[60vh] h-[400px] flex items-center justify-center"
+          class="overflow-hidden rounded-xl border border-slate-200 bg-slate-100 h-[400px] flex items-center justify-center relative"
         >
           <Cropper
             v-if="open && image"
@@ -61,8 +61,14 @@ const handleCancel = () => {
             :stencil-props="{
               aspectRatio: 1 / 1,
             }"
-            image-restriction="fill-area"
+            image-restriction="stencil"
             :auto-zoom="true"
+            :default-size="
+              ({ imageSize }: { imageSize: any }) => ({
+                width: Math.min(imageSize.width, imageSize.height) * 0.8,
+                height: Math.min(imageSize.width, imageSize.height) * 0.8,
+              })
+            "
           />
         </div>
         <p class="text-[10px] text-slate-500 mt-2 text-center">
