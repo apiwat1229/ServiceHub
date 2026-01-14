@@ -13,7 +13,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { bookingsApi } from '@/services/bookings';
 import { rubberTypesApi, type RubberType } from '@/services/rubberTypes';
-import { ClipboardList, FlaskConical, List, Tags, TestTubes, Waves } from 'lucide-vue-next';
+import { ClipboardList, FlaskConical, List, TestTubes, Waves } from 'lucide-vue-next';
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
@@ -34,7 +34,6 @@ const tabs = [
   { id: 'cl-po-pri', label: 'CL PO PRI', icon: ClipboardList },
   { id: 'cl-lab', label: 'CL Lab', icon: TestTubes },
   { id: 'cuplump-pool', label: 'Cuplump Pool', icon: Waves },
-  { id: 'select-pool', label: 'Select Pool', icon: Tags },
   { id: 'uss-po-pri', label: 'USS PO PRI', icon: ClipboardList },
   { id: 'uss-summary', label: 'USS Summary', icon: List },
 ];

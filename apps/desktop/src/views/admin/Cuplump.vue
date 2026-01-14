@@ -118,7 +118,19 @@ const processedBookings = computed(() => {
       (b.estimatedWeight && b.estimatedWeight > 0);
 
     if (isCuplumpType(b.rubberType) && hasMainWeight) {
-      const isComplete = (b.moisture || 0) > 0 && (b.cpAvg || 0) > 0;
+      const bSamples = b.labSamples?.filter((s: any) => !s.isTrailer) || [];
+      const validCpSamples = bSamples.filter((s: any) => s.percentCp > 0);
+      const avgCp =
+        validCpSamples.length > 0
+          ? validCpSamples.reduce((sum: number, s: any) => sum + s.percentCp, 0) /
+            validCpSamples.length
+          : b.cpAvg || 0;
+
+      const isComplete = (b.moisture || 0) > 0 && avgCp > 0;
+      const gross = Math.max(0, (b.weightIn || 0) - (b.weightOut || 0));
+      const drc = b.drcActual || 0;
+      const netWeight = drc > 0 ? Math.round(gross * (drc / 100)) : 0;
+
       result.push({
         ...b,
         id: b.id + '-main',
@@ -127,13 +139,14 @@ const processedBookings = computed(() => {
         partLabel: t('truckScale.mainTruck') || 'Main Truck',
         displayRubberType: getRubberTypeName(b.rubberType),
         displayRubberSource: b.rubberSource,
-        displayWeightIn: Math.abs((b.weightIn || 0) - (b.weightOut || 0)),
+        displayWeightIn: gross,
         displayWeightOut: '-',
+        displayNetWeight: netWeight,
         moisture: b.moisture ? b.moisture.toFixed(1) : '-',
         drcEst: b.drcEst ? b.drcEst.toFixed(1) : '-',
         drcRequested: b.drcRequested ? b.drcRequested.toFixed(1) : '-',
         drcActual: b.drcActual ? b.drcActual.toFixed(1) : '-',
-        cpAvg: b.cpAvg ? b.cpAvg.toFixed(2) : '-',
+        cpAvg: avgCp > 0 ? avgCp.toFixed(2) : '-',
         lotNo: b.lotNo || '-',
         isComplete,
       });
@@ -147,7 +160,19 @@ const processedBookings = computed(() => {
       (b.trailerEstimatedWeight && b.trailerEstimatedWeight > 0);
 
     if (isTrailer && hasTrailerWeight && isCuplumpType(b.trailerRubberType)) {
-      const isComplete = (b.trailerMoisture || 0) > 0 && (b.trailerCpAvg || 0) > 0;
+      const bSamples = b.labSamples?.filter((s: any) => s.isTrailer) || [];
+      const validCpSamples = bSamples.filter((s: any) => s.percentCp > 0);
+      const avgCp =
+        validCpSamples.length > 0
+          ? validCpSamples.reduce((sum: number, s: any) => sum + s.percentCp, 0) /
+            validCpSamples.length
+          : b.trailerCpAvg || 0;
+
+      const isComplete = (b.trailerMoisture || 0) > 0 && avgCp > 0;
+      const gross = Math.max(0, (b.trailerWeightIn || 0) - (b.trailerWeightOut || 0));
+      const drc = b.trailerDrcActual || 0;
+      const netWeight = drc > 0 ? Math.round(gross * (drc / 100)) : 0;
+
       result.push({
         ...b,
         id: b.id + '-trailer',
@@ -156,11 +181,14 @@ const processedBookings = computed(() => {
         partLabel: t('truckScale.trailer') || 'Trailer',
         displayRubberType: getRubberTypeName(b.trailerRubberType),
         displayRubberSource: b.trailerRubberSource || '-',
-        displayWeightIn: Math.abs((b.trailerWeightIn || 0) - (b.trailerWeightOut || 0)),
+        displayWeightIn: gross,
         displayWeightOut: '-',
+        displayNetWeight: netWeight,
         moisture: b.trailerMoisture ? b.trailerMoisture.toFixed(1) : '-',
         drcEst: b.trailerDrcEst ? b.trailerDrcEst.toFixed(1) : '-',
-        cpAvg: b.trailerCpAvg ? b.trailerCpAvg.toFixed(2) : '-',
+        drcRequested: b.trailerDrcRequested ? b.trailerDrcRequested.toFixed(1) : '-',
+        drcActual: b.trailerDrcActual ? b.trailerDrcActual.toFixed(1) : '-',
+        cpAvg: avgCp > 0 ? avgCp.toFixed(2) : '-',
         lotNo: b.trailerLotNo || '1251226-' + b.queueNo + '/2',
         isComplete,
       });
@@ -193,7 +221,7 @@ const stats = computed(() => {
   const complete = processedBookings.value.filter((i) => i.isComplete).length;
   const incomplete = total - complete;
   const grossWeight = processedBookings.value.reduce((sum, i) => sum + (i.displayWeightIn || 0), 0);
-  const netWeight = 0; // Set to 0 as net weight is placeholder now
+  const netWeight = processedBookings.value.reduce((sum, i) => sum + (i.displayNetWeight || 0), 0);
 
   return { total, complete, incomplete, grossWeight, netWeight };
 });
@@ -298,8 +326,18 @@ const columns: ColumnDef<any>[] = [
   {
     accessorKey: 'netWeight',
     header: () => h('div', { class: 'text-right w-full pr-4' }, t('cuplump.netWeight')),
-    cell: () => h('div', { class: 'font-bold text-green-600 text-right pr-4' }, '-'),
+    cell: ({ row }) => {
+      const val = row.original.displayNetWeight;
+      if (!val || val === 0)
+        return h('div', { class: 'text-center font-bold text-green-600 pr-4' }, '-');
+      return h(
+        'div',
+        { class: 'font-bold text-green-600 text-right pr-4' },
+        val.toLocaleString() + ' ' + t('cuplump.kg')
+      );
+    },
   },
+
   {
     id: 'actions',
     header: () => h('div', { class: 'text-right' }, t('common.actions')),

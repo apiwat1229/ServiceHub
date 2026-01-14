@@ -118,7 +118,19 @@ const processedBookings = computed(() => {
       (b.estimatedWeight && b.estimatedWeight > 0);
 
     if (isUssType(b.rubberType) && hasMainWeight) {
-      const isComplete = (b.weightOut || 0) > 0;
+      const bSamples = b.labSamples?.filter((s: any) => !s.isTrailer) || [];
+      const validCpSamples = bSamples.filter((s: any) => s.percentCp > 0);
+      const avgCp =
+        validCpSamples.length > 0
+          ? validCpSamples.reduce((sum: number, s: any) => sum + s.percentCp, 0) /
+            validCpSamples.length
+          : b.cpAvg || 0;
+
+      const isComplete = (b.weightOut || 0) > 0 && avgCp > 0;
+      const gross = Math.max(0, (b.weightIn || 0) - (b.weightOut || 0));
+      const drc = b.drcActual || 0;
+      const netWeight = drc > 0 ? Math.round(gross * (drc / 100)) : 0;
+
       result.push({
         ...b,
         id: b.id + '-main',
@@ -129,11 +141,12 @@ const processedBookings = computed(() => {
         displayRubberSource: b.rubberSource,
         displayWeightIn: b.weightIn || b.grossWeight || b.actualWeight || 0,
         displayWeightOut: b.weightOut || 0,
+        displayNetWeight: netWeight,
         moisture: b.moisture ? b.moisture.toFixed(1) : '-',
         drcEst: b.drcEst ? b.drcEst.toFixed(1) : '-',
         drcRequested: b.drcRequested ? b.drcRequested.toFixed(1) : '-',
         drcActual: b.drcActual ? b.drcActual.toFixed(1) : '-',
-        cpAvg: b.cpAvg ? b.cpAvg.toFixed(2) : '-',
+        cpAvg: avgCp > 0 ? avgCp.toFixed(2) : '-',
         lotNo: b.lotNo || '-',
         isComplete,
       });
@@ -147,7 +160,19 @@ const processedBookings = computed(() => {
       (b.trailerEstimatedWeight && b.trailerEstimatedWeight > 0);
 
     if (isTrailer && hasTrailerWeight && isUssType(b.trailerRubberType)) {
-      const isComplete = (b.trailerWeightOut || 0) > 0;
+      const bSamples = b.labSamples?.filter((s: any) => s.isTrailer) || [];
+      const validCpSamples = bSamples.filter((s: any) => s.percentCp > 0);
+      const avgCp =
+        validCpSamples.length > 0
+          ? validCpSamples.reduce((sum: number, s: any) => sum + s.percentCp, 0) /
+            validCpSamples.length
+          : b.trailerCpAvg || 0;
+
+      const isComplete = (b.trailerWeightOut || 0) > 0 && avgCp > 0;
+      const gross = Math.max(0, (b.trailerWeightIn || 0) - (b.trailerWeightOut || 0));
+      const drc = b.trailerDrcActual || 0;
+      const netWeight = drc > 0 ? Math.round(gross * (drc / 100)) : 0;
+
       result.push({
         ...b,
         id: b.id + '-trailer',
@@ -158,9 +183,12 @@ const processedBookings = computed(() => {
         displayRubberSource: b.trailerRubberSource || '-',
         displayWeightIn: b.trailerWeightIn || b.trailerGrossWeight || b.trailerActualWeight || 0,
         displayWeightOut: b.trailerWeightOut || 0,
+        displayNetWeight: netWeight,
         moisture: b.trailerMoisture ? b.trailerMoisture.toFixed(1) : '-',
         drcEst: b.trailerDrcEst ? b.trailerDrcEst.toFixed(1) : '-',
-        cpAvg: b.trailerCpAvg ? b.trailerCpAvg.toFixed(2) : '-',
+        drcRequested: b.trailerDrcRequested ? b.trailerDrcRequested.toFixed(1) : '-',
+        drcActual: b.trailerDrcActual ? b.trailerDrcActual.toFixed(1) : '-',
+        cpAvg: avgCp > 0 ? avgCp.toFixed(2) : '-',
         lotNo: b.trailerLotNo || '2251226-' + b.queueNo + '/2',
         isComplete,
       });
@@ -193,10 +221,7 @@ const stats = computed(() => {
   const complete = processedBookings.value.filter((i) => i.isComplete).length;
   const incomplete = total - complete;
   const grossWeight = processedBookings.value.reduce((sum, i) => sum + (i.displayWeightIn || 0), 0);
-  const netWeight = processedBookings.value.reduce((sum, i) => {
-    const net = (i.displayWeightIn || 0) - (i.displayWeightOut || 0);
-    return sum + (net > 0 ? net : 0);
-  }, 0);
+  const netWeight = processedBookings.value.reduce((sum, i) => sum + (i.displayNetWeight || 0), 0);
 
   return { total, complete, incomplete, grossWeight, netWeight };
 });
@@ -261,10 +286,12 @@ const columns: ColumnDef<any>[] = [
     accessorKey: 'netWeight',
     header: () => h('div', { class: 'text-center' }, t('uss.netWeight')),
     cell: ({ row }) => {
-      const net = (row.original.displayWeightIn || 0) - (row.original.displayWeightOut || 0);
-      return h('div', { class: 'text-center font-bold' }, (net > 0 ? net : 0).toLocaleString());
+      const val = row.original.displayNetWeight;
+      if (!val || val === 0) return h('div', { class: 'text-center font-bold' }, '-');
+      return h('div', { class: 'text-center font-bold' }, val.toLocaleString());
     },
   },
+
   {
     accessorKey: 'drcEst',
     header: () => h('div', { class: 'text-center' }, t('uss.drcEst')),

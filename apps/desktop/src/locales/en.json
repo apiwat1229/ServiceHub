@@ -1864,6 +1864,9 @@
     "avgCp": "AVG %CP",
     "grossWeight": "Gross Weight",
     "netWeight": "Net Weight",
+    "weightIn": "Weight In (W-In)",
+    "weightOut": "Weight Out (W-Out)",
+
     "all": "All",
     "complete": "Complete",
     "incomplete": "Incomplete",

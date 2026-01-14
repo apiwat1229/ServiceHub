@@ -51,11 +51,28 @@ const isSaving = ref(false);
 
 const isDrcOpen = ref(false);
 const isMoistureOpen = ref(false);
+const isWeightsOpen = ref(false);
 const showSaveConfirm = ref(false);
 const showDeleteConfirm = ref(false);
 const sampleToDeleteId = ref<string | null>(null);
 const isDeleting = ref(false);
 const editingSampleId = ref<string | null>(null);
+
+const weightForm = ref({
+  weightIn: '',
+  weightOut: '',
+});
+
+watch(isWeightsOpen, (newVal) => {
+  if (newVal && booking.value) {
+    weightForm.value = {
+      weightIn:
+        (isTrailer ? booking.value.trailerWeightIn : booking.value.weightIn)?.toString() || '',
+      weightOut:
+        (isTrailer ? booking.value.trailerWeightOut : booking.value.weightOut)?.toString() || '',
+    };
+  }
+});
 
 const toggleEdit = async (id: string) => {
   const isEditing = editingSampleId.value === id;
@@ -79,6 +96,34 @@ const drcForm = ref({
   drcRequested: '',
   drcActual: '',
 });
+
+const drcEstRef = ref<any>(null);
+const drcReqRef = ref<any>(null);
+const drcActualRef = ref<any>(null);
+
+const onDrcKeydown = (e: KeyboardEvent, nextField: 'req' | 'actual' | 'save') => {
+  if (e.key === 'Enter') {
+    console.log('DRC Keydown Enter (UssDetail.vue) triggered for:', nextField);
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (nextField === 'save') {
+      handleSaveDrc('enter_key');
+      return;
+    }
+
+    const targetRef = nextField === 'req' ? drcReqRef : drcActualRef;
+    if (targetRef.value) {
+      const el =
+        targetRef.value.$el?.querySelector('input') || targetRef.value.$el || targetRef.value;
+      if (el) {
+        console.log('Shifting focus to:', nextField);
+        el.focus();
+        if (el.select) el.select();
+      }
+    }
+  }
+};
 
 const moistureForm = ref('');
 
@@ -161,12 +206,28 @@ const displayRubberType = computed(() => {
   return type ? type.name : code;
 });
 
-const displayNetWeight = computed(() => {
-  if (!booking.value) return 0;
-  const inW = isTrailer ? booking.value.trailerWeightIn : booking.value.weightIn;
-  const outW = isTrailer ? booking.value.trailerWeightOut : booking.value.weightOut;
-  const net = (inW || 0) - (outW || 0);
+const displayGrossWeight = computed(() => {
+  if (!booking.value) return '-';
+  const inW = isTrailer ? booking.value.trailerWeightIn || 0 : booking.value.weightIn || 0;
+  const outW = isTrailer ? booking.value.trailerWeightOut || 0 : booking.value.weightOut || 0;
+  const net = inW - outW;
   return (net > 0 ? net : 0).toLocaleString();
+});
+
+const displayNetWeight = computed(() => {
+  if (!booking.value) return '0';
+  const inW = isTrailer ? booking.value.trailerWeightIn || 0 : booking.value.weightIn || 0;
+  const outW = isTrailer ? booking.value.trailerWeightOut || 0 : booking.value.weightOut || 0;
+  const gross = Math.max(0, inW - outW);
+  const drc = parseFloat(booking.value.drcActual) || 0;
+
+  if (gross === 0 || drc === 0) return '0';
+
+  const dryWeight = Math.round(gross * (drc / 100));
+  return dryWeight.toLocaleString(undefined, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  });
 });
 
 const handleNumericInput = (sample: any, field: string, value: string) => {
@@ -421,7 +482,8 @@ const handleUpdateLotNo = async () => {
   // Manually update originalLotNo after successful save in saveHeaderInfoOnly
 };
 
-const handleSaveDrc = async () => {
+const handleSaveDrc = async (source = 'button_click') => {
+  console.log('handleSaveDrc (UssDetail.vue) called from source:', source);
   if (!booking.value) return;
 
   try {
@@ -496,6 +558,43 @@ const handleSaveMoisture = async () => {
   isMoistureOpen.value = false;
 };
 
+const handleSaveWeights = async () => {
+  if (!booking.value) return;
+
+  try {
+    const wIn = parseFloat(weightForm.value.weightIn) || 0;
+    const wOut = parseFloat(weightForm.value.weightOut) || 0;
+    const updateData: any = {};
+
+    if (isTrailer) {
+      updateData.trailerLotNo = booking.value.lotNo;
+      updateData.trailerWeightIn = wIn;
+      updateData.trailerWeightOut = wOut;
+    } else {
+      updateData.lotNo = booking.value.lotNo;
+      updateData.weightIn = wIn;
+      updateData.weightOut = wOut;
+    }
+
+    await bookingsApi.update(bookingId, updateData);
+
+    // Update local model
+    if (isTrailer) {
+      booking.value.trailerWeightIn = wIn;
+      booking.value.trailerWeightOut = wOut;
+    } else {
+      booking.value.weightIn = wIn;
+      booking.value.weightOut = wOut;
+    }
+
+    toast.success(t('common.saved'));
+  } catch (error) {
+    console.error('Failed to update Weights:', error);
+    toast.error(t('common.errorSaving'));
+  }
+  isWeightsOpen.value = false;
+};
+
 onMounted(async () => {
   await fetchData();
   if (samples.value.length === 0 && newSamples.value.length === 0) {
@@ -545,27 +644,92 @@ onMounted(async () => {
 
             <!-- Section 1.5: Centered Weights -->
             <div class="flex items-center gap-8 px-8">
-              <div class="flex flex-col items-center">
-                <span
-                  class="text-[0.625rem] font-bold text-blue-600 uppercase tracking-tighter mb-1"
-                  >{{ t('uss.grossWeight') }}</span
-                >
-                <div class="flex items-baseline gap-1">
-                  <span class="text-2xl font-black text-blue-700 leading-none">{{
-                    displayNetWeight
-                  }}</span>
-                  <span class="text-[0.625rem] text-muted-foreground font-bold">Kg</span>
-                </div>
-              </div>
+              <Popover v-model:open="isWeightsOpen">
+                <PopoverTrigger as-child>
+                  <div
+                    class="flex flex-col items-center cursor-pointer hover:bg-blue-50/50 rounded-lg p-1 transition-colors group"
+                  >
+                    <span
+                      class="text-[0.625rem] font-bold text-blue-600 uppercase tracking-tighter mb-1 relative"
+                    >
+                      {{ t('uss.grossWeight') }}
+                      <Pencil
+                        class="w-2 h-2 absolute -right-3 top-0 text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                      />
+                    </span>
+                    <div class="flex items-baseline gap-1">
+                      <span class="text-2xl font-black text-blue-700 leading-none">{{
+                        displayGrossWeight
+                      }}</span>
+                      <span class="text-[0.625rem] text-muted-foreground font-bold">Kg</span>
+                    </div>
+                  </div>
+                </PopoverTrigger>
+                <PopoverContent class="w-80">
+                  <div class="grid gap-4">
+                    <div class="space-y-2">
+                      <h4
+                        class="font-medium leading-none text-blue-700 font-bold uppercase tracking-tight"
+                      >
+                        Weight Management
+                      </h4>
+                      <p class="text-xs text-muted-foreground">
+                        Adjust inbound and outbound weights.
+                      </p>
+                    </div>
+                    <div class="grid gap-3">
+                      <div class="grid grid-cols-3 items-center gap-4">
+                        <Label class="text-xs uppercase font-bold text-slate-600">{{
+                          t('uss.weightIn')
+                        }}</Label>
+                        <Input
+                          v-model="weightForm.weightIn"
+                          type="number"
+                          class="col-span-2 h-8 font-bold"
+                        />
+                      </div>
+                      <div class="grid grid-cols-3 items-center gap-4">
+                        <Label class="text-xs uppercase font-bold text-slate-600">{{
+                          t('uss.weightOut')
+                        }}</Label>
+                        <Input
+                          v-model="weightForm.weightOut"
+                          type="number"
+                          class="col-span-2 h-8 font-bold"
+                          @keydown.enter="handleSaveWeights"
+                        />
+                      </div>
+                      <div class="pt-2 border-t flex justify-end">
+                        <Button
+                          size="sm"
+                          class="h-8 gap-1.5 bg-blue-600 hover:bg-blue-700 text-white"
+                          @click="handleSaveWeights"
+                        >
+                          <Save class="w-3.5 h-3.5" />
+                          {{ t('common.save') }}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+
               <div class="h-8 w-px bg-slate-200 dark:bg-slate-800"></div>
+
               <div class="flex flex-col items-center">
                 <span
                   class="text-[0.625rem] font-bold text-green-600 uppercase tracking-tighter mb-1"
                   >{{ t('uss.netWeight') }}</span
                 >
                 <div class="flex items-baseline gap-1">
-                  <span class="text-2xl font-black text-green-700 leading-none">-</span>
-                  <span class="text-[0.625rem] text-muted-foreground font-bold">Kg</span>
+                  <span class="text-2xl font-black text-green-700 leading-none">{{
+                    displayNetWeight
+                  }}</span>
+                  <span
+                    v-if="displayNetWeight"
+                    class="text-[0.625rem] text-muted-foreground font-bold"
+                    >Kg</span
+                  >
                 </div>
               </div>
             </div>
@@ -716,18 +880,19 @@ onMounted(async () => {
                         Adjust DRC estimated, requested, and actual values.
                       </p>
                     </div>
-                    <div class="grid gap-3">
+                    <div class="grid gap-3" @keydown.enter.stop>
                       <div class="grid grid-cols-3 items-center gap-4">
                         <Label for="drcEst" class="text-xs uppercase font-bold text-teal-600">{{
                           t('uss.drcEst')
                         }}</Label>
                         <Input
+                          ref="drcEstRef"
                           id="drcEst"
                           v-model="drcForm.drcEst"
                           type="number"
                           step="0.01"
                           class="col-span-2 h-8 font-bold"
-                          @keydown.enter="handleSaveDrc"
+                          @keydown.enter.prevent.stop="onDrcKeydown($event, 'req')"
                         />
                       </div>
                       <div class="grid grid-cols-3 items-center gap-4">
@@ -735,12 +900,13 @@ onMounted(async () => {
                           >DRC Req.</Label
                         >
                         <Input
+                          ref="drcReqRef"
                           id="drcReq"
                           v-model="drcForm.drcRequested"
                           type="number"
                           step="0.01"
                           class="col-span-2 h-8 font-bold"
-                          @keydown.enter="handleSaveDrc"
+                          @keydown.enter.prevent.stop="onDrcKeydown($event, 'actual')"
                         />
                       </div>
                       <div class="grid grid-cols-3 items-center gap-4">
@@ -748,20 +914,22 @@ onMounted(async () => {
                           >DRC Actual</Label
                         >
                         <Input
+                          ref="drcActualRef"
                           id="drcActual"
                           v-model="drcForm.drcActual"
                           type="number"
                           step="0.01"
                           class="col-span-2 h-8 font-bold"
-                          @keydown.enter="handleSaveDrc"
+                          @keydown.enter.prevent.stop="onDrcKeydown($event, 'save')"
                         />
                       </div>
                     </div>
                     <div class="flex justify-end pt-2 border-t mt-2">
                       <Button
+                        type="button"
                         size="sm"
                         class="h-8 gap-1.5 bg-teal-600 hover:bg-teal-700 text-white"
-                        @click="handleSaveDrc"
+                        @click="handleSaveDrc('button_click')"
                       >
                         <Save class="w-3.5 h-3.5" />
                         {{ t('common.save') }}

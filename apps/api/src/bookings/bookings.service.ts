@@ -329,6 +329,10 @@ export class BookingsService {
             trailerDrcEst: safeFloat(data.trailerDrcEst),
             trailerDrcRequested: safeFloat(data.trailerDrcRequested),
             trailerDrcActual: safeFloat(data.trailerDrcActual),
+            weightIn: safeFloat(data.weightIn),
+            weightOut: safeFloat(data.weightOut),
+            trailerWeightIn: safeFloat(data.trailerWeightIn),
+            trailerWeightOut: safeFloat(data.trailerWeightOut)
         };
 
         if (data.status === 'APPROVED') {
@@ -628,6 +632,7 @@ export class BookingsService {
             if (validCp.length > 0) {
                 const avgCp = validCp.reduce((sum, s) => sum + s.percentCp, 0) / validCp.length;
                 updateData[prefix ? `${prefix}DrcEst` : 'drcEst'] = avgCp;
+                updateData[prefix ? `${prefix}CpAvg` : 'cpAvg'] = avgCp;
             }
             if (validPri.length > 0) {
                 // PRI is just for display usually, but we could store average if needed
