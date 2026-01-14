@@ -373,6 +373,7 @@
           "price": "ราคาต่อหน่วย (บาท)",
           "unit": "หน่วย",
           "location": "สถานที่จัดเก็บ",
+          "receivedDate": "วันที่รับของ",
           "recordedBy": "บันทึกโดย",
           "changePhoto": "เปลี่ยนรูปภาพ",
           "uploadLimit": "สูงสุด 2MB. JPG หรือ PNG",
@@ -383,6 +384,12 @@
           "specsPlaceholder": "ข้อมูลทางเทคนิค, ข้อมูลผู้จัดจำหน่าย ฯลฯ",
           "itemSpecs": "รายละเอียดรายการ / ข้อมูลทางเทคนิค",
           "submit": "บันทึกอะไหล่"
+        },
+        "image": {
+          "cropTitle": "ตัดครอบรูปภาพ",
+          "cropAction": "ตัดและบันทึก",
+          "uploadTitle": "อัปโหลดรูปภาพ",
+          "uploadLimit": "สูงสุด 2MB. JPG หรือ PNG"
         },
         "common": {
           "cancel": "ยกเลิก",

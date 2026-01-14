@@ -10,9 +10,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { FileText, ScanBarcode } from 'lucide-vue-next';
+import { FileText, ScanBarcode, X } from 'lucide-vue-next';
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { toast } from 'vue-sonner';
+import ImageCropperModal from './ImageCropperModal.vue';
 
 const { t } = useI18n();
 
@@ -30,8 +32,46 @@ const machine = ref(
         model: '',
         location: '',
         status: 'Active',
+        image: undefined,
       }
 );
+
+const fileInput = ref<HTMLInputElement | null>(null);
+const showCropper = ref(false);
+const sourceImage = ref('');
+
+const handleFileClick = () => {
+  fileInput.value?.click();
+};
+
+const handleFileChange = (e: Event) => {
+  const target = e.target as HTMLInputElement;
+  const file = target.files?.[0];
+  if (!file) return;
+
+  if (file.size > 5 * 1024 * 1024) {
+    toast.error('File too large (max 5MB)');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    sourceImage.value = event.target?.result as string;
+    showCropper.value = true;
+  };
+  reader.readAsDataURL(file);
+};
+
+const handleCrop = (croppedImage: string) => {
+  machine.value.image = croppedImage;
+  showCropper.value = false;
+};
+
+const removeImage = (e: Event) => {
+  e.stopPropagation();
+  machine.value.image = undefined;
+  if (fileInput.value) fileInput.value.value = '';
+};
 
 const handleSave = () => {
   if (!machine.value.name) return;
@@ -46,18 +86,46 @@ const handleSave = () => {
       <Label class="mb-2 block text-slate-700 font-semibold">{{
         t('services.myMachine.forms.machine.image')
       }}</Label>
+      <input
+        type="file"
+        ref="fileInput"
+        class="hidden"
+        accept="image/*"
+        @change="handleFileChange"
+      />
       <div
-        class="border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center p-8 h-[250px] bg-slate-50/50 hover:bg-slate-50 transition-colors cursor-pointer group"
+        @click="handleFileClick"
+        class="border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center h-[250px] bg-slate-50/50 hover:bg-slate-50 transition-colors cursor-pointer group relative overflow-hidden"
       >
-        <div
-          class="bg-blue-50 text-blue-500 p-4 rounded-full mb-3 group-hover:scale-110 transition-transform"
-        >
-          <FileText :size="28" />
-        </div>
-        <p class="font-bold text-sm text-slate-900 mb-1">
-          {{ t('services.myMachine.forms.machine.upload') }}
-        </p>
-        <p class="text-xs text-slate-500 text-center">Max 5MB. JPG or PNG.</p>
+        <template v-if="machine.image">
+          <img :src="machine.image" class="w-full h-full object-cover" />
+          <div
+            class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2"
+          >
+            <Button
+              variant="secondary"
+              size="sm"
+              class="h-8 text-xs font-bold"
+              @click.stop="handleFileClick"
+            >
+              {{ t('services.myMachine.forms.stock.changePhoto') }}
+            </Button>
+            <Button variant="destructive" size="icon" class="h-8 w-8" @click="removeImage">
+              <X class="w-4 h-4" />
+            </Button>
+          </div>
+        </template>
+        <template v-else>
+          <div
+            class="bg-blue-50 text-blue-500 p-4 rounded-full mb-3 group-hover:scale-110 transition-transform"
+          >
+            <FileText :size="28" />
+          </div>
+          <p class="font-bold text-sm text-slate-900 mb-1">
+            {{ t('services.myMachine.forms.machine.upload') }}
+          </p>
+          <p class="text-xs text-slate-500 text-center">Max 5MB. JPG or PNG.</p>
+        </template>
       </div>
 
       <div class="mt-4">
@@ -171,4 +239,6 @@ const handleSave = () => {
       t('services.myMachine.forms.machine.submit')
     }}</Button>
   </div>
+
+  <ImageCropperModal v-model:open="showCropper" :image="sourceImage" @crop="handleCrop" />
 </template>

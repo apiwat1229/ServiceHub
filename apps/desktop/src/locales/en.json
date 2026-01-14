@@ -376,6 +376,7 @@
           "price": "Unit Price (THB)",
           "unit": "Unit",
           "location": "Storage Location",
+          "receivedDate": "Received Date",
           "recordedBy": "Recorded By",
           "changePhoto": "Change Photo",
           "uploadLimit": "Max 2MB. JPG or PNG.",
@@ -386,6 +387,12 @@
           "specsPlaceholder": "Technical specs, supplier info, etc.",
           "itemSpecs": "Item Description / Technical Specs",
           "submit": "Save Part"
+        },
+        "image": {
+          "cropTitle": "Crop Image",
+          "cropAction": "Crop & Save",
+          "uploadTitle": "Upload Photo",
+          "uploadLimit": "Max 2MB. JPG or PNG."
         },
         "common": {
           "cancel": "Cancel",

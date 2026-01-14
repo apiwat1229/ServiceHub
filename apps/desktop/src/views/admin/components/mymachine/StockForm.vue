@@ -15,24 +15,29 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useMyMachine } from '@/composables/useMyMachine';
+import { useAuthStore } from '@/stores/auth';
 import { CalendarDate, getLocalTimeZone } from '@internationalized/date';
 import { format } from 'date-fns';
-import { Barcode, Calendar as CalendarIcon, FileText, QrCode, Settings, X } from 'lucide-vue-next';
+import { Barcode, FileText, QrCode, Settings, X } from 'lucide-vue-next';
 import QrcodeVue from 'qrcode.vue';
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
 import VueBarcode from 'vue3-barcode';
 import CategorySettingsModal from './CategorySettingsModal.vue';
 import GLCodeSettingsModal from './GLCodeSettingsModal.vue';
+import ImageCropperModal from './ImageCropperModal.vue';
 import LocationSettingsModal from './LocationSettingsModal.vue';
 
 const { t, locale } = useI18n();
 const { categories, locations, glCodes } = useMyMachine();
+const authStore = useAuthStore();
 const tagMode = ref<'qr' | 'barcode'>('qr');
 const showCategorySettings = ref(false);
 const showLocationSettings = ref(false);
 const showGLCodeSettings = ref(false);
+const showCropper = ref(false);
+const sourceImage = ref('');
 
 const props = defineProps<{
   initialData?: any;
@@ -108,9 +113,15 @@ const handleFileChange = (e: Event) => {
 
   const reader = new FileReader();
   reader.onload = (event) => {
-    form.value.image = event.target?.result as string;
+    sourceImage.value = event.target?.result as string;
+    showCropper.value = true;
   };
   reader.readAsDataURL(file);
+};
+
+const handleCrop = (croppedImage: string) => {
+  form.value.image = croppedImage;
+  showCropper.value = false;
 };
 
 const removeImage = (e: Event) => {
@@ -129,6 +140,13 @@ watch(
   },
   { immediate: true }
 );
+
+onMounted(() => {
+  // Pre-fill receiver with current user if it's a new entry
+  if (!props.initialData && authStore.user) {
+    form.value.receiver = authStore.user.displayName || authStore.user.name || '';
+  }
+});
 
 const handleSave = () => {
   if (!form.value.nameEN) {
@@ -455,7 +473,7 @@ const handleSave = () => {
       <div class="grid grid-cols-2 gap-4">
         <div class="space-y-2">
           <Label class="text-slate-700 font-semibold">{{
-            t('services.myMachine.forms.repair.date')
+            t('services.myMachine.forms.stock.receivedDate')
           }}</Label>
           <Popover>
             <PopoverTrigger as-child>
@@ -477,17 +495,17 @@ const handleSave = () => {
             </PopoverContent>
           </Popover>
         </div>
-      </div>
 
-      <div class="space-y-2">
-        <Label class="text-slate-700 font-semibold">{{
-          t('services.myMachine.forms.stock.recordedBy')
-        }}</Label>
-        <Input
-          v-model="form.receiver"
-          :placeholder="t('services.myMachine.forms.stock.staffIdentifier')"
-          class="bg-white border-slate-200"
-        />
+        <div class="space-y-2">
+          <Label class="text-slate-700 font-semibold">{{
+            t('services.myMachine.forms.stock.recordedBy')
+          }}</Label>
+          <Input
+            v-model="form.receiver"
+            :placeholder="t('services.myMachine.forms.stock.staffIdentifier')"
+            class="bg-white border-slate-200"
+          />
+        </div>
       </div>
 
       <div class="space-y-2">
@@ -534,4 +552,6 @@ const handleSave = () => {
     v-model:open="showGLCodeSettings"
     @update:open="showGLCodeSettings = $event"
   />
+
+  <ImageCropperModal v-model:open="showCropper" :image="sourceImage" @crop="handleCrop" />
 </template>
