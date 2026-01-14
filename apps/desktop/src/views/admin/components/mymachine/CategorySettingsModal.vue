@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useMyMachine, type StockCategory } from '@/composables/useMyMachine';
 import { Plus, Search } from 'lucide-vue-next';
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import CategoryDataTable from './CategoryDataTable.vue';
 
@@ -26,6 +26,21 @@ const form = ref({
 });
 
 const editingId = ref<string | null>(null);
+
+watch(
+  () => form.value.nameEN,
+  (newVal: string) => {
+    if (!editingId.value && newVal) {
+      // Generate 4-char prefix: take first 4 alphanumeric chars and uppercase
+      const suggested = newVal
+        .trim()
+        .replace(/[^a-zA-Z0-9]/g, '')
+        .substring(0, 4)
+        .toUpperCase();
+      form.value.prefix = suggested;
+    }
+  }
+);
 
 const resetForm = () => {
   form.value = {

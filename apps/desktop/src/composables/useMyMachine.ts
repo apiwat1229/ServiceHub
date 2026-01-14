@@ -307,8 +307,8 @@ export function useMyMachine() {
             const res = await api.post('/mymachine/categories', category);
             categories.value.push(res.data);
             return res.data;
-        } catch (e) {
-            console.error('Failed to add category', e);
+        } catch (e: any) {
+            console.error('Failed to add category:', e.response?.data || e.message);
             throw e;
         }
     };
@@ -343,8 +343,8 @@ export function useMyMachine() {
             const res = await api.post('/mymachine/locations', location);
             locations.value.push(res.data);
             return res.data;
-        } catch (e) {
-            console.error('Failed to add location', e);
+        } catch (e: any) {
+            console.error('Failed to add location:', e.response?.data || e.message);
             throw e;
         }
     };

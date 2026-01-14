@@ -37,6 +37,7 @@ const columns = computed<ColumnDef<StockCategory>[]>(() => [
   {
     accessorKey: 'prefix',
     header: 'Code Prefix',
+    size: 100,
     cell: ({ row }) =>
       h(
         'code',
@@ -58,9 +59,10 @@ const columns = computed<ColumnDef<StockCategory>[]>(() => [
   {
     id: 'actions',
     header: 'Actions',
+    size: 80,
     cell: ({ row }) => {
       const category = row.original;
-      return h('div', { class: 'flex items-center gap-1' }, [
+      return h('div', { class: 'flex items-center justify-end gap-1' }, [
         h(
           Button,
           {
@@ -124,12 +126,20 @@ const table = useVueTable({
               v-for="header in headerGroup.headers"
               :key="header.id"
               class="bg-slate-50 font-semibold text-slate-700"
+              :style="{ width: header.getSize() !== 150 ? `${header.getSize()}px` : 'auto' }"
             >
-              <FlexRender
-                v-if="!header.isPlaceholder"
-                :render="header.column.columnDef.header"
-                :props="header.getContext()"
-              />
+              <div
+                :class="[
+                  'flex items-center',
+                  header.column.id === 'actions' ? 'justify-end' : 'justify-start',
+                ]"
+              >
+                <FlexRender
+                  v-if="!header.isPlaceholder"
+                  :render="header.column.columnDef.header"
+                  :props="header.getContext()"
+                />
+              </div>
             </TableHead>
           </TableRow>
         </TableHeader>
@@ -138,9 +148,16 @@ const table = useVueTable({
             <TableRow
               v-for="row in table.getRowModel().rows"
               :key="row.id"
-              class="hover:bg-slate-50"
+              class="hover:bg-slate-50 transition-colors"
             >
-              <TableCell v-for="cell in row.getVisibleCells()" :key="cell.id">
+              <TableCell
+                v-for="cell in row.getVisibleCells()"
+                :key="cell.id"
+                class="py-2.5"
+                :style="{
+                  width: cell.column.getSize() !== 150 ? `${cell.column.getSize()}px` : 'auto',
+                }"
+              >
                 <FlexRender :render="cell.column.columnDef.cell" :props="cell.getContext()" />
               </TableCell>
             </TableRow>
