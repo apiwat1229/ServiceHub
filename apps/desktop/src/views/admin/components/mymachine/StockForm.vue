@@ -24,6 +24,7 @@ import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
 import VueBarcode from 'vue3-barcode';
 import CategorySettingsModal from './CategorySettingsModal.vue';
+import GLCodeSettingsModal from './GLCodeSettingsModal.vue';
 import LocationSettingsModal from './LocationSettingsModal.vue';
 
 const { t } = useI18n();
