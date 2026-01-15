@@ -26,7 +26,7 @@ import {
 import { bookingsApi } from '@/services/bookings';
 import { rubberTypesApi } from '@/services/rubberTypes';
 import { useAuthStore } from '@/stores/auth';
-import { AlertTriangle, ArrowLeft, Check, Pencil, Plus, Save, Trash2 } from 'lucide-vue-next';
+import { AlertTriangle, ArrowLeft, Check, Pencil, Plus, Save, Trash2, X } from 'lucide-vue-next';
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
@@ -52,10 +52,13 @@ const isLoading = ref(false);
 const isSaving = ref(false);
 
 const isDrcOpen = ref(false);
+const isBeforeDryerOpen = ref(false);
 
 const isWeightsOpen = ref(false);
 const showSaveConfirm = ref(false);
 const showDeleteConfirm = ref(false);
+
+const originalSampleData = ref<Record<string, any>>({});
 const sampleToDeleteId = ref<string | null>(null);
 const isDeleting = ref(false);
 const editingSampleId = ref<string | null>(null);
@@ -76,11 +79,20 @@ watch(isWeightsOpen, (newVal) => {
   }
 });
 
-const toggleEdit = async (id: string) => {
+const toggleEdit = async (sample: any) => {
+  const id = sample.id;
   const isEditing = editingSampleId.value === id;
-  editingSampleId.value = isEditing ? null : id;
 
-  if (!isEditing) {
+  if (isEditing) {
+    // Saving
+    editingSampleId.value = null;
+    delete originalSampleData.value[id];
+    // Optional: Trigger save here if needed
+  } else {
+    // Starting edit
+    originalSampleData.value[id] = { ...sample };
+    editingSampleId.value = id;
+
     await nextTick();
     const targetRow = document.querySelector(`[data-row-id="${id}"]`);
     if (targetRow) {
@@ -91,6 +103,15 @@ const toggleEdit = async (id: string) => {
       }
     }
   }
+};
+
+const cancelEdit = (sample: any) => {
+  const id = sample.id;
+  if (originalSampleData.value[id]) {
+    Object.assign(sample, originalSampleData.value[id]);
+    delete originalSampleData.value[id];
+  }
+  editingSampleId.value = null;
 };
 
 const drcForm = ref({
@@ -136,18 +157,36 @@ watch(isDrcOpen, (newVal) => {
   }
 });
 
+const beforeDryerForm = ref({
+  moisture: '',
+});
+
+watch(isBeforeDryerOpen, (newVal) => {
+  if (newVal && booking.value) {
+    const val = isTrailer ? booking.value.trailerMoisture : booking.value.moisture;
+    beforeDryerForm.value = {
+      moisture: val ? val.toString() : '',
+    };
+  }
+});
+
 // New Sample Form (Batch)
 const newSamples = ref<any[]>([]);
 
 const addNewSampleRow = async () => {
   const tempId = 'temp-' + Date.now();
+
+  const allSamples = [...samples.value, ...newSamples.value];
+  const lastSample = allSamples[allSamples.length - 1];
+  const previousStorage = lastSample?.storage || '';
+
   newSamples.value.push({
     id: tempId,
     totalWeight: '',
-    palletWeight: '2',
+    palletWeight: '',
     grossWeight: '',
     spgr: '',
-    storage: '',
+    storage: previousStorage,
     recordedBy:
       authStore.user?.displayName || authStore.user?.firstName || authStore.user?.username || '-',
   });
@@ -200,7 +239,10 @@ const focusNextInput = (event: KeyboardEvent) => {
 
 const formatNumber = (value: number | string, decimals = 0) => {
   if (value === '' || value === null || value === undefined) return '';
-  const num = typeof value === 'string' ? parseFloat(value) : value;
+  const valStr = value.toString();
+  // Remove existing commas to ensure parseFloat works correctly
+  const cleanVal = valStr.replace(/,/g, '');
+  const num = parseFloat(cleanVal);
   if (isNaN(num)) return '';
   return num.toLocaleString('en-US', {
     minimumFractionDigits: decimals,
@@ -208,11 +250,34 @@ const formatNumber = (value: number | string, decimals = 0) => {
   });
 };
 
+const formatNumberCommas = (value: string) => {
+  if (!value) return '';
+  const parts = value.split('.');
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return parts.join('.');
+};
+
+const parseRaw = (val: string | number) => {
+  if (typeof val === 'number') return val;
+  if (!val) return 0;
+  return parseFloat(val.toString().replace(/,/g, ''));
+};
+
 const displayRubberType = computed(() => {
   if (!booking.value) return '-';
   const code = isTrailer ? booking.value.trailerRubberType : booking.value.rubberType;
+  // Assume 'grade' or 'trailerGrade' exists on booking object
+  const grade = isTrailer ? (booking.value as any).trailerGrade : (booking.value as any).grade;
+
   const type = rubberTypes.value.find((t) => t.code === code);
-  return type ? type.name : code;
+  let displayText = type ? type.name : code || '-';
+
+  if (grade) {
+    displayText += ` | ${grade}`;
+  } else {
+    displayText += ` | -`;
+  }
+  return displayText;
 });
 
 const displayGrossWeight = computed(() => {
@@ -239,6 +304,12 @@ const displayNetWeight = computed(() => {
   });
 });
 
+const displayBeforeDryer = computed(() => {
+  if (!booking.value) return '-';
+  const val = isTrailer ? booking.value.trailerMoisture : booking.value.moisture;
+  return val ? val.toFixed(1) : '-';
+});
+
 const handleNumericInput = (sample: any, field: string, value: string) => {
   let cleaned = value.replace(/[^0-9.]/g, '');
   const parts = cleaned.split('.');
@@ -246,11 +317,12 @@ const handleNumericInput = (sample: any, field: string, value: string) => {
     cleaned = parts[0] + '.' + parts.slice(1).join('');
   }
 
-  if (cleaned !== value) {
-    sample[field] = cleaned;
-  } else {
-    sample[field] = value;
+  // Format with commas if field is weight
+  if (['totalWeight', 'palletWeight'].includes(field)) {
+    cleaned = formatNumberCommas(cleaned);
   }
+
+  sample[field] = cleaned;
 
   if (['totalWeight', 'palletWeight'].includes(field)) {
     calculateGrossWeight(sample);
@@ -258,13 +330,13 @@ const handleNumericInput = (sample: any, field: string, value: string) => {
 };
 
 const calculateGrossWeight = (sample: any) => {
-  const total = parseFloat(sample.totalWeight || '0');
-  const pallet = parseFloat(sample.palletWeight || '0');
+  const total = parseRaw(sample.totalWeight || '0');
+  const pallet = parseRaw(sample.palletWeight || '0');
 
   if (total && pallet) {
     const gross = total - pallet;
-    // Round to integer as requested
-    sample.grossWeight = gross > 0 ? Math.round(gross).toFixed(0) : '0';
+    // Round to integer and format
+    sample.grossWeight = gross > 0 ? Math.round(gross).toLocaleString('en-US') : '0';
   } else {
     sample.grossWeight = '';
   }
@@ -295,9 +367,9 @@ const fetchData = async (silent = false) => {
       .filter((s: any) => s.isTrailer === isTrailer)
       .map((s: any) => ({
         ...s,
-        totalWeight: s.beforePress?.toString() || '',
-        palletWeight: s.basketWeight?.toString() || '2',
-        grossWeight: s.afterPress?.toFixed(0) || '', // Force integer display for existing items
+        totalWeight: s.beforePress ? formatNumberCommas(s.beforePress.toString()) : '',
+        palletWeight: s.basketWeight ? formatNumberCommas(s.basketWeight.toString()) : '',
+        grossWeight: s.afterPress ? formatNumber(s.afterPress, 0) : '',
         spgr: s.percentCp?.toString() || '',
         storage: s.storage || '',
         recordedBy: s.recordedBy || '',
@@ -386,10 +458,10 @@ const saveSamplesDirectly = async () => {
 
       await bookingsApi.saveSample(bookingId, {
         ...sample,
-        beforePress: parseFloat(sample.totalWeight),
+        beforePress: parseRaw(sample.totalWeight),
         afterPress: parseFloat(sample.grossWeight),
         percentCp: parseFloat(sample.spgr || '0'),
-        basketWeight: parseFloat(sample.palletWeight),
+        basketWeight: parseRaw(sample.palletWeight),
         storage: sample.storage,
         recordedBy:
           sample.recordedBy ||
@@ -414,10 +486,10 @@ const saveSamplesDirectly = async () => {
       updateData.drcRequested = booking.value.drcRequested;
       updateData.drcActual = booking.value.drcActual;
     }
+
+    updateData.silent = true;
     await bookingsApi.update(bookingId, updateData);
 
-    toast.success(t('uss.sampleSaved'));
-    newSamples.value = [];
     toast.success(t('uss.sampleSaved'));
     newSamples.value = [];
     await fetchData(true); // Silent refresh
@@ -453,10 +525,10 @@ const confirmSaveSamples = async () => {
 
       await bookingsApi.saveSample(bookingId, {
         ...sample,
-        beforePress: parseFloat(sample.totalWeight),
+        beforePress: parseRaw(sample.totalWeight),
         afterPress: parseFloat(sample.grossWeight),
         percentCp: parseFloat(sample.spgr || '0'),
-        basketWeight: parseFloat(sample.palletWeight),
+        basketWeight: parseRaw(sample.palletWeight),
         storage: sample.storage,
         recordedBy:
           sample.recordedBy ||
@@ -483,6 +555,7 @@ const confirmSaveSamples = async () => {
       updateData.drcActual = booking.value.drcActual;
     }
 
+    updateData.silent = true;
     await bookingsApi.update(bookingId, updateData);
 
     toast.success(t('uss.sampleSaved'));
@@ -595,6 +668,7 @@ const handleSaveDrc = async (source = 'button_click') => {
 
     const updateData: any = {
       lotNo: booking.value.lotNo,
+      silent: true,
     };
 
     if (isTrailer) {
@@ -627,13 +701,45 @@ const handleSaveDrc = async (source = 'button_click') => {
   isDrcOpen.value = false;
 };
 
+const handleSaveBeforeDryer = async () => {
+  if (!booking.value) return;
+
+  try {
+    const moisture = parseFloat(beforeDryerForm.value.moisture) || 0;
+    const updateData: any = {
+      lotNo: booking.value.lotNo,
+      silent: true,
+    };
+
+    if (isTrailer) {
+      updateData.trailerMoisture = moisture;
+    } else {
+      updateData.moisture = moisture;
+    }
+
+    await bookingsApi.update(bookingId, updateData);
+
+    if (isTrailer) {
+      booking.value.trailerMoisture = moisture;
+    } else {
+      booking.value.moisture = moisture;
+    }
+
+    toast.success(t('common.saved'));
+  } catch (error) {
+    console.error('Failed to update Before Dryer:', error);
+    toast.error(t('common.errorSaving'));
+  }
+  isBeforeDryerOpen.value = false;
+};
+
 const handleSaveWeights = async () => {
   if (!booking.value) return;
 
   try {
     const wIn = parseFloat(weightForm.value.weightIn) || 0;
     const wOut = parseFloat(weightForm.value.weightOut) || 0;
-    const updateData: any = {};
+    const updateData: any = { silent: true };
 
     if (isTrailer) {
       updateData.trailerLotNo = booking.value.lotNo;
@@ -717,7 +823,7 @@ onMounted(async () => {
               <!-- Rubber Type -->
               <div class="flex flex-col justify-center min-w-[5rem] px-2">
                 <div class="text-[0.5rem] font-bold text-slate-400 uppercase tracking-widest mb-1">
-                  {{ t('uss.rubberType') }}
+                  {{ t('uss.rubberType') }} | GRADE
                 </div>
                 <div class="text-xs font-black text-slate-800 dark:text-slate-100">
                   {{ displayRubberType }}
@@ -833,6 +939,55 @@ onMounted(async () => {
                         <Save class="w-3.5 h-3.5" />
                         {{ t('common.save') }}
                       </Button>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+
+              <!-- Before Dryer -->
+              <div class="w-px h-8 bg-slate-100 dark:bg-slate-800"></div>
+              <Popover v-model:open="isBeforeDryerOpen">
+                <PopoverTrigger as-child>
+                  <div
+                    class="cursor-pointer flex flex-col items-center justify-center min-w-[3.5rem] hover:bg-blue-50/50 rounded p-1 transition-colors"
+                  >
+                    <div
+                      class="text-[0.5rem] font-bold text-blue-600 uppercase tracking-wider mb-0.5"
+                    >
+                      {{ t('uss.beforeDryer') }}
+                    </div>
+                    <div class="text-sm font-black text-blue-700">
+                      {{ displayBeforeDryer }}<span v-if="displayBeforeDryer !== '-'">%</span>
+                    </div>
+                  </div>
+                </PopoverTrigger>
+                <PopoverContent class="w-80">
+                  <div class="grid gap-4">
+                    <div class="space-y-2">
+                      <h4 class="font-medium leading-none text-blue-700">Before Dryer %</h4>
+                      <p class="text-xs text-muted-foreground">Adjust Before Dryer % value.</p>
+                    </div>
+                    <div class="grid gap-3" @keydown.enter.stop>
+                      <div class="grid grid-cols-3 items-center gap-4">
+                        <Label class="text-xs uppercase font-bold text-blue-600">Value %</Label>
+                        <Input
+                          v-model="beforeDryerForm.moisture"
+                          type="number"
+                          step="0.1"
+                          class="col-span-2 h-8 font-bold"
+                          @keydown.enter.prevent.stop="handleSaveBeforeDryer"
+                        />
+                      </div>
+                      <div class="flex justify-end pt-2 border-t mt-2">
+                        <Button
+                          size="sm"
+                          class="h-8 gap-1.5 bg-blue-600 hover:bg-blue-700 text-white"
+                          @click="handleSaveBeforeDryer"
+                        >
+                          <Save class="w-3.5 h-3.5" />
+                          {{ t('common.save') }}
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </PopoverContent>
@@ -996,10 +1151,10 @@ onMounted(async () => {
                       t('uss.palletNumber')
                     }}</TableHead>
                     <TableHead class="text-[0.625rem] font-black uppercase text-center">{{
-                      t('uss.palletWeight')
+                      t('uss.totalWeight')
                     }}</TableHead>
                     <TableHead class="text-[0.625rem] font-black uppercase text-center">{{
-                      t('uss.totalWeight')
+                      t('uss.palletWeight')
                     }}</TableHead>
                     <TableHead
                       class="text-[0.625rem] font-black uppercase text-center text-blue-600"
@@ -1031,19 +1186,6 @@ onMounted(async () => {
                       {{ index + 1 }}
                     </TableCell>
 
-                    <!-- Pallet Weight -->
-                    <TableCell class="text-center">
-                      <div v-if="editingSampleId === sample.id" class="flex justify-center">
-                        <Input
-                          v-model="sample.palletWeight"
-                          class="h-8 w-24 text-center font-bold text-xs"
-                          @input="handleNumericInput(sample, 'palletWeight', $event.target.value)"
-                          @keydown.enter="focusNextInput"
-                        />
-                      </div>
-                      <span v-else class="font-bold text-slate-600">{{ sample.palletWeight }}</span>
-                    </TableCell>
-
                     <!-- Total Weight -->
                     <TableCell class="text-center">
                       <div v-if="editingSampleId === sample.id" class="flex justify-center">
@@ -1054,7 +1196,24 @@ onMounted(async () => {
                           @keydown.enter="focusNextInput"
                         />
                       </div>
-                      <span v-else class="font-bold text-slate-900">{{ sample.totalWeight }}</span>
+                      <span v-else class="font-bold text-slate-900">{{
+                        formatNumber(sample.totalWeight)
+                      }}</span>
+                    </TableCell>
+
+                    <!-- Pallet Weight -->
+                    <TableCell class="text-center">
+                      <div v-if="editingSampleId === sample.id" class="flex justify-center">
+                        <Input
+                          v-model="sample.palletWeight"
+                          class="h-8 w-24 text-center font-bold text-xs"
+                          @input="handleNumericInput(sample, 'palletWeight', $event.target.value)"
+                          @keydown.enter="focusNextInput"
+                        />
+                      </div>
+                      <span v-else class="font-bold text-slate-600">{{
+                        formatNumber(sample.palletWeight)
+                      }}</span>
                     </TableCell>
 
                     <!-- Gross Weight (Calculated) -->
@@ -1097,11 +1256,12 @@ onMounted(async () => {
 
                     <TableCell class="text-center">
                       <div class="flex items-center justify-center gap-1">
+                        <!-- Save (Check) / Edit (Pencil) -->
                         <Button
                           size="icon"
                           variant="ghost"
                           class="h-7 w-7"
-                          @click="toggleEdit(sample.id)"
+                          @click="toggleEdit(sample)"
                         >
                           <component
                             :is="editingSampleId === sample.id ? Check : Pencil"
@@ -1111,7 +1271,21 @@ onMounted(async () => {
                             "
                           />
                         </Button>
+
+                        <!-- Cancel (X) - Only when editing -->
                         <Button
+                          v-if="editingSampleId === sample.id"
+                          size="icon"
+                          variant="ghost"
+                          class="h-7 w-7 text-red-500 hover:text-red-600"
+                          @click="cancelEdit(sample)"
+                        >
+                          <X class="w-3.5 h-3.5" />
+                        </Button>
+
+                        <!-- Delete (Trash) - Only when NOT editing -->
+                        <Button
+                          v-if="editingSampleId !== sample.id"
                           size="icon"
                           variant="ghost"
                           class="h-7 w-7 text-red-500 hover:text-red-600"
@@ -1132,22 +1306,34 @@ onMounted(async () => {
                   >
                     <TableCell class="text-center font-bold text-xs text-blue-400">New</TableCell>
 
-                    <!-- Pallet Weight -->
+                    <!-- Total Weight -->
                     <TableCell class="text-center">
                       <Input
-                        v-model="sample.palletWeight"
+                        :model-value="sample.totalWeight"
                         class="h-8 w-24 text-center font-bold text-xs mx-auto"
-                        @input="handleNumericInput(sample, 'palletWeight', $event.target.value)"
+                        @input="
+                          handleNumericInput(
+                            sample,
+                            'totalWeight',
+                            ($event.target as HTMLInputElement).value
+                          )
+                        "
                         @keydown.enter="focusNextInput"
                       />
                     </TableCell>
 
-                    <!-- Total Weight -->
+                    <!-- Pallet Weight -->
                     <TableCell class="text-center">
                       <Input
-                        v-model="sample.totalWeight"
+                        :model-value="sample.palletWeight"
                         class="h-8 w-24 text-center font-bold text-xs mx-auto"
-                        @input="handleNumericInput(sample, 'totalWeight', $event.target.value)"
+                        @input="
+                          handleNumericInput(
+                            sample,
+                            'palletWeight',
+                            ($event.target as HTMLInputElement).value
+                          )
+                        "
                         @keydown.enter="focusNextInput"
                       />
                     </TableCell>
@@ -1184,14 +1370,24 @@ onMounted(async () => {
                     </TableCell>
 
                     <TableCell class="text-center">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        class="h-7 w-7 text-red-400 hover:text-red-500"
-                        @click="removeNewSampleRow(index)"
-                      >
-                        <Trash2 class="w-3.5 h-3.5" />
-                      </Button>
+                      <div class="flex items-center justify-center gap-1">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          class="h-7 w-7 text-green-600 hover:text-green-700"
+                          @click="handleSaveAllSamples"
+                        >
+                          <Save class="w-3.5 h-3.5" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          class="h-7 w-7 text-red-400 hover:text-red-500"
+                          @click="removeNewSampleRow(index)"
+                        >
+                          <Trash2 class="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
 
@@ -1200,7 +1396,7 @@ onMounted(async () => {
                     <TableCell class="text-center text-[0.625rem] uppercase">Totals</TableCell>
                     <TableCell class="text-center">{{
                       samples
-                        .reduce((sum, s) => sum + parseFloat(s.palletWeight || 0), 0)
+                        .reduce((sum, s) => sum + parseRaw(s.totalWeight || 0), 0)
                         .toLocaleString(undefined, {
                           minimumFractionDigits: 0,
                           maximumFractionDigits: 0,
@@ -1208,7 +1404,7 @@ onMounted(async () => {
                     }}</TableCell>
                     <TableCell class="text-center">{{
                       samples
-                        .reduce((sum, s) => sum + parseFloat(s.totalWeight || 0), 0)
+                        .reduce((sum, s) => sum + parseRaw(s.palletWeight || 0), 0)
                         .toLocaleString(undefined, {
                           minimumFractionDigits: 0,
                           maximumFractionDigits: 0,
@@ -1216,7 +1412,7 @@ onMounted(async () => {
                     }}</TableCell>
                     <TableCell class="text-center text-blue-600">{{
                       samples
-                        .reduce((sum, s) => sum + parseFloat(s.grossWeight || 0), 0)
+                        .reduce((sum, s) => sum + parseRaw(s.grossWeight || 0), 0)
                         .toLocaleString(undefined, {
                           minimumFractionDigits: 0,
                           maximumFractionDigits: 0,

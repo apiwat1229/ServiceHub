@@ -348,12 +348,14 @@ export class BookingsService {
                 data: updateData,
             });
 
-            // Trigger Notification
-            await this.triggerNotification('Booking', 'UPDATE', {
-                title: 'Booking Updated',
-                message: `Booking ${result.bookingCode} (${result.supplierName}) at ${result.slot} has been updated.`,
-                actionUrl: `/bookings?code=${result.bookingCode}`,
-            });
+            // Trigger Notification unless silent
+            if (!data.silent) {
+                await this.triggerNotification('Booking', 'UPDATE', {
+                    title: 'Booking Updated',
+                    message: `Booking ${result.bookingCode} (${result.supplierName}) at ${result.slot} has been updated.`,
+                    actionUrl: `/bookings?code=${result.bookingCode}`,
+                });
+            }
 
             return result;
         } catch (error: any) {

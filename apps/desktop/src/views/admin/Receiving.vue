@@ -1,13 +1,17 @@
 <script setup lang="ts">
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Droplets, Sheet } from 'lucide-vue-next';
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Cuplump from './Cuplump.vue';
 import Uss from './Uss.vue';
 
 const { t } = useI18n();
-const activeTab = ref('cuplump');
+const activeTab = ref(localStorage.getItem('receiving-active-tab') || 'cuplump');
+
+watch(activeTab, (newVal: string) => {
+  localStorage.setItem('receiving-active-tab', newVal);
+});
 </script>
 
 <template>

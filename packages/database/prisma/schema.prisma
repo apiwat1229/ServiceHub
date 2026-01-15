@@ -265,7 +265,7 @@ model Booking {
   drcRequested Float? @map("drc_requested")
   drcActual    Float? @map("drc_actual")
   cpAvg        Float? @map("cp_avg")
-
+  grade        String? @map("grade")
 
   // Metadata
   recorder  String
@@ -307,6 +307,7 @@ model Booking {
   trailerDrcRequested Float? @map("trailer_drc_requested")
   trailerDrcActual    Float? @map("trailer_drc_actual")
   trailerCpAvg        Float? @map("trailer_cp_avg")
+  trailerGrade        String? @map("trailer_grade")
 
 
   createdAt DateTime @default(now()) @map("created_at")

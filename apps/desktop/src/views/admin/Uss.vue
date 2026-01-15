@@ -298,9 +298,9 @@ const columns: ColumnDef<any>[] = [
     cell: ({ row }) => h('div', { class: 'text-center font-medium' }, row.original.drcEst),
   },
   {
-    accessorKey: 'beforeDryer',
-    header: () => h('div', { class: 'text-center' }, t('uss.beforeDryer')),
-    cell: ({ row }) => h('div', { class: 'text-center font-medium' }, row.original.moisture),
+    accessorKey: 'drcActual',
+    header: () => h('div', { class: 'text-center' }, t('uss.drcActual')),
+    cell: ({ row }) => h('div', { class: 'text-center font-medium' }, row.original.drcActual),
   },
   {
     id: 'actions',
