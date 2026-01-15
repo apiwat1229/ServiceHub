@@ -151,12 +151,13 @@ const getGradeColor = (grade: string) => {
         </CardContent>
       </Card>
 
-      <!-- Combined Weights -->
-      <Card class="bg-white border-slate-200/60 shadow-sm col-span-1 lg:col-span-2">
-        <div class="grid grid-cols-[1fr_2.2fr] h-full divide-x divide-slate-100">
-          <!-- Net Weight -->
-          <div class="p-4 flex flex-col justify-center">
-            <div class="flex items-center gap-2 mb-3">
+      <Card
+        class="bg-white border-slate-200/60 shadow-sm col-span-1 lg:col-span-2 p-5 py-6 overflow-hidden"
+      >
+        <div class="flex items-center gap-6 lg:gap-10 h-full">
+          <!-- Net Weight SECTION -->
+          <div class="flex flex-col shrink-0">
+            <div class="flex items-center gap-2 mb-2">
               <div class="p-1 px-1.5 bg-blue-50 rounded-md">
                 <TrendingUp class="w-3.5 h-3.5 text-blue-600" />
               </div>
@@ -165,14 +166,17 @@ const getGradeColor = (grade: string) => {
                 >Net Weight</span
               >
             </div>
-            <div class="text-3xl font-black text-blue-600 tracking-tight">
+            <div class="text-3xl font-black text-blue-600 tracking-tight leading-none">
               {{ formatNum(stats.netWeight) }}
             </div>
           </div>
 
-          <!-- Weight By Grade -->
-          <div class="p-4 flex flex-col justify-center pl-6">
-            <div class="flex items-center gap-2 mb-3">
+          <!-- Vertical Divider -->
+          <div class="w-px h-12 bg-slate-100 flex-shrink-0"></div>
+
+          <!-- Weight By Grade SECTION -->
+          <div class="flex-1 flex flex-col min-w-0">
+            <div class="flex items-center gap-2 mb-2">
               <div class="p-1 px-1.5 bg-emerald-50 rounded-md">
                 <DatabaseIcon class="w-3.5 h-3.5 text-emerald-600" />
               </div>
@@ -181,22 +185,24 @@ const getGradeColor = (grade: string) => {
               >
             </div>
 
-            <div class="flex items-center gap-12">
+            <div
+              class="flex items-center justify-between lg:justify-end gap-4 lg:gap-10 overflow-x-auto no-scrollbar"
+            >
               <div
                 v-for="(weight, grade) in stats.gradeBreakdown"
                 :key="grade"
-                class="flex flex-col min-w-[60px]"
+                class="flex flex-col items-end shrink-0"
               >
                 <span
                   :class="[
-                    'text-[10px] font-black uppercase leading-none mb-2',
+                    'text-[10px] font-black uppercase leading-none mb-1.5',
                     getGradeColor(grade as string),
                   ]"
                   >{{ grade }}</span
                 >
                 <div class="flex items-baseline gap-1">
                   <span
-                    :class="['text-xl font-black tracking-tighter', getGradeColor(grade as string)]"
+                    :class="['text-lg font-black tracking-tighter', getGradeColor(grade as string)]"
                     >{{ formatNum(weight, 1) }}</span
                   >
                 </div>
