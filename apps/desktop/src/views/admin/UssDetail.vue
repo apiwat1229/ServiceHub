@@ -391,7 +391,12 @@ const saveSamplesDirectly = async () => {
         percentCp: parseFloat(sample.spgr || '0'),
         basketWeight: parseFloat(sample.palletWeight),
         storage: sample.storage,
-        recordedBy: sample.recordedBy,
+        recordedBy:
+          sample.recordedBy ||
+          authStore.user?.displayName ||
+          authStore.user?.firstName ||
+          authStore.user?.username ||
+          '-',
         isTrailer: isTrailer,
       });
     }
@@ -453,7 +458,12 @@ const confirmSaveSamples = async () => {
         percentCp: parseFloat(sample.spgr || '0'),
         basketWeight: parseFloat(sample.palletWeight),
         storage: sample.storage,
-        recordedBy: sample.recordedBy,
+        recordedBy:
+          sample.recordedBy ||
+          authStore.user?.displayName ||
+          authStore.user?.firstName ||
+          authStore.user?.username ||
+          '-',
         isTrailer: isTrailer,
       });
     }
