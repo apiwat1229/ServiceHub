@@ -959,7 +959,13 @@ const scaleInColumns: ColumnDef<any>[] = [
     header: () => h('div', { class: 'text-center' }, t('truckScale.startDrain') || 'Start Drain'),
     cell: ({ row }) => {
       const isUSS = (row.original.rubberType || '').toUpperCase().includes('USS');
-      if (isUSS) return h('div', { class: 'text-center text-muted-foreground' }, '-');
+      if (isUSS) {
+        return h(
+          'div',
+          { class: 'text-center text-xs text-muted-foreground italic' },
+          t('truckScale.notRequired') || 'Not Required'
+        );
+      }
 
       if (row.original.startDrainAt) {
         return h(
@@ -997,7 +1003,13 @@ const scaleInColumns: ColumnDef<any>[] = [
     header: () => h('div', { class: 'text-center' }, t('truckScale.stopDrain') || 'Stop Drain'),
     cell: ({ row }) => {
       const isUSS = (row.original.rubberType || '').toUpperCase().includes('USS');
-      if (isUSS) return h('div', { class: 'text-center text-muted-foreground' }, '-');
+      if (isUSS) {
+        return h(
+          'div',
+          { class: 'text-center text-xs text-muted-foreground italic' },
+          t('truckScale.notRequired') || 'Not Required'
+        );
+      }
 
       if (row.original.stopDrainAt) {
         return h(
@@ -1042,7 +1054,13 @@ const scaleInColumns: ColumnDef<any>[] = [
     header: () => h('div', { class: 'text-center' }, t('truckScale.totalDrain') || 'Total Drain'),
     cell: ({ row }) => {
       const isUSS = (row.original.rubberType || '').toUpperCase().includes('USS');
-      if (isUSS) return h('div', { class: 'text-center text-muted-foreground' }, '-');
+      if (isUSS) {
+        return h(
+          'div',
+          { class: 'text-center text-xs text-muted-foreground italic' },
+          t('truckScale.notRequired') || 'Not Required'
+        );
+      }
 
       if (row.original.startDrainAt) {
         return h(
@@ -1394,6 +1412,33 @@ const dashboardColumns: ColumnDef<any>[] = [
   },
 ];
 
+const handleSocketNotification = () => {
+  // Only refresh if autoRefresh is on
+  if (settings.value.autoRefresh) {
+    // Debounce slightly or just fetch
+    console.log('[TruckScale] Notification received, refreshing data...');
+    fetchBookings();
+  }
+
+  // Play Sound
+  if (settings.value.sound) {
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(500, audioCtx.currentTime);
+      gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + 0.1);
+    } catch (e) {
+      console.error('Audio play failed', e);
+    }
+  }
+};
+
 onMounted(async () => {
   // Permission check with detailed logging
   console.log('[TruckScale] Checking permissions...');
@@ -1417,39 +1462,11 @@ onMounted(async () => {
   fetchBookings();
 
   // Socket Listener
-  socketService.on('notification', () => {
-    // Only refresh if autoRefresh is on
-    if (settings.value.autoRefresh) {
-      // Debounce slightly or just fetch
-      console.log('[TruckScale] Notification received, refreshing data...');
-      fetchBookings();
-    }
-
-    // Play Sound
-    if (settings.value.sound) {
-      // Simple beep using browser API if possible, or create an Audio context
-      // Since we don't have assets, we can try a simple audio object if a URL existed,
-      // or just log it for now. Users often demand a real sound, so we can try a data URI beep suitable for notification.
-      try {
-        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-        const oscillator = audioCtx.createOscillator();
-        const gainNode = audioCtx.createGain();
-        oscillator.connect(gainNode);
-        gainNode.connect(audioCtx.destination);
-        oscillator.type = 'sine';
-        oscillator.frequency.setValueAtTime(500, audioCtx.currentTime);
-        gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        oscillator.start();
-        oscillator.stop(audioCtx.currentTime + 0.1);
-      } catch (e) {
-        console.error('Audio play failed', e);
-      }
-    }
-  });
+  socketService.on('notification', handleSocketNotification);
 });
 
 onUnmounted(() => {
-  socketService.off('notification');
+  socketService.off('notification', handleSocketNotification);
 });
 </script>
 
@@ -1624,19 +1641,19 @@ onUnmounted(() => {
                     <TabsList class="bg-transparent h-full p-0 flex gap-1">
                       <TabsTrigger
                         value="all"
-                        class="h-8 text-[0.7rem] px-3 font-semibold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-md transition-all"
+                        class="h-8 text-[0.7rem] px-3 font-semibold uppercase tracking-wider data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-md transition-all"
                       >
                         ALL
                       </TabsTrigger>
                       <TabsTrigger
                         value="cuplump"
-                        class="h-8 text-[0.7rem] px-3 font-semibold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-md transition-all"
+                        class="h-8 text-[0.7rem] px-3 font-semibold uppercase tracking-wider data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-md transition-all"
                       >
                         Cuplump
                       </TabsTrigger>
                       <TabsTrigger
                         value="uss"
-                        class="h-8 text-[0.7rem] px-3 font-semibold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-md transition-all"
+                        class="h-8 text-[0.7rem] px-3 font-semibold uppercase tracking-wider data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-md transition-all"
                       >
                         USS
                       </TabsTrigger>

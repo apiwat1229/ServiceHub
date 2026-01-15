@@ -348,6 +348,9 @@ model BookingLabSample {
   p30  Float? @map("p30")
   pri  Float? @map("pri")
 
+  storage       String? @map("storage")
+  recordedBy    String? @map("recorded_by")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 

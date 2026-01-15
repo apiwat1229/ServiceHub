@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/table';
 import { bookingsApi } from '@/services/bookings';
 import { rubberTypesApi } from '@/services/rubberTypes';
+import { useAuthStore } from '@/stores/auth';
 import { AlertTriangle, ArrowLeft, Check, Pencil, Plus, Save, Trash2 } from 'lucide-vue-next';
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -34,6 +35,7 @@ import { toast } from 'vue-sonner';
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
+const authStore = useAuthStore();
 
 // Route Params & Query
 const bookingId = route.params.id as string;
@@ -50,7 +52,7 @@ const isLoading = ref(false);
 const isSaving = ref(false);
 
 const isDrcOpen = ref(false);
-const isMoistureOpen = ref(false);
+
 const isWeightsOpen = ref(false);
 const showSaveConfirm = ref(false);
 const showDeleteConfirm = ref(false);
@@ -97,7 +99,6 @@ const drcForm = ref({
   drcActual: '',
 });
 
-const drcEstRef = ref<any>(null);
 const drcReqRef = ref<any>(null);
 const drcActualRef = ref<any>(null);
 
@@ -125,14 +126,6 @@ const onDrcKeydown = (e: KeyboardEvent, nextField: 'req' | 'actual' | 'save') =>
   }
 };
 
-const moistureForm = ref('');
-
-watch(isMoistureOpen, (newVal) => {
-  if (newVal && booking.value) {
-    moistureForm.value = booking.value.moisture || '';
-  }
-});
-
 watch(isDrcOpen, (newVal) => {
   if (newVal && booking.value) {
     drcForm.value = {
@@ -151,9 +144,12 @@ const addNewSampleRow = async () => {
   newSamples.value.push({
     id: tempId,
     totalWeight: '',
-    palletWeight: '2.4',
+    palletWeight: '2',
     grossWeight: '',
     spgr: '',
+    storage: '',
+    recordedBy:
+      authStore.user?.displayName || authStore.user?.firstName || authStore.user?.username || '-',
   });
 
   await nextTick();
@@ -190,13 +186,26 @@ const focusNextInput = (event: KeyboardEvent) => {
       event.preventDefault();
       inputs[nextIndex].focus();
     } else {
+      // Last input logic is now handled by specific handler on the last field,
+      // but if we fall through here, just save.
       const isLastField = currentIndex === inputs.length - 1;
       if (isLastField) {
-        event.preventDefault();
-        handleSaveAllSamples();
+        // Prevent default only if we are handling it
+        // event.preventDefault();
+        // handleSaveAllSamples();
       }
     }
   }
+};
+
+const formatNumber = (value: number | string, decimals = 0) => {
+  if (value === '' || value === null || value === undefined) return '';
+  const num = typeof value === 'string' ? parseFloat(value) : value;
+  if (isNaN(num)) return '';
+  return num.toLocaleString('en-US', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
 };
 
 const displayRubberType = computed(() => {
@@ -254,15 +263,16 @@ const calculateGrossWeight = (sample: any) => {
 
   if (total && pallet) {
     const gross = total - pallet;
-    sample.grossWeight = gross > 0 ? gross.toFixed(2) : '0.00';
+    // Round to integer as requested
+    sample.grossWeight = gross > 0 ? Math.round(gross).toFixed(0) : '0';
   } else {
     sample.grossWeight = '';
   }
 };
 
-const fetchData = async () => {
+const fetchData = async (silent = false) => {
   if (!bookingId) return;
-  isLoading.value = true;
+  if (!silent) isLoading.value = true;
   try {
     const [bookingData, samplesData, typesData] = await Promise.all([
       bookingsApi.getById(bookingId),
@@ -286,9 +296,11 @@ const fetchData = async () => {
       .map((s: any) => ({
         ...s,
         totalWeight: s.beforePress?.toString() || '',
-        palletWeight: s.basketWeight?.toString() || '2.4',
-        grossWeight: s.afterPress?.toString() || '',
+        palletWeight: s.basketWeight?.toString() || '2',
+        grossWeight: s.afterPress?.toFixed(0) || '', // Force integer display for existing items
         spgr: s.percentCp?.toString() || '',
+        storage: s.storage || '',
+        recordedBy: s.recordedBy || '',
       }));
     rubberTypes.value = typesData;
   } catch (error) {
@@ -319,7 +331,9 @@ const saveHeaderInfoOnly = async () => {
 
     await bookingsApi.update(bookingId, updateData);
     toast.success(t('common.saved'));
-    fetchData(); // Refresh to ensure sync
+    await bookingsApi.update(bookingId, updateData);
+    toast.success(t('common.saved'));
+    fetchData(true); // Silent refresh
   } catch (error) {
     console.error('Failed to save header info:', error);
     toast.error(t('common.errorSaving'));
@@ -328,23 +342,97 @@ const saveHeaderInfoOnly = async () => {
   }
 };
 
-const handleSaveAllSamples = async () => {
+const handleSaveAllSamples = async (): Promise<boolean> => {
   const allSamples = [...samples.value, ...newSamples.value];
-  const populatedSamples = allSamples.filter((s) => s.beforePress || s.afterPress);
+  const populatedSamples = allSamples.filter((s) => s.totalWeight || s.palletWeight);
 
   const allValid = populatedSamples.every((s) => s.totalWeight && s.palletWeight);
 
   if (populatedSamples.length > 0 && !allValid) {
     toast.error(t('uss.enterRequiredFields'));
-    return;
+    return false;
   }
 
   if (populatedSamples.length === 0) {
     await saveHeaderInfoOnly();
-    return;
+    return true;
   }
 
   showSaveConfirm.value = true;
+  // Return a promise that resolves when the dialog is confirmed or cancelled?
+  // Actually, showSaveConfirm opens a dialog. We can't return true immediately unless we change the flow
+  // to be synchronous or wait for the dialog.
+  // HOWEVER, the user asked for "Enter -> Save and new row".
+  // If we show a confirmation dialog every time, it defeats the purpose of "Enter key quick add".
+  // Maybe we should skip confirmation for the "Quick Add" flow?
+  // Or just return false here and let the dialog confirm action trigger the next steps?
+  // Let's refactor: If invoked via Enter key, maybe skip confirmation if data is valid?
+  // For now, let's keep it simple: The requirement implies a seamless flow.
+  // I will add a `skipConfirm` parameter.
+  return false;
+};
+
+// Refactored with skipConfirm
+const saveSamplesDirectly = async () => {
+  const allSamples = [...samples.value, ...newSamples.value];
+  const populatedSamples = allSamples.filter((s) => s.totalWeight || s.palletWeight || s.spgr);
+
+  if (populatedSamples.length === 0) return true;
+
+  isSaving.value = true;
+  try {
+    for (const sample of populatedSamples) {
+      if (!sample.grossWeight) calculateGrossWeight(sample);
+
+      await bookingsApi.saveSample(bookingId, {
+        ...sample,
+        beforePress: parseFloat(sample.totalWeight),
+        afterPress: parseFloat(sample.grossWeight),
+        percentCp: parseFloat(sample.spgr || '0'),
+        basketWeight: parseFloat(sample.palletWeight),
+        storage: sample.storage,
+        recordedBy: sample.recordedBy,
+        isTrailer: isTrailer,
+      });
+    }
+    const updateData: any = {};
+    if (isTrailer) {
+      updateData.trailerLotNo = booking.value.lotNo;
+      updateData.trailerMoisture = booking.value.moisture;
+      updateData.trailerDrcEst = booking.value.drcEst;
+      updateData.trailerDrcRequested = booking.value.drcRequested;
+      updateData.trailerDrcActual = booking.value.drcActual;
+    } else {
+      updateData.lotNo = booking.value.lotNo;
+      updateData.moisture = booking.value.moisture;
+      updateData.drcEst = booking.value.drcEst;
+      updateData.drcRequested = booking.value.drcRequested;
+      updateData.drcActual = booking.value.drcActual;
+    }
+    await bookingsApi.update(bookingId, updateData);
+
+    toast.success(t('uss.sampleSaved'));
+    newSamples.value = [];
+    toast.success(t('uss.sampleSaved'));
+    newSamples.value = [];
+    await fetchData(true); // Silent refresh
+    return true;
+  } catch (error: any) {
+    console.error('Failed to save samples:', error);
+    toast.error(error.response?.data?.message || t('uss.failedToSave'));
+    return false;
+  } finally {
+    isSaving.value = false;
+  }
+};
+
+const handleEnterOnLastFieldLogic = async (event: KeyboardEvent) => {
+  event.preventDefault();
+  // This calls the direct save method, bypassing the confirmation dialog for speed
+  const success = await saveSamplesDirectly();
+  if (success) {
+    await addNewSampleRow();
+  }
 };
 
 const confirmSaveSamples = async () => {
@@ -364,6 +452,8 @@ const confirmSaveSamples = async () => {
         afterPress: parseFloat(sample.grossWeight),
         percentCp: parseFloat(sample.spgr || '0'),
         basketWeight: parseFloat(sample.palletWeight),
+        storage: sample.storage,
+        recordedBy: sample.recordedBy,
         isTrailer: isTrailer,
       });
     }
@@ -387,7 +477,7 @@ const confirmSaveSamples = async () => {
 
     toast.success(t('uss.sampleSaved'));
     newSamples.value = [];
-    fetchData();
+    fetchData(true);
   } catch (error: any) {
     console.error('Failed to save samples:', error);
     toast.error(error.response?.data?.message || t('uss.failedToSave'));
@@ -407,7 +497,7 @@ const confirmDeleteSample = async () => {
   try {
     await bookingsApi.deleteSample(bookingId, sampleToDeleteId.value);
     toast.success(t('uss.sampleDeleted'));
-    await fetchData();
+    await fetchData(true);
   } catch (e) {
     toast.error(t('uss.failedToDelete'));
   } finally {
@@ -527,37 +617,6 @@ const handleSaveDrc = async (source = 'button_click') => {
   isDrcOpen.value = false;
 };
 
-const handleSaveMoisture = async () => {
-  if (!booking.value) return;
-
-  try {
-    const moistureVal = parseFloat(moistureForm.value) || 0;
-    const updateData: any = {
-      lotNo: booking.value.lotNo,
-    };
-
-    if (isTrailer) {
-      updateData.trailerMoisture = moistureVal;
-    } else {
-      updateData.moisture = moistureVal;
-    }
-
-    await bookingsApi.update(bookingId, updateData);
-
-    if (isTrailer) {
-      booking.value.trailerMoisture = moistureVal;
-    } else {
-      booking.value.moisture = moistureVal;
-    }
-
-    toast.success(t('common.saved'));
-  } catch (error) {
-    console.error('Failed to update Moisture:', error);
-    toast.error(t('common.errorSaving'));
-  }
-  isMoistureOpen.value = false;
-};
-
 const handleSaveWeights = async () => {
   if (!booking.value) return;
 
@@ -614,22 +673,21 @@ onMounted(async () => {
 
 <template>
   <div class="p-6 max-w-[1600px] mx-auto space-y-6">
-    <!-- Main Content -->
-    <Card class="flex-1 overflow-hidden border-border/50 shadow-sm bg-card/50 backdrop-blur-sm">
-      <CardContent class="p-6 h-full flex flex-col">
-        <div v-if="isLoading" class="flex items-center justify-center p-12">
-          <div class="text-center">
-            <div
-              class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-4"
-            ></div>
-            <div class="text-sm font-medium text-muted-foreground">Loading information...</div>
-          </div>
-        </div>
+    <div v-if="isLoading" class="flex items-center justify-center p-12">
+      <div class="text-center">
+        <div
+          class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-4"
+        ></div>
+        <div class="text-sm font-medium text-muted-foreground">Loading information...</div>
+      </div>
+    </div>
 
-        <template v-else-if="booking">
-          <!-- Section 1: Identification Header -->
-          <div class="flex items-center justify-between pb-4 border-b">
-            <div class="min-w-0 flex-1">
+    <template v-else-if="booking">
+      <!-- Section 1: Header Info (Card 1) -->
+      <Card class="border-border/50 shadow-sm bg-card/50 backdrop-blur-sm">
+        <CardContent class="p-6">
+          <div class="flex items-center justify-between">
+            <div class="min-w-0 flex-1 pl-6">
               <div
                 class="text-[0.625rem] text-muted-foreground font-bold uppercase tracking-widest mb-1"
               >
@@ -642,7 +700,136 @@ onMounted(async () => {
               </h1>
             </div>
 
-            <!-- Section 1.5: Centered Weights -->
+            <!-- Metrics (Rubber Type, Est, Req, Actual) -->
+            <div
+              class="hidden xl:flex items-center gap-4 px-6 border-l border-r border-slate-100 dark:border-slate-800 mx-4"
+            >
+              <!-- Rubber Type -->
+              <div class="flex flex-col justify-center min-w-[5rem] px-2">
+                <div class="text-[0.5rem] font-bold text-slate-400 uppercase tracking-widest mb-1">
+                  {{ t('uss.rubberType') }}
+                </div>
+                <div class="text-xs font-black text-slate-800 dark:text-slate-100">
+                  {{ displayRubberType }}
+                </div>
+              </div>
+
+              <!-- Est -->
+              <div class="w-px h-8 bg-slate-100 dark:bg-slate-800"></div>
+              <div
+                @click="isDrcOpen = true"
+                class="cursor-pointer flex flex-col items-center justify-center min-w-[3.5rem] hover:bg-teal-50/50 rounded p-1 transition-colors"
+                role="button"
+              >
+                <div class="text-[0.5rem] font-bold text-teal-600 uppercase tracking-wider mb-0.5">
+                  EST.
+                </div>
+                <div class="text-sm font-black text-teal-700">
+                  {{ formatNumber(booking.drcEst, 1) }}%
+                </div>
+              </div>
+
+              <!-- Req -->
+              <div class="w-px h-8 bg-slate-100 dark:bg-slate-800"></div>
+              <div
+                @click="isDrcOpen = true"
+                class="cursor-pointer flex flex-col items-center justify-center min-w-[3.5rem] hover:bg-teal-50/50 rounded p-1 transition-colors"
+                role="button"
+              >
+                <div class="text-[0.5rem] font-bold text-teal-600 uppercase tracking-wider mb-0.5">
+                  REQ.
+                </div>
+                <div class="text-sm font-black text-teal-700">
+                  {{ formatNumber(booking.drcRequested, 1) }}%
+                </div>
+              </div>
+
+              <!-- Actual -->
+              <div class="w-px h-8 bg-slate-100 dark:bg-slate-800"></div>
+              <Popover v-model:open="isDrcOpen">
+                <PopoverTrigger as-child>
+                  <div
+                    class="cursor-pointer flex flex-col items-center justify-center min-w-[3.5rem] hover:bg-teal-50/50 rounded p-1 transition-colors"
+                    role="button"
+                  >
+                    <div
+                      class="text-[0.5rem] font-bold text-teal-600 uppercase tracking-wider mb-0.5"
+                    >
+                      ACTUAL
+                    </div>
+                    <div class="text-sm font-black text-teal-700">
+                      {{ formatNumber(booking.drcActual, 1) }}%
+                    </div>
+                  </div>
+                </PopoverTrigger>
+                <PopoverContent class="w-80">
+                  <div class="grid gap-4">
+                    <div class="space-y-2">
+                      <h4 class="font-medium leading-none text-teal-700">DRC % Details</h4>
+                      <p class="text-xs text-muted-foreground">
+                        Adjust DRC estimated, requested, and actual values.
+                      </p>
+                    </div>
+                    <div class="grid gap-3" @keydown.enter.stop>
+                      <div class="grid grid-cols-3 items-center gap-4">
+                        <Label for="drcEst" class="text-xs uppercase font-bold text-teal-600">{{
+                          t('uss.drcEst')
+                        }}</Label>
+                        <Input
+                          id="drcEst"
+                          v-model="drcForm.drcEst"
+                          type="number"
+                          step="0.01"
+                          class="col-span-2 h-8 font-bold"
+                          @keydown.enter.prevent.stop="onDrcKeydown($event, 'req')"
+                        />
+                      </div>
+                      <div class="grid grid-cols-3 items-center gap-4">
+                        <Label for="drcReq" class="text-xs uppercase font-bold text-teal-600"
+                          >DRC Req.</Label
+                        >
+                        <Input
+                          ref="drcReqRef"
+                          id="drcReq"
+                          v-model="drcForm.drcRequested"
+                          type="number"
+                          step="0.01"
+                          class="col-span-2 h-8 font-bold"
+                          @keydown.enter.prevent.stop="onDrcKeydown($event, 'actual')"
+                        />
+                      </div>
+                      <div class="grid grid-cols-3 items-center gap-4">
+                        <Label for="drcActual" class="text-xs uppercase font-bold text-teal-600"
+                          >DRC Actual</Label
+                        >
+                        <Input
+                          ref="drcActualRef"
+                          id="drcActual"
+                          v-model="drcForm.drcActual"
+                          type="number"
+                          step="0.01"
+                          class="col-span-2 h-8 font-bold"
+                          @keydown.enter.prevent.stop="onDrcKeydown($event, 'save')"
+                        />
+                      </div>
+                    </div>
+                    <div class="flex justify-end pt-2 border-t mt-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        class="h-8 gap-1.5 bg-teal-600 hover:bg-teal-700 text-white"
+                        @click="handleSaveDrc('button_click')"
+                      >
+                        <Save class="w-3.5 h-3.5" />
+                        {{ t('common.save') }}
+                      </Button>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <!-- Weights -->
             <div class="flex items-center gap-8 px-8">
               <Popover v-model:open="isWeightsOpen">
                 <PopoverTrigger as-child>
@@ -762,484 +949,353 @@ onMounted(async () => {
               </div>
             </div>
           </div>
+        </CardContent>
+      </Card>
 
-          <div class="flex-1 overflow-y-auto pr-2 space-y-4 pt-4">
-            <!-- Section 2: Key Metrics Dashboard (Final Results) -->
-            <div class="grid grid-cols-5 gap-2">
-              <!-- Rubber Type -->
-              <div
-                class="px-3 py-3 rounded-xl bg-slate-50/50 border border-slate-100 dark:bg-slate-900/20 dark:border-slate-800 flex flex-col justify-center min-h-[4.5rem]"
-              >
-                <div
-                  class="text-[0.625rem] font-bold text-slate-500 uppercase tracking-widest mb-1.5 leading-none"
-                >
-                  {{ t('uss.rubberType') }}
-                </div>
-                <div class="text-xs font-black text-slate-900 dark:text-slate-100 leading-tight">
-                  {{ displayRubberType }}
-                </div>
+      <!-- Section 3: Recorded Items Table (Card 3) -->
+      <Card class="border-border/50 shadow-sm bg-card/50 backdrop-blur-sm">
+        <CardContent class="p-6">
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <h3 class="text-xs font-black uppercase tracking-widest text-slate-400">
+                  {{ t('uss.recordedItems') }}
+                </h3>
+                <Badge variant="secondary" class="h-5 px-1.5 text-[0.625rem] font-bold">
+                  {{ populatedCount }}
+                </Badge>
               </div>
-
-              <!-- Before Dryer (Formerly Moisture) -->
-              <Popover v-model:open="isMoistureOpen">
-                <PopoverTrigger as-child>
-                  <div
-                    class="cursor-pointer p-2 rounded-xl bg-orange-50/50 border border-orange-100 dark:bg-orange-900/20 dark:border-orange-800 flex flex-col justify-center items-center text-center min-h-[4.5rem] hover:bg-orange-100/50 transition-colors"
-                  >
-                    <div
-                      class="text-[0.625rem] font-bold text-orange-600 uppercase tracking-tighter mb-1.5 leading-none"
-                    >
-                      {{ t('uss.beforeDryer') }}
-                    </div>
-                    <div class="text-xl font-black text-orange-700 leading-none">
-                      {{ (booking?.moisture || 0).toFixed(1) }}%
-                    </div>
-                  </div>
-                </PopoverTrigger>
-                <PopoverContent class="w-60">
-                  <div class="grid gap-4">
-                    <div class="space-y-2">
-                      <h4 class="font-medium leading-none">{{ t('uss.beforeDryer') }}</h4>
-                      <p class="text-xs text-muted-foreground">Adjust Before Dryer percentage.</p>
-                    </div>
-                    <div class="flex gap-2 items-center">
-                      <Input
-                        v-model="moistureForm"
-                        type="number"
-                        step="0.1"
-                        class="h-8 font-bold text-center"
-                        @keydown.enter="handleSaveMoisture"
-                      />
-                      <span class="text-sm font-bold text-muted-foreground">%</span>
-                    </div>
-                    <div class="flex justify-end pt-2 border-t mt-2">
-                      <Button
-                        size="sm"
-                        class="h-8 gap-1.5 bg-orange-600 hover:bg-orange-700 text-white"
-                        @click="handleSaveMoisture"
-                      >
-                        <Save class="w-3.5 h-3.5" />
-                        {{ t('common.save') }}
-                      </Button>
-                    </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
-
-              <!-- DRC Est -->
-              <div
-                @click="isDrcOpen = true"
-                class="cursor-pointer p-2 rounded-xl bg-teal-50/50 border border-teal-100 dark:bg-teal-900/20 dark:border-teal-800 flex flex-col justify-center items-center text-center min-h-[4.5rem] hover:bg-teal-100/50 transition-colors"
+              <Button
+                size="sm"
+                variant="default"
+                @click="addNewSampleRow"
+                class="h-7 gap-1 px-3 text-[0.625rem] font-bold bg-blue-600 hover:bg-blue-700"
               >
-                <div
-                  class="text-[0.5625rem] font-bold text-teal-600 uppercase tracking-tighter mb-1.5 leading-none"
-                >
-                  Est.
-                </div>
-                <div class="text-xl font-black text-teal-700 leading-none">
-                  {{ (booking.drcEst || 0).toFixed(1) }}%
-                </div>
-              </div>
-
-              <!-- DRC Req -->
-              <div
-                @click="isDrcOpen = true"
-                class="cursor-pointer p-2 rounded-xl bg-teal-50/50 border border-teal-100 dark:bg-teal-900/20 dark:border-teal-800 flex flex-col justify-center items-center text-center min-h-[4.5rem] hover:bg-teal-100/50 transition-colors"
-              >
-                <div
-                  class="text-[0.5625rem] font-bold text-teal-600 uppercase tracking-tighter mb-1.5 leading-none"
-                >
-                  Req.
-                </div>
-                <div class="text-xl font-black text-teal-700 leading-none">
-                  {{ (booking.drcRequested || 0).toFixed(1) }}%
-                </div>
-              </div>
-
-              <!-- DRC Actual (Trigger) -->
-              <Popover v-model:open="isDrcOpen">
-                <PopoverTrigger as-child>
-                  <div
-                    class="cursor-pointer p-2 rounded-xl bg-teal-50/50 border border-teal-100 dark:bg-teal-900/20 dark:border-teal-800 flex flex-col justify-center items-center text-center min-h-[4.5rem] hover:bg-teal-100/50 transition-colors"
-                  >
-                    <div
-                      class="text-[0.5625rem] font-bold text-teal-600 uppercase tracking-tighter mb-1.5 leading-none"
-                    >
-                      Actual
-                    </div>
-                    <div class="text-xl font-black text-teal-700 leading-none">
-                      {{ (booking.drcActual || 0).toFixed(1) }}%
-                    </div>
-                  </div>
-                </PopoverTrigger>
-                <PopoverContent class="w-80">
-                  <div class="grid gap-4">
-                    <div class="space-y-2">
-                      <h4 class="font-medium leading-none text-teal-700">DRC % Details</h4>
-                      <p class="text-xs text-muted-foreground">
-                        Adjust DRC estimated, requested, and actual values.
-                      </p>
-                    </div>
-                    <div class="grid gap-3" @keydown.enter.stop>
-                      <div class="grid grid-cols-3 items-center gap-4">
-                        <Label for="drcEst" class="text-xs uppercase font-bold text-teal-600">{{
-                          t('uss.drcEst')
-                        }}</Label>
-                        <Input
-                          ref="drcEstRef"
-                          id="drcEst"
-                          v-model="drcForm.drcEst"
-                          type="number"
-                          step="0.01"
-                          class="col-span-2 h-8 font-bold"
-                          @keydown.enter.prevent.stop="onDrcKeydown($event, 'req')"
-                        />
-                      </div>
-                      <div class="grid grid-cols-3 items-center gap-4">
-                        <Label for="drcReq" class="text-xs uppercase font-bold text-teal-600"
-                          >DRC Req.</Label
-                        >
-                        <Input
-                          ref="drcReqRef"
-                          id="drcReq"
-                          v-model="drcForm.drcRequested"
-                          type="number"
-                          step="0.01"
-                          class="col-span-2 h-8 font-bold"
-                          @keydown.enter.prevent.stop="onDrcKeydown($event, 'actual')"
-                        />
-                      </div>
-                      <div class="grid grid-cols-3 items-center gap-4">
-                        <Label for="drcActual" class="text-xs uppercase font-bold text-teal-600"
-                          >DRC Actual</Label
-                        >
-                        <Input
-                          ref="drcActualRef"
-                          id="drcActual"
-                          v-model="drcForm.drcActual"
-                          type="number"
-                          step="0.01"
-                          class="col-span-2 h-8 font-bold"
-                          @keydown.enter.prevent.stop="onDrcKeydown($event, 'save')"
-                        />
-                      </div>
-                    </div>
-                    <div class="flex justify-end pt-2 border-t mt-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        class="h-8 gap-1.5 bg-teal-600 hover:bg-teal-700 text-white"
-                        @click="handleSaveDrc('button_click')"
-                      >
-                        <Save class="w-3.5 h-3.5" />
-                        {{ t('common.save') }}
-                      </Button>
-                    </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
+                <Plus class="w-3 h-3" />
+                Add Pallet
+              </Button>
             </div>
 
-            <!-- Section 3: Recorded Balances Table -->
-            <div class="space-y-3">
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                  <h3 class="text-xs font-black uppercase tracking-widest text-slate-400">
-                    {{ t('uss.recordedItems') }}
-                  </h3>
-                  <Badge variant="secondary" class="h-5 px-1.5 text-[0.625rem] font-bold">
-                    {{ populatedCount }}
-                  </Badge>
-                </div>
-                <Button
-                  size="sm"
-                  variant="default"
-                  @click="addNewSampleRow"
-                  class="h-7 gap-1 px-3 text-[0.625rem] font-bold bg-blue-600 hover:bg-blue-700"
-                >
-                  <Plus class="w-3 h-3" />
-                  Add Pallet
-                </Button>
-              </div>
-
-              <div
-                class="rounded-xl border border-slate-100 dark:border-slate-800 overflow-hidden bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm shadow-sm"
-              >
-                <Table>
-                  <TableHeader class="bg-slate-50/50 dark:bg-slate-800/50">
-                    <TableRow class="hover:bg-transparent border-slate-100 dark:border-slate-800">
-                      <TableHead
-                        class="w-[80px] text-[0.625rem] font-black uppercase text-center"
-                        >{{ t('uss.palletNumber') }}</TableHead
-                      >
-                      <TableHead class="text-[0.625rem] font-black uppercase text-center">{{
-                        t('uss.palletWeight')
-                      }}</TableHead>
-                      <TableHead class="text-[0.625rem] font-black uppercase text-center">{{
-                        t('uss.totalWeight')
-                      }}</TableHead>
-                      <TableHead
-                        class="text-[0.625rem] font-black uppercase text-center text-blue-600"
-                        >{{ t('uss.grossWeight') }}</TableHead
-                      >
-                      <TableHead class="text-[0.625rem] font-black uppercase text-center">{{
-                        t('uss.spgr')
-                      }}</TableHead>
-                      <TableHead class="w-[100px] text-[0.625rem] font-black uppercase text-center"
-                        >Action</TableHead
-                      >
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <!-- Existing Samples -->
-                    <TableRow
-                      v-for="(sample, index) in samples"
-                      :key="sample.id"
-                      :data-row-id="sample.id"
-                      class="group border-slate-50 dark:border-slate-800/50 hover:bg-slate-50/30 transition-colors"
+            <div
+              class="rounded-xl border border-slate-100 dark:border-slate-800 overflow-hidden bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm shadow-sm"
+            >
+              <Table>
+                <TableHeader class="bg-slate-50/50 dark:bg-slate-800/50">
+                  <TableRow class="hover:bg-transparent border-slate-100 dark:border-slate-800">
+                    <TableHead class="w-[80px] text-[0.625rem] font-black uppercase text-center">{{
+                      t('uss.palletNumber')
+                    }}</TableHead>
+                    <TableHead class="text-[0.625rem] font-black uppercase text-center">{{
+                      t('uss.palletWeight')
+                    }}</TableHead>
+                    <TableHead class="text-[0.625rem] font-black uppercase text-center">{{
+                      t('uss.totalWeight')
+                    }}</TableHead>
+                    <TableHead
+                      class="text-[0.625rem] font-black uppercase text-center text-blue-600"
+                      >{{ t('uss.grossWeight') }}</TableHead
                     >
-                      <TableCell class="text-center font-bold text-xs text-slate-400">
-                        {{ index + 1 }}
-                      </TableCell>
-
-                      <!-- Pallet Weight -->
-                      <TableCell class="text-center">
-                        <div v-if="editingSampleId === sample.id" class="flex justify-center">
-                          <Input
-                            v-model="sample.palletWeight"
-                            class="h-8 w-24 text-center font-bold text-xs"
-                            @input="handleNumericInput(sample, 'palletWeight', $event.target.value)"
-                            @keydown.enter="focusNextInput"
-                          />
-                        </div>
-                        <span v-else class="font-bold text-slate-600">{{
-                          sample.palletWeight
-                        }}</span>
-                      </TableCell>
-
-                      <!-- Total Weight -->
-                      <TableCell class="text-center">
-                        <div v-if="editingSampleId === sample.id" class="flex justify-center">
-                          <Input
-                            v-model="sample.totalWeight"
-                            class="h-8 w-24 text-center font-bold text-xs"
-                            @input="handleNumericInput(sample, 'totalWeight', $event.target.value)"
-                            @keydown.enter="focusNextInput"
-                          />
-                        </div>
-                        <span v-else class="font-bold text-slate-900">{{
-                          sample.totalWeight
-                        }}</span>
-                      </TableCell>
-
-                      <!-- Gross Weight (Calculated) -->
-                      <TableCell class="text-center">
-                        <span class="font-bold text-blue-600">{{ sample.grossWeight }}</span>
-                      </TableCell>
-
-                      <!-- SPGR -->
-                      <TableCell class="text-center">
-                        <div
-                          v-if="editingSampleId === sample.id"
-                          class="flex justify-center group/calc relative"
-                        >
-                          <Input
-                            v-model="sample.spgr"
-                            class="h-8 w-24 text-center font-bold text-xs text-green-600 bg-green-50"
-                            @input="handleNumericInput(sample, 'spgr', $event.target.value)"
-                            @keydown.enter="focusNextInput"
-                          />
-                        </div>
-                        <span v-else class="font-bold text-green-600">{{ sample.spgr }}</span>
-                      </TableCell>
-
-                      <TableCell class="text-center">
-                        <div
-                          class="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            class="h-7 w-7"
-                            @click="toggleEdit(sample.id)"
-                          >
-                            <component
-                              :is="editingSampleId === sample.id ? Check : Pencil"
-                              class="w-3.5 h-3.5"
-                              :class="
-                                editingSampleId === sample.id ? 'text-green-600' : 'text-slate-400'
-                              "
-                            />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            class="h-7 w-7 text-red-500 hover:text-red-600"
-                            @click="handleDeleteSample(sample.id)"
-                          >
-                            <Trash2 class="w-3.5 h-3.5" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-
-                    <!-- New Samples Rows -->
-                    <TableRow
-                      v-for="(sample, index) in newSamples"
-                      :key="sample.id"
-                      :data-row-id="sample.id"
-                      class="bg-blue-50/20 dark:bg-blue-900/5"
+                    <TableHead class="text-[0.625rem] font-black uppercase text-center">{{
+                      t('uss.spgr')
+                    }}</TableHead>
+                    <TableHead class="text-[0.625rem] font-black uppercase text-center">{{
+                      t('uss.storage') || 'Storage'
+                    }}</TableHead>
+                    <TableHead class="text-[0.625rem] font-black uppercase text-center">{{
+                      t('uss.recordedBy') || 'Recorded By'
+                    }}</TableHead>
+                    <TableHead class="w-[100px] text-[0.625rem] font-black uppercase text-center"
+                      >Action</TableHead
                     >
-                      <TableCell class="text-center font-bold text-xs text-blue-400">New</TableCell>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <!-- Existing Samples -->
+                  <TableRow
+                    v-for="(sample, index) in samples"
+                    :key="sample.id"
+                    :data-row-id="sample.id"
+                    class="group border-slate-50 dark:border-slate-800/50 hover:bg-slate-50/30 transition-colors"
+                  >
+                    <TableCell class="text-center font-bold text-xs text-slate-400">
+                      {{ index + 1 }}
+                    </TableCell>
 
-                      <!-- Pallet Weight -->
-                      <TableCell class="text-center">
+                    <!-- Pallet Weight -->
+                    <TableCell class="text-center">
+                      <div v-if="editingSampleId === sample.id" class="flex justify-center">
                         <Input
                           v-model="sample.palletWeight"
-                          class="h-8 w-24 text-center font-bold text-xs mx-auto"
+                          class="h-8 w-24 text-center font-bold text-xs"
                           @input="handleNumericInput(sample, 'palletWeight', $event.target.value)"
                           @keydown.enter="focusNextInput"
                         />
-                      </TableCell>
+                      </div>
+                      <span v-else class="font-bold text-slate-600">{{ sample.palletWeight }}</span>
+                    </TableCell>
 
-                      <!-- Total Weight -->
-                      <TableCell class="text-center">
+                    <!-- Total Weight -->
+                    <TableCell class="text-center">
+                      <div v-if="editingSampleId === sample.id" class="flex justify-center">
                         <Input
                           v-model="sample.totalWeight"
-                          class="h-8 w-24 text-center font-bold text-xs mx-auto"
+                          class="h-8 w-24 text-center font-bold text-xs"
                           @input="handleNumericInput(sample, 'totalWeight', $event.target.value)"
                           @keydown.enter="focusNextInput"
                         />
-                      </TableCell>
+                      </div>
+                      <span v-else class="font-bold text-slate-900">{{ sample.totalWeight }}</span>
+                    </TableCell>
 
-                      <!-- Gross Weight -->
-                      <TableCell class="text-center">
-                        <span class="font-bold text-blue-600">{{ sample.grossWeight }}</span>
-                      </TableCell>
+                    <!-- Gross Weight (Calculated) -->
+                    <TableCell class="text-center">
+                      <span class="font-bold text-blue-600">{{ sample.grossWeight }}</span>
+                    </TableCell>
 
-                      <!-- SPGR -->
-                      <TableCell class="text-center">
+                    <!-- SPGR -->
+                    <TableCell class="text-center">
+                      <div
+                        v-if="editingSampleId === sample.id"
+                        class="flex justify-center group/calc relative"
+                      >
                         <Input
                           v-model="sample.spgr"
-                          class="h-8 w-24 text-center font-bold text-xs mx-auto"
+                          class="h-8 w-24 text-center font-bold text-xs text-green-600 bg-green-50"
                           @input="handleNumericInput(sample, 'spgr', $event.target.value)"
                           @keydown.enter="focusNextInput"
                         />
-                      </TableCell>
+                      </div>
+                      <span v-else class="font-bold text-green-600">{{ sample.spgr }}</span>
+                    </TableCell>
 
-                      <TableCell class="text-center">
+                    <!-- Storage -->
+                    <TableCell class="text-center">
+                      <div v-if="editingSampleId === sample.id" class="flex justify-center">
+                        <Input
+                          v-model="sample.storage"
+                          class="h-8 w-48 text-center font-bold text-xs"
+                          @keydown.enter="handleEnterOnLastFieldLogic"
+                        />
+                      </div>
+                      <span v-else class="font-bold text-slate-700">{{ sample.storage }}</span>
+                    </TableCell>
+
+                    <!-- Recorded By -->
+                    <TableCell class="text-center">
+                      <span class="font-bold text-slate-500 text-xs">{{ sample.recordedBy }}</span>
+                    </TableCell>
+
+                    <TableCell class="text-center">
+                      <div class="flex items-center justify-center gap-1">
                         <Button
                           size="icon"
                           variant="ghost"
-                          class="h-7 w-7 text-red-400 hover:text-red-500"
-                          @click="removeNewSampleRow(index)"
+                          class="h-7 w-7"
+                          @click="toggleEdit(sample.id)"
+                        >
+                          <component
+                            :is="editingSampleId === sample.id ? Check : Pencil"
+                            class="w-3.5 h-3.5"
+                            :class="
+                              editingSampleId === sample.id ? 'text-green-600' : 'text-slate-400'
+                            "
+                          />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          class="h-7 w-7 text-red-500 hover:text-red-600"
+                          @click="handleDeleteSample(sample.id)"
                         >
                           <Trash2 class="w-3.5 h-3.5" />
                         </Button>
-                      </TableCell>
-                    </TableRow>
+                      </div>
+                    </TableCell>
+                  </TableRow>
 
-                    <!-- Totals Row -->
-                    <TableRow class="bg-slate-100/50 dark:bg-slate-800/50 font-black border-t-2">
-                      <TableCell class="text-center text-[0.625rem] uppercase">Totals</TableCell>
-                      <TableCell class="text-center">{{
-                        samples
-                          .reduce((sum, s) => sum + parseFloat(s.palletWeight || 0), 0)
-                          .toLocaleString(undefined, { minimumFractionDigits: 1 })
-                      }}</TableCell>
-                      <TableCell class="text-center">{{
-                        samples
-                          .reduce((sum, s) => sum + parseFloat(s.totalWeight || 0), 0)
-                          .toLocaleString(undefined, { minimumFractionDigits: 1 })
-                      }}</TableCell>
-                      <TableCell class="text-center text-blue-600">{{
-                        samples
-                          .reduce((sum, s) => sum + parseFloat(s.grossWeight || 0), 0)
-                          .toLocaleString(undefined, { minimumFractionDigits: 1 })
-                      }}</TableCell>
-                      <TableCell class="text-center"></TableCell>
-                      <TableCell class="text-center"></TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </div>
+                  <!-- New Samples Rows -->
+                  <TableRow
+                    v-for="(sample, index) in newSamples"
+                    :key="sample.id"
+                    :data-row-id="sample.id"
+                    class="bg-blue-50/20 dark:bg-blue-900/5"
+                  >
+                    <TableCell class="text-center font-bold text-xs text-blue-400">New</TableCell>
 
-              <div class="flex justify-end pt-2 gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  class="h-8 text-xs gap-1.5 px-4"
-                  @click="router.back()"
-                >
-                  <ArrowLeft class="w-3.5 h-3.5" />
-                  {{ t('common.back') }}
-                </Button>
-                <Button
-                  v-if="populatedCount > 0"
-                  size="sm"
-                  class="bg-green-600 hover:bg-green-700 h-8 text-xs gap-1.5 shadow-sm px-4"
-                  :disabled="isSaving"
-                  @click="handleSaveAllSamples"
-                >
-                  <Save class="w-3.5 h-3.5" />
-                  {{ t('common.save') }} ({{ populatedCount }})
-                </Button>
-              </div>
+                    <!-- Pallet Weight -->
+                    <TableCell class="text-center">
+                      <Input
+                        v-model="sample.palletWeight"
+                        class="h-8 w-24 text-center font-bold text-xs mx-auto"
+                        @input="handleNumericInput(sample, 'palletWeight', $event.target.value)"
+                        @keydown.enter="focusNextInput"
+                      />
+                    </TableCell>
+
+                    <!-- Total Weight -->
+                    <TableCell class="text-center">
+                      <Input
+                        v-model="sample.totalWeight"
+                        class="h-8 w-24 text-center font-bold text-xs mx-auto"
+                        @input="handleNumericInput(sample, 'totalWeight', $event.target.value)"
+                        @keydown.enter="focusNextInput"
+                      />
+                    </TableCell>
+
+                    <!-- Gross Weight -->
+                    <TableCell class="text-center">
+                      <span class="font-bold text-blue-600">{{
+                        formatNumber(sample.grossWeight)
+                      }}</span>
+                    </TableCell>
+
+                    <!-- SPGR -->
+                    <TableCell class="text-center">
+                      <Input
+                        v-model="sample.spgr"
+                        class="h-8 w-24 text-center font-bold text-xs mx-auto"
+                        @input="handleNumericInput(sample, 'spgr', $event.target.value)"
+                        @keydown.enter="focusNextInput"
+                      />
+                    </TableCell>
+
+                    <!-- Storage -->
+                    <TableCell class="text-center">
+                      <Input
+                        v-model="sample.storage"
+                        class="h-8 w-48 text-center font-bold text-xs mx-auto"
+                        @keydown.enter="handleEnterOnLastFieldLogic"
+                      />
+                    </TableCell>
+
+                    <!-- Recorded By -->
+                    <TableCell class="text-center">
+                      <span class="font-bold text-blue-400 text-xs">{{ sample.recordedBy }}</span>
+                    </TableCell>
+
+                    <TableCell class="text-center">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        class="h-7 w-7 text-red-400 hover:text-red-500"
+                        @click="removeNewSampleRow(index)"
+                      >
+                        <Trash2 class="w-3.5 h-3.5" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+
+                  <!-- Totals Row -->
+                  <TableRow class="bg-slate-100/50 dark:bg-slate-800/50 font-black border-t-2">
+                    <TableCell class="text-center text-[0.625rem] uppercase">Totals</TableCell>
+                    <TableCell class="text-center">{{
+                      samples
+                        .reduce((sum, s) => sum + parseFloat(s.palletWeight || 0), 0)
+                        .toLocaleString(undefined, {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0,
+                        })
+                    }}</TableCell>
+                    <TableCell class="text-center">{{
+                      samples
+                        .reduce((sum, s) => sum + parseFloat(s.totalWeight || 0), 0)
+                        .toLocaleString(undefined, {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0,
+                        })
+                    }}</TableCell>
+                    <TableCell class="text-center text-blue-600">{{
+                      samples
+                        .reduce((sum, s) => sum + parseFloat(s.grossWeight || 0), 0)
+                        .toLocaleString(undefined, {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0,
+                        })
+                    }}</TableCell>
+                    <TableCell class="text-center"></TableCell>
+                    <TableCell class="text-center"></TableCell>
+                    <TableCell class="text-center"></TableCell>
+                    <TableCell class="text-center"></TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+
+            <div class="flex justify-end pt-2 gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                class="h-8 text-xs gap-1.5 px-4"
+                @click="router.back()"
+              >
+                <ArrowLeft class="w-3.5 h-3.5" />
+                {{ t('common.back') }}
+              </Button>
+              <Button
+                v-if="populatedCount > 0"
+                size="sm"
+                class="bg-green-600 hover:bg-green-700 h-8 text-xs gap-1.5 shadow-sm px-4"
+                :disabled="isSaving"
+                @click="handleSaveAllSamples"
+              >
+                <Save class="w-3.5 h-3.5" />
+                {{ t('common.save') }} ({{ populatedCount }})
+              </Button>
             </div>
           </div>
-        </template>
+        </CardContent>
+      </Card>
+    </template>
 
-        <AlertDialog :open="showSaveConfirm" @update:open="showSaveConfirm = $event">
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle class="flex items-center gap-2">
-                <AlertTriangle class="h-5 w-5 text-yellow-500" />
-                {{ t('common.confirm') }}
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                {{ t('uss.confirmSaveAll', { count: populatedCount }) }}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel @click="showSaveConfirm = false">{{
-                t('common.cancel')
-              }}</AlertDialogCancel>
-              <AlertDialogAction @click="confirmSaveSamples">{{
-                t('common.confirm')
-              }}</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+    <AlertDialog :open="showSaveConfirm" @update:open="showSaveConfirm = $event">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle class="flex items-center gap-2">
+            <AlertTriangle class="h-5 w-5 text-yellow-500" />
+            {{ t('common.confirm') }}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {{ t('uss.confirmSaveAll', { count: populatedCount }) }}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel @click="showSaveConfirm = false">{{
+            t('common.cancel')
+          }}</AlertDialogCancel>
+          <AlertDialogAction @click="confirmSaveSamples">{{
+            t('common.confirm')
+          }}</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
 
-        <AlertDialog :open="showDeleteConfirm" @update:open="showDeleteConfirm = $event">
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle class="flex items-center gap-2">
-                <Trash2 class="h-5 w-5 text-destructive" />
-                {{ t('uss.confirmDelete') }}
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                {{
-                  t('uss.confirmDeleteMsg') ||
-                  'This action cannot be undone. This sample row will be permanently deleted.'
-                }}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel @click="showDeleteConfirm = false">{{
-                t('common.cancel')
-              }}</AlertDialogCancel>
-              <AlertDialogAction
-                class="bg-destructive hover:bg-destructive/90"
-                :disabled="isDeleting"
-                @click="confirmDeleteSample"
-              >
-                {{ isDeleting ? t('common.deleting') : t('common.confirm') }}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </CardContent>
-    </Card>
+    <AlertDialog :open="showDeleteConfirm" @update:open="showDeleteConfirm = $event">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle class="flex items-center gap-2">
+            <Trash2 class="h-5 w-5 text-destructive" />
+            {{ t('uss.confirmDelete') }}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {{
+              t('uss.confirmDeleteMsg') ||
+              'This action cannot be undone. This sample row will be permanently deleted.'
+            }}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel @click="showDeleteConfirm = false">{{
+            t('common.cancel')
+          }}</AlertDialogCancel>
+          <AlertDialogAction
+            class="bg-destructive hover:bg-destructive/90"
+            :disabled="isDeleting"
+            @click="confirmDeleteSample"
+          >
+            {{ isDeleting ? t('common.deleting') : t('common.confirm') }}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   </div>
 </template>

@@ -224,112 +224,143 @@ const handleNotificationClick = async (notification: NotificationDto) => {
   }
 };
 
+// Moved accessors to setup scope, init in onMounted below
+
+// Ensure we join the room if user data loads late
+// Logic moved to SocketService.connect() 'connect' listener to avoid race conditions
+/* if (authStore.user?.id) {
+    socketService.joinRoom(authStore.user.id);
+  } */
+
+const lastNotification = ref<{ title: string; message: string; time: number } | null>(null);
+const instanceId = Math.random().toString(36).substring(7);
+
+console.log(`[Navbar] Mounted instance: ${instanceId}`);
+
+const handleNotificationSocket = (newNotification: any) => {
+  console.log(`[Navbar ${instanceId}] Received socket notification:`, newNotification);
+
+  // Frontend Deduplication Safeguard
+  // Prevent duplicate notifications (same title/message) within 2 seconds, even if IDs differ
+  const now = Date.now();
+  if (lastNotification.value) {
+    const isSameContent =
+      lastNotification.value.title === newNotification.title &&
+      lastNotification.value.message === newNotification.message;
+    const isRecent = now - lastNotification.value.time < 2000; // 2000ms window
+
+    if (isSameContent && isRecent) {
+      console.warn('[Navbar] Duplicate notification suppressed:', newNotification.title);
+      return;
+    }
+  }
+
+  // Update last notification tracker
+  lastNotification.value = {
+    title: newNotification.title,
+    message: newNotification.message,
+    time: now,
+  };
+
+  // Add new notification to list
+  if (!unreadNotifications.value.some((n) => n.id === newNotification.id)) {
+    unreadNotifications.value.unshift(newNotification);
+
+    // Show Toast with type-based styling
+    const getToastStyles = (type: string) => {
+      const styles = {
+        SUCCESS: {
+          textColor: 'text-green-600',
+          iconColor: '!text-green-600',
+          buttonBg: 'bg-green-600',
+          buttonHover: 'hover:bg-green-700',
+        },
+        APPROVE: {
+          textColor: 'text-teal-600',
+          iconColor: '!text-teal-600',
+          buttonBg: 'bg-teal-600',
+          buttonHover: 'hover:bg-teal-700',
+        },
+        ERROR: {
+          textColor: 'text-red-600',
+          iconColor: '!text-red-600',
+          buttonBg: 'bg-red-600',
+          buttonHover: 'hover:bg-red-700',
+        },
+        WARNING: {
+          textColor: 'text-yellow-600',
+          iconColor: '!text-yellow-600',
+          buttonBg: 'bg-yellow-600',
+          buttonHover: 'hover:bg-yellow-700',
+        },
+        INFO: {
+          textColor: 'text-blue-600',
+          iconColor: '!text-blue-600',
+          buttonBg: 'bg-blue-600',
+          buttonHover: 'hover:bg-blue-700',
+        },
+        REQUEST: {
+          textColor: 'text-purple-600',
+          iconColor: '!text-purple-600',
+          buttonBg: 'bg-purple-600',
+          buttonHover: 'hover:bg-purple-700',
+        },
+      };
+      return styles[type as keyof typeof styles] || styles.INFO;
+    };
+
+    const style = getToastStyles(newNotification.type);
+
+    const toastOptions = {
+      description: newNotification.message,
+      duration: 5000, // 5 seconds
+      unstyled: false, // Keep Sonner's base styling
+      action: {
+        label: 'View',
+        onClick: () => handleNotificationClick(newNotification),
+      },
+      classNames: {
+        toast: 'bg-white border-2 shadow-lg',
+        title: `font-semibold ${style.textColor}`,
+        description: 'text-gray-600',
+        actionButton: `${style.buttonBg} ${style.buttonHover} text-white border-0 font-medium !important`,
+        icon: `w-6 h-6 ${style.iconColor}`,
+      },
+    };
+
+    switch (newNotification.type) {
+      case 'SUCCESS':
+      case 'APPROVE':
+        toast.success(newNotification.title, toastOptions);
+        break;
+      case 'ERROR':
+        toast.error(newNotification.title, toastOptions);
+        break;
+      case 'WARNING':
+        toast.warning(newNotification.title, toastOptions);
+        break;
+      case 'INFO':
+      case 'REQUEST':
+      default:
+        toast.info(newNotification.title, toastOptions);
+        break;
+    }
+  }
+
+  // Refresh pending approvals if notification relates to approvals
+  if (
+    newNotification.type === 'REQUEST' ||
+    newNotification.title.toLowerCase().includes('approval')
+  ) {
+    fetchPendingApprovals();
+  }
+};
+
 onMounted(() => {
   fetchUnreadNotifications();
   fetchPendingApprovals();
   socketService.connect();
-
-  // Ensure we join the room if user data loads late
-  // Logic moved to SocketService.connect() 'connect' listener to avoid race conditions
-  /* if (authStore.user?.id) {
-    socketService.joinRoom(authStore.user.id);
-  } */
-
-  socketService.on('notification', (newNotification: any) => {
-    console.log('[Navbar] Received socket notification:', newNotification);
-    // Add new notification to list
-    if (!unreadNotifications.value.some((n) => n.id === newNotification.id)) {
-      unreadNotifications.value.unshift(newNotification);
-
-      // Show Toast with type-based styling
-      const getToastStyles = (type: string) => {
-        const styles = {
-          SUCCESS: {
-            textColor: 'text-green-600',
-            iconColor: '!text-green-600',
-            buttonBg: 'bg-green-600',
-            buttonHover: 'hover:bg-green-700',
-          },
-          APPROVE: {
-            textColor: 'text-teal-600',
-            iconColor: '!text-teal-600',
-            buttonBg: 'bg-teal-600',
-            buttonHover: 'hover:bg-teal-700',
-          },
-          ERROR: {
-            textColor: 'text-red-600',
-            iconColor: '!text-red-600',
-            buttonBg: 'bg-red-600',
-            buttonHover: 'hover:bg-red-700',
-          },
-          WARNING: {
-            textColor: 'text-yellow-600',
-            iconColor: '!text-yellow-600',
-            buttonBg: 'bg-yellow-600',
-            buttonHover: 'hover:bg-yellow-700',
-          },
-          INFO: {
-            textColor: 'text-blue-600',
-            iconColor: '!text-blue-600',
-            buttonBg: 'bg-blue-600',
-            buttonHover: 'hover:bg-blue-700',
-          },
-          REQUEST: {
-            textColor: 'text-purple-600',
-            iconColor: '!text-purple-600',
-            buttonBg: 'bg-purple-600',
-            buttonHover: 'hover:bg-purple-700',
-          },
-        };
-        return styles[type as keyof typeof styles] || styles.INFO;
-      };
-
-      const style = getToastStyles(newNotification.type);
-
-      const toastOptions = {
-        description: newNotification.message,
-        duration: 5000, // 5 seconds
-        unstyled: false, // Keep Sonner's base styling
-        action: {
-          label: 'View',
-          onClick: () => handleNotificationClick(newNotification),
-        },
-        classNames: {
-          toast: 'bg-white border-2 shadow-lg',
-          title: `font-semibold ${style.textColor}`,
-          description: 'text-gray-600',
-          actionButton: `${style.buttonBg} ${style.buttonHover} text-white border-0 font-medium !important`,
-          icon: `w-6 h-6 ${style.iconColor}`,
-        },
-      };
-
-      switch (newNotification.type) {
-        case 'SUCCESS':
-        case 'APPROVE':
-          toast.success(newNotification.title, toastOptions);
-          break;
-        case 'ERROR':
-          toast.error(newNotification.title, toastOptions);
-          break;
-        case 'WARNING':
-          toast.warning(newNotification.title, toastOptions);
-          break;
-        case 'INFO':
-        case 'REQUEST':
-        default:
-          toast.info(newNotification.title, toastOptions);
-          break;
-      }
-    }
-
-    // Refresh pending approvals if notification relates to approvals
-    if (
-      newNotification.type === 'REQUEST' ||
-      newNotification.title.toLowerCase().includes('approval')
-    ) {
-      fetchPendingApprovals();
-    }
-  });
+  socketService.on('notification', handleNotificationSocket);
 });
 
 watch(
@@ -343,7 +374,7 @@ watch(
 
 onUnmounted(() => {
   // if (pollingInterval) clearInterval(pollingInterval);
-  socketService.off('notification');
+  socketService.off('notification', handleNotificationSocket);
 });
 </script>
 
@@ -352,6 +383,7 @@ onUnmounted(() => {
     class="h-12 border-b border-border bg-card/80 backdrop-blur px-6 flex items-center justify-between sticky top-0 z-50 draggable-region"
   >
     <div class="flex items-center gap-4 no-drag">
+      <MobileSidebar />
       <!-- Navigation Controls -->
       <div class="flex items-center gap-1">
         <Button variant="ghost" size="icon" class="h-8 w-8" @click="router.back()" title="Back">

@@ -477,7 +477,10 @@ export class BookingsService {
             }
 
             // Deduplicate
+            const originalCount = targetUserIds.length;
             targetUserIds = [...new Set(targetUserIds)];
+
+            console.log(`[BookingsService] TriggerNotification ${sourceApp}:${actionType} | Users found: ${originalCount} | Unique: ${targetUserIds.length} | IDs: [${targetUserIds.join(', ')}]`);
 
             // 4. Send Notification to each user
             for (const userId of targetUserIds) {
@@ -549,6 +552,8 @@ export class BookingsService {
                         p0: safeParseFloat(data.p0),
                         p30: safeParseFloat(data.p30),
                         pri: safeParseFloat(data.pri),
+                        storage: data.storage,
+                        recordedBy: data.recordedBy,
                     }
                 });
             } catch (error: any) {
@@ -592,6 +597,8 @@ export class BookingsService {
                 p0: safeParseFloat(data.p0),
                 p30: safeParseFloat(data.p30),
                 pri: safeParseFloat(data.pri),
+                storage: data.storage,
+                recordedBy: data.recordedBy,
             };
             console.log(`[BookingsService] Prepared Prisma Payload:`, JSON.stringify(payloadData, null, 2));
 

@@ -1,93 +1,14 @@
 <script setup lang="ts">
-import { usePermissions } from '@/composables/usePermissions';
+import { useSidebarMenu } from '@/composables/useSidebarMenu';
 import { cn } from '@/lib/utils';
-import {
-  Bell,
-  ClipboardCheck,
-  Layers,
-  LayoutDashboard,
-  Server,
-  Shield,
-  Truck,
-  Users,
-} from 'lucide-vue-next';
-import { computed } from 'vue';
-import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 
 const route = useRoute();
-const { hasPermission, isAdmin } = usePermissions();
-
-const { t } = useI18n();
-
-const allMenuGroups = computed(() => [
-  {
-    title: t('admin.sidebar.main'),
-    items: [
-      { name: t('admin.sidebar.dashboard'), path: '/admin', icon: LayoutDashboard }, // Public for admin panel
-      {
-        name: t('admin.sidebar.roles'),
-        path: '/admin/roles',
-        icon: Shield,
-        permission: 'roles:read',
-      },
-      {
-        name: t('admin.sidebar.users'),
-        path: '/admin/users',
-        icon: Users,
-        permission: 'users:read',
-      },
-      {
-        name: t('admin.sidebar.suppliers'),
-        path: '/admin/suppliers',
-        icon: Truck,
-        permission: 'suppliers:read',
-      },
-      {
-        name: t('admin.sidebar.rubberTypes'),
-        path: '/admin/rubber-types',
-        icon: Layers,
-        permission: 'rubberTypes:read',
-      },
-      {
-        name: t('admin.sidebar.notifications'),
-        path: '/admin/notifications',
-        icon: Bell,
-        permission: 'notifications:read',
-      },
-      // { name: t('admin.sidebar.bookingQueue'), path: '/bookings', icon: Calendar, permission: 'bookings:read' },
-      // { name: t('admin.sidebar.truckScale'), path: '/scale', icon: Truck, permission: 'bookings:read' },
-      { name: t('admin.sidebar.approvals'), path: '/approvals', icon: ClipboardCheck }, // Pending permission module
-    ],
-  },
-  {
-    title: t('admin.sidebar.system'),
-    items: [
-      // { name: t('admin.sidebar.analytics'), path: '/admin/analytics', icon: Activity },
-      { name: t('admin.systemStatus.title'), path: '/admin/system-status', icon: Server },
-    ],
-  },
-]);
-
-const menuGroups = computed(() => {
-  return allMenuGroups.value
-    .map((group) => ({
-      ...group,
-      items: group.items.filter((item) => {
-        // If no permission required, show it
-        if (!item.permission) return true;
-        // If admin, always show (unless logic changes)
-        if (isAdmin.value) return true;
-        // Otherwise check permission
-        return hasPermission(item.permission);
-      }),
-    }))
-    .filter((group) => group.items.length > 0); // Hide empty groups
-});
+const { menuGroups } = useSidebarMenu();
 </script>
 
 <template>
-  <aside class="w-64 h-full flex flex-col">
+  <aside class="hidden lg:flex w-64 h-full flex-col border-r bg-background">
     <nav class="flex-1 p-4 space-y-6 overflow-y-auto">
       <div v-for="(group, index) in menuGroups" :key="index">
         <h4 class="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
