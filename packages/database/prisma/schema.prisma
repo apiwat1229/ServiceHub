@@ -438,6 +438,51 @@ enum NotificationStatus {
   ARCHIVED
 }
 
+model Pool {
+  id          String   @id @default(uuid())
+  name        String
+  status      String   @default("empty") // empty, open, closed
+  grade       String?  @default("-")
+  rubberType  String?  @map("rubber_type") @default("-")
+  capacity    Float    @default(3000)
+  totalWeight Float    @map("total_weight") @default(0)
+  totalGrossWeight Float @map("total_gross_weight") @default(0)
+  
+  openDate    DateTime? @map("open_date")
+  closeDate   DateTime? @map("close_date")
+  emptyDate   DateTime? @map("empty_date")
+  fillingDate DateTime? @map("filling_date")
+  
+  productionPlan String? @map("production_plan")
+  
+  items       PoolItem[]
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("pools")
+}
+
+model PoolItem {
+  id           String   @id @default(uuid())
+  poolId       String   @map("pool_id")
+  pool         Pool     @relation(fields: [poolId], references: [id], onDelete: Cascade)
+  
+  bookingId    String   @map("booking_id")
+  lotNumber    String   @map("lot_number")
+  supplierName String   @map("supplier_name")
+  supplierCode String   @map("supplier_code")
+  date         DateTime
+  netWeight    Float    @map("net_weight")
+  grossWeight  Float    @map("gross_weight")
+  grade        String
+  rubberType   String   @map("rubber_type")
+
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("pool_items")
+}
+
 model NotificationSetting {
   id String @id @default(uuid())
 

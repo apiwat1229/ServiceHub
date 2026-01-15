@@ -117,7 +117,7 @@ const calculateLabDrc = (before: string | number, after: string | number) => {
   const b = parseFloat(before?.toString());
   const a = parseFloat(after?.toString());
   if (b && a && b > 0) {
-    return ((a / b) * 100).toFixed(2);
+    return ((a / b) * 100).toFixed(1);
   }
   return null;
 };
@@ -134,26 +134,114 @@ const handleNumericInput = (sample: any, field: string, value: string) => {
 const saveAll = async () => {
   isSaving.value = true;
   try {
-    // Save all samples that have ID
     const all = samples.value;
 
     for (const s of all) {
+      // Helper to parse float or null
+      const pf = (v: any) => parseFloat(v?.toString()) || null;
+
+      const ad1 = pf(s.afterDryerB1);
+      const bl1 = pf(s.beforeLabDryerB1);
+      const al1 = pf(s.afterLabDryerB1);
+      const bb1 = pf(s.beforeBaking1);
+
+      const ad2 = pf(s.afterDryerB2);
+      const bl2 = pf(s.beforeLabDryerB2);
+      const al2 = pf(s.afterLabDryerB2);
+      const bb2 = pf(s.beforeBaking2);
+
+      const ad3 = pf(s.afterDryerB3);
+      const bl3 = pf(s.beforeLabDryerB3);
+      const al3 = pf(s.afterLabDryerB3);
+      const bb3 = pf(s.beforeBaking3);
+
+      // Calculations per basket
+      const calcDrc = (after: number | null, before: number | null) =>
+        after && before ? (after / before) * 100 : null;
+      const calcMoisture = (beforeLab: number | null, afterLab: number | null) =>
+        beforeLab && afterLab && beforeLab > 0 ? ((beforeLab - afterLab) / beforeLab) * 100 : null;
+      const calcRecal = (drc: number | null, moisture: number | null) =>
+        drc !== null && moisture !== null ? drc / (1 - moisture / 100) : null;
+      const calcDrcDry = (drc: number | null) => (drc ? drc / 0.9152 : null); // Assuming 8.48% target moisture for factory "Dry" standard if recal not used? Or use Recal?
+      // Actually, looking at the image, Recal and DRC Dry are separate.
+      // I'll use a placeholder or common formula if found. For now, let's use recalDrc as a base for drcDry or keeping it null.
+      // Actually, I'll just map recalDrc for now to see if it matches.
+
+      const drcB1 = calcDrc(ad1, bb1);
+      const moist1 = calcMoisture(bl1, al1);
+      const recal1 = calcRecal(drcB1, moist1);
+      const drcDry1 = calcDrcDry(drcB1);
+
+      const drcB2 = calcDrc(ad2, bb2);
+      const moist2 = calcMoisture(bl2, al2);
+      const recal2 = calcRecal(drcB2, moist2);
+      const drcDry2 = calcDrcDry(drcB2);
+
+      const drcB3 = calcDrc(ad3, bb3);
+      const moist3 = calcMoisture(bl3, al3);
+      const recal3 = calcRecal(drcB3, moist3);
+      const drcDry3 = calcDrcDry(drcB3);
+
+      // Summary Calculations (Median)
+      const drcs = [drcB1, drcB2, drcB3].filter((v) => v !== null) as number[];
+      const recals = [recal1, recal2, recal3].filter((v) => v !== null) as number[];
+      const drys = [drcDry1, drcDry2, drcDry3].filter((v) => v !== null) as number[];
+
+      const getMedian = (arr: number[]) => {
+        if (arr.length === 0) return null;
+        const sorted = [...arr].sort((a, b) => a - b);
+        const mid = Math.floor(sorted.length / 2);
+        return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+      };
+
+      const medianDrc = getMedian(drcs);
+      const medianRecal = getMedian(recals);
+      const medianDrcDry = getMedian(drys);
+
+      // Difference = Recal DRC - Est DRC (percentCp)
+      const estDrc = pf(s.percentCp);
+      const difference = medianRecal !== null && estDrc !== null ? medianRecal - estDrc : null;
+
       await bookingsApi.saveSample(props.bookingId, {
         ...s,
-        // Parse Floats
-        afterDryerB1: parseFloat(s.afterDryerB1) || null,
-        beforeLabDryerB1: parseFloat(s.beforeLabDryerB1) || null,
-        afterLabDryerB1: parseFloat(s.afterLabDryerB1) || null,
+        // Raw Inputs
+        afterDryerB1: ad1,
+        beforeLabDryerB1: bl1,
+        afterLabDryerB1: al1,
+        afterDryerB2: ad2,
+        beforeLabDryerB2: bl2,
+        afterLabDryerB2: al2,
+        afterDryerB3: ad3,
+        beforeLabDryerB3: bl3,
+        afterLabDryerB3: al3,
 
-        afterDryerB2: parseFloat(s.afterDryerB2) || null,
-        beforeLabDryerB2: parseFloat(s.beforeLabDryerB2) || null,
-        afterLabDryerB2: parseFloat(s.afterLabDryerB2) || null,
+        // Calculated Per Basket
+        drcB1,
+        moisturePercentB1: moist1,
+        recalDrcB1: recal1,
+        drcDryB1: drcDry1,
+        labDrcB1: bl1 && al1 ? (al1 / bl1) * 100 : null,
 
-        afterDryerB3: parseFloat(s.afterDryerB3) || null,
-        beforeLabDryerB3: parseFloat(s.beforeLabDryerB3) || null,
-        afterLabDryerB3: parseFloat(s.afterLabDryerB3) || null,
+        drcB2,
+        moisturePercentB2: moist2,
+        recalDrcB2: recal2,
+        drcDryB2: drcDry2,
+        labDrcB2: bl2 && al2 ? (al2 / bl2) * 100 : null,
+
+        drcB3,
+        moisturePercentB3: moist3,
+        recalDrcB3: recal3,
+        drcDryB3: drcDry3,
+        labDrcB3: bl3 && al3 ? (al3 / bl3) * 100 : null,
+
+        // Summary
+        drc: medianDrc,
+        recalDrc: medianRecal,
+        drcDry: medianDrcDry,
+        difference,
 
         isTrailer: props.isTrailer || false,
+        basketWeight: pf(s.basketWeight),
       });
     }
 
@@ -365,7 +453,7 @@ onMounted(async () => {
             <Badge variant="outline" class="bg-slate-100 text-slate-600"
               >Sample {{ index + 1 }}</Badge
             >
-            <div class="flex items-center gap-4 text-[10px] text-slate-500 hidden md:flex">
+            <div class="items-center gap-4 text-[10px] text-slate-500 hidden md:flex">
               <div class="flex gap-1" title="Before Press">
                 <span>Before Press:</span>
                 <span class="font-bold text-slate-700">{{ sample.beforePress || '-' }}</span>
@@ -388,6 +476,10 @@ onMounted(async () => {
                   calculatePri(sample.p0, sample.p30)
                 }}</span>
               </div>
+              <div class="flex gap-1" title="Basket Weight">
+                <span>Basket:</span>
+                <span class="font-bold text-slate-700">{{ sample.basketWeight || '-' }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -403,7 +495,19 @@ onMounted(async () => {
               Basket {{ b }}
             </div>
             <div class="space-y-2">
-              <div class="grid grid-cols-2 gap-2">
+              <div class="grid grid-cols-3 gap-2">
+                <!-- Basket Weight -->
+                <div class="space-y-1">
+                  <label class="text-[0.6rem] font-bold text-slate-400 uppercase">Basket</label>
+                  <Input
+                    v-model="sample.basketWeight"
+                    class="h-8 bg-white"
+                    placeholder="kg"
+                    @input="handleNumericInput(sample, 'basketWeight', $event.target.value)"
+                    @keydown.enter="handleEnter"
+                    :disabled="!isEditing"
+                  />
+                </div>
                 <!-- Before Dryer (Read Only) -->
                 <div class="space-y-1">
                   <label class="text-[0.6rem] font-bold text-slate-400 uppercase"

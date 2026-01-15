@@ -96,6 +96,13 @@ watch(secondMonthPlaceholder, (_secondMonthPlaceholder) => {
   if (isEqualMonth(_secondMonthPlaceholder, placeholder.value))
     placeholder.value = placeholder.value.subtract({ months: 1 });
 });
+
+const formatDate = (date: Date) => {
+  const d = date.getDate();
+  const m = new Intl.DateTimeFormat('en-US', { month: 'short' }).format(date);
+  const y = date.getFullYear();
+  return `${d}-${m}-${y}`;
+};
 </script>
 
 <template>
@@ -104,31 +111,17 @@ watch(secondMonthPlaceholder, (_secondMonthPlaceholder) => {
       <Button
         variant="outline"
         :class="
-          cn('w-[280px] justify-start text-left font-normal', !value && 'text-muted-foreground')
+          cn('w-[280px] justify-center text-left font-normal', !value && 'text-muted-foreground')
         "
       >
         <CalendarIcon class="mr-2 h-4 w-4" />
         <template v-if="value?.start">
           <template v-if="value.end">
-            {{
-              formatter.custom(toDate(value.start), {
-                dateStyle: 'medium',
-              })
-            }}
-            -
-            {{
-              formatter.custom(toDate(value.end), {
-                dateStyle: 'medium',
-              })
-            }}
+            {{ formatDate(toDate(value.start)) }} - {{ formatDate(toDate(value.end)) }}
           </template>
 
           <template v-else>
-            {{
-              formatter.custom(toDate(value.start), {
-                dateStyle: 'medium',
-              })
-            }}
+            {{ formatDate(toDate(value.start)) }}
           </template>
         </template>
         <template v-else> Pick a date range </template>

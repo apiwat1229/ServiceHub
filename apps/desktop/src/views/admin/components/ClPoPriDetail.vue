@@ -94,7 +94,7 @@ const calculatePri = (sample: any) => {
   const p0 = parseFloat(sample.p0);
   const p30 = parseFloat(sample.p30);
   if (p0 && p30 && p0 > 0) {
-    sample.pri = ((p30 / p0) * 100).toFixed(2);
+    sample.pri = ((p30 / p0) * 100).toFixed(1);
   } else {
     sample.pri = '';
   }
@@ -196,6 +196,13 @@ const displayRubberType = computed(() => {
   return type ? type.name : code || '-';
 });
 
+const displayLocation = computed(() => {
+  if (!booking.value) return '-';
+  return props.isTrailer
+    ? booking.value.trailerRubberSource || booking.value.rubberSource || '-'
+    : booking.value.rubberSource || '-';
+});
+
 const displayNetWeight = computed(() => {
   if (!booking.value) return '0';
   const inW = props.isTrailer ? booking.value.trailerWeightIn || 0 : booking.value.weightIn || 0;
@@ -219,6 +226,12 @@ const calculatedGrade = computed(() => {
   if (avg < 60) return 'A';
   return 'AA';
 });
+
+const formatNum = (v: any, decimals = 1) => {
+  const n = parseFloat(v);
+  if (isNaN(n)) return v || '-';
+  return n.toFixed(decimals);
+};
 
 onMounted(async () => {
   await fetchData();
@@ -268,11 +281,16 @@ onMounted(async () => {
           <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest mb-1"
             >Rubber Type</span
           >
-          <Badge
-            variant="outline"
-            class="w-fit bg-white text-blue-600 border-blue-200 uppercase text-[10px] h-5 px-2"
-            >{{ displayRubberType }}</Badge
-          >
+          <div class="flex flex-col gap-1">
+            <Badge
+              variant="outline"
+              class="w-fit bg-white text-blue-600 border-blue-200 uppercase text-[10px] h-5 px-2"
+              >{{ displayRubberType }}</Badge
+            >
+            <span class="text-[10px] font-medium text-blue-600 truncate max-w-[120px]">{{
+              displayLocation
+            }}</span>
+          </div>
         </div>
 
         <div class="flex flex-col">
@@ -280,7 +298,13 @@ onMounted(async () => {
             >DRC ACTUAL</span
           >
           <span class="text-sm font-bold text-purple-600"
-            >{{ (props.isTrailer ? booking?.trailerDrcEst : booking?.drcEst) || '-' }}%</span
+            >{{
+              formatNum(
+                props.isTrailer
+                  ? booking?.trailerDrcActual || booking?.trailerDrcEst
+                  : booking?.drcActual || booking?.drcEst
+              )
+            }}%</span
           >
         </div>
 

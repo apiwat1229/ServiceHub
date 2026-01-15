@@ -112,6 +112,7 @@ const processedBookings = computed(() => {
         isTrailerPart: false,
         partLabel: 'Main Truck',
         displayRubberType: getRubberTypeName(b.rubberType),
+        displayLocation: b.rubberSource || '-',
         displayWeightIn: grossMain,
         displayNetWeight: netWeightMain,
         avgPo: avgPoMain,
@@ -151,6 +152,7 @@ const processedBookings = computed(() => {
           isTrailerPart: true,
           partLabel: 'Trailer',
           displayRubberType: getRubberTypeName(b.trailerRubberType || b.rubberType),
+          displayLocation: b.trailerRubberSource || b.rubberSource || '-',
           displayWeightIn: grossTrailer,
           displayNetWeight: netWeightTrailer,
           avgPo: avgPoTrailer,
@@ -256,7 +258,11 @@ const columns: ColumnDef<any>[] = [
       const booking = row.original;
       return h('div', { class: 'flex flex-col' }, [
         h('span', { class: 'font-medium text-sm' }, booking.displayRubberType),
-        h('span', { class: 'text-[10px] text-muted-foreground' }, booking.location || '-'),
+        h(
+          'span',
+          { class: 'text-[10px] text-muted-foreground font-medium text-blue-600' },
+          booking.displayLocation
+        ),
       ]);
     },
   },
@@ -275,7 +281,7 @@ const columns: ColumnDef<any>[] = [
       const val = row.original.avgPo;
       if (!val || val === 0)
         return h('div', { class: 'text-center text-muted-foreground/30' }, '-');
-      return h('div', { class: 'text-center font-bold text-slate-600' }, val.toFixed(2));
+      return h('div', { class: 'text-center font-bold text-slate-600' }, val.toFixed(1));
     },
   },
   {
@@ -293,7 +299,7 @@ const columns: ColumnDef<any>[] = [
       const val = row.original.avgPri;
       if (!val || val === 0)
         return h('div', { class: 'text-center text-muted-foreground/30' }, '-');
-      return h('div', { class: 'text-center font-bold text-slate-600' }, val.toFixed(2));
+      return h('div', { class: 'text-center font-bold text-slate-600' }, val.toFixed(1));
     },
   },
   {

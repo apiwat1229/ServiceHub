@@ -22,6 +22,7 @@ import { toast } from 'vue-sonner';
 
 import ClLabTab from './tabs/ClLabTab.vue';
 import ClPoPriTab from './tabs/ClPoPriTab.vue';
+import ClSummaryTab from './tabs/ClSummaryTab.vue';
 import UssPoPriTab from './tabs/UssPoPriTab.vue';
 
 const { t } = useI18n();
@@ -59,6 +60,7 @@ const selectedCategory = ref<'CL' | 'USS'>(
 const allTabs = [
   { id: 'cl-po-pri', label: 'CL PO PRI', icon: ClipboardList, category: 'CL' },
   { id: 'cl-lab', label: 'CL Lab', icon: TestTubes, category: 'CL' },
+  { id: 'cl-summary', label: 'CL Summary', icon: List, category: 'CL' },
   { id: 'cuplump-pool', label: 'Cuplump Pool', icon: Waves, category: 'CL' },
   { id: 'uss-po-pri', label: 'USS PO PRI', icon: ClipboardList, category: 'USS' },
   { id: 'uss-summary', label: 'USS Summary', icon: List, category: 'USS' },
@@ -200,50 +202,62 @@ onMounted(() => {
     </div>
 
     <!-- Tab Content -->
-    <div v-if="currentTab === 'cl-po-pri'">
-      <ClPoPriTab
-        :search-query="searchQuery"
-        :date="selectedDate"
-        :status-filter="statusFilter"
-        @update:stats="handleStatsUpdate"
-      />
-    </div>
-    <div v-else-if="currentTab === 'cl-lab'">
-      <ClLabTab
-        :search-query="searchQuery"
-        :date="selectedDate"
-        :status-filter="statusFilter"
-        @update:stats="handleStatsUpdate"
-      />
-    </div>
-    <div v-else-if="currentTab === 'cuplump-pool'">
-      <!-- Placeholders for other tabs if they need props -->
-      <div
-        class="flex items-center justify-center h-64 border rounded-lg bg-slate-50 border-dashed"
-      >
-        <div class="text-center">
-          <Waves class="h-10 w-10 text-slate-300 mx-auto mb-3" />
-          <h3 class="text-lg font-medium text-slate-900">Cuplump Pool</h3>
-          <p class="text-slate-500">Feature coming soon</p>
+    <!-- Tab Content Area -->
+    <div
+      class="flex-1 overflow-y-auto pr-2 -mr-2 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent"
+    >
+      <div v-if="currentTab === 'cl-po-pri'">
+        <ClPoPriTab
+          :search-query="searchQuery"
+          :date="selectedDate"
+          :status-filter="statusFilter"
+          @update:stats="handleStatsUpdate"
+        />
+      </div>
+      <div v-else-if="currentTab === 'cl-lab'">
+        <ClLabTab
+          :search-query="searchQuery"
+          :date="selectedDate"
+          :status-filter="statusFilter"
+          @update:stats="handleStatsUpdate"
+        />
+      </div>
+      <div v-else-if="currentTab === 'cl-summary'">
+        <ClSummaryTab
+          :search-query="searchQuery"
+          :date="selectedDate"
+          :status-filter="statusFilter"
+          @update:stats="handleStatsUpdate"
+        />
+      </div>
+      <div v-else-if="currentTab === 'cuplump-pool'">
+        <div
+          class="flex items-center justify-center h-64 border rounded-lg bg-slate-50 border-dashed"
+        >
+          <div class="text-center">
+            <Waves class="h-10 w-10 text-slate-300 mx-auto mb-3" />
+            <h3 class="text-lg font-medium text-slate-900">Cuplump Pool</h3>
+            <p class="text-slate-500">Feature coming soon</p>
+          </div>
         </div>
       </div>
-    </div>
-    <div v-else-if="currentTab === 'uss-po-pri'">
-      <UssPoPriTab
-        :search-query="searchQuery"
-        :date="selectedDate"
-        :status-filter="statusFilter"
-        @update:stats="handleStatsUpdate"
-      />
-    </div>
-    <div v-else-if="currentTab === 'uss-summary'">
-      <div
-        class="flex items-center justify-center h-64 border rounded-lg bg-slate-50 border-dashed"
-      >
-        <div class="text-center">
-          <List class="h-10 w-10 text-slate-300 mx-auto mb-3" />
-          <h3 class="text-lg font-medium text-slate-900">USS Summary</h3>
-          <p class="text-slate-500">Feature coming soon</p>
+      <div v-else-if="currentTab === 'uss-po-pri'">
+        <UssPoPriTab
+          :search-query="searchQuery"
+          :date="selectedDate"
+          :status-filter="statusFilter"
+          @update:stats="handleStatsUpdate"
+        />
+      </div>
+      <div v-else-if="currentTab === 'uss-summary'">
+        <div
+          class="flex items-center justify-center h-64 border rounded-lg bg-slate-50 border-dashed"
+        >
+          <div class="text-center">
+            <List class="h-10 w-10 text-slate-300 mx-auto mb-3" />
+            <h3 class="text-lg font-medium text-slate-900">USS Summary</h3>
+            <p class="text-slate-500">Feature coming soon</p>
+          </div>
         </div>
       </div>
     </div>

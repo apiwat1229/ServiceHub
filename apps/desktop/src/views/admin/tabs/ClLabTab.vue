@@ -17,7 +17,7 @@ const emit = defineEmits(['update:stats']);
 const bookings = ref<any[]>([]);
 const rubberTypes = ref<RubberType[]>([]);
 const isLoading = ref(false);
-// Local statusFilter removed, using props.statusFilter
+
 const statusFilter = computed(() => props.statusFilter || 'ALL');
 
 // Detail Dialog
@@ -48,7 +48,7 @@ const fetchData = async () => {
     ]);
 
     rubberTypes.value = typesData;
-    // Filter for Cuplump only (Should match CL PO PRI logic)
+    // Filter for Cuplump only
     bookings.value = (bookingsData || []).filter(
       (b: any) =>
         b.rubberType &&
@@ -68,17 +68,28 @@ const getRubberTypeName = (code: string) => {
   return type ? type.name : code;
 };
 
-// Computed Data for Stats
+const calculateGrade = (avg: number) => {
+  if (!avg || avg === 0) return '-';
+  if (avg < 20) return 'D';
+  if (avg < 35) return 'C';
+  if (avg < 47) return 'B';
+  if (avg < 60) return 'A';
+  return 'AA';
+};
+
+// Computed Data
 const processedBookings = computed(() => {
   const result: any[] = [];
   bookings.value.forEach((b: any) => {
     // 1. Main Part
     const bSamplesMain = b.labSamples?.filter((s: any) => !s.isTrailer) || [];
-    // Calculate simple stats if needed, or rely on stored fields if backend calculates
-    // Currently relying on frontend processing for display consistency
-
-    // Using avgPri for grade just for reference, but main focus is Lab fields availability?
+    const validPoMain = bSamplesMain.filter((s: any) => s.p0 && s.p0 > 0);
     const validPriMain = bSamplesMain.filter((s: any) => s.pri && s.pri > 0);
+
+    const avgPoMain =
+      validPoMain.length > 0
+        ? validPoMain.reduce((sum: number, s: any) => sum + s.p0, 0) / validPoMain.length
+        : 0;
     const avgPriMain =
       validPriMain.length > 0
         ? validPriMain.reduce((sum: number, s: any) => sum + s.pri, 0) / validPriMain.length
@@ -88,7 +99,6 @@ const processedBookings = computed(() => {
     const drcMain = b.drcActual || 0;
     const netWeightMain = drcMain > 0 ? Math.round(grossMain * (drcMain / 100)) : 0;
 
-    // Only display if samples exist AND Lot Number is present
     if (bSamplesMain.length > 0 && b.lotNo) {
       result.push({
         ...b,
@@ -97,10 +107,12 @@ const processedBookings = computed(() => {
         isTrailerPart: false,
         partLabel: 'Main Truck',
         displayRubberType: getRubberTypeName(b.rubberType),
+        displayLocation: b.rubberSource || '-',
         displayWeightIn: grossMain,
         displayNetWeight: netWeightMain,
-        drcActual: drcMain,
+        avgPo: avgPoMain,
         avgPri: avgPriMain,
+        grade: calculateGrade(avgPriMain),
         lotNo: b.lotNo,
       });
     }
@@ -110,10 +122,24 @@ const processedBookings = computed(() => {
       (b.trailerWeightIn && b.trailerWeightIn > 0) || (b.trailerRubberType && b.trailerRubberType);
     if (hasTrailer) {
       const bSamplesTrailer = b.labSamples?.filter((s: any) => s.isTrailer) || [];
-
-      // Only display if trailer samples exist AND Lot Number is present
       if (bSamplesTrailer.length > 0 && b.lotNo) {
+        const validPoTrailer = bSamplesTrailer.filter((s: any) => s.p0 && s.p0 > 0);
+        const validPriTrailer = bSamplesTrailer.filter((s: any) => s.pri && s.pri > 0);
+
+        const avgPoTrailer =
+          validPoTrailer.length > 0
+            ? validPoTrailer.reduce((sum: number, s: any) => sum + s.p0, 0) / validPoTrailer.length
+            : 0;
+        const avgPriTrailer =
+          validPriTrailer.length > 0
+            ? validPriTrailer.reduce((sum: number, s: any) => sum + s.pri, 0) /
+              validPriTrailer.length
+            : 0;
+
         const grossTrailer = Math.max(0, (b.trailerWeightIn || 0) - (b.trailerWeightOut || 0));
+        const drcTrailer = b.trailerDrcActual || 0;
+        const netWeightTrailer = drcTrailer > 0 ? Math.round(grossTrailer * (drcTrailer / 100)) : 0;
+
         result.push({
           ...b,
           id: b.id + '-trailer',
@@ -121,8 +147,12 @@ const processedBookings = computed(() => {
           isTrailerPart: true,
           partLabel: 'Trailer',
           displayRubberType: getRubberTypeName(b.trailerRubberType || b.rubberType),
+          displayLocation: b.trailerRubberSource || b.rubberSource || '-',
           displayWeightIn: grossTrailer,
-          // ... simplified for brevity
+          displayNetWeight: netWeightTrailer,
+          avgPo: avgPoTrailer,
+          avgPri: avgPriTrailer,
+          grade: calculateGrade(avgPriTrailer),
           lotNo: b.lotNo,
         });
       }
@@ -132,43 +162,36 @@ const processedBookings = computed(() => {
 });
 
 const stats = computed(() => {
-  // Check completeness based on Lab Data?
-  // Assume complete if drcActual > 0 ? Or if samples exist?
-  return { total: processedBookings.value.length, complete: 0, incomplete: 0 };
+  const total = processedBookings.value.length;
+  // Assume complete if has avg data
+  const complete = processedBookings.value.filter((b: any) => b.avgPo > 0 || b.avgPri > 0).length;
+  return { total, complete, incomplete: total - complete };
 });
 
-watch(
-  stats,
-  (newStats) => {
-    emit('update:stats', newStats);
-  },
-  { immediate: true }
-);
+watch(stats, (s) => emit('update:stats', s), { immediate: true });
 
 const filteredBookings = computed(() => {
   let result = processedBookings.value;
 
   if (statusFilter.value === 'COMPLETE') {
-    // ClLab filtering logic for complete/incomplete
-    // Assuming complete means drcActual > 0
-    result = result.filter((b: any) => b.drcActual && b.drcActual > 0);
+    result = result.filter((b: any) => b.avgPo > 0 || b.avgPri > 0);
   } else if (statusFilter.value === 'INCOMPLETE') {
-    result = result.filter((b: any) => !b.drcActual || b.drcActual <= 0);
+    result = result.filter((b: any) => !(b.avgPo > 0 || b.avgPri > 0));
   }
-  // Apply Search
+
   if (props.searchQuery) {
     const query = props.searchQuery.toLowerCase();
     result = result.filter(
       (b) =>
-        b.bookingCode?.toLowerCase().includes(query) ||
+        b.lotNo?.toLowerCase().includes(query) ||
         b.supplierName?.toLowerCase().includes(query) ||
-        b.lotNo?.toLowerCase().includes(query)
+        b.supplierCode?.toLowerCase().includes(query)
     );
   }
   return result;
 });
 
-// Column Definitions (Simplified for Lab)
+// Column Definitions
 const columns: ColumnDef<any>[] = [
   {
     accessorKey: 'bookingCode',
@@ -201,19 +224,93 @@ const columns: ColumnDef<any>[] = [
     },
   },
   {
-    accessorKey: 'drcActual',
-    header: () => h('div', { class: 'text-center' }, 'DRC %'),
+    accessorKey: 'truckRegister',
+    header: () => 'Truck',
     cell: ({ row }) => {
-      const val = row.original.drcActual;
-      if (!val) return h('div', { class: 'text-center text-muted-foreground/30' }, '-');
-      return h('div', { class: 'text-center font-bold text-blue-600' }, `${val}%`);
+      const booking = row.original;
+      return h('div', { class: 'flex flex-col' }, [
+        h('span', { class: 'font-bold text-sm capitalize' }, booking.truckRegister),
+        h(
+          'span',
+          { class: 'text-[10px] text-muted-foreground' },
+          booking.isTrailerPart ? 'Trailer' : booking.truckType || 'Main Truck'
+        ),
+      ]);
+    },
+  },
+  {
+    accessorKey: 'rubberType',
+    header: () => 'Rubber Type',
+    cell: ({ row }) => {
+      const booking = row.original;
+      return h('div', { class: 'flex flex-col' }, [
+        h('span', { class: 'font-medium text-sm' }, booking.displayRubberType),
+        h(
+          'span',
+          { class: 'text-[10px] text-muted-foreground font-medium text-blue-600' },
+          booking.displayLocation
+        ),
+      ]);
+    },
+  },
+  {
+    accessorKey: 'avgPo',
+    header: () =>
+      h(
+        'div',
+        {
+          class:
+            'text-center bg-slate-100 text-slate-700 h-8 flex items-center justify-center rounded-sm mx-1 min-w-[80px] font-bold text-xs',
+        },
+        'AVG PO'
+      ),
+    cell: ({ row }) => {
+      const val = row.original.avgPo;
+      if (!val || val === 0)
+        return h('div', { class: 'text-center text-muted-foreground/30' }, '-');
+      return h('div', { class: 'text-center font-bold text-slate-600' }, val.toFixed(1));
+    },
+  },
+  {
+    accessorKey: 'avgPri',
+    header: () =>
+      h(
+        'div',
+        {
+          class:
+            'text-center bg-slate-100 text-slate-700 h-8 flex items-center justify-center rounded-sm mx-1 min-w-[80px] font-bold text-xs',
+        },
+        'AVG PRI'
+      ),
+    cell: ({ row }) => {
+      const val = row.original.avgPri;
+      if (!val || val === 0)
+        return h('div', { class: 'text-center text-muted-foreground/30' }, '-');
+      return h('div', { class: 'text-center font-bold text-slate-600' }, val.toFixed(1));
+    },
+  },
+  {
+    accessorKey: 'grade',
+    header: () =>
+      h(
+        'div',
+        {
+          class:
+            'text-center bg-slate-100 text-slate-700 h-8 flex items-center justify-center rounded-sm mx-1 min-w-[60px] font-bold text-xs',
+        },
+        'Grade'
+      ),
+    cell: ({ row }) => {
+      const val = row.original.grade;
+      if (!val || val === '-')
+        return h('div', { class: 'text-center text-muted-foreground/30' }, '-');
+      return h('div', { class: 'text-center font-black text-slate-800' }, val);
     },
   },
   {
     accessorKey: 'netWeight',
     header: () => h('div', { class: 'text-right' }, 'Net Weight'),
     cell: ({ row }) => {
-      // Reuse logic from ClPoPriTab
       const val = row.original.displayNetWeight;
       return h('div', { class: 'text-right' }, [
         val > 0
@@ -235,7 +332,6 @@ onMounted(() => {
 
 <template>
   <div class="space-y-4">
-    <!-- Data Table -->
     <div class="rounded-md border bg-card">
       <DataTable
         :columns="columns"
@@ -245,7 +341,6 @@ onMounted(() => {
       />
     </div>
 
-    <!-- Detail Dialog -->
     <ClLabDialog
       v-model:open="isDialogOpen"
       :booking-id="selectedBookingId"

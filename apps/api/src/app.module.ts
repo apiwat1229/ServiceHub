@@ -16,6 +16,7 @@ import { MyMachineModule } from './mymachine/mymachine.module';
 import { NotificationGroupsModule } from './notification-groups/notification-groups.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PlcModule } from './plc/plc.module';
+import { PoolsModule } from './pools/pools.module';
 import { PostsModule } from './posts/posts.module';
 import { PrinterUsageModule } from './printer-usage/printer-usage.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -51,6 +52,7 @@ import { UsersModule } from './users/users.module';
         MyMachineModule,
         MaintenanceModule,
         PlcModule,
+        PoolsModule,
         // ServeStaticModule.forRoot({
         //     rootPath: join(process.cwd(), 'uploads'),
         //     serveRoot: '/uploads',
