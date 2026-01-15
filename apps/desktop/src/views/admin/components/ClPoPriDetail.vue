@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { bookingsApi } from '@/services/bookings';
 import { rubberTypesApi } from '@/services/rubberTypes';
-import { Save } from 'lucide-vue-next';
+import { Pencil, Save, Trash2 } from 'lucide-vue-next';
 import { computed, nextTick, onMounted, ref } from 'vue';
 import { toast } from 'vue-sonner';
 
@@ -25,7 +25,7 @@ const props = defineProps<{
   isTrailer?: boolean;
 }>();
 
-const emit = defineEmits(['close', 'update']);
+const emit = defineEmits(['close', 'update', 'print']);
 
 // State
 const booking = ref<any>(null);
@@ -36,6 +36,25 @@ const isSaving = ref(false);
 const showDeleteConfirm = ref(false);
 const sampleToDeleteId = ref<string | null>(null);
 const isDeleting = ref(false);
+const showBookingDeleteConfirm = ref(false);
+const isEditing = ref(false);
+
+const deleteBooking = async () => {
+  if (!booking.value?.id) return;
+  isDeleting.value = true;
+  try {
+    await bookingsApi.delete(booking.value.id);
+    toast.success('Deleted successfully');
+    emit('close');
+    emit('update');
+  } catch (error) {
+    console.error('Failed to delete:', error);
+    toast.error('Failed to delete');
+  } finally {
+    isDeleting.value = false;
+    showBookingDeleteConfirm.value = false;
+  }
+};
 
 // New Samples are disabled for QA
 
@@ -184,6 +203,23 @@ const displayNetWeight = computed(() => {
   return Math.max(0, inW - outW).toLocaleString();
 });
 
+const averagePri = computed(() => {
+  const valid = samples.value.map((s) => parseFloat(s.pri)).filter((v) => !isNaN(v));
+  if (valid.length === 0) return null;
+  return valid.reduce((a, b) => a + b, 0) / valid.length;
+});
+
+const calculatedGrade = computed(() => {
+  const avg = averagePri.value;
+  if (avg === null) return '-';
+
+  if (avg < 20) return 'D';
+  if (avg < 35) return 'C';
+  if (avg < 47) return 'B';
+  if (avg < 60) return 'A';
+  return 'AA';
+});
+
 onMounted(async () => {
   await fetchData();
   focusFirstInput();
@@ -192,7 +228,7 @@ onMounted(async () => {
 
 <template>
   <div
-    class="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden flex flex-col h-full"
+    class="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden flex flex-col h-full relative"
   >
     <!-- Header Section -->
     <div class="p-6 border-b border-slate-100 bg-slate-50/50">
@@ -241,7 +277,7 @@ onMounted(async () => {
 
         <div class="flex flex-col">
           <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest mb-1"
-            >DRC Est.</span
+            >DRC ACTUAL</span
           >
           <span class="text-sm font-bold text-purple-600"
             >{{ (props.isTrailer ? booking?.trailerDrcEst : booking?.drcEst) || '-' }}%</span
@@ -253,6 +289,17 @@ onMounted(async () => {
             >Net Weight</span
           >
           <span class="text-sm font-bold text-blue-600">{{ displayNetWeight }} kg</span>
+        </div>
+
+        <div class="flex flex-col">
+          <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest mb-1"
+            >Grade</span
+          >
+          <div
+            class="flex items-center justify-center border-2 border-slate-200 rounded px-2 h-5 min-w-[3rem] bg-white"
+          >
+            <span class="text-xs font-black text-slate-900">{{ calculatedGrade }}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -306,10 +353,12 @@ onMounted(async () => {
             <label class="text-[10px] font-bold text-slate-400 uppercase">PO</label>
             <Input
               v-model="sample.p0"
-              class="h-9 bg-white border-slate-200 font-bold text-slate-700"
+              class="h-9 border-slate-200 font-bold"
+              :class="!isEditing ? 'bg-slate-100 text-slate-500' : 'bg-white text-slate-700'"
               placeholder="PO"
               @input="handleNumericInput(sample, 'p0', $event.target.value)"
               @keydown="handleEnter"
+              :disabled="!isEditing"
             />
           </div>
 
@@ -317,17 +366,19 @@ onMounted(async () => {
             <label class="text-[10px] font-bold text-slate-400 uppercase">P30</label>
             <Input
               v-model="sample.p30"
-              class="h-9 bg-white border-slate-200 font-bold text-slate-700"
+              class="h-9 border-slate-200 font-bold"
+              :class="!isEditing ? 'bg-slate-100 text-slate-500' : 'bg-white text-slate-700'"
               placeholder="P30"
               @input="handleNumericInput(sample, 'p30', $event.target.value)"
               @keydown="handleEnter"
+              :disabled="!isEditing"
             />
           </div>
 
           <div class="flex flex-col gap-1">
             <label class="text-[10px] font-bold text-slate-400 uppercase">PRI</label>
             <div
-              class="h-9 flex items-center px-3 bg-slate-100/50 rounded-md border border-slate-200 font-bold text-slate-500"
+              class="h-9 flex items-center px-3 bg-slate-100 rounded-md border border-slate-200 font-bold text-slate-500"
             >
               {{ sample.pri || '-' }}
             </div>
@@ -341,20 +392,48 @@ onMounted(async () => {
     </div>
 
     <!-- Footer Action -->
-    <div class="p-6 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-3">
-      <Button variant="outline" @click="emit('close')">Cancel</Button>
+    <div
+      class="p-6 border-t border-slate-100 bg-slate-50/50 flex justify-between items-center gap-3"
+    >
+      <!-- Left: Delete Button -->
       <Button
-        class="bg-primary hover:bg-primary/90 min-w-[120px]"
-        :disabled="isSaving"
-        @click="saveAll"
+        variant="ghost"
+        class="text-red-500 hover:text-red-600 hover:bg-red-50"
+        @click="showBookingDeleteConfirm = true"
       >
-        <Save v-if="!isSaving" class="w-4 h-4 mr-2" />
-        <div
-          v-else
-          class="animate-spin rounded-full h-4 w-4 border-2 border-white/30 border-t-white mr-2"
-        ></div>
-        Save Data
+        <Trash2 class="w-4 h-4 mr-2" />
+        Delete Booking
       </Button>
+
+      <!-- Right: Action Buttons -->
+      <div class="flex gap-3">
+        <Button variant="outline" @click="isEditing ? (isEditing = false) : emit('close')">
+          {{ isEditing ? 'Cancel' : 'Close' }}
+        </Button>
+
+        <Button
+          v-if="!isEditing"
+          class="bg-blue-600 hover:bg-blue-700 min-w-[120px]"
+          @click="isEditing = true"
+        >
+          <Pencil class="w-4 h-4 mr-2" />
+          Edit
+        </Button>
+
+        <Button
+          v-else
+          class="bg-primary hover:bg-primary/90 min-w-[120px]"
+          :disabled="isSaving"
+          @click="saveAll"
+        >
+          <Save v-if="!isSaving" class="w-4 h-4 mr-2" />
+          <div
+            v-else
+            class="animate-spin rounded-full h-4 w-4 border-2 border-white/30 border-t-white mr-2"
+          ></div>
+          Save Data
+        </Button>
+      </div>
     </div>
 
     <!-- Delete Confirmation -->
@@ -370,6 +449,24 @@ onMounted(async () => {
           <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction class="bg-red-600 hover:bg-red-700" @click="deleteSample">
             Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
+    <!-- Delete Booking Confirmation -->
+    <AlertDialog :open="showBookingDeleteConfirm" @update:open="showBookingDeleteConfirm = $event">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete Booking</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to delete this booking data? This action cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction class="bg-red-600 hover:bg-red-700" @click="deleteBooking">
+            {{ isDeleting ? 'Deleting...' : 'Delete' }}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

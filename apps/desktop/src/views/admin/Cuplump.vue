@@ -248,8 +248,9 @@ const columns: ColumnDef<any>[] = [
         h(
           'span',
           { class: 'font-bold text-slate-950 dark:text-slate-50' },
-          row.original.supplierCode + ' : ' + row.original.supplierName
+          row.original.supplierCode
         ),
+        h('span', { class: 'text-[10px] text-muted-foreground' }, row.original.supplierName),
       ]),
   },
   {

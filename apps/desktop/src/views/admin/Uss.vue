@@ -245,11 +245,8 @@ const columns: ColumnDef<any>[] = [
     header: () => t('uss.supplier'),
     cell: ({ row }) =>
       h('div', { class: 'flex flex-col' }, [
-        h(
-          'span',
-          { class: 'font-medium' },
-          row.original.supplierCode + ' : ' + row.original.supplierName
-        ),
+        h('span', { class: 'font-bold' }, row.original.supplierCode),
+        h('span', { class: 'text-[10px] text-muted-foreground' }, row.original.supplierName),
       ]),
   },
   {

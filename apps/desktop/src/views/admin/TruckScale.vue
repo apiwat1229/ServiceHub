@@ -833,8 +833,8 @@ const columns: ColumnDef<any>[] = [
     },
     cell: ({ row }) =>
       h('div', { class: 'flex flex-col' }, [
-        h('span', { class: 'font-medium' }, row.original.supplierCode),
-        h('span', { class: 'text-sm text-muted-foreground' }, row.original.supplierName),
+        h('span', { class: 'font-bold' }, row.original.supplierCode),
+        h('span', { class: 'text-[10px] text-muted-foreground' }, row.original.supplierName),
       ]),
   },
   {
@@ -928,8 +928,8 @@ const scaleInColumns: ColumnDef<any>[] = [
     header: () => t('truckScale.supplier') || 'Supplier',
     cell: ({ row }) =>
       h('div', { class: 'flex flex-col' }, [
-        h('span', { class: 'font-medium' }, row.original.supplierCode),
-        h('span', { class: 'text-sm text-muted-foreground' }, row.original.supplierName),
+        h('span', { class: 'font-bold' }, row.original.supplierCode),
+        h('span', { class: 'text-[10px] text-muted-foreground' }, row.original.supplierName),
       ]),
   },
   {
@@ -1275,7 +1275,11 @@ const dashboardColumns: ColumnDef<any>[] = [
   {
     accessorKey: 'supplierName',
     header: () => t('truckScale.supplier'),
-    cell: ({ row }) => `${row.original.supplierCode} : ${row.original.supplierName}`,
+    cell: ({ row }) =>
+      h('div', { class: 'flex flex-col' }, [
+        h('span', { class: 'font-bold' }, row.original.supplierCode),
+        h('span', { class: 'text-[10px] text-muted-foreground' }, row.original.supplierName),
+      ]),
   },
   {
     accessorKey: 'truckRegister',

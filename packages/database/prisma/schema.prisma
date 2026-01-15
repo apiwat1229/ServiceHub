@@ -341,8 +341,40 @@ model BookingLabSample {
   percentCp     Float? @map("percent_cp")
 
   beforeBaking1 Float? @map("before_baking_1")
+  afterDryerB1      Float? @map("after_dryer_b1")
+  beforeLabDryerB1  Float? @map("before_lab_dryer_b1")
+  afterLabDryerB1   Float? @map("after_lab_dryer_b1")
+  drcB1             Float? @map("drc_b1")
+  moisturePercentB1 Float? @map("moisture_percent_b1")
+  drcDryB1          Float? @map("drc_dry_b1")
+  labDrcB1          Float? @map("lab_drc_b1") 
+  recalDrcB1        Float? @map("recal_drc_b1")
+
   beforeBaking2 Float? @map("before_baking_2")
+  afterDryerB2      Float? @map("after_dryer_b2")
+  beforeLabDryerB2  Float? @map("before_lab_dryer_b2")
+  afterLabDryerB2   Float? @map("after_lab_dryer_b2")
+  drcB2             Float? @map("drc_b2")
+  moisturePercentB2 Float? @map("moisture_percent_b2")
+  drcDryB2          Float? @map("drc_dry_b2")
+  labDrcB2          Float? @map("lab_drc_b2")
+  recalDrcB2        Float? @map("recal_drc_b2")
+
   beforeBaking3 Float? @map("before_baking_3")
+  afterDryerB3      Float? @map("after_dryer_b3")
+  beforeLabDryerB3  Float? @map("before_lab_dryer_b3")
+  afterLabDryerB3   Float? @map("after_lab_dryer_b3")
+  drcB3             Float? @map("drc_b3")
+  moisturePercentB3 Float? @map("moisture_percent_b3")
+  drcDryB3          Float? @map("drc_dry_b3")
+  labDrcB3          Float? @map("lab_drc_b3")
+  recalDrcB3        Float? @map("recal_drc_b3")
+
+  // Summary Calculated
+  drc             Float? @map("drc")
+  moistureFactor  Float? @map("moisture_factor")
+  recalDrc        Float? @map("recal_drc")
+  difference      Float? @map("difference")
 
   // PO & PRI Data
   p0   Float? @map("p0")
