@@ -279,7 +279,7 @@ const columns: ColumnDef<any>[] = [
       const val = row.original.avgPo;
       if (!val || val === 0)
         return h('div', { class: 'text-center text-muted-foreground/30' }, '-');
-      return h('div', { class: 'text-center font-bold text-foreground/80' }, val.toFixed(1));
+      return h('div', { class: 'text-center font-bold text-foreground/80' }, val.toFixed(2));
     },
   },
   {
@@ -297,7 +297,7 @@ const columns: ColumnDef<any>[] = [
       const val = row.original.avgPri;
       if (!val || val === 0)
         return h('div', { class: 'text-center text-muted-foreground/30' }, '-');
-      return h('div', { class: 'text-center font-bold text-foreground/80' }, val.toFixed(1));
+      return h('div', { class: 'text-center font-bold text-foreground/80' }, val.toFixed(2));
     },
   },
   {

@@ -75,9 +75,9 @@ const fetchData = async () => {
         ...s,
         beforePress: s.beforePress?.toString() || '',
         afterPress: s.afterPress?.toString() || '',
-        p0: s.p0?.toString() || '',
-        p30: s.p30?.toString() || '',
-        pri: s.pri?.toString() || '',
+        p0: s.p0 !== null && s.p0 !== undefined ? Number(s.p0).toFixed(2) : '',
+        p30: s.p30 !== null && s.p30 !== undefined ? Number(s.p30).toFixed(2) : '',
+        pri: s.pri !== null && s.pri !== undefined ? Number(s.pri).toFixed(2) : '',
       }));
     rubberTypes.value = typesData;
   } catch (error) {
@@ -94,7 +94,7 @@ const calculatePri = (sample: any) => {
   const p0 = parseFloat(sample.p0);
   const p30 = parseFloat(sample.p30);
   if (p0 && p30 && p0 > 0) {
-    sample.pri = ((p30 / p0) * 100).toFixed(1);
+    sample.pri = ((p30 / p0) * 100).toFixed(2);
   } else {
     sample.pri = '';
   }
@@ -278,9 +278,6 @@ onMounted(async () => {
         </div>
 
         <div class="flex flex-col">
-          <span class="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1"
-            >Rubber Type</span
-          >
           <div class="flex flex-col gap-1">
             <Badge
               variant="outline"

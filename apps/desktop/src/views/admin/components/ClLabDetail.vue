@@ -284,6 +284,19 @@ const displayNetWeight = computed(() => {
   return Math.max(0, inW - outW).toLocaleString();
 });
 
+const displayLocation = computed(() => {
+  if (!booking.value) return '-';
+  return props.isTrailer
+    ? booking.value.trailerRubberSource || booking.value.rubberSource || '-'
+    : booking.value.rubberSource || '-';
+});
+
+const displayGrossWeight = computed(() => {
+  if (!booking.value) return '0';
+  const inW = props.isTrailer ? booking.value.trailerWeightIn || 0 : booking.value.weightIn || 0;
+  return inW.toLocaleString();
+});
+
 const averagePri = computed(() => {
   const valid = samples.value
     .map((s) => {
@@ -349,7 +362,7 @@ onMounted(async () => {
   >
     <!-- Header Section -->
     <div class="p-6 border-b border-border bg-muted/30">
-      <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-9 gap-6">
+      <div class="flex flex-wrap items-center gap-y-4 gap-x-8">
         <div class="flex flex-col">
           <span class="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1"
             >Date</span
@@ -372,11 +385,8 @@ onMounted(async () => {
             booking?.lotNo || booking?.bookingCode || '-'
           }}</span>
         </div>
-        <div class="flex flex-col col-span-2">
-          <span class="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1"
-            >Supplier</span
-          >
-          <div class="flex flex-col">
+        <div class="flex flex-col max-w-[200px]">
+          <div class="flex flex-col gap-1">
             <span class="text-sm font-bold text-foreground truncate">{{
               booking?.supplierCode || '-'
             }}</span>
@@ -386,12 +396,25 @@ onMounted(async () => {
           </div>
         </div>
         <div class="flex flex-col">
+          <div class="flex flex-col gap-1">
+            <span class="text-[10px] font-bold text-primary uppercase h-5 flex items-center">
+              {{ displayRubberType }}
+            </span>
+            <span class="text-xs font-medium text-primary truncate max-w-[120px]">{{
+              displayLocation
+            }}</span>
+          </div>
+        </div>
+
+        <div class="flex flex-col">
           <span class="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1"
-            >Rubber Type</span
+            >Grade</span
           >
-          <Badge variant="secondary" class="bg-primary/10 text-primary hover:bg-primary/20 w-fit">
-            {{ displayRubberType }}
-          </Badge>
+          <div
+            class="flex items-center justify-center border-2 border-border rounded px-2 h-6 w-12 bg-card"
+          >
+            <span class="text-sm font-black text-foreground">{{ calculatedGrade }}</span>
+          </div>
         </div>
 
         <div class="flex flex-col">
@@ -414,20 +437,16 @@ onMounted(async () => {
 
         <div class="flex flex-col">
           <span class="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1"
-            >Net Weight</span
+            >Gross Weight</span
           >
-          <span class="text-sm font-bold text-foreground">{{ displayNetWeight }} kg</span>
+          <span class="text-sm font-bold text-foreground">{{ displayGrossWeight }} kg</span>
         </div>
 
         <div class="flex flex-col">
           <span class="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1"
-            >Grade</span
+            >Net Weight</span
           >
-          <div
-            class="flex items-center justify-center border-2 border-border rounded px-2 h-6 w-12 bg-card"
-          >
-            <span class="text-sm font-black text-foreground">{{ calculatedGrade }}</span>
-          </div>
+          <span class="text-sm font-bold text-foreground">{{ displayNetWeight }} kg</span>
         </div>
       </div>
     </div>
@@ -507,7 +526,7 @@ onMounted(async () => {
                     placeholder="kg"
                     @input="handleNumericInput(sample, 'basketWeight', $event.target.value)"
                     @keydown.enter="handleEnter"
-                    :disabled="!isEditing"
+                    disabled
                   />
                 </div>
                 <!-- Before Dryer (Read Only) -->
