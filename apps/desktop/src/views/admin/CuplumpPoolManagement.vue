@@ -8,6 +8,7 @@ import { toast } from 'vue-sonner';
 import PoolCard from './components/PoolCard.vue';
 import PoolDistributionCharts from './components/PoolDistributionCharts.vue';
 import PoolManagementDialog from './components/PoolManagementDialog.vue';
+import QaHeader from './components/QaHeader.vue';
 
 const pools = ref<Pool[]>([]);
 const isLoading = ref(false);
@@ -103,6 +104,7 @@ const getGradeColor = (grade: string) => {
 
 <template>
   <div class="p-6 space-y-6 bg-slate-50/30 min-h-screen custom-scrollbar overflow-y-auto">
+    <QaHeader active-tab="cuplump-pool" />
     <!-- Top Stats Row -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       <!-- Pool Counts -->

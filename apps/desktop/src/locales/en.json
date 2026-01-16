@@ -94,13 +94,15 @@
     "title": "Quality Assurance",
     "cuplump": "Cuplump",
     "uss": "USS",
+    "jobOrder": "Job Order",
     "tabs": {
       "clPoPri": "CL PO PRI",
       "clLab": "CL Lab",
       "clSummary": "CL Summary",
       "cuplumpPool": "Cuplump Pool",
       "ussPoPri": "USS PO PRI",
-      "ussSummary": "USS Summary"
+      "ussSummary": "USS Summary",
+      "labOrders": "Lab Orders"
     },
     "searchPlaceholder": "Search items...",
     "pickDate": "Pick a date",

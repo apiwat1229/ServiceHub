@@ -586,6 +586,51 @@ model ApprovalLog {
   @@map("approval_logs")
 }
 
+model JobOrder {
+  id              String   @id @default(uuid())
+  bookNo          String   @map("book_no")
+  no              Int      @map("no")
+  jobOrderNo      String   @unique @map("job_order_no")
+  contractNo      String   @map("contract_no")
+  grade           String
+  otherGrade      String?  @map("other_grade")
+  quantityBale    Int      @map("quantity_bale") // 35 or 36
+  palletType      String   @map("pallet_type")
+  orderQuantity   Int      @map("order_quantity") // Number of pallets
+  palletMarking   Boolean  @default(true) @map("pallet_marking")
+  note            String?
+  qaName          String   @map("qa_name")
+  qaDate          DateTime @map("qa_date")
+  isClosed        Boolean  @default(false) @map("is_closed")
+  productionName  String?  @map("production_name")
+  productionDate  DateTime? @map("production_date")
+  
+  logs            JobOrderLog[]
+
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("job_orders")
+}
+
+model JobOrderLog {
+  id              String   @id @default(uuid())
+  jobOrderId      String   @map("job_order_id")
+  jobOrder        JobOrder @relation(fields: [jobOrderId], references: [id], onDelete: Cascade)
+  
+  date            DateTime
+  shift           String   // "1st", "2nd"
+  lotStart        String   @map("lot_start")
+  lotEnd          String   @map("lot_end")
+  quantity        Int      // Pallets
+  sign            String?
+
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("job_order_logs")
+}
+
 enum ApprovalStatus {
   PENDING
   APPROVED

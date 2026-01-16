@@ -3,23 +3,17 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { bookingsApi } from '@/services/bookings';
 import { rubberTypesApi, type RubberType } from '@/services/rubberTypes';
-import { getLocalTimeZone, today } from '@internationalized/date';
+import { CalendarDate, getLocalTimeZone, today } from '@internationalized/date';
 import { format } from 'date-fns';
-import {
-  Calendar as CalendarIcon,
-  ClipboardList,
-  List,
-  Search,
-  TestTubes,
-  Waves,
-} from 'lucide-vue-next';
+import { Calendar as CalendarIcon, List, Search, Waves } from 'lucide-vue-next';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRouter } from 'vue-router';
+import { useRoute } from 'vue-router';
 import { toast } from 'vue-sonner';
+
+import QaHeader from './components/QaHeader.vue';
 
 import ClLabTab from './tabs/ClLabTab.vue';
 import ClPoPriTab from './tabs/ClPoPriTab.vue';
@@ -37,7 +31,34 @@ const searchQuery = ref('');
 const statusFilter = ref('ALL');
 const currentStats = ref({ total: 0, complete: 0, incomplete: 0 });
 
-const selectedDateObject = ref<any>(today(getLocalTimeZone()));
+// Date Persistence Logic
+const getInitialDate = () => {
+  const now = today(getLocalTimeZone());
+  const storedDateStr = localStorage.getItem('qa_selected_date');
+  const storedTodayStr = localStorage.getItem('qa_last_accessed_today');
+  const currentTodayStr = now.toString();
+
+  // If we haven't stored today yet, or if today has changed since last visit
+  if (!storedTodayStr || storedTodayStr !== currentTodayStr) {
+    localStorage.setItem('qa_last_accessed_today', currentTodayStr);
+    localStorage.removeItem('qa_selected_date'); // Clear old choice from previous day
+    return now;
+  }
+
+  // If we have a stored choice for the SAME day
+  if (storedDateStr) {
+    try {
+      const d = JSON.parse(storedDateStr);
+      return new CalendarDate(d.year, d.month, d.day);
+    } catch (e) {
+      return now;
+    }
+  }
+
+  return now;
+};
+
+const selectedDateObject = ref<any>(getInitialDate());
 const isDatePopoverOpen = ref(false);
 const selectedDate = computed(() => {
   return selectedDateObject.value ? selectedDateObject.value.toString() : '';
@@ -46,6 +67,20 @@ const selectedDate = computed(() => {
 const handleDateSelect = (newDate: any) => {
   selectedDateObject.value = newDate;
   isDatePopoverOpen.value = false;
+
+  // Store the intentional selection
+  if (newDate) {
+    localStorage.setItem(
+      'qa_selected_date',
+      JSON.stringify({
+        year: newDate.year,
+        month: newDate.month,
+        day: newDate.day,
+      })
+    );
+  } else {
+    localStorage.removeItem('qa_selected_date');
+  }
 };
 
 const handleStatsUpdate = (stats: { total: number; complete: number; incomplete: number }) => {
@@ -53,51 +88,40 @@ const handleStatsUpdate = (stats: { total: number; complete: number; incomplete:
 };
 
 const currentTab = ref('cl-po-pri');
+const route = useRoute();
 
-const selectedCategory = ref<'CL' | 'USS'>(
-  (localStorage.getItem('qaCategory') as 'CL' | 'USS') || 'CL'
+const selectedCategory = ref<'CL' | 'USS' | 'JOB_ORDER'>(
+  (localStorage.getItem('qaCategory') as 'CL' | 'USS' | 'JOB_ORDER') || 'CL'
 );
 
-const allTabs = [
-  { id: 'cl-po-pri', label: 'qa.tabs.clPoPri', icon: ClipboardList, category: 'CL' },
-  { id: 'cl-lab', label: 'qa.tabs.clLab', icon: TestTubes, category: 'CL' },
-  { id: 'cl-summary', label: 'qa.tabs.clSummary', icon: List, category: 'CL' },
-  { id: 'cuplump-pool', label: 'qa.tabs.cuplumpPool', icon: Waves, category: 'CL' },
-  { id: 'uss-po-pri', label: 'qa.tabs.ussPoPri', icon: ClipboardList, category: 'USS' },
-  { id: 'uss-summary', label: 'qa.tabs.ussSummary', icon: List, category: 'USS' },
-];
-
-const tabs = computed(() => {
-  return allTabs
-    .filter((tab) => tab.category === selectedCategory.value)
-    .map((tab) => ({ ...tab, label: t(tab.label) }));
-});
-
 const currentTabLabel = computed(() => {
-  return allTabs.find((tab) => tab.id === currentTab.value)?.label || '';
+  const allTabs = [
+    { id: 'cl-po-pri', label: 'qa.tabs.clPoPri', category: 'CL' },
+    { id: 'cl-lab', label: 'qa.tabs.clLab', category: 'CL' },
+    { id: 'cl-summary', label: 'qa.tabs.clSummary', category: 'CL' },
+    { id: 'cuplump-pool', label: 'qa.tabs.cuplumpPool', category: 'CL' },
+    { id: 'uss-po-pri', label: 'qa.tabs.ussPoPri', category: 'USS' },
+    { id: 'uss-summary', label: 'qa.tabs.ussSummary', category: 'USS' },
+    { id: 'lab-orders', label: 'qa.tabs.labOrders', category: 'JOB_ORDER' },
+  ];
+  return t(allTabs.find((tab) => tab.id === currentTab.value)?.label || '');
 });
 
-const router = useRouter();
+// Sync tab with query query
+watch(
+  () => route.query.tab,
+  (newTab) => {
+    if (newTab && typeof newTab === 'string') {
+      currentTab.value = newTab;
+    }
+  },
+  { immediate: true }
+);
 
-// Watch category change to reset tab
-watch(selectedCategory, (newVal) => {
-  localStorage.setItem('qaCategory', newVal);
-  const firstTab = tabs.value[0];
-  if (firstTab) {
-    currentTab.value = firstTab.id;
-  }
-});
-
-// Navigate to separate modules if selected as tab
-watch(currentTab, (newTab) => {
-  if (newTab === 'cuplump-pool') {
-    router.push('/cuplump-pool');
-    // Revert tab selection so it doesn't stay on an empty state if they come back
-    setTimeout(() => {
-      currentTab.value = 'cl-po-pri';
-    }, 100);
-  }
-});
+// Watch category changes from header
+const handleCategoryUpdate = (newCat: 'CL' | 'USS' | 'JOB_ORDER') => {
+  selectedCategory.value = newCat;
+};
 
 const fetchData = async () => {
   isLoading.value = true;
@@ -125,54 +149,7 @@ onMounted(() => {
 
 <template>
   <div class="h-full flex flex-col space-y-4 p-4 max-w-[1600px] mx-auto w-full">
-    <!-- Header -->
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-      <div class="flex items-center gap-4">
-        <h2 class="text-2xl font-bold tracking-tight">{{ t('qa.title') }}</h2>
-        <!-- Category Selector -->
-        <div class="flex items-center bg-muted/50 p-1 rounded-lg border border-border">
-          <button
-            class="px-3 py-1 text-sm font-medium rounded-md transition-all"
-            :class="
-              selectedCategory === 'CL'
-                ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            "
-            @click="selectedCategory = 'CL'"
-          >
-            {{ t('qa.cuplump') }}
-          </button>
-          <button
-            class="px-3 py-1 text-sm font-medium rounded-md transition-all"
-            :class="
-              selectedCategory === 'USS'
-                ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            "
-            @click="selectedCategory = 'USS'"
-          >
-            {{ t('qa.uss') }}
-          </button>
-        </div>
-      </div>
-
-      <!-- Tabs ONLY -->
-      <div class="w-full md:w-auto">
-        <Tabs v-model="currentTab" class="w-auto">
-          <TabsList class="bg-muted p-1 rounded-lg w-full h-auto flex flex-wrap justify-end gap-1">
-            <TabsTrigger
-              v-for="tab in tabs"
-              :key="tab.id"
-              :value="tab.id"
-              class="gap-2 px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all rounded-md text-sm font-medium"
-            >
-              <component :is="tab.icon" class="w-4 h-4" v-if="tab.icon" />
-              {{ tab.label }}
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </div>
-    </div>
+    <QaHeader :active-tab="currentTab" @update:category="handleCategoryUpdate" />
 
     <!-- Filters Bar (Moved above table) -->
     <div class="flex items-center justify-between px-1 mb-2">
@@ -277,6 +254,17 @@ onMounted(() => {
           <div class="text-center">
             <List class="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
             <h3 class="text-lg font-medium text-foreground">{{ t('qa.tabs.ussSummary') }}</h3>
+            <p class="text-muted-foreground mt-1">{{ t('qa.comingSoon') }}</p>
+          </div>
+        </div>
+      </div>
+      <div v-else-if="currentTab === 'lab-orders'">
+        <div
+          class="flex items-center justify-center h-64 border rounded-lg bg-muted/20 border-dashed"
+        >
+          <div class="text-center">
+            <Search class="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
+            <h3 class="text-lg font-medium text-foreground">{{ t('qa.tabs.labOrders') }}</h3>
             <p class="text-muted-foreground mt-1">{{ t('qa.comingSoon') }}</p>
           </div>
         </div>
