@@ -98,9 +98,9 @@
     "uss": "USS",
     "jobOrder": "ใบงานสั่งผลิต (Job Order)",
     "tabs": {
-      "clPoPri": "CL PO PRI",
-      "clLab": "แล็บ CL",
-      "clSummary": "สรุป CL",
+      "clPoPri": "PO P30 PRI",
+      "clLab": "Lab Test",
+      "clSummary": "Incoming",
       "cuplumpPool": "บ่อยางก้อนถ้วย",
       "ussPoPri": "USS PO PRI",
       "ussSummary": "สรุป USS",

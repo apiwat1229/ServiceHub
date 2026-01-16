@@ -114,12 +114,14 @@ watch(
         class="w-auto"
         @update:model-value="$emit('update:activeTab', $event)"
       >
-        <TabsList class="bg-muted p-1 rounded-lg w-full h-auto flex flex-wrap justify-end gap-1">
+        <TabsList
+          class="bg-muted/40 p-1.5 rounded-xl w-full h-auto flex flex-wrap justify-end gap-2 border border-border/50 shadow-inner"
+        >
           <TabsTrigger
             v-for="tab in tabs"
             :key="tab.id"
             :value="tab.id"
-            class="gap-2 px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all rounded-md text-sm font-medium"
+            class="gap-2 px-5 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all rounded-lg text-xs font-black uppercase tracking-tight border-2 border-transparent data-[state=active]:border-primary shadow-sm hover:bg-background/80"
           >
             <component :is="tab.icon" class="w-4 h-4" v-if="tab.icon" />
             {{ tab.label }}

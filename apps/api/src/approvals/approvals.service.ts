@@ -241,44 +241,59 @@ export class ApprovalsService {
         try {
             const { entityType, entityId, actionType, proposedData } = request;
 
-            if (actionType === 'UPDATE') {
+            // Normalization for case-insensitive matches
+            const normalizedEntityType = entityType?.toUpperCase();
+            const normalizedActionType = actionType?.toUpperCase();
+
+            if (normalizedActionType === 'UPDATE' || normalizedActionType === 'EDIT_WEIGHT_IN') {
                 // Apply update based on entity type
-                if (entityType === 'Supplier') {
+                if (normalizedEntityType === 'SUPPLIER') {
                     await this.prisma.supplier.update({
                         where: { id: entityId },
                         data: proposedData,
                     });
-                } else if (entityType === 'RubberType') {
+                } else if (normalizedEntityType === 'RUBBERTYPE') {
                     await this.prisma.rubberType.update({
                         where: { id: entityId },
                         data: proposedData,
                     });
-                } else if (entityType === 'Booking') {
+                } else if (normalizedEntityType === 'BOOKING') {
+                    const data = { ...proposedData };
+
+                    // Ensure weights are numbers if present
+                    if (data.weightIn !== undefined) {
+                        data.weightIn = parseFloat(String(data.weightIn)) || 0;
+                    }
+                    if (data.trailerWeightIn !== undefined) {
+                        data.trailerWeightIn = data.trailerWeightIn === null || data.trailerWeightIn === '-'
+                            ? null
+                            : parseFloat(String(data.trailerWeightIn)) || 0;
+                    }
+
                     await this.prisma.booking.update({
                         where: { id: entityId },
-                        data: proposedData,
+                        data: data,
                     });
                 }
-            } else if (actionType === 'DELETE') {
+            } else if (normalizedActionType === 'DELETE') {
                 // Apply soft delete based on entity type
-                if (entityType === 'Supplier') {
+                if (normalizedEntityType === 'SUPPLIER') {
                     await this.prisma.supplier.update({
                         where: { id: entityId },
                         data: {
                             deletedAt: new Date(),
                             deletedBy: request.approverId,
-                        } as any, // Type assertion until Prisma regenerates
+                        } as any,
                     });
-                } else if (entityType === 'RubberType') {
+                } else if (normalizedEntityType === 'RUBBERTYPE') {
                     await this.prisma.rubberType.update({
                         where: { id: entityId },
                         data: {
                             deletedAt: new Date(),
                             deletedBy: request.approverId,
-                        } as any, // Type assertion until Prisma regenerates
+                        } as any,
                     });
-                } else if (entityType === 'Booking') {
-                    // Booking Soft Delete
+                } else if (normalizedEntityType === 'BOOKING') {
                     await this.prisma.booking.update({
                         where: { id: entityId },
                         data: {
@@ -290,7 +305,6 @@ export class ApprovalsService {
             }
         } catch (error) {
             console.error('[ApprovalsService] Failed to apply approved changes:', error);
-            // Log error but don't throw - approval is already recorded
         }
     }
 

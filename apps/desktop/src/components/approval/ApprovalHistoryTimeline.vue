@@ -93,6 +93,10 @@ const getConfig = (action: string) => {
                     v-for="(value, key) in log.newValue"
                     :key="key"
                     class="bg-blue-50 text-blue-700 border border-blue-100 px-1.5 py-0.5 rounded text-[0.625rem] flex items-center gap-1 shadow-sm uppercase font-bold"
+                    :class="{
+                      'bg-emerald-50 text-emerald-700 border-emerald-100':
+                        key === 'status' && value === 'APPROVED',
+                    }"
                   >
                     <span class="opacity-60"
                       >{{

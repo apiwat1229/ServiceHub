@@ -122,13 +122,30 @@ const fetchData = async () => {
 };
 
 // Calculation Logic for display
-const calculateLabDrc = (before: string | number, after: string | number) => {
-  const b = parseFloat(before?.toString());
-  const a = parseFloat(after?.toString());
-  if (b && a && b > 0) {
-    return ((a / b) * 100).toFixed(1);
-  }
-  return null;
+const formatNum = (val: number | null | undefined, digits = 2) => {
+  if (val === null || val === undefined || isNaN(val)) return '-';
+  return val.toLocaleString(undefined, {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  });
+};
+
+const calculateMetrics = (s: any, b: number) => {
+  const bb = parseFloat(s['beforeBaking' + b]);
+  const ad = parseFloat(s['afterDryerB' + b]);
+  const bl = parseFloat(s['beforeLabDryerB' + b]);
+  const al = parseFloat(s['afterLabDryerB' + b]);
+
+  const drc = bb && ad ? (ad / bb) * 100 : 0;
+  const moisture = bb && ad ? ((bb - ad) / bb) * 100 : 0;
+
+  // DRC Dry factor derived from user examples (66.70/75.00 = 0.8893)
+  const drcDry = drc * 0.8893;
+
+  const moistureFactor = bl && al && bl > 0 ? al / bl : 0;
+  const recalDrc = drcDry * moistureFactor;
+
+  return { drc, moisture, drcDry, moistureFactor, recalDrc, hasData: bb && ad };
 };
 
 const handleNumericInput = (sample: any, field: string, value: string) => {
@@ -167,29 +184,35 @@ const saveAll = async () => {
       // Calculations per basket
       const calcDrc = (after: number | null, before: number | null) =>
         after && before ? (after / before) * 100 : null;
-      const calcMoisture = (beforeLab: number | null, afterLab: number | null) =>
-        beforeLab && afterLab && beforeLab > 0 ? ((beforeLab - afterLab) / beforeLab) * 100 : null;
-      const calcRecal = (drc: number | null, moisture: number | null) =>
-        drc !== null && moisture !== null ? drc / (1 - moisture / 100) : null;
-      const calcDrcDry = (drc: number | null) => (drc ? drc / 0.9152 : null); // Assuming 8.48% target moisture for factory "Dry" standard if recal not used? Or use Recal?
-      // Actually, looking at the image, Recal and DRC Dry are separate.
-      // I'll use a placeholder or common formula if found. For now, let's use recalDrc as a base for drcDry or keeping it null.
-      // Actually, I'll just map recalDrc for now to see if it matches.
+      const calcMoisture = (beforeDryer: number | null, afterDryer: number | null) =>
+        beforeDryer && afterDryer ? ((beforeDryer - afterDryer) / beforeDryer) * 100 : null;
+
+      const calcDrcDry = (drc: number | null) => (drc ? drc * 0.8893 : null);
+
+      // Moisture Factor (Lab Ratio)
+      const calcMoistureFactor = (beforeLab: number | null, afterLab: number | null) =>
+        beforeLab && afterLab && beforeLab > 0 ? afterLab / beforeLab : null;
+
+      const calcRecal = (drcDry: number | null, moistureFactor: number | null) =>
+        drcDry !== null && moistureFactor !== null ? drcDry * moistureFactor : null;
 
       const drcB1 = calcDrc(ad1, bb1);
-      const moist1 = calcMoisture(bl1, al1);
-      const recal1 = calcRecal(drcB1, moist1);
+      const moist1 = calcMoisture(bb1, ad1);
       const drcDry1 = calcDrcDry(drcB1);
+      const mf1 = calcMoistureFactor(bl1, al1);
+      const recal1 = calcRecal(drcDry1, mf1);
 
       const drcB2 = calcDrc(ad2, bb2);
-      const moist2 = calcMoisture(bl2, al2);
-      const recal2 = calcRecal(drcB2, moist2);
+      const moist2 = calcMoisture(bb2, ad2);
       const drcDry2 = calcDrcDry(drcB2);
+      const mf2 = calcMoistureFactor(bl2, al2);
+      const recal2 = calcRecal(drcDry2, mf2);
 
       const drcB3 = calcDrc(ad3, bb3);
-      const moist3 = calcMoisture(bl3, al3);
-      const recal3 = calcRecal(drcB3, moist3);
+      const moist3 = calcMoisture(bb3, ad3);
       const drcDry3 = calcDrcDry(drcB3);
+      const mf3 = calcMoistureFactor(bl3, al3);
+      const recal3 = calcRecal(drcDry3, mf3);
 
       // Summary Calculations (Median)
       const drcs = [drcB1, drcB2, drcB3].filter((v) => v !== null) as number[];
@@ -229,19 +252,19 @@ const saveAll = async () => {
         moisturePercentB1: moist1,
         recalDrcB1: recal1,
         drcDryB1: drcDry1,
-        labDrcB1: bl1 && al1 ? (al1 / bl1) * 100 : null,
+        labDrcB1: mf1 ? mf1 * 100 : null,
 
         drcB2,
         moisturePercentB2: moist2,
         recalDrcB2: recal2,
         drcDryB2: drcDry2,
-        labDrcB2: bl2 && al2 ? (al2 / bl2) * 100 : null,
+        labDrcB2: mf2 ? mf2 * 100 : null,
 
         drcB3,
         moisturePercentB3: moist3,
         recalDrcB3: recal3,
         drcDryB3: drcDry3,
-        labDrcB3: bl3 && al3 ? (al3 / bl3) * 100 : null,
+        labDrcB3: mf3 ? mf3 * 100 : null,
 
         // Summary
         drc: medianDrc,
@@ -588,14 +611,45 @@ onMounted(async () => {
                 </div>
               </div>
               <!-- Calc Result -->
-              <div class="mt-2 text-right">
-                <span class="text-xs text-muted-foreground">Lab DRC: </span>
-                <span class="text-xs font-bold text-primary">
-                  {{
-                    calculateLabDrc(sample['beforeLabDryerB' + b], sample['afterLabDryerB' + b]) ||
-                    '-'
-                  }}%
-                </span>
+              <!-- Summary Stats for Basket -->
+              <div
+                v-if="calculateMetrics(sample, b).hasData"
+                class="grid grid-cols-5 gap-2 mt-3 pt-2 border-t border-border/50 text-[10px]"
+              >
+                <div class="flex flex-col">
+                  <span class="text-muted-foreground">DRC</span>
+                  <span class="font-bold text-foreground">{{
+                    formatNum(calculateMetrics(sample, b).drc, 2)
+                  }}</span>
+                </div>
+                <div class="flex flex-col">
+                  <span class="text-muted-foreground">Moisture</span>
+                  <span class="font-bold text-orange-600">{{
+                    formatNum(calculateMetrics(sample, b).moisture, 2)
+                  }}</span>
+                </div>
+                <div class="flex flex-col">
+                  <span class="text-muted-foreground">DRC Dry</span>
+                  <span class="font-bold text-violet-500">{{
+                    formatNum(calculateMetrics(sample, b).drcDry, 2)
+                  }}</span>
+                </div>
+                <div class="flex flex-col">
+                  <span class="text-muted-foreground">M.Factor</span>
+                  <span class="font-bold text-orange-500"
+                    >{{ formatNum(calculateMetrics(sample, b).moistureFactor * 100, 2) }}%</span
+                  >
+                </div>
+                <div class="flex flex-col">
+                  <span class="text-muted-foreground">Recal</span>
+                  <span class="font-bold text-blue-600">{{
+                    formatNum(calculateMetrics(sample, b).recalDrc, 2)
+                  }}</span>
+                </div>
+              </div>
+
+              <div class="mt-2 text-right hidden">
+                <!-- Hidden old lab display -->
               </div>
             </div>
           </div>

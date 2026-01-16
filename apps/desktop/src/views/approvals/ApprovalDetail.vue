@@ -256,7 +256,9 @@ onMounted(() => {
                     <span class="text-xs font-black text-emerald-800">{{
                       request.currentData?.rubberType || bookingContext?.rubberType || '-'
                     }}</span>
-                    <span class="text-[0.5625rem] font-bold text-slate-500 uppercase tracking-tight">
+                    <span
+                      class="text-[0.5625rem] font-bold text-slate-500 uppercase tracking-tight"
+                    >
                       {{ request.currentData?.truckType || bookingContext?.truckType || '-' }}
                     </span>
                     <span
@@ -284,14 +286,9 @@ onMounted(() => {
                     t('approval.detail.requester')
                   }}</span>
                   <div
-                    class="flex items-center gap-1.5 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200/50 w-fit"
+                    class="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded border border-slate-200/50 w-fit"
                   >
-                    <div
-                      class="w-3.5 h-3.5 rounded bg-primary/20 flex items-center justify-center text-[0.5rem] font-black text-primary"
-                    >
-                      {{ request.requester?.displayName?.charAt(0) || 'U' }}
-                    </div>
-                    <span class="text-[0.6875rem] font-black text-slate-700 truncate max-w-[100px]">{{
+                    <span class="text-[0.6875rem] font-black text-slate-700">{{
                       request.requester?.displayName || request.requester?.email || '-'
                     }}</span>
                   </div>
@@ -323,30 +320,29 @@ onMounted(() => {
                 <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">{{
                   t('approval.detail.proposedChanges')
                 }}</span>
-                <div class="mt-2 space-y-2 overflow-y-auto max-h-[120px] scrollbar-hide">
+                <div class="mt-3 space-y-3 overflow-y-auto max-h-[200px] pr-2">
                   <!-- Structured Proposed Data -->
-                  <div v-if="Object.keys(changedFields).length > 0" class="space-y-1">
+                  <div v-if="Object.keys(changedFields).length > 0" class="space-y-3">
                     <div
                       v-for="(value, key) in changedFields"
                       :key="key"
-                      class="flex items-center flex-wrap gap-x-2 gap-y-0.5"
+                      class="flex flex-col gap-1 border-l-2 border-primary/20 pl-3 py-0.5"
                     >
-                      <span class="text-[0.625rem] text-slate-400 font-black uppercase tracking-tighter"
-                        >{{ prettifyKey(String(key)) }}:</span
+                      <span
+                        class="text-[0.625rem] text-slate-500 font-bold uppercase tracking-wider"
+                        >{{ prettifyKey(String(key)) }}</span
                       >
-                      <div class="flex items-center gap-1.5 flex-wrap">
+                      <div class="flex items-center gap-3">
                         <!-- Old Value -->
-                        <span
-                          class="text-[0.625rem] text-slate-400 line-through decoration-slate-300 decoration-1"
-                        >
+                        <span class="text-xs text-slate-400">
                           {{ formatValue(request.currentData?.[key]) || '-' }}
                         </span>
 
                         <!-- Arrow indicator -->
-                        <span class="text-[0.625rem] text-slate-300">➜</span>
+                        <span class="text-xs text-slate-300 font-bold">➜</span>
 
                         <!-- New Value -->
-                        <span class="text-[0.6875rem] font-black text-primary">{{
+                        <span class="text-sm font-black text-blue-600">{{
                           formatValue(value)
                         }}</span>
                       </div>

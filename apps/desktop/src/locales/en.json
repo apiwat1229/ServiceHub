@@ -96,9 +96,9 @@
     "uss": "USS",
     "jobOrder": "Job Order",
     "tabs": {
-      "clPoPri": "CL PO PRI",
-      "clLab": "CL Lab",
-      "clSummary": "CL Summary",
+      "clPoPri": "PO P30 PRI",
+      "clLab": "Lab Test",
+      "clSummary": "Incoming",
       "cuplumpPool": "Cuplump Pool",
       "ussPoPri": "USS PO PRI",
       "ussSummary": "USS Summary",
