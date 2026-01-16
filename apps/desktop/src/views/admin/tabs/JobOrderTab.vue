@@ -2,7 +2,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -106,19 +106,20 @@ onMounted(() => {
 
 <template>
   <div class="space-y-6">
-    <!-- Header with Search, Date, and Button -->
-    <div class="space-y-4">
+    <!-- Header with Search, Date, and Button in One Row -->
+    <div class="flex items-center justify-between gap-4">
+      <!-- Left: Title -->
       <div>
-        <h2 class="text-2xl font-black text-slate-800 flex items-center gap-3">
-          <div class="w-1.5 h-8 bg-gradient-to-b from-primary to-primary/60 rounded-full"></div>
+        <h2 class="text-xl font-black text-slate-800 flex items-center gap-2">
+          <div class="w-1 h-6 bg-gradient-to-b from-primary to-primary/60 rounded-full"></div>
           Job Orders Management
         </h2>
-        <p class="text-sm text-slate-500 mt-1 ml-5">Manage and track all production job orders</p>
+        <p class="text-xs text-slate-500 mt-0.5 ml-4">Manage and track all production job orders</p>
       </div>
 
-      <!-- Search, Date Picker, and New Button Row -->
+      <!-- Right: Search, Date Picker, and New Button -->
       <div class="flex items-center gap-3">
-        <div class="relative flex-1 max-w-sm">
+        <div class="relative w-64">
           <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <Input
             v-model="searchQuery"
@@ -152,74 +153,57 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Summary Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <Card
-        class="border-l-4 border-l-blue-500 bg-gradient-to-br from-blue-50 to-white hover:shadow-md transition-shadow"
-      >
-        <CardContent class="p-5">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-                Total Orders
-              </p>
-              <p class="text-3xl font-black text-blue-600">{{ jobOrders.length }}</p>
-            </div>
-            <div class="bg-blue-100 p-3 rounded-xl">
-              <FileText class="w-6 h-6 text-blue-600" />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card
-        class="border-l-4 border-l-emerald-500 bg-gradient-to-br from-emerald-50 to-white hover:shadow-md transition-shadow"
-      >
-        <CardContent class="p-5">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-                Completed
-              </p>
-              <p class="text-3xl font-black text-emerald-600">
-                {{ jobOrders.filter((j) => j.isClosed).length }}
-              </p>
-            </div>
-            <div class="bg-emerald-100 p-3 rounded-xl">
-              <CheckCircle2 class="w-6 h-6 text-emerald-600" />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card
-        class="border-l-4 border-l-amber-500 bg-gradient-to-br from-amber-50 to-white hover:shadow-md transition-shadow"
-      >
-        <CardContent class="p-5">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-                In Progress
-              </p>
-              <p class="text-3xl font-black text-amber-600">
-                {{ jobOrders.filter((j) => !j.isClosed).length }}
-              </p>
-            </div>
-            <div class="bg-amber-100 p-3 rounded-xl">
-              <Clock class="w-6 h-6 text-amber-600" />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-
     <!-- Job Orders Table -->
     <Card class="border shadow-sm overflow-hidden">
-      <div class="bg-gradient-to-r from-slate-50 to-slate-100 px-6 py-4 border-b">
-        <h3 class="font-black text-slate-700 flex items-center gap-2">
-          <Package class="w-5 h-5" />
-          All Job Orders
-        </h3>
+      <div class="bg-gradient-to-r from-slate-50 to-slate-100 px-6 py-3 border-b">
+        <div class="flex items-center justify-between">
+          <h3 class="font-black text-slate-700 flex items-center gap-2">
+            <Package class="w-4 h-4" />
+            All Job Orders
+          </h3>
+
+          <div class="flex items-center gap-4">
+            <!-- Divider Line -->
+            <div class="h-8 w-px bg-slate-300"></div>
+
+            <!-- Summary Stats Cards -->
+            <div class="flex items-center gap-2">
+              <div
+                class="flex items-center gap-1.5 px-2 py-1 bg-blue-50 border-l-2 border-blue-500 rounded"
+              >
+                <FileText class="w-3.5 h-3.5 text-blue-600" />
+                <div class="flex items-center gap-1">
+                  <span class="text-[10px] font-bold text-slate-500 uppercase">Total</span>
+                  <span class="text-sm font-black text-blue-600">{{ jobOrders.length }}</span>
+                </div>
+              </div>
+
+              <div
+                class="flex items-center gap-1.5 px-2 py-1 bg-emerald-50 border-l-2 border-emerald-500 rounded"
+              >
+                <CheckCircle2 class="w-3.5 h-3.5 text-emerald-600" />
+                <div class="flex items-center gap-1">
+                  <span class="text-[10px] font-bold text-slate-500 uppercase">Completed</span>
+                  <span class="text-sm font-black text-emerald-600">{{
+                    jobOrders.filter((j) => j.isClosed).length
+                  }}</span>
+                </div>
+              </div>
+
+              <div
+                class="flex items-center gap-1.5 px-2 py-1 bg-amber-50 border-l-2 border-amber-500 rounded"
+              >
+                <Clock class="w-3.5 h-3.5 text-amber-600" />
+                <div class="flex items-center gap-1">
+                  <span class="text-[10px] font-bold text-slate-500 uppercase">In Progress</span>
+                  <span class="text-sm font-black text-amber-600">{{
+                    jobOrders.filter((j) => !j.isClosed).length
+                  }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="overflow-x-auto">
         <Table>

@@ -152,8 +152,8 @@ onMounted(() => {
   <div class="h-full flex flex-col space-y-4 p-4 max-w-[1600px] mx-auto w-full">
     <QaHeader :active-tab="currentTab" @update:category="handleCategoryUpdate" />
 
-    <!-- Filters Bar (Moved above table) -->
-    <div class="flex items-center justify-between px-1 mb-2">
+    <!-- Filters Bar (Show for all tabs except Job Orders) -->
+    <div v-if="currentTab !== 'lab-orders'" class="flex items-center justify-between px-1 mb-2">
       <div class="flex items-center gap-2">
         <div class="w-1.5 h-6 bg-primary rounded-full mr-1"></div>
         <h3 class="text-sm font-black uppercase tracking-widest text-foreground">
@@ -162,7 +162,7 @@ onMounted(() => {
       </div>
 
       <div class="flex items-center gap-3">
-        <!-- Search Input (Replaced Popover) -->
+        <!-- Search Input -->
         <div class="relative w-64">
           <Search
             class="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"

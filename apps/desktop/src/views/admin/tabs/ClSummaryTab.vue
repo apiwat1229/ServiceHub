@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from '@/components/ui/carousel';
 import { bookingsApi } from '@/services/bookings';
 import { rubberTypesApi, type RubberType } from '@/services/rubberTypes';
-import {
-  Beaker,
-  ChevronLeft,
-  ChevronRight,
-  FlaskConical,
-  Scale,
-  Thermometer,
-} from 'lucide-vue-next';
+import { Beaker, FlaskConical, Scale, Thermometer } from 'lucide-vue-next';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
@@ -203,16 +203,6 @@ const calculateGrade = (avg: number) => {
   return 'AA';
 };
 
-const scrollContainers = ref<Record<string, HTMLElement | null>>({});
-
-const scroll = (id: string, dir: 'left' | 'right') => {
-  const el = scrollContainers.value[id];
-  if (el) {
-    const amount = dir === 'left' ? -524 : 524;
-    el.scrollBy({ left: amount, behavior: 'smooth' });
-  }
-};
-
 // Update stats for parent component
 watch(
   processedBookings,
@@ -330,215 +320,219 @@ const formatNum = (val: any, decimals = 1) => {
         </div>
 
         <CardContent class="p-4">
-          <!-- Horizontal Scroll Container for Samples -->
-          <div class="relative group">
-            <!-- Navigation Buttons -->
-            <button
-              v-if="b.samples.length > 2"
-              @click="scroll(b.id, 'left')"
-              class="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-card/90 shadow-lg border border-border rounded-full p-2 text-muted-foreground hover:text-primary hover:bg-card transition-all opacity-0 group-hover:opacity-100 -ml-4"
-            >
-              <ChevronLeft class="h-5 w-5" />
-            </button>
-            <button
-              v-if="b.samples.length > 2"
-              @click="scroll(b.id, 'right')"
-              class="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-card/90 shadow-lg border border-border rounded-full p-2 text-muted-foreground hover:text-primary hover:bg-card transition-all opacity-0 group-hover:opacity-100 -mr-4"
-            >
-              <ChevronRight class="h-5 w-5" />
-            </button>
-
-            <div
-              :ref="
-                (el) => {
-                  if (el) scrollContainers[b.id] = el as HTMLElement;
-                }
-              "
-              class="flex gap-6 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory max-w-full"
-              :class="b.samples.length <= 2 ? 'justify-center' : 'justify-start'"
-            >
-              <div
+          <!-- Carousel for Samples -->
+          <Carousel
+            class="w-full"
+            :opts="{
+              align: 'start',
+              loop: true,
+            }"
+          >
+            <CarouselContent class="-ml-4">
+              <CarouselItem
                 v-for="(s, sIdx) in b.samples"
                 :key="s.id"
-                class="flex flex-col bg-card border border-border rounded-xl overflow-hidden shadow-sm shrink-0 w-[420px] md:w-[500px] snap-center mx-1"
+                class="pl-4 md:basis-1/2 lg:basis-1/3"
               >
-                <!-- Sample Header -->
                 <div
-                  class="bg-primary text-primary-foreground px-3 py-2 flex items-center justify-between"
+                  class="flex flex-col bg-card border border-border rounded-xl overflow-hidden shadow-sm"
                 >
-                  <div class="flex items-center gap-2">
-                    <Beaker class="h-4 w-4" />
-                    <span class="text-sm font-bold"
-                      >{{ t('qa.labels.sample') }} {{ Number(sIdx) + 1 }}</span
-                    >
-                  </div>
-                  <div class="flex items-center gap-3">
-                    <div class="flex flex-col items-end">
-                      <span class="text-[9px] opacity-70 uppercase leading-none">DRC Median</span>
-                      <span class="font-black leading-none text-primary-foreground"
-                        >{{ formatNum(s.drc) }}%</span
+                  <!-- Sample Header -->
+                  <div
+                    class="bg-primary text-primary-foreground px-3 py-2 flex items-center justify-between"
+                  >
+                    <div class="flex items-center gap-2">
+                      <Beaker class="h-4 w-4" />
+                      <span class="text-sm font-bold"
+                        >{{ t('qa.labels.sample') }} {{ Number(sIdx) + 1 }}</span
                       >
                     </div>
-                    <div class="flex flex-col items-end">
-                      <span class="text-[9px] opacity-70 uppercase leading-none">Recal Median</span>
-                      <span class="font-black leading-none text-accent-foreground"
-                        >{{ formatNum(s.recalDrc) }}%</span
-                      >
+                    <div class="flex items-center gap-3">
+                      <div class="flex flex-col items-end">
+                        <span class="text-[9px] opacity-70 uppercase leading-none">DRC Median</span>
+                        <span class="font-black leading-none text-primary-foreground"
+                          >{{ formatNum(s.drc) }}%</span
+                        >
+                      </div>
+                      <div class="flex flex-col items-end">
+                        <span class="text-[9px] opacity-70 uppercase leading-none"
+                          >Recal Median</span
+                        >
+                        <span class="font-black leading-none text-accent-foreground"
+                          >{{ formatNum(s.recalDrc) }}%</span
+                        >
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <!-- Sample Body: 3-Column Grid -->
-                <div class="p-4">
-                  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <!-- Column 1: Weight Process -->
-                    <div class="space-y-4">
-                      <div class="flex items-center gap-2 mb-2 text-muted-foreground">
-                        <Scale class="h-3 w-3" />
-                        <span class="text-xs font-bold tracking-wider">{{
-                          t('qa.labels.weightProcess')
-                        }}</span>
-                      </div>
-                      <div class="space-y-1">
-                        <div class="flex justify-between text-[11px]">
-                          <span class="text-muted-foreground">{{
-                            t('qa.labels.beforePress')
-                          }}</span>
-                          <span class="font-bold text-foreground">{{
-                            formatNum(s.beforePress, 1)
+                  <!-- Sample Body: 3-Column Grid -->
+                  <div class="p-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <!-- Column 1: Weight Process -->
+                      <div class="space-y-4">
+                        <div class="flex items-center gap-2 mb-2 text-muted-foreground">
+                          <Scale class="h-3 w-3" />
+                          <span class="text-xs font-bold tracking-wider">{{
+                            t('qa.labels.weightProcess')
                           }}</span>
                         </div>
-                        <div class="flex justify-between text-[11px]">
-                          <span class="text-muted-foreground">{{ t('qa.labels.afterPress') }}</span>
-                          <span class="font-bold text-foreground">{{
-                            formatNum(s.afterPress, 1)
-                          }}</span>
-                        </div>
-                        <div class="flex justify-between text-[11px]">
-                          <span class="text-muted-foreground">{{ t('qa.labels.basket') }}</span>
-                          <span class="font-bold text-foreground">{{
-                            formatNum(s.basketWeight, 1)
-                          }}</span>
-                        </div>
-                        <div class="flex justify-between text-[11px]">
-                          <span class="text-muted-foreground">{{
-                            t('qa.labels.beforeDryer')
-                          }}</span>
-                          <span class="font-bold text-foreground">{{
-                            formatNum(s.medianBeforeBaking, 1)
-                          }}</span>
-                        </div>
-                        <div class="flex justify-between text-[11px]">
-                          <span class="text-muted-foreground">{{ t('qa.labels.afterDryer') }}</span>
-                          <span class="font-bold text-foreground">{{
-                            formatNum(s.medianAfterDryer, 1)
-                          }}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- Column 2: DRC Analysis -->
-                    <div class="space-y-4 border-l border-border/50 pl-6">
-                      <div class="flex items-center gap-2 mb-2 text-muted-foreground">
-                        <Thermometer class="h-3 w-3" />
-                        <span class="text-xs font-bold tracking-wider">{{
-                          t('qa.labels.drcAnalysis')
-                        }}</span>
-                      </div>
-                      <div class="space-y-1">
-                        <div class="flex justify-between text-[11px]">
-                          <span class="text-muted-foreground">{{
-                            t('qa.labels.drcAfterBaking')
-                          }}</span>
-                          <span class="font-bold text-foreground">{{ formatNum(s.drc, 1) }}</span>
-                        </div>
-                        <div class="flex justify-between text-[11px]">
-                          <span class="text-muted-foreground">{{ t('qa.labels.drcMedian') }}</span>
-                          <span class="font-bold text-foreground">{{ formatNum(s.drc, 1) }}</span>
-                        </div>
-                        <div class="flex justify-between text-[11px]">
-                          <span class="text-muted-foreground">{{ t('qa.labels.recalDrc') }}</span>
-                          <span class="font-bold text-primary">{{ formatNum(s.recalDrc, 1) }}</span>
-                        </div>
-                        <div
-                          class="flex justify-between text-[11px] pt-2 border-t border-border/20"
-                        >
-                          <span class="text-muted-foreground">{{ t('qa.labels.difference') }}</span>
-                          <span
-                            class="font-bold"
-                            :class="
-                              parseFloat(s.difference) >= 0
-                                ? 'text-emerald-600'
-                                : 'text-destructive'
-                            "
-                          >
-                            {{ formatNum(s.difference, 1) }}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- Column 3: Summary -->
-                    <div class="space-y-4 border-l border-border/50 pl-6">
-                      <div class="space-y-1">
-                        <div class="flex justify-between text-[11px]">
-                          <span class="text-muted-foreground">{{ t('qa.labels.drcEst') }}</span>
-                          <span class="font-bold text-foreground"
-                            >{{ formatNum(b.drcEstimate, 0) }}%</span
-                          >
-                        </div>
-                        <div class="flex justify-between text-[11px]">
-                          <span class="text-muted-foreground">{{ t('qa.labels.drc') }}</span>
-                          <span class="font-bold text-foreground">{{ formatNum(s.drc, 1) }}</span>
-                        </div>
-                        <div class="flex justify-between text-[11px]">
-                          <span class="text-muted-foreground">{{ t('qa.labels.drcDry') }}</span>
-                          <span class="font-bold text-violet-500">{{
-                            formatNum(s.drcDry, 1)
-                          }}</span>
-                        </div>
-                        <div class="flex justify-between text-[11px]">
-                          <span class="text-muted-foreground">{{ t('qa.labels.recalDrc') }}</span>
-                          <span class="font-bold text-primary">{{ formatNum(s.recalDrc, 1) }}</span>
-                        </div>
-                      </div>
-
-                      <div class="pt-2 border-t border-border/50">
-                        <span
-                          class="text-xs font-bold text-muted-foreground tracking-wider block mb-2"
-                          >{{ t('qa.labels.moistureLab') }}</span
-                        >
                         <div class="space-y-1">
                           <div class="flex justify-between text-[11px]">
                             <span class="text-muted-foreground">{{
-                              t('qa.labels.moisturePercent')
+                              t('qa.labels.beforePress')
                             }}</span>
-                            <span class="font-bold text-orange-600"
-                              >{{ formatNum(s.medianMoisture, 1) }}%</span
-                            >
+                            <span class="font-bold text-foreground">{{
+                              formatNum(s.beforePress, 1)
+                            }}</span>
                           </div>
                           <div class="flex justify-between text-[11px]">
                             <span class="text-muted-foreground">{{
-                              t('qa.labels.beforeLabDryer')
+                              t('qa.labels.afterPress')
                             }}</span>
                             <span class="font-bold text-foreground">{{
-                              formatNum(s.medianBeforeLab, 1)
+                              formatNum(s.afterPress, 1)
                             }}</span>
                           </div>
                           <div class="flex justify-between text-[11px]">
-                            <span class="text-muted-foreground">{{ t('qa.labels.afterLab') }}</span>
+                            <span class="text-muted-foreground">{{ t('qa.labels.basket') }}</span>
                             <span class="font-bold text-foreground">{{
-                              formatNum(s.medianAfterLab, 1)
+                              formatNum(s.basketWeight, 1)
                             }}</span>
+                          </div>
+                          <div class="flex justify-between text-[11px]">
+                            <span class="text-muted-foreground">{{
+                              t('qa.labels.beforeDryer')
+                            }}</span>
+                            <span class="font-bold text-foreground">{{
+                              formatNum(s.medianBeforeBaking, 1)
+                            }}</span>
+                          </div>
+                          <div class="flex justify-between text-[11px]">
+                            <span class="text-muted-foreground">{{
+                              t('qa.labels.afterDryer')
+                            }}</span>
+                            <span class="font-bold text-foreground">{{
+                              formatNum(s.medianAfterDryer, 1)
+                            }}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Column 2: DRC Analysis -->
+                      <div class="space-y-4 border-l border-border/50 pl-6">
+                        <div class="flex items-center gap-2 mb-2 text-muted-foreground">
+                          <Thermometer class="h-3 w-3" />
+                          <span class="text-xs font-bold tracking-wider">{{
+                            t('qa.labels.drcAnalysis')
+                          }}</span>
+                        </div>
+                        <div class="space-y-1">
+                          <div class="flex justify-between text-[11px]">
+                            <span class="text-muted-foreground">{{
+                              t('qa.labels.drcAfterBaking')
+                            }}</span>
+                            <span class="font-bold text-foreground">{{ formatNum(s.drc, 1) }}</span>
+                          </div>
+                          <div class="flex justify-between text-[11px]">
+                            <span class="text-muted-foreground">{{
+                              t('qa.labels.drcMedian')
+                            }}</span>
+                            <span class="font-bold text-foreground">{{ formatNum(s.drc, 1) }}</span>
+                          </div>
+                          <div class="flex justify-between text-[11px]">
+                            <span class="text-muted-foreground">{{ t('qa.labels.recalDrc') }}</span>
+                            <span class="font-bold text-primary">{{
+                              formatNum(s.recalDrc, 1)
+                            }}</span>
+                          </div>
+                          <div
+                            class="flex justify-between text-[11px] pt-2 border-t border-border/20"
+                          >
+                            <span class="text-muted-foreground">{{
+                              t('qa.labels.difference')
+                            }}</span>
+                            <span
+                              class="font-bold"
+                              :class="
+                                parseFloat(s.difference) >= 0
+                                  ? 'text-emerald-600'
+                                  : 'text-destructive'
+                              "
+                            >
+                              {{ formatNum(s.difference, 1) }}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Column 3: Summary -->
+                      <div class="space-y-4 border-l border-border/50 pl-6">
+                        <div class="space-y-1">
+                          <div class="flex justify-between text-[11px]">
+                            <span class="text-muted-foreground">{{ t('qa.labels.drcEst') }}</span>
+                            <span class="font-bold text-foreground"
+                              >{{ formatNum(b.drcEstimate, 0) }}%</span
+                            >
+                          </div>
+                          <div class="flex justify-between text-[11px]">
+                            <span class="text-muted-foreground">{{ t('qa.labels.drc') }}</span>
+                            <span class="font-bold text-foreground">{{ formatNum(s.drc, 1) }}</span>
+                          </div>
+                          <div class="flex justify-between text-[11px]">
+                            <span class="text-muted-foreground">{{ t('qa.labels.drcDry') }}</span>
+                            <span class="font-bold text-violet-500">{{
+                              formatNum(s.drcDry, 1)
+                            }}</span>
+                          </div>
+                          <div class="flex justify-between text-[11px]">
+                            <span class="text-muted-foreground">{{ t('qa.labels.recalDrc') }}</span>
+                            <span class="font-bold text-primary">{{
+                              formatNum(s.recalDrc, 1)
+                            }}</span>
+                          </div>
+                        </div>
+
+                        <div class="pt-2 border-t border-border/50">
+                          <span
+                            class="text-xs font-bold text-muted-foreground tracking-wider block mb-2"
+                            >{{ t('qa.labels.moistureLab') }}</span
+                          >
+                          <div class="space-y-1">
+                            <div class="flex justify-between text-[11px]">
+                              <span class="text-muted-foreground">{{
+                                t('qa.labels.moisturePercent')
+                              }}</span>
+                              <span class="font-bold text-orange-600"
+                                >{{ formatNum(s.medianMoisture, 1) }}%</span
+                              >
+                            </div>
+                            <div class="flex justify-between text-[11px]">
+                              <span class="text-muted-foreground">{{
+                                t('qa.labels.beforeLabDryer')
+                              }}</span>
+                              <span class="font-bold text-foreground">{{
+                                formatNum(s.medianBeforeLab, 1)
+                              }}</span>
+                            </div>
+                            <div class="flex justify-between text-[11px]">
+                              <span class="text-muted-foreground">{{
+                                t('qa.labels.afterLab')
+                              }}</span>
+                              <span class="font-bold text-foreground">{{
+                                formatNum(s.medianAfterLab, 1)
+                              }}</span>
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
+              </CarouselItem>
+            </CarouselContent>
+            <CarouselPrevious class="-left-12" />
+            <CarouselNext class="-right-12" />
+          </Carousel>
         </CardContent>
       </Card>
     </div>
