@@ -79,6 +79,15 @@ const fetchData = async () => {
         pri: s.pri !== null && s.pri !== undefined ? Number(s.pri).toFixed(2) : '',
       }));
     rubberTypes.value = typesData;
+
+    // Auto-edit mode if no data has been saved yet
+    const hasExistingData = samples.value.some(
+      (s) => (s.p0 && parseFloat(s.p0) > 0) || (s.p30 && parseFloat(s.p30) > 0)
+    );
+    if (!hasExistingData && samples.value.length > 0) {
+      isEditing.value = true;
+      focusFirstInput();
+    }
   } catch (error) {
     console.error('Failed to load data:', error);
     toast.error('Error loading data');
@@ -448,7 +457,10 @@ onMounted(async () => {
         <Button
           v-if="!isEditing"
           class="bg-primary hover:bg-primary/90 text-primary-foreground min-w-[120px]"
-          @click="isEditing = true"
+          @click="
+            isEditing = true;
+            focusFirstInput();
+          "
         >
           <Pencil class="w-4 h-4 mr-2" />
           Edit
