@@ -24,9 +24,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import approvalsApi, { type ApprovalRequest } from '@/services/approvals';
+import { socketService } from '@/services/socket';
 import { handleApiError } from '@/utils/errorHandler';
 import { ArrowUpDown, FileText, RefreshCw, Trash2 } from 'lucide-vue-next';
-import { h, onMounted, ref } from 'vue';
+import { h, onMounted, onUnmounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 
@@ -36,7 +37,7 @@ const isLoading = ref(false);
 
 // Filters
 const filters = ref({
-  status: '',
+  status: 'PENDING', // Default to PENDING to make it clear what needs action
   showDeleted: false,
 });
 
@@ -202,8 +203,20 @@ const fetchApprovals = async () => {
   }
 };
 
+const handleNotification = (data: any) => {
+  // Refresh if it's an approval related notification
+  if (data.sourceApp === 'APPROVALS' || data.type === 'REQUEST' || data.type === 'APPROVE') {
+    fetchApprovals();
+  }
+};
+
 onMounted(() => {
   fetchApprovals();
+  socketService.on('notification', handleNotification);
+});
+
+onUnmounted(() => {
+  socketService.off('notification', handleNotification);
 });
 </script>
 
@@ -239,6 +252,10 @@ onMounted(() => {
                     <SelectItem value="APPROVED">{{ t('approval.status.approved') }}</SelectItem>
                     <SelectItem value="REJECTED">{{ t('approval.status.rejected') }}</SelectItem>
                     <SelectItem value="RETURNED">{{ t('approval.status.returned') }}</SelectItem>
+                    <SelectItem value="VOID">{{ t('approval.status.void') || 'Void' }}</SelectItem>
+                    <SelectItem value="CANCELLED">{{
+                      t('approval.status.cancelled') || 'Cancelled'
+                    }}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

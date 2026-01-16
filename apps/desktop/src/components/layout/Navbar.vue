@@ -349,7 +349,9 @@ const handleNotificationSocket = (newNotification: any) => {
 
   // Refresh pending approvals if notification relates to approvals
   if (
+    newNotification.sourceApp === 'APPROVALS' ||
     newNotification.type === 'REQUEST' ||
+    newNotification.type === 'APPROVE' ||
     newNotification.title.toLowerCase().includes('approval')
   ) {
     fetchPendingApprovals();
@@ -361,6 +363,7 @@ onMounted(() => {
   fetchPendingApprovals();
   socketService.connect();
   socketService.on('notification', handleNotificationSocket);
+  window.addEventListener('refresh-approvals-count', fetchPendingApprovals);
 });
 
 watch(
@@ -375,6 +378,7 @@ watch(
 onUnmounted(() => {
   // if (pollingInterval) clearInterval(pollingInterval);
   socketService.off('notification', handleNotificationSocket);
+  window.removeEventListener('refresh-approvals-count', fetchPendingApprovals);
 });
 </script>
 

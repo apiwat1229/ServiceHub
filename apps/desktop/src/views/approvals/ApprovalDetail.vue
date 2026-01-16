@@ -148,6 +148,8 @@ const changedFields = computed(() => {
 
 const handleSuccess = () => {
   fetchRequest();
+  // Dispatch global event to refresh Navbar count
+  window.dispatchEvent(new CustomEvent('refresh-approvals-count'));
 };
 
 onMounted(() => {

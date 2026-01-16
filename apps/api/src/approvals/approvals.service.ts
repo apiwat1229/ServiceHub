@@ -56,7 +56,7 @@ export class ApprovalsService {
         });
 
         // Notify admins/approvers
-        // await this.notifyApprovers(request); 
+        await this.notifyApprovers(request);
         // DISABLED: Handled by BookingsService (or caller) via Notification Settings to avoid duplicates.
 
         return request;
