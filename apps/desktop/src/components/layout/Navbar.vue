@@ -433,7 +433,7 @@ onUnmounted(() => {
             </span>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent class="w-80 p-0" align="end">
+        <DropdownMenuContent class="w-80 p-0" align="end" side="bottom" :side-offset="8">
           <div class="flex items-center justify-between p-4 border-b">
             <h4 class="font-semibold leading-none">Notifications</h4>
             <span class="text-xs text-muted-foreground" v-if="unreadCount > 0">
@@ -492,7 +492,7 @@ onUnmounted(() => {
             </Avatar>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent class="w-56" align="end">
+        <DropdownMenuContent class="w-56" align="end" side="bottom" :side-offset="8">
           <DropdownMenuLabel class="font-normal">
             <div class="flex flex-col space-y-1">
               <p class="text-sm font-medium leading-none">

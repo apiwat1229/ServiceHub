@@ -10,7 +10,7 @@ const route = useRoute();
 const showSidebar = computed(() => {
   if (
     route.path.startsWith('/admin/cuplump') ||
-    route.path.startsWith('/admin/cuplump-pool') ||
+    route.path.startsWith('/cuplump-pool') ||
     route.path.startsWith('/admin/uss') ||
     route.path.startsWith('/admin/helpdesk') ||
     route.path.startsWith('/admin/project-timeline') ||

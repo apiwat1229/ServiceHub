@@ -3,8 +3,6 @@
 @tailwind utilities;
 
 :root {
-  font-family: 'Inter', 'Prompt', sans-serif;
-  font-size: 15px;
   line-height: 1.5;
   font-weight: 400;
 }

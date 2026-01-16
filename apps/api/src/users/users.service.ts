@@ -278,7 +278,6 @@ export class UsersService {
             role,
             status,
             avatar,
-            customPreferences: preferences, // Rename to avoid conflict if any, or just keep preferences if schema allows
             forceChangePassword, // Update forceChangePassword status
         };
 

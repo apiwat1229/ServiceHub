@@ -65,7 +65,17 @@ export const poolsApi = {
         return api.get<Pool>(`/pools/${id}`).then(res => res.data);
     },
     create: (data: Partial<Pool>) => api.post<Pool>('/pools', data).then(res => res.data),
-    update: (id: string, data: Partial<Pool>) => api.put<Pool>(`/pools/${id}`, data).then(res => res.data),
+    update: (id: string, data: Partial<Pool>) => {
+        if (USE_MOCK) {
+            const pool = mockPools.find(p => p.id === id);
+            if (pool) {
+                Object.assign(pool, data);
+                if (data.status) pool.status = data.status;
+            }
+            return Promise.resolve(pool!);
+        }
+        return api.put<Pool>(`/pools/${id}`, data).then(res => res.data);
+    },
     addItems: (poolId: string, items: { displayWeight?: number; displayGrade?: string; displayRubberType?: string }[]) => {
         if (USE_MOCK) {
             const pool = mockPools.find(p => p.id === poolId);

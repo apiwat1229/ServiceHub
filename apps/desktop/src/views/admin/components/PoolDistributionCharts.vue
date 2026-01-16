@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { Card, CardContent } from '@/components/ui/card';
 import DateRangePicker from '@/components/ui/date-range-picker.vue';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { type Pool } from '@/services/pools';
 import { getLocalTimeZone, today } from '@internationalized/date';
 import { type DateRange } from 'reka-ui';
@@ -16,12 +23,24 @@ const dateRange = ref<DateRange>({
   end: today(getLocalTimeZone()),
 } as any);
 
+const viewMode = ref<'grade' | 'type'>('grade');
+
 const distributionFromIntake = computed(() => {
-  const grades = ['AA', 'A', 'B', 'C'];
-  const colors = ['#10b981', '#0ea5e9', '#6366f1', '#f59e0b'];
-  const series = intakeChartData.value.series.map((s) => s.data.reduce((a, b) => a + b, 0));
-  const total = series.reduce((a, b) => a + b, 0);
-  return { categories: grades, series, total, colors };
+  if (viewMode.value === 'grade') {
+    const grades = ['AA', 'A', 'B', 'C'];
+    const colors = ['#10b981', '#0ea5e9', '#6366f1', '#f59e0b'];
+    const series = intakeChartData.value.series.map((s) => s.data.reduce((a, b) => a + b, 0));
+    const total = series.reduce((a, b) => a + b, 0);
+    return { categories: grades, series, total, colors };
+  } else {
+    // Mocking Type data based on pools
+    const types = ['Cuplump', 'USS', 'RSS'];
+    const colors = ['#3b82f6', '#8b5cf6', '#ec4899'];
+    // Random series for demo
+    const series = [450.5, 320.0, 164.5];
+    const total = series.reduce((a, b) => a + b, 0);
+    return { categories: types, series, total, colors };
+  }
 });
 
 const intakeChartData = computed(() => {
@@ -39,13 +58,16 @@ const intakeChartData = computed(() => {
     days = Array.from({ length: 15 }, (_, i) => `${i + 1} Oct`);
   }
 
-  const grades = ['AA', 'A', 'B', 'C'];
-  const series = grades.map((grade) => ({
-    name: `Grade ${grade}`,
+  const items = viewMode.value === 'grade' ? ['AA', 'A', 'B', 'C'] : ['Cuplump', 'USS', 'RSS'];
+  const colors =
+    viewMode.value === 'grade'
+      ? ['#10b981', '#0ea5e9', '#6366f1', '#f59e0b']
+      : ['#3b82f6', '#8b5cf6', '#ec4899'];
+
+  const series = items.map((name) => ({
+    name: viewMode.value === 'grade' ? `Grade ${name}` : name,
     data: days.map(() => Math.floor(Math.random() * 20) + 5),
   }));
-
-  const colors = ['#10b981', '#0ea5e9', '#6366f1', '#f59e0b'];
 
   return { categories: days, series, colors };
 });
@@ -142,10 +164,25 @@ const getChartOptions = (labels: string[], colors: string[], total: number) => (
     <CardContent class="p-0">
       <div class="grid grid-cols-1 lg:grid-cols-12 divide-x divide-slate-50 h-[360px]">
         <div class="lg:col-span-3 p-6 flex flex-col bg-slate-50/20">
-          <div class="flex items-center h-8 mb-6">
+          <div class="flex items-center justify-between h-8 mb-6">
             <div class="text-[10px] font-black text-blue-600 uppercase tracking-widest">
               Weight Distribution
             </div>
+            <Select v-model="viewMode">
+              <SelectTrigger
+                class="h-7 py-0 px-2 text-[9px] font-black w-20 border-0 bg-white/50 focus:ring-1 focus:ring-blue-100 shadow-none hover:bg-white transition-colors uppercase tracking-widest"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="grade" class="text-[9px] font-black uppercase tracking-widest"
+                  >Grade</SelectItem
+                >
+                <SelectItem value="type" class="text-[9px] font-black uppercase tracking-widest"
+                  >Type</SelectItem
+                >
+              </SelectContent>
+            </Select>
           </div>
           <div class="w-full h-48 flex items-center justify-center flex-1">
             <VueApexCharts

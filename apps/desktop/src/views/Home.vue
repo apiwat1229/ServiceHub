@@ -57,7 +57,7 @@ const modules = computed<ServiceModule[]>(() => [
     color: 'text-orange-600',
     bgColor: 'bg-orange-50/50 group-hover:bg-orange-100/50',
     hoverBorder: 'group-hover:border-orange-500',
-    route: '/admin/cuplump-pool',
+    route: '/cuplump-pool',
     permission: 'bookings:read', // Cuplump is part of booking system
   },
   {

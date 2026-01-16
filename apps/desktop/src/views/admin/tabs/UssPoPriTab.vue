@@ -6,7 +6,10 @@ import { rubberTypesApi, type RubberType } from '@/services/rubberTypes';
 import type { ColumnDef } from '@tanstack/vue-table';
 import { Edit } from 'lucide-vue-next';
 import { computed, h, onMounted, ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import ClPoPriDialog from '../components/ClPoPriDialog.vue';
+
+const { t } = useI18n();
 
 const props = defineProps<{
   searchQuery?: string;
@@ -110,7 +113,7 @@ const processedBookings = computed(() => {
         id: b.id + '-main',
         originalId: b.id,
         isTrailerPart: false,
-        partLabel: 'Main Truck',
+        partLabel: t('qa.labels.mainTruck'),
         displayRubberType: getRubberTypeName(b.rubberType),
         displayLocation: b.rubberSource || '-',
         displayWeightIn: grossMain,
@@ -150,7 +153,7 @@ const processedBookings = computed(() => {
           id: b.id + '-trailer',
           originalId: b.id,
           isTrailerPart: true,
-          partLabel: 'Trailer',
+          partLabel: t('qa.labels.trailer'),
           displayRubberType: getRubberTypeName(b.trailerRubberType || b.rubberType),
           displayLocation: b.trailerRubberSource || b.rubberSource || '-',
           displayWeightIn: grossTrailer,
@@ -208,14 +211,14 @@ const filteredBookings = computed(() => {
 const columns: ColumnDef<any>[] = [
   {
     accessorKey: 'bookingCode',
-    header: () => 'Lot Number',
+    header: () => t('qa.columns.lotNumber'),
     cell: ({ row }) => {
       const booking = row.original;
       return h('div', { class: 'flex flex-col' }, [
-        h('span', { class: 'font-bold text-sm' }, booking.lotNo),
+        h('span', { class: 'font-bold text-sm text-foreground' }, booking.lotNo),
         h(
           'span',
-          { class: 'text-[10px] text-muted-foreground' },
+          { class: 'text-xs text-primary font-medium' },
           new Date(booking.date).toLocaleDateString('en-GB', {
             day: '2-digit',
             month: 'short',
@@ -227,42 +230,40 @@ const columns: ColumnDef<any>[] = [
   },
   {
     accessorKey: 'supplierName',
-    header: () => 'Supplier',
+    header: () => t('qa.columns.supplier'),
     cell: ({ row }) => {
       const booking = row.original;
       return h('div', { class: 'flex flex-col' }, [
-        h('span', { class: 'font-bold text-sm' }, booking.supplierCode),
-        h('span', { class: 'text-[10px] text-muted-foreground' }, booking.supplierName),
+        h('span', { class: 'font-bold text-sm text-foreground' }, booking.supplierCode),
+        h('span', { class: 'text-xs text-primary font-medium' }, booking.supplierName),
       ]);
     },
   },
   {
     accessorKey: 'truckRegister',
-    header: () => 'Truck',
+    header: () => t('qa.columns.truck'),
     cell: ({ row }) => {
       const booking = row.original;
       return h('div', { class: 'flex flex-col' }, [
-        h('span', { class: 'font-bold text-sm capitalize' }, booking.truckRegister),
+        h('span', { class: 'font-bold text-sm capitalize text-foreground' }, booking.truckRegister),
         h(
           'span',
-          { class: 'text-[10px] text-muted-foreground' },
-          booking.isTrailerPart ? 'Trailer' : booking.truckType || 'Main Truck'
+          { class: 'text-xs text-primary font-medium' },
+          booking.isTrailerPart
+            ? t('qa.labels.trailer')
+            : booking.truckType || t('qa.labels.mainTruck')
         ),
       ]);
     },
   },
   {
     accessorKey: 'rubberType',
-    header: () => 'Rubber Type',
+    header: () => t('qa.columns.rubberType'),
     cell: ({ row }) => {
       const booking = row.original;
       return h('div', { class: 'flex flex-col' }, [
-        h('span', { class: 'font-medium text-sm' }, booking.displayRubberType),
-        h(
-          'span',
-          { class: 'text-[10px] text-muted-foreground font-medium text-blue-600' },
-          booking.displayLocation
-        ),
+        h('span', { class: 'font-medium text-sm text-foreground' }, booking.displayRubberType),
+        h('span', { class: 'text-xs text-primary font-medium' }, booking.displayLocation),
       ]);
     },
   },
@@ -273,15 +274,15 @@ const columns: ColumnDef<any>[] = [
         'div',
         {
           class:
-            'text-center bg-slate-100 text-slate-700 h-8 flex items-center justify-center rounded-sm mx-1 min-w-[80px] font-bold text-xs',
+            'text-center bg-primary/10 text-primary h-8 flex items-center justify-center rounded-sm mx-1 min-w-[80px] font-bold text-xs',
         },
-        'AVG PO'
+        t('qa.columns.avgPo')
       ),
     cell: ({ row }) => {
       const val = row.original.avgPo;
       if (!val || val === 0)
         return h('div', { class: 'text-center text-muted-foreground/30' }, '-');
-      return h('div', { class: 'text-center font-bold text-slate-600' }, val.toFixed(1));
+      return h('div', { class: 'text-center font-bold text-foreground/80' }, val.toFixed(1));
     },
   },
   {
@@ -291,15 +292,15 @@ const columns: ColumnDef<any>[] = [
         'div',
         {
           class:
-            'text-center bg-slate-100 text-slate-700 h-8 flex items-center justify-center rounded-sm mx-1 min-w-[80px] font-bold text-xs',
+            'text-center bg-primary/10 text-primary h-8 flex items-center justify-center rounded-sm mx-1 min-w-[80px] font-bold text-xs',
         },
-        'AVG PRI'
+        t('qa.columns.avgPri')
       ),
     cell: ({ row }) => {
       const val = row.original.avgPri;
       if (!val || val === 0)
         return h('div', { class: 'text-center text-muted-foreground/30' }, '-');
-      return h('div', { class: 'text-center font-bold text-slate-600' }, val.toFixed(1));
+      return h('div', { class: 'text-center font-bold text-foreground/80' }, val.toFixed(1));
     },
   },
   {
@@ -309,32 +310,36 @@ const columns: ColumnDef<any>[] = [
         'div',
         {
           class:
-            'text-center bg-slate-100 text-slate-700 h-8 flex items-center justify-center rounded-sm mx-1 min-w-[60px] font-bold text-xs',
+            'text-center bg-primary/10 text-primary h-8 flex items-center justify-center rounded-sm mx-1 min-w-[60px] font-bold text-xs',
         },
-        'Grade'
+        t('qa.columns.grade')
       ),
     cell: ({ row }) => {
       const val = row.original.grade;
       if (!val || val === '-')
         return h('div', { class: 'text-center text-muted-foreground/30' }, '-');
-      return h('div', { class: 'text-center font-black text-slate-800' }, val);
+      return h('div', { class: 'text-center font-black text-foreground' }, val);
     },
   },
   {
     accessorKey: 'netWeight',
-    header: () => h('div', { class: 'text-right' }, 'Net Weight'),
+    header: () => h('div', { class: 'text-right' }, t('qa.columns.netWeight')),
     cell: ({ row }) => {
       const val = row.original.displayNetWeight;
       return h('div', { class: 'text-right' }, [
         val > 0
-          ? h('span', { class: 'font-bold text-green-600' }, `${val.toLocaleString()} Kg.`)
-          : h('span', { class: 'text-green-600/30 font-bold' }, '-'),
+          ? h(
+              'span',
+              { class: 'font-bold text-emerald-600' },
+              `${val.toLocaleString()} ${t('qa.labels.kg')}`
+            )
+          : h('span', { class: 'text-emerald-600/30 font-bold' }, '-'),
       ]);
     },
   },
   {
     id: 'actions',
-    header: () => h('div', { class: 'text-center' }, 'Actions'),
+    header: () => h('div', { class: 'text-center' }, t('common.actions')),
     cell: ({ row }) => {
       return h(
         'div',

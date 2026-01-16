@@ -241,16 +241,16 @@ onMounted(async () => {
 
 <template>
   <div
-    class="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden flex flex-col h-full relative"
+    class="bg-card rounded-xl shadow-lg border border-border overflow-hidden flex flex-col h-full relative"
   >
     <!-- Header Section -->
-    <div class="p-6 border-b border-slate-100 bg-slate-50/50">
+    <div class="p-6 border-b border-border bg-muted/30">
       <div class="flex flex-wrap items-center gap-y-4 gap-x-8">
         <div class="flex flex-col">
-          <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest mb-1"
+          <span class="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1"
             >Date</span
           >
-          <span class="text-sm font-bold text-slate-900">{{
+          <span class="text-sm font-bold text-foreground">{{
             booking
               ? new Date(booking.date).toLocaleDateString('en-GB', {
                   day: '2-digit',
@@ -262,42 +262,42 @@ onMounted(async () => {
         </div>
 
         <div class="flex flex-col">
-          <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest mb-1"
+          <span class="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1"
             >Lot Number</span
           >
-          <span class="text-sm font-bold text-blue-600">{{ booking?.lotNo || '-' }}</span>
+          <span class="text-sm font-bold text-primary">{{ booking?.lotNo || '-' }}</span>
         </div>
 
         <div class="flex flex-col">
-          <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest mb-1"
+          <span class="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1"
             >Supplier</span
           >
-          <span class="text-sm font-bold text-slate-900"
+          <span class="text-sm font-bold text-foreground"
             >{{ booking?.supplierCode }} : {{ booking?.supplierName }}</span
           >
         </div>
 
         <div class="flex flex-col">
-          <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest mb-1"
+          <span class="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1"
             >Rubber Type</span
           >
           <div class="flex flex-col gap-1">
             <Badge
               variant="outline"
-              class="w-fit bg-white text-blue-600 border-blue-200 uppercase text-[10px] h-5 px-2"
+              class="w-fit bg-card text-primary border-primary/20 uppercase text-[10px] h-5 px-2"
               >{{ displayRubberType }}</Badge
             >
-            <span class="text-[10px] font-medium text-blue-600 truncate max-w-[120px]">{{
+            <span class="text-xs font-medium text-primary truncate max-w-[120px]">{{
               displayLocation
             }}</span>
           </div>
         </div>
 
         <div class="flex flex-col">
-          <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest mb-1"
+          <span class="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1"
             >DRC ACTUAL</span
           >
-          <span class="text-sm font-bold text-purple-600"
+          <span class="text-sm font-bold text-violet-500"
             >{{
               formatNum(
                 props.isTrailer
@@ -309,35 +309,35 @@ onMounted(async () => {
         </div>
 
         <div class="flex flex-col">
-          <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest mb-1"
+          <span class="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1"
             >Net Weight</span
           >
-          <span class="text-sm font-bold text-blue-600">{{ displayNetWeight }} kg</span>
+          <span class="text-sm font-bold text-primary">{{ displayNetWeight }} kg</span>
         </div>
 
         <div class="flex flex-col">
-          <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest mb-1"
+          <span class="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1"
             >Grade</span
           >
           <div
-            class="flex items-center justify-center border-2 border-slate-200 rounded px-2 h-5 min-w-[3rem] bg-white"
+            class="flex items-center justify-center border-2 border-border rounded px-2 h-5 min-w-[3rem] bg-card"
           >
-            <span class="text-xs font-black text-slate-900">{{ calculatedGrade }}</span>
+            <span class="text-xs font-black text-foreground">{{ calculatedGrade }}</span>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Samples List -->
-    <div class="flex-1 overflow-y-auto p-6 space-y-4 bg-white">
+    <div class="flex-1 overflow-y-auto p-6 space-y-4 bg-card">
       <div
         v-for="(sample, index) in samples"
         :key="sample.id"
-        class="group relative flex items-center gap-4 p-4 rounded-xl border border-slate-100 bg-slate-50/30 hover:bg-white hover:shadow-md transition-all"
+        class="group relative flex items-center gap-4 p-4 rounded-xl border border-border bg-muted/20 hover:bg-muted/40 hover:shadow-md transition-all"
       >
         <!-- Sample Label -->
         <div
-          class="flex flex-col items-center justify-center min-w-[80px] h-10 bg-slate-200 rounded-lg text-slate-600"
+          class="flex flex-col items-center justify-center min-w-[80px] h-10 bg-muted rounded-lg text-muted-foreground"
         >
           <span class="text-[10px] font-bold uppercase">Sample</span>
           <span class="text-sm font-black leading-none">{{ index + 1 }}</span>
@@ -346,39 +346,39 @@ onMounted(async () => {
         <!-- Inputs Grid -->
         <div class="flex-1 grid grid-cols-5 gap-6">
           <div class="flex flex-col gap-1">
-            <label class="text-[10px] font-bold text-slate-400 uppercase">Before Press</label>
+            <label class="text-xs font-bold text-muted-foreground uppercase">Before Press</label>
             <div class="flex items-center gap-2">
               <Input
                 v-model="sample.beforePress"
                 readonly
-                class="h-9 bg-slate-100 border-slate-200 font-bold text-slate-500 cursor-not-allowed"
+                class="h-9 bg-muted border-border font-bold text-muted-foreground cursor-not-allowed"
                 @input="handleNumericInput(sample, 'beforePress', $event.target.value)"
               />
 
-              <span class="text-xs font-bold text-slate-400">kg</span>
+              <span class="text-xs font-bold text-muted-foreground">kg</span>
             </div>
           </div>
 
           <div class="flex flex-col gap-1">
-            <label class="text-[10px] font-bold text-slate-400 uppercase">After Press</label>
+            <label class="text-xs font-bold text-muted-foreground uppercase">After Press</label>
             <div class="flex items-center gap-2">
               <Input
                 v-model="sample.afterPress"
                 readonly
-                class="h-9 bg-slate-100 border-slate-200 font-bold text-slate-500 cursor-not-allowed"
+                class="h-9 bg-muted border-border font-bold text-muted-foreground cursor-not-allowed"
                 @input="handleNumericInput(sample, 'afterPress', $event.target.value)"
               />
 
-              <span class="text-xs font-bold text-slate-400">kg</span>
+              <span class="text-xs font-bold text-muted-foreground">kg</span>
             </div>
           </div>
 
           <div class="flex flex-col gap-1">
-            <label class="text-[10px] font-bold text-slate-400 uppercase">PO</label>
+            <label class="text-xs font-bold text-muted-foreground uppercase">PO</label>
             <Input
               v-model="sample.p0"
-              class="h-9 border-slate-200 font-bold"
-              :class="!isEditing ? 'bg-slate-100 text-slate-500' : 'bg-white text-slate-700'"
+              class="h-9 border-border font-bold"
+              :class="!isEditing ? 'bg-muted text-muted-foreground' : 'bg-card text-foreground'"
               placeholder="PO"
               @input="handleNumericInput(sample, 'p0', $event.target.value)"
               @keydown="handleEnter"
@@ -387,11 +387,11 @@ onMounted(async () => {
           </div>
 
           <div class="flex flex-col gap-1">
-            <label class="text-[10px] font-bold text-slate-400 uppercase">P30</label>
+            <label class="text-xs font-bold text-muted-foreground uppercase">P30</label>
             <Input
               v-model="sample.p30"
-              class="h-9 border-slate-200 font-bold"
-              :class="!isEditing ? 'bg-slate-100 text-slate-500' : 'bg-white text-slate-700'"
+              class="h-9 border-border font-bold"
+              :class="!isEditing ? 'bg-muted text-muted-foreground' : 'bg-card text-foreground'"
               placeholder="P30"
               @input="handleNumericInput(sample, 'p30', $event.target.value)"
               @keydown="handleEnter"
@@ -400,9 +400,9 @@ onMounted(async () => {
           </div>
 
           <div class="flex flex-col gap-1">
-            <label class="text-[10px] font-bold text-slate-400 uppercase">PRI</label>
+            <label class="text-xs font-bold text-muted-foreground uppercase">PRI</label>
             <div
-              class="h-9 flex items-center px-3 bg-slate-100 rounded-md border border-slate-200 font-bold text-slate-500"
+              class="h-9 flex items-center px-3 bg-muted rounded-md border border-border font-bold text-muted-foreground"
             >
               {{ sample.pri || '-' }}
             </div>
@@ -416,13 +416,11 @@ onMounted(async () => {
     </div>
 
     <!-- Footer Action -->
-    <div
-      class="p-6 border-t border-slate-100 bg-slate-50/50 flex justify-between items-center gap-3"
-    >
+    <div class="p-6 border-t border-border bg-muted/30 flex justify-between items-center gap-3">
       <!-- Left: Delete Button -->
       <Button
         variant="ghost"
-        class="text-red-500 hover:text-red-600 hover:bg-red-50"
+        class="text-destructive hover:text-destructive hover:bg-destructive/10"
         @click="showBookingDeleteConfirm = true"
       >
         <Trash2 class="w-4 h-4 mr-2" />
@@ -437,7 +435,7 @@ onMounted(async () => {
 
         <Button
           v-if="!isEditing"
-          class="bg-blue-600 hover:bg-blue-700 min-w-[120px]"
+          class="bg-primary hover:bg-primary/90 text-primary-foreground min-w-[120px]"
           @click="isEditing = true"
         >
           <Pencil class="w-4 h-4 mr-2" />
@@ -471,7 +469,10 @@ onMounted(async () => {
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction class="bg-red-600 hover:bg-red-700" @click="deleteSample">
+          <AlertDialogAction
+            class="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+            @click="deleteSample"
+          >
             Delete
           </AlertDialogAction>
         </AlertDialogFooter>
@@ -489,7 +490,10 @@ onMounted(async () => {
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction class="bg-red-600 hover:bg-red-700" @click="deleteBooking">
+          <AlertDialogAction
+            class="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+            @click="deleteBooking"
+          >
             {{ isDeleting ? 'Deleting...' : 'Delete' }}
           </AlertDialogAction>
         </AlertDialogFooter>

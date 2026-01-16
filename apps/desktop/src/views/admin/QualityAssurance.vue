@@ -16,8 +16,9 @@ import {
   TestTubes,
   Waves,
 } from 'lucide-vue-next';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useRouter } from 'vue-router';
 import { toast } from 'vue-sonner';
 
 import ClLabTab from './tabs/ClLabTab.vue';
@@ -58,25 +59,43 @@ const selectedCategory = ref<'CL' | 'USS'>(
 );
 
 const allTabs = [
-  { id: 'cl-po-pri', label: 'CL PO PRI', icon: ClipboardList, category: 'CL' },
-  { id: 'cl-lab', label: 'CL Lab', icon: TestTubes, category: 'CL' },
-  { id: 'cl-summary', label: 'CL Summary', icon: List, category: 'CL' },
-  { id: 'cuplump-pool', label: 'Cuplump Pool', icon: Waves, category: 'CL' },
-  { id: 'uss-po-pri', label: 'USS PO PRI', icon: ClipboardList, category: 'USS' },
-  { id: 'uss-summary', label: 'USS Summary', icon: List, category: 'USS' },
+  { id: 'cl-po-pri', label: 'qa.tabs.clPoPri', icon: ClipboardList, category: 'CL' },
+  { id: 'cl-lab', label: 'qa.tabs.clLab', icon: TestTubes, category: 'CL' },
+  { id: 'cl-summary', label: 'qa.tabs.clSummary', icon: List, category: 'CL' },
+  { id: 'cuplump-pool', label: 'qa.tabs.cuplumpPool', icon: Waves, category: 'CL' },
+  { id: 'uss-po-pri', label: 'qa.tabs.ussPoPri', icon: ClipboardList, category: 'USS' },
+  { id: 'uss-summary', label: 'qa.tabs.ussSummary', icon: List, category: 'USS' },
 ];
 
 const tabs = computed(() => {
-  return allTabs.filter((tab) => tab.category === selectedCategory.value);
+  return allTabs
+    .filter((tab) => tab.category === selectedCategory.value)
+    .map((tab) => ({ ...tab, label: t(tab.label) }));
 });
 
+const currentTabLabel = computed(() => {
+  return allTabs.find((tab) => tab.id === currentTab.value)?.label || '';
+});
+
+const router = useRouter();
+
 // Watch category change to reset tab
-import { watch } from 'vue';
 watch(selectedCategory, (newVal) => {
   localStorage.setItem('qaCategory', newVal);
   const firstTab = tabs.value[0];
   if (firstTab) {
     currentTab.value = firstTab.id;
+  }
+});
+
+// Navigate to separate modules if selected as tab
+watch(currentTab, (newTab) => {
+  if (newTab === 'cuplump-pool') {
+    router.push('/cuplump-pool');
+    // Revert tab selection so it doesn't stay on an empty state if they come back
+    setTimeout(() => {
+      currentTab.value = 'cl-po-pri';
+    }, 100);
   }
 });
 
@@ -109,82 +128,36 @@ onMounted(() => {
     <!-- Header -->
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
       <div class="flex items-center gap-4">
-        <h2 class="text-2xl font-bold tracking-tight">Quality Assurance</h2>
+        <h2 class="text-2xl font-bold tracking-tight">{{ t('qa.title') }}</h2>
         <!-- Category Selector -->
-        <div class="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200">
+        <div class="flex items-center bg-muted/50 p-1 rounded-lg border border-border">
           <button
             class="px-3 py-1 text-sm font-medium rounded-md transition-all"
             :class="
               selectedCategory === 'CL'
                 ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'text-slate-500 hover:text-slate-700'
+                : 'text-muted-foreground hover:text-foreground'
             "
             @click="selectedCategory = 'CL'"
           >
-            Cuplump
+            {{ t('qa.cuplump') }}
           </button>
           <button
             class="px-3 py-1 text-sm font-medium rounded-md transition-all"
             :class="
               selectedCategory === 'USS'
                 ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'text-slate-500 hover:text-slate-700'
+                : 'text-muted-foreground hover:text-foreground'
             "
             @click="selectedCategory = 'USS'"
           >
-            USS
+            {{ t('qa.uss') }}
           </button>
         </div>
       </div>
 
-      <!-- Center Tabs & Filters -->
-      <div class="flex-1 flex flex-col md:flex-row items-center justify-end gap-3 w-full md:w-auto">
-        <!-- Filters -->
-        <div class="flex items-center gap-2 w-full md:w-auto">
-          <Popover>
-            <PopoverTrigger as-child>
-              <Button variant="outline" size="icon" class="bg-white border-dashed">
-                <Search class="h-4 w-4 text-muted-foreground" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent class="p-2 w-80" align="end">
-              <div class="relative w-full">
-                <Search class="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  v-model="searchQuery"
-                  placeholder="Search..."
-                  class="pl-8 bg-white"
-                  autoFocus
-                />
-              </div>
-            </PopoverContent>
-          </Popover>
-
-          <Popover :open="isDatePopoverOpen" @update:open="isDatePopoverOpen = $event">
-            <PopoverTrigger as-child>
-              <Button
-                variant="outline"
-                class="w-[150px] pl-3 text-left font-normal bg-white"
-                :class="!selectedDateObject && 'text-muted-foreground'"
-              >
-                {{
-                  selectedDateObject
-                    ? format(new Date(selectedDateObject.toString()), 'dd-MMM-yyyy')
-                    : 'Pick a date'
-                }}
-                <CalendarIcon class="ml-auto h-4 w-4 opacity-50" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent class="w-auto p-0" align="start">
-              <Calendar
-                v-model="selectedDateObject"
-                mode="single"
-                @update:model-value="handleDateSelect"
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
-
+      <!-- Tabs ONLY -->
+      <div class="w-full md:w-auto">
         <Tabs v-model="currentTab" class="w-auto">
           <TabsList class="bg-muted p-1 rounded-lg w-full h-auto flex flex-wrap justify-end gap-1">
             <TabsTrigger
@@ -201,10 +174,58 @@ onMounted(() => {
       </div>
     </div>
 
+    <!-- Filters Bar (Moved above table) -->
+    <div class="flex items-center justify-between px-1 mb-2">
+      <div class="flex items-center gap-2">
+        <div class="w-1.5 h-6 bg-primary rounded-full mr-1"></div>
+        <h3 class="text-sm font-black uppercase tracking-widest text-foreground">
+          {{ currentTabLabel }}
+        </h3>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <!-- Search Input (Replaced Popover) -->
+        <div class="relative w-64">
+          <Search
+            class="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"
+          />
+          <Input
+            v-model="searchQuery"
+            :placeholder="t('qa.searchPlaceholder')"
+            class="pl-9 h-9 bg-card border-input text-xs"
+          />
+        </div>
+
+        <Popover :open="isDatePopoverOpen" @update:open="isDatePopoverOpen = $event">
+          <PopoverTrigger as-child>
+            <Button
+              variant="outline"
+              class="w-[150px] pl-3 text-left font-normal bg-card h-9 shadow-sm hover:bg-muted/50 transition-all border-input"
+              :class="!selectedDateObject && 'text-muted-foreground'"
+            >
+              {{
+                selectedDateObject
+                  ? format(new Date(selectedDateObject.toString()), 'dd-MMM-yyyy')
+                  : t('qa.pickDate')
+              }}
+              <CalendarIcon class="ml-auto h-4 w-4 text-muted-foreground/50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent class="w-auto p-0" align="end">
+            <Calendar
+              v-model="selectedDateObject"
+              mode="single"
+              @update:model-value="handleDateSelect"
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
+    </div>
+
     <!-- Tab Content -->
     <!-- Tab Content Area -->
     <div
-      class="flex-1 overflow-y-auto pr-2 -mr-2 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent"
+      class="flex-1 overflow-y-auto pr-2 -mr-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
     >
       <div v-if="currentTab === 'cl-po-pri'">
         <ClPoPriTab
@@ -232,12 +253,12 @@ onMounted(() => {
       </div>
       <div v-else-if="currentTab === 'cuplump-pool'">
         <div
-          class="flex items-center justify-center h-64 border rounded-lg bg-slate-50 border-dashed"
+          class="flex items-center justify-center h-64 border rounded-lg bg-muted/20 border-dashed"
         >
           <div class="text-center">
-            <Waves class="h-10 w-10 text-slate-300 mx-auto mb-3" />
-            <h3 class="text-lg font-medium text-slate-900">Cuplump Pool</h3>
-            <p class="text-slate-500">Feature coming soon</p>
+            <Waves class="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
+            <h3 class="text-lg font-medium text-foreground">{{ t('qa.tabs.cuplumpPool') }}</h3>
+            <p class="text-muted-foreground mt-1">{{ t('qa.comingSoon') }}</p>
           </div>
         </div>
       </div>
@@ -251,12 +272,12 @@ onMounted(() => {
       </div>
       <div v-else-if="currentTab === 'uss-summary'">
         <div
-          class="flex items-center justify-center h-64 border rounded-lg bg-slate-50 border-dashed"
+          class="flex items-center justify-center h-64 border rounded-lg bg-muted/20 border-dashed"
         >
           <div class="text-center">
-            <List class="h-10 w-10 text-slate-300 mx-auto mb-3" />
-            <h3 class="text-lg font-medium text-slate-900">USS Summary</h3>
-            <p class="text-slate-500">Feature coming soon</p>
+            <List class="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
+            <h3 class="text-lg font-medium text-foreground">{{ t('qa.tabs.ussSummary') }}</h3>
+            <p class="text-muted-foreground mt-1">{{ t('qa.comingSoon') }}</p>
           </div>
         </div>
       </div>

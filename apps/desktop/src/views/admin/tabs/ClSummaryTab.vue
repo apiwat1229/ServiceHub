@@ -12,6 +12,9 @@ import {
   Thermometer,
 } from 'lucide-vue-next';
 import { computed, onMounted, ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 const props = defineProps<{
   searchQuery?: string;
@@ -60,9 +63,9 @@ const getGradeColorClass = (grade: string) => {
     case 'C':
       return 'bg-orange-100 text-orange-700 border-orange-200';
     case 'D':
-      return 'bg-red-100 text-red-700 border-red-200';
+      return 'bg-destructive/10 text-destructive border-destructive/20';
     default:
-      return 'bg-slate-100 text-slate-700 border-slate-200';
+      return 'bg-muted text-muted-foreground border-border';
   }
 };
 
@@ -152,7 +155,7 @@ const processedBookings = computed(() => {
           id: b.id + '-main',
           originalId: b.id,
           isTrailerPart: false,
-          partLabel: 'Main Truck',
+          partLabel: t('qa.labels.mainTruck'),
           displayRubberType: getRubberTypeName(b.rubberType),
           displayLocation: b.rubberSource || '-',
           samples: processSamples(mainSamples),
@@ -176,7 +179,7 @@ const processedBookings = computed(() => {
           id: b.id + '-trailer',
           originalId: b.id,
           isTrailerPart: true,
-          partLabel: 'Trailer',
+          partLabel: t('qa.labels.trailer'),
           displayRubberType: getRubberTypeName(b.trailerRubberType || b.rubberType),
           displayLocation: b.trailerRubberSource || b.rubberSource || '-',
           samples: processSamples(trailerSamples),
@@ -240,13 +243,12 @@ const formatNum = (val: any, decimals = 1) => {
 
     <div
       v-else-if="processedBookings.length === 0"
-      class="flex flex-col items-center justify-center py-20 bg-slate-50 border border-dashed rounded-xl border-slate-200"
+      class="flex flex-col items-center justify-center py-20 bg-muted/20 border border-dashed rounded-xl border-border"
     >
-      <FlaskConical class="h-12 w-12 text-slate-300 mb-4" />
-      <h3 class="text-lg font-medium text-slate-900">No Cuplump Summary Data</h3>
-      <p class="text-slate-500 text-sm max-w-xs text-center">
-        We couldn't find any recorded lab samples for this date. Make sure samples are recorded in
-        the Lab tab.
+      <FlaskConical class="h-12 w-12 text-muted-foreground/30 mb-4" />
+      <h3 class="text-lg font-medium text-foreground">{{ t('qa.noSummaryData') }}</h3>
+      <p class="text-muted-foreground text-sm max-w-xs text-center">
+        {{ t('qa.noSummaryDesc') }}
       </p>
     </div>
 
@@ -254,17 +256,18 @@ const formatNum = (val: any, decimals = 1) => {
       <Card
         v-for="b in processedBookings"
         :key="b.id"
-        class="overflow-hidden border-slate-200 shadow-sm hover:shadow-md transition-shadow"
+        class="overflow-hidden border-border shadow-sm hover:shadow-md transition-shadow"
       >
         <!-- Card Header Area -->
-        <div class="bg-slate-50/80 border-b border-slate-100 p-4">
+        <div class="bg-muted/30 border-b border-border p-4">
           <div class="flex flex-wrap items-center justify-between gap-4">
             <div class="flex items-center gap-6">
               <div class="flex flex-col">
-                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1"
-                  >Date</span
+                <span
+                  class="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1"
+                  >{{ t('qa.columns.date') }}</span
                 >
-                <span class="text-sm font-semibold text-slate-900">
+                <span class="text-sm font-semibold text-foreground">
                   {{
                     new Date(b.date).toLocaleDateString('en-GB', {
                       day: '2-digit',
@@ -275,16 +278,17 @@ const formatNum = (val: any, decimals = 1) => {
                 </span>
               </div>
               <div class="flex flex-col">
-                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1"
-                  >Lot Number</span
+                <span
+                  class="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1"
+                  >{{ t('qa.columns.lotNumber') }}</span
                 >
-                <span class="text-lg font-black text-blue-600 leading-none">{{ b.lotNo }}</span>
+                <span class="text-lg font-black text-primary leading-none">{{ b.lotNo }}</span>
               </div>
               <div class="flex flex-col max-w-[200px] justify-center">
-                <span class="text-sm font-bold text-slate-900 truncate leading-none mb-1">{{
+                <span class="text-sm font-bold text-foreground truncate leading-none mb-1">{{
                   b.supplierCode
                 }}</span>
-                <span class="text-[11px] text-slate-500 truncate leading-none">{{
+                <span class="text-xs text-primary font-medium truncate leading-none">{{
                   b.supplierName
                 }}</span>
               </div>
@@ -292,30 +296,33 @@ const formatNum = (val: any, decimals = 1) => {
 
             <div class="flex items-center gap-8">
               <div class="flex flex-col items-end">
-                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1"
-                  >Net Weight</span
+                <span
+                  class="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1"
+                  >{{ t('qa.columns.netWeight') }}</span
                 >
-                <span class="text-sm font-bold text-slate-900"
+                <span class="text-sm font-bold text-foreground"
                   >{{ b.displayWeight.toLocaleString() }}
-                  <span class="text-slate-400 font-normal ml-1">kg.</span></span
+                  <span class="text-muted-foreground font-normal ml-1">{{
+                    t('qa.labels.kg')
+                  }}</span></span
                 >
               </div>
               <div class="flex flex-col items-end justify-center">
                 <Badge
                   variant="secondary"
-                  class="bg-blue-50 text-blue-800 hover:bg-blue-100 border-blue-100"
+                  class="bg-primary/10 text-primary hover:bg-primary/20 border-primary/20"
                 >
                   {{ b.displayRubberType }}
                 </Badge>
-                <span class="text-[10px] font-medium text-blue-600 mt-1">{{
-                  b.displayLocation
-                }}</span>
+                <span class="text-xs font-medium text-primary mt-1">{{ b.displayLocation }}</span>
               </div>
               <div
-                class="flex flex-col items-center justify-center bg-white border-2 rounded-lg h-12 w-14"
+                class="flex flex-col items-center justify-center bg-card border-2 rounded-lg h-12 w-14 shadow-sm"
                 :class="getGradeColorClass(b.displayGrade)"
               >
-                <span class="text-[9px] font-black uppercase mb-0.5">Grade</span>
+                <span class="text-[9px] font-black uppercase mb-0.5 opacity-80">{{
+                  t('qa.columns.grade')
+                }}</span>
                 <span class="text-xl font-black leading-none">{{ b.displayGrade || '-' }}</span>
               </div>
             </div>
@@ -329,14 +336,14 @@ const formatNum = (val: any, decimals = 1) => {
             <button
               v-if="b.samples.length > 2"
               @click="scroll(b.id, 'left')"
-              class="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 shadow-lg border border-slate-200 rounded-full p-2 text-slate-600 hover:text-blue-600 hover:bg-white transition-all opacity-0 group-hover:opacity-100 -ml-4"
+              class="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-card/90 shadow-lg border border-border rounded-full p-2 text-muted-foreground hover:text-primary hover:bg-card transition-all opacity-0 group-hover:opacity-100 -ml-4"
             >
               <ChevronLeft class="h-5 w-5" />
             </button>
             <button
               v-if="b.samples.length > 2"
               @click="scroll(b.id, 'right')"
-              class="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 shadow-lg border border-slate-200 rounded-full p-2 text-slate-600 hover:text-blue-600 hover:bg-white transition-all opacity-0 group-hover:opacity-100 -mr-4"
+              class="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-card/90 shadow-lg border border-border rounded-full p-2 text-muted-foreground hover:text-primary hover:bg-card transition-all opacity-0 group-hover:opacity-100 -mr-4"
             >
               <ChevronRight class="h-5 w-5" />
             </button>
@@ -353,22 +360,28 @@ const formatNum = (val: any, decimals = 1) => {
               <div
                 v-for="(s, sIdx) in b.samples"
                 :key="s.id"
-                class="flex flex-col bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm shrink-0 w-[420px] md:w-[500px] snap-center mx-1"
+                class="flex flex-col bg-card border border-border rounded-xl overflow-hidden shadow-sm shrink-0 w-[420px] md:w-[500px] snap-center mx-1"
               >
                 <!-- Sample Header -->
-                <div class="bg-blue-600 text-white px-3 py-2 flex items-center justify-between">
+                <div
+                  class="bg-primary text-primary-foreground px-3 py-2 flex items-center justify-between"
+                >
                   <div class="flex items-center gap-2">
                     <Beaker class="h-4 w-4" />
-                    <span class="text-sm font-bold">Sample {{ Number(sIdx) + 1 }}</span>
+                    <span class="text-sm font-bold"
+                      >{{ t('qa.labels.sample') }} {{ Number(sIdx) + 1 }}</span
+                    >
                   </div>
                   <div class="flex items-center gap-3">
                     <div class="flex flex-col items-end">
-                      <span class="text-[9px] opacity-80 uppercase leading-none">DRC Median</span>
-                      <span class="font-black leading-none">{{ formatNum(s.drc) }}%</span>
+                      <span class="text-[9px] opacity-70 uppercase leading-none">DRC Median</span>
+                      <span class="font-black leading-none text-primary-foreground"
+                        >{{ formatNum(s.drc) }}%</span
+                      >
                     </div>
                     <div class="flex flex-col items-end">
-                      <span class="text-[9px] opacity-80 uppercase leading-none">Recal Median</span>
-                      <span class="font-black leading-none text-yellow-300"
+                      <span class="text-[9px] opacity-70 uppercase leading-none">Recal Median</span>
+                      <span class="font-black leading-none text-accent-foreground"
                         >{{ formatNum(s.recalDrc) }}%</span
                       >
                     </div>
@@ -380,38 +393,44 @@ const formatNum = (val: any, decimals = 1) => {
                   <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <!-- Column 1: Weight Process -->
                     <div class="space-y-4">
-                      <div class="flex items-center gap-2 mb-2 text-slate-400">
+                      <div class="flex items-center gap-2 mb-2 text-muted-foreground">
                         <Scale class="h-3 w-3" />
-                        <span class="text-[10px] font-bold tracking-wider">Weight Process</span>
+                        <span class="text-xs font-bold tracking-wider">{{
+                          t('qa.labels.weightProcess')
+                        }}</span>
                       </div>
                       <div class="space-y-1">
                         <div class="flex justify-between text-[11px]">
-                          <span class="text-slate-500">Before Press</span>
-                          <span class="font-bold text-slate-700">{{
+                          <span class="text-muted-foreground">{{
+                            t('qa.labels.beforePress')
+                          }}</span>
+                          <span class="font-bold text-foreground">{{
                             formatNum(s.beforePress, 1)
                           }}</span>
                         </div>
                         <div class="flex justify-between text-[11px]">
-                          <span class="text-slate-500">After Press</span>
-                          <span class="font-bold text-slate-700">{{
+                          <span class="text-muted-foreground">{{ t('qa.labels.afterPress') }}</span>
+                          <span class="font-bold text-foreground">{{
                             formatNum(s.afterPress, 1)
                           }}</span>
                         </div>
                         <div class="flex justify-between text-[11px]">
-                          <span class="text-slate-500">Basket</span>
-                          <span class="font-bold text-slate-700">{{
+                          <span class="text-muted-foreground">{{ t('qa.labels.basket') }}</span>
+                          <span class="font-bold text-foreground">{{
                             formatNum(s.basketWeight, 1)
                           }}</span>
                         </div>
                         <div class="flex justify-between text-[11px]">
-                          <span class="text-slate-500">Before Dryer</span>
-                          <span class="font-bold text-slate-700">{{
+                          <span class="text-muted-foreground">{{
+                            t('qa.labels.beforeDryer')
+                          }}</span>
+                          <span class="font-bold text-foreground">{{
                             formatNum(s.medianBeforeBaking, 1)
                           }}</span>
                         </div>
                         <div class="flex justify-between text-[11px]">
-                          <span class="text-slate-500">After Dryer</span>
-                          <span class="font-bold text-slate-700">{{
+                          <span class="text-muted-foreground">{{ t('qa.labels.afterDryer') }}</span>
+                          <span class="font-bold text-foreground">{{
                             formatNum(s.medianAfterDryer, 1)
                           }}</span>
                         </div>
@@ -419,32 +438,38 @@ const formatNum = (val: any, decimals = 1) => {
                     </div>
 
                     <!-- Column 2: DRC Analysis -->
-                    <div class="space-y-4 border-l border-slate-100 pl-6">
-                      <div class="flex items-center gap-2 mb-2 text-slate-400">
+                    <div class="space-y-4 border-l border-border/50 pl-6">
+                      <div class="flex items-center gap-2 mb-2 text-muted-foreground">
                         <Thermometer class="h-3 w-3" />
-                        <span class="text-[10px] font-bold tracking-wider">DRC Analysis</span>
+                        <span class="text-xs font-bold tracking-wider">{{
+                          t('qa.labels.drcAnalysis')
+                        }}</span>
                       </div>
                       <div class="space-y-1">
                         <div class="flex justify-between text-[11px]">
-                          <span class="text-slate-500">DRC After Baking</span>
-                          <span class="font-bold text-slate-700">{{ formatNum(s.drc, 1) }}</span>
-                        </div>
-                        <div class="flex justify-between text-[11px]">
-                          <span class="text-slate-500">DRC Median</span>
-                          <span class="font-bold text-slate-700">{{ formatNum(s.drc, 1) }}</span>
-                        </div>
-                        <div class="flex justify-between text-[11px]">
-                          <span class="text-slate-500">Recal DRC</span>
-                          <span class="font-bold text-blue-600">{{
-                            formatNum(s.recalDrc, 1)
+                          <span class="text-muted-foreground">{{
+                            t('qa.labels.drcAfterBaking')
                           }}</span>
+                          <span class="font-bold text-foreground">{{ formatNum(s.drc, 1) }}</span>
                         </div>
-                        <div class="flex justify-between text-[11px] pt-2 border-t border-slate-50">
-                          <span class="text-slate-500">Difference</span>
+                        <div class="flex justify-between text-[11px]">
+                          <span class="text-muted-foreground">{{ t('qa.labels.drcMedian') }}</span>
+                          <span class="font-bold text-foreground">{{ formatNum(s.drc, 1) }}</span>
+                        </div>
+                        <div class="flex justify-between text-[11px]">
+                          <span class="text-muted-foreground">{{ t('qa.labels.recalDrc') }}</span>
+                          <span class="font-bold text-primary">{{ formatNum(s.recalDrc, 1) }}</span>
+                        </div>
+                        <div
+                          class="flex justify-between text-[11px] pt-2 border-t border-border/20"
+                        >
+                          <span class="text-muted-foreground">{{ t('qa.labels.difference') }}</span>
                           <span
                             class="font-bold"
                             :class="
-                              parseFloat(s.difference) >= 0 ? 'text-green-600' : 'text-red-600'
+                              parseFloat(s.difference) >= 0
+                                ? 'text-emerald-600'
+                                : 'text-destructive'
                             "
                           >
                             {{ formatNum(s.difference, 1) }}
@@ -454,52 +479,55 @@ const formatNum = (val: any, decimals = 1) => {
                     </div>
 
                     <!-- Column 3: Summary -->
-                    <div class="space-y-4 border-l border-slate-100 pl-6">
+                    <div class="space-y-4 border-l border-border/50 pl-6">
                       <div class="space-y-1">
                         <div class="flex justify-between text-[11px]">
-                          <span class="text-slate-500">DRC Est.</span>
-                          <span class="font-bold text-slate-700"
+                          <span class="text-muted-foreground">{{ t('qa.labels.drcEst') }}</span>
+                          <span class="font-bold text-foreground"
                             >{{ formatNum(b.drcEstimate, 0) }}%</span
                           >
                         </div>
                         <div class="flex justify-between text-[11px]">
-                          <span class="text-slate-500">DRC</span>
-                          <span class="font-bold text-slate-700">{{ formatNum(s.drc, 1) }}</span>
+                          <span class="text-muted-foreground">{{ t('qa.labels.drc') }}</span>
+                          <span class="font-bold text-foreground">{{ formatNum(s.drc, 1) }}</span>
                         </div>
                         <div class="flex justify-between text-[11px]">
-                          <span class="text-slate-500">DRC Dry</span>
-                          <span class="font-bold text-purple-600">{{
+                          <span class="text-muted-foreground">{{ t('qa.labels.drcDry') }}</span>
+                          <span class="font-bold text-violet-500">{{
                             formatNum(s.drcDry, 1)
                           }}</span>
                         </div>
                         <div class="flex justify-between text-[11px]">
-                          <span class="text-slate-500">Recal DRC</span>
-                          <span class="font-bold text-blue-500">{{
-                            formatNum(s.recalDrc, 1)
-                          }}</span>
+                          <span class="text-muted-foreground">{{ t('qa.labels.recalDrc') }}</span>
+                          <span class="font-bold text-primary">{{ formatNum(s.recalDrc, 1) }}</span>
                         </div>
                       </div>
 
-                      <div class="pt-2 border-t border-slate-100">
-                        <span class="text-[10px] font-bold text-slate-400 tracking-wider block mb-2"
-                          >Moisture & Lab</span
+                      <div class="pt-2 border-t border-border/50">
+                        <span
+                          class="text-xs font-bold text-muted-foreground tracking-wider block mb-2"
+                          >{{ t('qa.labels.moistureLab') }}</span
                         >
                         <div class="space-y-1">
                           <div class="flex justify-between text-[11px]">
-                            <span class="text-slate-500">Moisture %</span>
+                            <span class="text-muted-foreground">{{
+                              t('qa.labels.moisturePercent')
+                            }}</span>
                             <span class="font-bold text-orange-600"
                               >{{ formatNum(s.medianMoisture, 1) }}%</span
                             >
                           </div>
                           <div class="flex justify-between text-[11px]">
-                            <span class="text-slate-500">Before Lab Dryer</span>
-                            <span class="font-bold text-slate-700">{{
+                            <span class="text-muted-foreground">{{
+                              t('qa.labels.beforeLabDryer')
+                            }}</span>
+                            <span class="font-bold text-foreground">{{
                               formatNum(s.medianBeforeLab, 1)
                             }}</span>
                           </div>
                           <div class="flex justify-between text-[11px]">
-                            <span class="text-slate-500">After Lab</span>
-                            <span class="font-bold text-slate-700">{{
+                            <span class="text-muted-foreground">{{ t('qa.labels.afterLab') }}</span>
+                            <span class="font-bold text-foreground">{{
                               formatNum(s.medianAfterLab, 1)
                             }}</span>
                           </div>

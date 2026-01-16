@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import DatePicker from '@/components/ui/date-picker.vue';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { formatNum } from '@/lib/utils';
 import { bookingsApi } from '@/services/bookings';
 import { poolsApi, type Pool } from '@/services/pools';
 import {
@@ -186,13 +188,21 @@ const poolDuration = computed(() => {
   return `${diffDays} Days`;
 });
 
-const formatDate = (dateStr: string | undefined) => {
-  if (!dateStr) return '-';
-  const date = new Date(dateStr);
-  const d = date.getDate();
-  const m = new Intl.DateTimeFormat('en-US', { month: 'short' }).format(date);
-  const y = date.getFullYear();
-  return `${d}-${m}-${y}`;
+const isUpdating = ref(false);
+
+const updateMetadata = async (field: string, value: any) => {
+  if (!poolDetails.value) return;
+  isUpdating.value = true;
+  try {
+    const updated = await poolsApi.update(poolDetails.value.id, { [field]: value });
+    poolDetails.value = updated;
+    toast.success('Pool updated successfully');
+    emit('refresh');
+  } catch (error) {
+    toast.error('Failed to update pool');
+  } finally {
+    isUpdating.value = false;
+  }
 };
 </script>
 
@@ -213,53 +223,69 @@ const formatDate = (dateStr: string | undefined) => {
 
         <div v-if="poolDetails" class="flex gap-6 pr-8">
           <div class="flex flex-col items-center">
-            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest"
+            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1"
               >วันที่เปิดใช้งาน</span
             >
-            <span class="text-xs font-black text-slate-900">{{
-              formatDate(poolDetails.fillingDate)
-            }}</span>
+            <DatePicker
+              :model-value="poolDetails.fillingDate?.split('T')[0]"
+              @update:model-value="(val: any) => updateMetadata('fillingDate', val)"
+              class="w-32"
+            />
           </div>
           <div class="flex flex-col items-center">
-            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest"
+            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1"
               >วันที่ปิดบ่อ</span
             >
-            <span class="text-xs font-black text-slate-900">{{
-              formatDate(poolDetails.closeDate)
+            <DatePicker
+              :model-value="poolDetails.closeDate?.split('T')[0]"
+              @update:model-value="(val: any) => updateMetadata('closeDate', val)"
+              class="w-32"
+            />
+          </div>
+          <div class="flex flex-col items-center">
+            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1"
+              >(DURATION)</span
+            >
+            <span class="text-xs font-black text-amber-600 h-10 flex items-center">{{
+              poolDuration
             }}</span>
           </div>
           <div class="flex flex-col items-center">
-            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest"
-              >(DURATION)</span
-            >
-            <span class="text-xs font-black text-amber-600">{{ poolDuration }}</span>
-          </div>
-          <div class="flex flex-col items-center">
-            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest"
+            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1"
               >Status</span
             >
-            <span
-              :class="[
-                'text-xs font-black uppercase',
-                poolDetails.status === 'closed' ? 'text-red-500' : 'text-emerald-500',
-              ]"
-              >{{ poolDetails.status }}</span
+            <Select
+              :model-value="poolDetails.status"
+              @update:model-value="(val: any) => updateMetadata('status', val)"
             >
+              <SelectTrigger
+                class="h-10 py-0 px-2 text-[10px] font-black w-24 border border-slate-200 rounded-lg hover:bg-slate-50 transition-all uppercase no-drag"
+                :class="poolDetails.status === 'closed' ? 'text-red-500' : 'text-emerald-500'"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="empty">EMPTY</SelectItem>
+                <SelectItem value="filling">FILLING</SelectItem>
+                <SelectItem value="open">OPEN</SelectItem>
+                <SelectItem value="closed">CLOSED</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div class="flex flex-col items-center">
-            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest"
+            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1"
               >Grade</span
             >
-            <span class="text-xs font-black text-slate-900 uppercase">{{
+            <span class="text-xs font-black text-slate-900 uppercase h-10 flex items-center">{{
               poolDetails.grade || '-'
             }}</span>
           </div>
           <div class="flex flex-col items-center">
-            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest"
+            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1"
               >Net Weight</span
             >
-            <span class="text-xs font-black text-blue-600 uppercase"
-              >{{ (poolDetails.totalWeight / 1000).toFixed(2) }} Ton</span
+            <span class="text-xs font-black text-blue-600 uppercase h-10 flex items-center"
+              >{{ formatNum(poolDetails.totalWeight / 1000, 1) }} Ton</span
             >
           </div>
         </div>

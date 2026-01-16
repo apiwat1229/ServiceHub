@@ -345,16 +345,16 @@ onMounted(async () => {
 
 <template>
   <div
-    class="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden flex flex-col h-full relative"
+    class="bg-card rounded-xl shadow-lg border border-border overflow-hidden flex flex-col h-full relative"
   >
     <!-- Header Section -->
-    <div class="p-6 border-b border-slate-100 bg-slate-50/50">
+    <div class="p-6 border-b border-border bg-muted/30">
       <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-9 gap-6">
         <div class="flex flex-col">
-          <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest mb-1"
+          <span class="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1"
             >Date</span
           >
-          <span class="text-sm font-bold text-slate-900">{{
+          <span class="text-sm font-bold text-foreground">{{
             booking
               ? new Date(booking.date).toLocaleDateString('en-GB', {
                   day: '2-digit',
@@ -365,80 +365,82 @@ onMounted(async () => {
           }}</span>
         </div>
         <div class="flex flex-col">
-          <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest mb-1"
+          <span class="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1"
             >Lot Number</span
           >
-          <span class="text-sm font-black text-blue-600 truncate" :title="booking?.lotNo">{{
+          <span class="text-sm font-black text-primary truncate" :title="booking?.lotNo">{{
             booking?.lotNo || booking?.bookingCode || '-'
           }}</span>
         </div>
         <div class="flex flex-col col-span-2">
-          <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest mb-1"
+          <span class="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1"
             >Supplier</span
           >
           <div class="flex flex-col">
-            <span class="text-sm font-bold text-slate-900 truncate">{{
+            <span class="text-sm font-bold text-foreground truncate">{{
               booking?.supplierCode || '-'
             }}</span>
-            <span class="text-xs text-slate-500 truncate">{{ booking?.supplierName || '-' }}</span>
+            <span class="text-xs text-muted-foreground truncate">{{
+              booking?.supplierName || '-'
+            }}</span>
           </div>
         </div>
         <div class="flex flex-col">
-          <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest mb-1"
+          <span class="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1"
             >Rubber Type</span
           >
-          <Badge variant="secondary" class="bg-blue-50 text-blue-700 hover:bg-blue-100 w-fit">
+          <Badge variant="secondary" class="bg-primary/10 text-primary hover:bg-primary/20 w-fit">
             {{ displayRubberType }}
           </Badge>
         </div>
 
         <div class="flex flex-col">
-          <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest mb-1"
+          <span class="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1"
             >AVG PO</span
           >
-          <span class="text-sm font-bold text-slate-900">{{
+          <span class="text-sm font-bold text-foreground">{{
             averagePo ? averagePo.toFixed(2) : '-'
           }}</span>
         </div>
 
         <div class="flex flex-col">
-          <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest mb-1"
+          <span class="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1"
             >AVG PRI</span
           >
-          <span class="text-sm font-bold text-slate-900">{{
+          <span class="text-sm font-bold text-foreground">{{
             averagePri ? averagePri.toFixed(2) : '-'
           }}</span>
         </div>
 
         <div class="flex flex-col">
-          <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest mb-1"
+          <span class="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1"
             >Net Weight</span
           >
-          <span class="text-sm font-bold text-slate-900">{{ displayNetWeight }} kg</span>
+          <span class="text-sm font-bold text-foreground">{{ displayNetWeight }} kg</span>
         </div>
 
         <div class="flex flex-col">
-          <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest mb-1"
+          <span class="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1"
             >Grade</span
           >
           <div
-            class="flex items-center justify-center border-2 border-slate-200 rounded px-2 h-6 w-12 bg-white"
+            class="flex items-center justify-center border-2 border-border rounded px-2 h-6 w-12 bg-card"
           >
-            <span class="text-sm font-black text-slate-900">{{ calculatedGrade }}</span>
+            <span class="text-sm font-black text-foreground">{{ calculatedGrade }}</span>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Content Section -->
-    <div class="flex-1 overflow-y-auto bg-slate-50/30 p-6 space-y-4">
+    <div class="flex-1 overflow-y-auto bg-muted/20 p-6 space-y-4">
       <div v-if="isLoading" class="flex justify-center py-8">
         <div
           class="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"
         ></div>
       </div>
 
-      <div v-else-if="samples.length === 0" class="text-center py-8 text-slate-400">
+      <div v-else-if="samples.length === 0" class="text-center py-8 text-muted-foreground">
         No samples found. Please check existing samples.
       </div>
 
@@ -446,39 +448,39 @@ onMounted(async () => {
         v-else
         v-for="(sample, index) in samples"
         :key="sample.id"
-        class="bg-white border border-slate-200 rounded-lg p-4 shadow-sm"
+        class="bg-card border border-border rounded-lg p-4 shadow-sm"
       >
-        <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-2">
+        <div class="flex items-center justify-between mb-4 border-b border-border/50 pb-2">
           <div class="flex items-center gap-4">
-            <Badge variant="outline" class="bg-slate-100 text-slate-600"
+            <Badge variant="outline" class="bg-muted text-muted-foreground"
               >Sample {{ index + 1 }}</Badge
             >
-            <div class="items-center gap-4 text-[10px] text-slate-500 hidden md:flex">
+            <div class="items-center gap-4 text-xs text-muted-foreground hidden md:flex">
               <div class="flex gap-1" title="Before Press">
                 <span>Before Press:</span>
-                <span class="font-bold text-slate-700">{{ sample.beforePress || '-' }}</span>
+                <span class="font-bold text-foreground">{{ sample.beforePress || '-' }}</span>
               </div>
               <div class="flex gap-1" title="After Press">
                 <span>After Press:</span>
-                <span class="font-bold text-slate-700">{{ sample.afterPress || '-' }}</span>
+                <span class="font-bold text-foreground">{{ sample.afterPress || '-' }}</span>
               </div>
               <div class="flex gap-1">
                 <span>PO:</span>
-                <span class="font-bold text-slate-700">{{ sample.p0 || '-' }}</span>
+                <span class="font-bold text-foreground">{{ sample.p0 || '-' }}</span>
               </div>
               <div class="flex gap-1">
                 <span>P30:</span>
-                <span class="font-bold text-slate-700">{{ sample.p30 || '-' }}</span>
+                <span class="font-bold text-foreground">{{ sample.p30 || '-' }}</span>
               </div>
               <div class="flex gap-1">
                 <span>PRI:</span>
-                <span class="font-bold text-blue-600">{{
+                <span class="font-bold text-primary">{{
                   calculatePri(sample.p0, sample.p30)
                 }}</span>
               </div>
               <div class="flex gap-1" title="Basket Weight">
                 <span>Basket:</span>
-                <span class="font-bold text-slate-700">{{ sample.basketWeight || '-' }}</span>
+                <span class="font-bold text-foreground">{{ sample.basketWeight || '-' }}</span>
               </div>
             </div>
           </div>
@@ -489,19 +491,19 @@ onMounted(async () => {
           <div
             v-for="b in [1, 2, 3]"
             :key="b"
-            class="bg-slate-50 p-3 rounded-lg border border-slate-100"
+            class="bg-muted/10 p-3 rounded-lg border border-border/50"
           >
-            <div class="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">
+            <div class="text-xs font-bold text-muted-foreground mb-2 uppercase tracking-wide">
               Basket {{ b }}
             </div>
             <div class="space-y-2">
               <div class="grid grid-cols-3 gap-2">
                 <!-- Basket Weight -->
                 <div class="space-y-1">
-                  <label class="text-[0.6rem] font-bold text-slate-400 uppercase">Basket</label>
+                  <label class="text-xs font-bold text-muted-foreground uppercase">Basket</label>
                   <Input
                     v-model="sample.basketWeight"
-                    class="h-8 bg-white"
+                    class="h-8 bg-card border-border"
                     placeholder="kg"
                     @input="handleNumericInput(sample, 'basketWeight', $event.target.value)"
                     @keydown.enter="handleEnter"
@@ -510,23 +512,23 @@ onMounted(async () => {
                 </div>
                 <!-- Before Dryer (Read Only) -->
                 <div class="space-y-1">
-                  <label class="text-[0.6rem] font-bold text-slate-400 uppercase"
+                  <label class="text-xs font-bold text-muted-foreground uppercase"
                     >Before Dryer</label
                   >
                   <div
-                    class="h-8 flex items-center px-3 bg-slate-100 border border-slate-200 rounded-md text-sm font-bold text-slate-700"
+                    class="h-8 flex items-center px-3 bg-muted border border-border rounded-md text-sm font-bold text-foreground"
                   >
                     {{ formatDecimal(sample['beforeBaking' + b]) }}
                   </div>
                 </div>
                 <!-- After Dryer -->
                 <div class="space-y-1">
-                  <label class="text-[0.6rem] font-bold text-slate-400 uppercase"
+                  <label class="text-xs font-bold text-muted-foreground uppercase"
                     >After Dryer</label
                   >
                   <Input
                     v-model="sample['afterDryerB' + b]"
-                    class="h-8 bg-white"
+                    class="h-8 bg-card border-border"
                     placeholder="kg"
                     @input="handleNumericInput(sample, 'afterDryerB' + b, $event.target.value)"
                     @keydown.enter="handleEnter"
@@ -537,10 +539,12 @@ onMounted(async () => {
               <!-- Lab Dryer Group -->
               <div class="grid grid-cols-2 gap-2 mt-2">
                 <div class="space-y-1">
-                  <label class="text-[0.6rem] font-bold text-slate-400 uppercase">Before Lab</label>
+                  <label class="text-xs font-bold text-muted-foreground uppercase"
+                    >Before Lab</label
+                  >
                   <Input
                     v-model="sample['beforeLabDryerB' + b]"
-                    class="h-8 bg-white"
+                    class="h-8 bg-card border-border"
                     placeholder="g"
                     @input="handleNumericInput(sample, 'beforeLabDryerB' + b, $event.target.value)"
                     @keydown.enter="handleEnter"
@@ -548,10 +552,10 @@ onMounted(async () => {
                   />
                 </div>
                 <div class="space-y-1">
-                  <label class="text-[0.6rem] font-bold text-slate-400 uppercase">After Lab</label>
+                  <label class="text-xs font-bold text-muted-foreground uppercase">After Lab</label>
                   <Input
                     v-model="sample['afterLabDryerB' + b]"
-                    class="h-8 bg-white"
+                    class="h-8 bg-card border-border"
                     placeholder="g"
                     @input="handleNumericInput(sample, 'afterLabDryerB' + b, $event.target.value)"
                     @keydown.enter="handleEnter"
@@ -561,8 +565,8 @@ onMounted(async () => {
               </div>
               <!-- Calc Result -->
               <div class="mt-2 text-right">
-                <span class="text-[10px] text-slate-400">Lab DRC: </span>
-                <span class="text-xs font-bold text-blue-600">
+                <span class="text-xs text-muted-foreground">Lab DRC: </span>
+                <span class="text-xs font-bold text-primary">
                   {{
                     calculateLabDrc(sample['beforeLabDryerB' + b], sample['afterLabDryerB' + b]) ||
                     '-'
@@ -576,13 +580,11 @@ onMounted(async () => {
     </div>
 
     <!-- Footer Action -->
-    <div
-      class="p-6 border-t border-slate-100 bg-slate-50/50 flex justify-between items-center gap-3"
-    >
+    <div class="p-6 border-t border-border bg-muted/30 flex justify-between items-center gap-3">
       <!-- Left: Delete Button -->
       <Button
         variant="ghost"
-        class="text-red-500 hover:text-red-600 hover:bg-red-50"
+        class="text-destructive hover:text-destructive hover:bg-destructive/10"
         :disabled="!isEditing"
         @click="showBookingDeleteConfirm = true"
       >
@@ -596,7 +598,7 @@ onMounted(async () => {
         </Button>
         <Button
           v-if="!isEditing"
-          class="bg-blue-600 hover:bg-blue-700 min-w-[120px]"
+          class="bg-primary hover:bg-primary/90 text-primary-foreground min-w-[120px]"
           @click="isEditing = true"
         >
           <Pencil class="w-4 h-4 mr-2" />
@@ -629,7 +631,10 @@ onMounted(async () => {
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction class="bg-red-600 hover:bg-red-700" @click="deleteBooking">
+          <AlertDialogAction
+            class="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+            @click="deleteBooking"
+          >
             {{ isDeleting ? 'Deleting...' : 'Delete' }}
           </AlertDialogAction>
         </AlertDialogFooter>

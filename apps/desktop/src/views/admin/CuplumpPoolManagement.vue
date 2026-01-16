@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatNum } from '@/lib/utils';
 import { poolsApi, type Pool } from '@/services/pools';
 import { Database as DatabaseIcon, LayoutGrid, RefreshCw, TrendingUp } from 'lucide-vue-next';
 import { computed, onMounted, ref } from 'vue';
@@ -84,13 +85,6 @@ const stats = computed(() => {
   };
 });
 
-const formatNum = (val: number, decimals = 1) => {
-  return val.toLocaleString(undefined, {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  });
-};
-
 const getGradeColor = (grade: string) => {
   switch (grade.toUpperCase()) {
     case 'AA':
@@ -154,10 +148,10 @@ const getGradeColor = (grade: string) => {
       <Card
         class="bg-white border-slate-200/60 shadow-sm col-span-1 lg:col-span-2 p-5 py-6 overflow-hidden"
       >
-        <div class="flex items-center gap-6 lg:gap-10 h-full">
+        <div class="flex items-start h-full">
           <!-- Net Weight SECTION -->
-          <div class="flex flex-col shrink-0">
-            <div class="flex items-center gap-2 mb-2">
+          <div class="flex flex-col shrink-0 pr-8 lg:pr-12">
+            <div class="flex items-center gap-2 mb-2 h-7">
               <div class="p-1 px-1.5 bg-blue-50 rounded-md">
                 <TrendingUp class="w-3.5 h-3.5 text-blue-600" />
               </div>
@@ -172,11 +166,11 @@ const getGradeColor = (grade: string) => {
           </div>
 
           <!-- Vertical Divider -->
-          <div class="w-px h-12 bg-slate-100 flex-shrink-0"></div>
+          <div class="w-px h-12 bg-slate-100 flex-shrink-0 mt-2"></div>
 
           <!-- Weight By Grade SECTION -->
-          <div class="flex-1 flex flex-col min-w-0">
-            <div class="flex items-center gap-2 mb-2">
+          <div class="flex-1 flex flex-col items-end ml-8 lg:ml-12 min-w-0">
+            <div class="flex items-center gap-2 mb-2 h-7">
               <div class="p-1 px-1.5 bg-emerald-50 rounded-md">
                 <DatabaseIcon class="w-3.5 h-3.5 text-emerald-600" />
               </div>
@@ -185,9 +179,7 @@ const getGradeColor = (grade: string) => {
               >
             </div>
 
-            <div
-              class="flex items-center justify-between lg:justify-end gap-4 lg:gap-10 overflow-x-auto no-scrollbar"
-            >
+            <div class="flex items-center gap-6 lg:gap-10 overflow-x-auto no-scrollbar">
               <div
                 v-for="(weight, grade) in stats.gradeBreakdown"
                 :key="grade"

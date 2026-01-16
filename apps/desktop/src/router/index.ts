@@ -133,11 +133,6 @@ const routes = [
                 component: () => import('../views/Placeholder.vue'),
             },
             {
-                path: 'cuplump-pool',
-                name: 'Cuplump',
-                component: () => import('../views/admin/CuplumpPoolManagement.vue'),
-            },
-            {
                 path: 'cuplump/:id',
                 name: 'CuplumpDetail',
                 component: () => import('../views/admin/CuplumpDetail.vue'),
@@ -214,6 +209,18 @@ const routes = [
                 path: '',
                 name: 'TruckScale',
                 component: () => import('../views/admin/TruckScale.vue'),
+            }
+        ]
+    },
+    {
+        path: '/cuplump-pool',
+        component: () => import('@/components/layout/MainLayout.vue'),
+        meta: { requiresAuth: true },
+        children: [
+            {
+                path: '',
+                name: 'Cuplump Pool',
+                component: () => import('../views/admin/CuplumpPoolManagement.vue'),
             }
         ]
     },
