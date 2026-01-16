@@ -1480,10 +1480,20 @@ onUnmounted(() => {
     <Tabs v-model="activeTab" class="w-full flex flex-col space-y-6">
       <!-- Header & Tabs List Row -->
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <!-- Title -->
-        <div class="flex flex-col gap-1">
+        <div class="flex flex-row items-center gap-4">
           <h1 class="text-3xl font-bold tracking-tight">{{ t('truckScale.title') }}</h1>
-          <p class="text-muted-foreground">{{ t('truckScale.formDescription') }}</p>
+          <div class="w-[180px]">
+            <Select v-model="selectedCategory">
+              <SelectTrigger>
+                <SelectValue :placeholder="t('truckScale.rubberType')" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">ALL</SelectItem>
+                <SelectItem value="cuplump">CUPLUMP</SelectItem>
+                <SelectItem value="uss">USS</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <div class="flex items-center gap-2 ml-auto">
@@ -1569,9 +1579,40 @@ onUnmounted(() => {
           <CardContent class="p-6 space-y-6">
             <!-- Filters & Stats Combined Row -->
             <!-- Filters & Stats Combined Row -->
-            <div class="flex flex-col xl:flex-row gap-4 items-end justify-start w-full">
+            <div class="flex flex-col xl:flex-row gap-4 items-end justify-between w-full">
               <!-- Filters Group -->
               <div class="flex flex-col md:flex-row gap-3 items-end w-full xl:w-auto shrink-0">
+                <div class="flex items-center">
+                  <Popover>
+                    <PopoverTrigger as-child>
+                      <Button variant="outline" size="icon" class="w-10 h-10 shrink-0">
+                        <Search class="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent class="w-80" align="start" side="bottom">
+                      <div class="grid gap-4">
+                        <div class="space-y-2">
+                          <h4 class="font-medium leading-none">{{ t('common.search') }}</h4>
+                          <p class="text-sm text-muted-foreground">
+                            {{ t('truckScale.searchPlaceholder') }}
+                          </p>
+                        </div>
+                        <div class="relative">
+                          <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            v-model="searchQuery"
+                            :placeholder="t('truckScale.searchPlaceholder')"
+                            class="pl-9"
+                            @keydown.enter="fetchBookings"
+                          />
+                        </div>
+                        <Button class="w-full" @click="fetchBookings">
+                          {{ t('common.search') }}
+                        </Button>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
                 <div class="grid gap-1.5 w-full md:w-auto">
                   <Label class="text-xs font-semibold text-muted-foreground ml-0.5">{{
                     t('truckScale.date')
@@ -1604,65 +1645,6 @@ onUnmounted(() => {
                       />
                     </PopoverContent>
                   </Popover>
-                </div>
-                <div class="flex items-center">
-                  <Popover>
-                    <PopoverTrigger as-child>
-                      <Button variant="outline" size="icon" class="w-10 h-10 shrink-0">
-                        <Search class="h-4 w-4 text-muted-foreground" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent class="w-80" align="start" side="bottom">
-                      <div class="grid gap-4">
-                        <div class="space-y-2">
-                          <h4 class="font-medium leading-none">{{ t('common.search') }}</h4>
-                          <p class="text-sm text-muted-foreground">
-                            {{ t('truckScale.searchPlaceholder') }}
-                          </p>
-                        </div>
-                        <div class="relative">
-                          <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                          <Input
-                            v-model="searchQuery"
-                            :placeholder="t('truckScale.searchPlaceholder')"
-                            class="pl-9"
-                            @keydown.enter="fetchBookings"
-                          />
-                        </div>
-                        <Button class="w-full" @click="fetchBookings">
-                          {{ t('common.search') }}
-                        </Button>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                <div class="grid gap-1.5 w-full md:w-auto">
-                  <Label class="text-xs font-semibold text-muted-foreground ml-0.5">{{
-                    t('truckScale.rubberType')
-                  }}</Label>
-                  <Tabs v-model="selectedCategory" class="h-10 bg-muted/50 p-1 rounded-lg">
-                    <TabsList class="bg-transparent h-full p-0 flex gap-1">
-                      <TabsTrigger
-                        value="all"
-                        class="h-8 text-[0.7rem] px-3 font-semibold uppercase tracking-wider data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-md transition-all"
-                      >
-                        ALL
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="cuplump"
-                        class="h-8 text-[0.7rem] px-3 font-semibold uppercase tracking-wider data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-md transition-all"
-                      >
-                        Cuplump
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="uss"
-                        class="h-8 text-[0.7rem] px-3 font-semibold uppercase tracking-wider data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-md transition-all"
-                      >
-                        USS
-                      </TabsTrigger>
-                    </TabsList>
-                  </Tabs>
                 </div>
               </div>
 
@@ -1756,40 +1738,6 @@ onUnmounted(() => {
             <div class="flex flex-col xl:flex-row gap-4 items-end justify-between w-full">
               <!-- Left: Filters -->
               <div class="flex flex-col md:flex-row gap-3 items-end w-full xl:w-auto shrink-0">
-                <div class="grid gap-1.5 w-full md:w-auto">
-                  <Label class="text-xs font-semibold text-muted-foreground ml-0.5">{{
-                    t('booking.selectDate')
-                  }}</Label>
-                  <Popover v-model:open="isDatePopoverOpen">
-                    <PopoverTrigger as-child>
-                      <Button
-                        variant="outline"
-                        :class="
-                          cn(
-                            'w-full md:w-[220px] justify-start text-left font-normal h-10',
-                            !selectedDate && 'text-muted-foreground'
-                          )
-                        "
-                      >
-                        <CalendarIcon class="mr-2 h-4 w-4 text-muted-foreground" />
-                        <span>{{
-                          selectedDate
-                            ? format(new Date(selectedDate), 'dd-MMM-yyyy')
-                            : t('truckScale.pickDate')
-                        }}</span>
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent class="w-auto p-0">
-                      <Calendar
-                        :model-value="selectedDateObject"
-                        @update:model-value="handleDateSelect"
-                        mode="single"
-                        initial-focus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
                 <div class="flex items-center">
                   <Popover>
                     <PopoverTrigger as-child>
@@ -1823,33 +1771,38 @@ onUnmounted(() => {
                     </PopoverContent>
                   </Popover>
                 </div>
-
                 <div class="grid gap-1.5 w-full md:w-auto">
                   <Label class="text-xs font-semibold text-muted-foreground ml-0.5">{{
-                    t('truckScale.rubberType')
+                    t('booking.selectDate')
                   }}</Label>
-                  <Tabs v-model="selectedCategory" class="h-10 bg-muted/50 p-1 rounded-lg">
-                    <TabsList class="bg-transparent h-full p-0 flex gap-1">
-                      <TabsTrigger
-                        value="all"
-                        class="h-8 text-[0.7rem] px-3 font-semibold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-md transition-all"
+                  <Popover v-model:open="isDatePopoverOpen">
+                    <PopoverTrigger as-child>
+                      <Button
+                        variant="outline"
+                        :class="
+                          cn(
+                            'w-full md:w-[220px] justify-start text-left font-normal h-10',
+                            !selectedDate && 'text-muted-foreground'
+                          )
+                        "
                       >
-                        ALL
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="cuplump"
-                        class="h-8 text-[0.7rem] px-3 font-semibold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-md transition-all"
-                      >
-                        Cuplump
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="uss"
-                        class="h-8 text-[0.7rem] px-3 font-semibold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-md transition-all"
-                      >
-                        USS
-                      </TabsTrigger>
-                    </TabsList>
-                  </Tabs>
+                        <CalendarIcon class="mr-2 h-4 w-4 text-muted-foreground" />
+                        <span>{{
+                          selectedDate
+                            ? format(new Date(selectedDate), 'dd-MMM-yyyy')
+                            : t('truckScale.pickDate')
+                        }}</span>
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent class="w-auto p-0">
+                      <Calendar
+                        :model-value="selectedDateObject"
+                        @update:model-value="handleDateSelect"
+                        mode="single"
+                        initial-focus
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
 

@@ -144,6 +144,7 @@
       "moistureLab": "ความชื้นและแล็บ",
       "moisturePercent": "ความชื้น %",
       "beforeLabDryer": "ก่อนตู้อบแล็บ",
+      "afterLabDryer": "หลังอบ Lab",
       "afterLab": "หลังแล็บ"
     }
   },

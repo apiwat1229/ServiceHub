@@ -22,9 +22,6 @@ watch(activeTab, (newVal: string) => {
           <h1 class="text-2xl font-bold tracking-tight text-foreground">
             {{ t('services.receiving.name') }}
           </h1>
-          <p class="text-sm text-muted-foreground">
-            {{ t('services.receiving.description') }}
-          </p>
         </div>
 
         <TabsList class="grid grid-cols-2 w-full md:w-[400px]">

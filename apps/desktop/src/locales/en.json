@@ -142,6 +142,7 @@
       "moistureLab": "Moisture & Lab",
       "moisturePercent": "Moisture %",
       "beforeLabDryer": "Before Lab Dryer",
+      "afterLabDryer": "After Lab Dryer",
       "afterLab": "After Lab"
     }
   },

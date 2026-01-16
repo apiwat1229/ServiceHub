@@ -68,15 +68,24 @@ const fetchData = async () => {
       .map((s: any) => ({
         ...s,
         // Map Lab Fields
-        afterDryerB1: s.afterDryerB1?.toString() || '',
+        afterDryerB1:
+          s.afterDryerB1 !== null && s.afterDryerB1 !== undefined
+            ? Number(s.afterDryerB1).toFixed(3)
+            : '',
         beforeLabDryerB1: s.beforeLabDryerB1?.toString() || '',
         afterLabDryerB1: s.afterLabDryerB1?.toString() || '',
 
-        afterDryerB2: s.afterDryerB2?.toString() || '',
+        afterDryerB2:
+          s.afterDryerB2 !== null && s.afterDryerB2 !== undefined
+            ? Number(s.afterDryerB2).toFixed(3)
+            : '',
         beforeLabDryerB2: s.beforeLabDryerB2?.toString() || '',
         afterLabDryerB2: s.afterLabDryerB2?.toString() || '',
 
-        afterDryerB3: s.afterDryerB3?.toString() || '',
+        afterDryerB3:
+          s.afterDryerB3 !== null && s.afterDryerB3 !== undefined
+            ? Number(s.afterDryerB3).toFixed(3)
+            : '',
         beforeLabDryerB3: s.beforeLabDryerB3?.toString() || '',
         afterLabDryerB3: s.afterLabDryerB3?.toString() || '',
 
@@ -241,7 +250,10 @@ const saveAll = async () => {
         difference,
 
         isTrailer: props.isTrailer || false,
-        basketWeight: pf(s.basketWeight),
+        basketWeight:
+          s.basketWeight && !isNaN(parseFloat(s.basketWeight.toString()))
+            ? parseFloat(parseFloat(s.basketWeight.toString()).toFixed(1))
+            : null,
       });
     }
 
@@ -408,17 +420,6 @@ onMounted(async () => {
 
         <div class="flex flex-col">
           <span class="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1"
-            >Grade</span
-          >
-          <div
-            class="flex items-center justify-center border-2 border-border rounded px-2 h-6 w-12 bg-card"
-          >
-            <span class="text-sm font-black text-foreground">{{ calculatedGrade }}</span>
-          </div>
-        </div>
-
-        <div class="flex flex-col">
-          <span class="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1"
             >AVG PO</span
           >
           <span class="text-sm font-bold text-foreground">{{
@@ -437,6 +438,17 @@ onMounted(async () => {
 
         <div class="flex flex-col">
           <span class="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1"
+            >Grade</span
+          >
+          <div
+            class="flex items-center justify-center border-2 border-border rounded px-2 h-6 w-12 bg-card"
+          >
+            <span class="text-sm font-black text-foreground">{{ calculatedGrade }}</span>
+          </div>
+        </div>
+
+        <div class="flex flex-col">
+          <span class="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1"
             >Gross Weight</span
           >
           <span class="text-sm font-bold text-foreground">{{ displayGrossWeight }} kg</span>
@@ -446,7 +458,7 @@ onMounted(async () => {
           <span class="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1"
             >Net Weight</span
           >
-          <span class="text-sm font-bold text-foreground">{{ displayNetWeight }} kg</span>
+          <span class="text-sm font-bold text-blue-600">{{ displayNetWeight }} kg</span>
         </div>
       </div>
     </div>
@@ -497,10 +509,6 @@ onMounted(async () => {
                   calculatePri(sample.p0, sample.p30)
                 }}</span>
               </div>
-              <div class="flex gap-1" title="Basket Weight">
-                <span>Basket:</span>
-                <span class="font-bold text-foreground">{{ sample.basketWeight || '-' }}</span>
-              </div>
             </div>
           </div>
         </div>
@@ -520,14 +528,11 @@ onMounted(async () => {
                 <!-- Basket Weight -->
                 <div class="space-y-1">
                   <label class="text-xs font-bold text-muted-foreground uppercase">Basket</label>
-                  <Input
-                    v-model="sample.basketWeight"
-                    class="h-8 bg-card border-border"
-                    placeholder="kg"
-                    @input="handleNumericInput(sample, 'basketWeight', $event.target.value)"
-                    @keydown.enter="handleEnter"
-                    disabled
-                  />
+                  <div
+                    class="h-8 flex items-center px-3 bg-muted border border-border rounded-md text-sm font-bold text-foreground"
+                  >
+                    {{ sample.basketWeight }}
+                  </div>
                 </div>
                 <!-- Before Dryer (Read Only) -->
                 <div class="space-y-1">

@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/carousel';
 import { bookingsApi } from '@/services/bookings';
 import { rubberTypesApi, type RubberType } from '@/services/rubberTypes';
-import { Beaker, FlaskConical, Scale, Thermometer } from 'lucide-vue-next';
+import { Beaker, FlaskConical } from 'lucide-vue-next';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
@@ -358,7 +358,7 @@ const formatNum = (val: any, decimals = 1) => {
                         <span class="text-[9px] opacity-70 uppercase leading-none"
                           >Recal Median</span
                         >
-                        <span class="font-black leading-none text-accent-foreground"
+                        <span class="font-black leading-none text-white"
                           >{{ formatNum(s.recalDrc) }}%</span
                         >
                       </div>
@@ -370,12 +370,6 @@ const formatNum = (val: any, decimals = 1) => {
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                       <!-- Column 1: Weight Process -->
                       <div class="space-y-4">
-                        <div class="flex items-center gap-2 mb-2 text-muted-foreground">
-                          <Scale class="h-3 w-3" />
-                          <span class="text-xs font-bold tracking-wider">{{
-                            t('qa.labels.weightProcess')
-                          }}</span>
-                        </div>
                         <div class="space-y-1">
                           <div class="flex justify-between text-[11px]">
                             <span class="text-muted-foreground">{{
@@ -399,7 +393,7 @@ const formatNum = (val: any, decimals = 1) => {
                               formatNum(s.basketWeight, 1)
                             }}</span>
                           </div>
-                          <div class="flex justify-between text-[11px]">
+                          <div class="flex justify-between items-center text-[11px]">
                             <span class="text-muted-foreground">{{
                               t('qa.labels.beforeDryer')
                             }}</span>
@@ -407,7 +401,7 @@ const formatNum = (val: any, decimals = 1) => {
                               formatNum(s.medianBeforeBaking, 1)
                             }}</span>
                           </div>
-                          <div class="flex justify-between text-[11px]">
+                          <div class="flex justify-between items-center text-[11px]">
                             <span class="text-muted-foreground">{{
                               t('qa.labels.afterDryer')
                             }}</span>
@@ -420,12 +414,6 @@ const formatNum = (val: any, decimals = 1) => {
 
                       <!-- Column 2: DRC Analysis -->
                       <div class="space-y-4 border-l border-border/50 pl-6">
-                        <div class="flex items-center gap-2 mb-2 text-muted-foreground">
-                          <Thermometer class="h-3 w-3" />
-                          <span class="text-xs font-bold tracking-wider">{{
-                            t('qa.labels.drcAnalysis')
-                          }}</span>
-                        </div>
                         <div class="space-y-1">
                           <div class="flex justify-between text-[11px]">
                             <span class="text-muted-foreground">{{
@@ -481,7 +469,7 @@ const formatNum = (val: any, decimals = 1) => {
                           <div class="flex justify-between text-[11px]">
                             <span class="text-muted-foreground">{{ t('qa.labels.drcDry') }}</span>
                             <span class="font-bold text-violet-500">{{
-                              formatNum(s.drcDry, 1)
+                              s.drcDry ? formatNum(s.drcDry, 1) : '-'
                             }}</span>
                           </div>
                           <div class="flex justify-between text-[11px]">
@@ -493,33 +481,37 @@ const formatNum = (val: any, decimals = 1) => {
                         </div>
 
                         <div class="pt-2 border-t border-border/50">
-                          <span
-                            class="text-xs font-bold text-muted-foreground tracking-wider block mb-2"
-                            >{{ t('qa.labels.moistureLab') }}</span
-                          >
                           <div class="space-y-1">
                             <div class="flex justify-between text-[11px]">
                               <span class="text-muted-foreground">{{
                                 t('qa.labels.moisturePercent')
                               }}</span>
                               <span class="font-bold text-orange-600"
-                                >{{ formatNum(s.medianMoisture, 1) }}%</span
+                                >{{ formatNum(s.medianMoisture, 2) }}%</span
                               >
                             </div>
-                            <div class="flex justify-between text-[11px]">
+                            <div class="flex justify-between items-center text-[11px]">
+                              <span class="text-muted-foreground">Moisture Factor</span>
+                              <span class="font-bold text-foreground">{{
+                                s.beforeLabDryer && s.afterLabDryer
+                                  ? ((s.afterLabDryer / s.beforeLabDryer) * 100).toFixed(2) + '%'
+                                  : '-'
+                              }}</span>
+                            </div>
+                            <div class="flex justify-between items-center text-[11px]">
                               <span class="text-muted-foreground">{{
                                 t('qa.labels.beforeLabDryer')
                               }}</span>
                               <span class="font-bold text-foreground">{{
-                                formatNum(s.medianBeforeLab, 1)
+                                formatNum(s.beforeLabDryer, 1)
                               }}</span>
                             </div>
-                            <div class="flex justify-between text-[11px]">
+                            <div class="flex justify-between items-center text-[11px]">
                               <span class="text-muted-foreground">{{
-                                t('qa.labels.afterLab')
+                                t('qa.labels.afterLabDryer')
                               }}</span>
                               <span class="font-bold text-foreground">{{
-                                formatNum(s.medianAfterLab, 1)
+                                formatNum(s.afterLabDryer, 1)
                               }}</span>
                             </div>
                           </div>

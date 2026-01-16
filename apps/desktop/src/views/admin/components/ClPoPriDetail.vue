@@ -9,7 +9,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { bookingsApi } from '@/services/bookings';
@@ -210,6 +209,18 @@ const displayNetWeight = computed(() => {
   return Math.max(0, inW - outW).toLocaleString();
 });
 
+const displayGrossWeight = computed(() => {
+  if (!booking.value) return '0';
+  const inW = props.isTrailer ? booking.value.trailerWeightIn || 0 : booking.value.weightIn || 0;
+  return inW.toLocaleString();
+});
+
+const averagePo = computed(() => {
+  const valid = samples.value.map((s) => parseFloat(s.p0)).filter((v) => !isNaN(v));
+  if (valid.length === 0) return null;
+  return valid.reduce((a, b) => a + b, 0) / valid.length;
+});
+
 const averagePri = computed(() => {
   const valid = samples.value.map((s) => parseFloat(s.pri)).filter((v) => !isNaN(v));
   if (valid.length === 0) return null;
@@ -226,12 +237,6 @@ const calculatedGrade = computed(() => {
   if (avg < 60) return 'A';
   return 'AA';
 });
-
-const formatNum = (v: any, decimals = 1) => {
-  const n = parseFloat(v);
-  if (isNaN(n)) return v || '-';
-  return n.toFixed(decimals);
-};
 
 onMounted(async () => {
   await fetchData();
@@ -268,22 +273,22 @@ onMounted(async () => {
           <span class="text-sm font-bold text-primary">{{ booking?.lotNo || '-' }}</span>
         </div>
 
-        <div class="flex flex-col">
-          <span class="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1"
-            >Supplier</span
-          >
-          <span class="text-sm font-bold text-foreground"
-            >{{ booking?.supplierCode }} : {{ booking?.supplierName }}</span
-          >
+        <div class="flex flex-col max-w-[200px]">
+          <div class="flex flex-col gap-1">
+            <span class="text-sm font-bold text-foreground truncate">{{
+              booking?.supplierCode || '-'
+            }}</span>
+            <span class="text-xs text-muted-foreground truncate">{{
+              booking?.supplierName || '-'
+            }}</span>
+          </div>
         </div>
 
         <div class="flex flex-col">
           <div class="flex flex-col gap-1">
-            <Badge
-              variant="outline"
-              class="w-fit bg-card text-primary border-primary/20 uppercase text-[10px] h-5 px-2"
-              >{{ displayRubberType }}</Badge
-            >
+            <span class="text-[10px] font-bold text-primary uppercase h-5 flex items-center">
+              {{ displayRubberType }}
+            </span>
             <span class="text-xs font-medium text-primary truncate max-w-[120px]">{{
               displayLocation
             }}</span>
@@ -292,24 +297,20 @@ onMounted(async () => {
 
         <div class="flex flex-col">
           <span class="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1"
-            >DRC ACTUAL</span
+            >AVG PO</span
           >
-          <span class="text-sm font-bold text-violet-500"
-            >{{
-              formatNum(
-                props.isTrailer
-                  ? booking?.trailerDrcActual || booking?.trailerDrcEst
-                  : booking?.drcActual || booking?.drcEst
-              )
-            }}%</span
-          >
+          <span class="text-sm font-bold text-foreground">{{
+            averagePo ? averagePo.toFixed(2) : '-'
+          }}</span>
         </div>
 
         <div class="flex flex-col">
           <span class="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1"
-            >Net Weight</span
+            >AVG PRI</span
           >
-          <span class="text-sm font-bold text-primary">{{ displayNetWeight }} kg</span>
+          <span class="text-sm font-bold text-foreground">{{
+            averagePri ? averagePri.toFixed(2) : '-'
+          }}</span>
         </div>
 
         <div class="flex flex-col">
@@ -317,10 +318,24 @@ onMounted(async () => {
             >Grade</span
           >
           <div
-            class="flex items-center justify-center border-2 border-border rounded px-2 h-5 min-w-[3rem] bg-card"
+            class="flex items-center justify-center border-2 border-border rounded px-2 h-6 min-w-[3rem] bg-card"
           >
-            <span class="text-xs font-black text-foreground">{{ calculatedGrade }}</span>
+            <span class="text-sm font-black text-foreground">{{ calculatedGrade }}</span>
           </div>
+        </div>
+
+        <div class="flex flex-col">
+          <span class="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1"
+            >Gross Weight</span
+          >
+          <span class="text-sm font-bold text-foreground">{{ displayGrossWeight }} kg</span>
+        </div>
+
+        <div class="flex flex-col">
+          <span class="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1"
+            >Net Weight</span
+          >
+          <span class="text-sm font-bold text-blue-600">{{ displayNetWeight }} kg</span>
         </div>
       </div>
     </div>
