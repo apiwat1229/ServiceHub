@@ -849,18 +849,15 @@ onMounted(() => {
     </div>
 
     <!-- Tabs -->
-    <Tabs v-model="activeTab" default-value="broadcast" class="w-full">
-      <TabsList class="grid w-full grid-cols-3">
-        <TabsTrigger value="broadcast" class="gap-2">
-          <Bell class="w-4 h-4" />
+    <Tabs v-model="activeTab" class="w-full">
+      <TabsList>
+        <TabsTrigger value="broadcast">
           {{ t('admin.notifications.broadcast') }}
         </TabsTrigger>
-        <TabsTrigger value="groups" class="gap-2">
-          <Users class="w-4 h-4" />
+        <TabsTrigger value="groups">
           {{ t('admin.notifications.groups') }}
         </TabsTrigger>
-        <TabsTrigger value="settings" class="gap-2">
-          <Settings class="w-4 h-4" />
+        <TabsTrigger value="settings">
           {{ t('admin.notifications.configuration') }}
         </TabsTrigger>
       </TabsList>
@@ -945,7 +942,9 @@ onMounted(() => {
               <h3 class="font-bold text-base mb-0.5 text-foreground tracking-tight">
                 {{ group.name }}
               </h3>
-              <p class="text-[0.6875rem] text-muted-foreground line-clamp-2 h-7 mb-2 leading-relaxed">
+              <p
+                class="text-[0.6875rem] text-muted-foreground line-clamp-2 h-7 mb-2 leading-relaxed"
+              >
                 {{ group.description || t('admin.notifications.noDescription') }}
               </p>
 
@@ -962,7 +961,9 @@ onMounted(() => {
                       class="w-6 h-6 border-2 border-background ring-2 ring-background transition-transform hover:scale-110 hover:z-10"
                     >
                       <AvatarImage :src="getUserAvatar(memberId)" />
-                      <AvatarFallback class="text-[0.5625rem] bg-muted text-muted-foreground font-bold">
+                      <AvatarFallback
+                        class="text-[0.5625rem] bg-muted text-muted-foreground font-bold"
+                      >
                         U{{ i + 1 }}
                       </AvatarFallback>
                     </Avatar>
@@ -1385,7 +1386,7 @@ onMounted(() => {
             </h3>
 
             <Tabs default-value="assigned" class="w-full">
-              <TabsList class="grid w-full grid-cols-2 mb-4">
+              <TabsList class="grid-cols-2 mb-4">
                 <TabsTrigger value="assigned" class="relative">
                   Assigned Members
                   <Badge

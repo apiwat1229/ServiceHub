@@ -99,12 +99,12 @@
     "jobOrder": "ใบงานสั่งผลิต (Job Order)",
     "tabs": {
       "clPoPri": "PO P30 PRI",
-      "clLab": "Lab Test",
-      "clSummary": "Incoming",
-      "cuplumpPool": "บ่อยางก้อนถ้วย",
+      "clLab": "LAB TEST",
+      "clSummary": "INCOMING",
+      "cuplumpPool": "CUPLUMP POOL",
       "ussPoPri": "USS PO PRI",
-      "ussSummary": "สรุป USS",
-      "labOrders": "คำสั่งแล็บ (Lab Orders)"
+      "ussSummary": "USS SUMMARY",
+      "labOrders": "LAB ORDERS"
     },
     "searchPlaceholder": "ค้นหารายการ...",
     "pickDate": "เลือกวันที่",

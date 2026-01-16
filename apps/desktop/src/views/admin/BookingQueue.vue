@@ -423,18 +423,8 @@ watch(selectedSlot, (newSlot) => {
       <div class="flex items-center space-x-2">
         <Tabs v-model="queueMode" class="w-[250px]">
           <TabsList class="grid w-full grid-cols-2">
-            <TabsTrigger
-              value="Cuplump"
-              class="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-            >
-              Cuplump
-            </TabsTrigger>
-            <TabsTrigger
-              value="USS"
-              class="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-            >
-              USS
-            </TabsTrigger>
+            <TabsTrigger value="Cuplump"> Cuplump </TabsTrigger>
+            <TabsTrigger value="USS"> USS </TabsTrigger>
           </TabsList>
         </Tabs>
 
@@ -492,7 +482,7 @@ watch(selectedSlot, (newSlot) => {
             <span class="text-sm text-muted-foreground">{{ t('bookingQueue.timeSlot') }}</span>
             <Tabs v-model="selectedSlot" class="w-full">
               <TabsList
-                class="grid w-full h-auto flex-wrap gap-1 bg-muted p-1"
+                class="w-full h-auto flex-wrap"
                 :style="{
                   gridTemplateColumns: `repeat(${Math.min(availableSlots.length, 5)}, minmax(0, 1fr))`,
                 }"
@@ -502,11 +492,8 @@ watch(selectedSlot, (newSlot) => {
                   :key="slot.value"
                   :value="slot.value"
                   @click="queueMode !== 'USS' ? (selectedSlot = slot.value) : null"
-                  class="flex-1 flex flex-col gap-0.5 py-1.5 min-w-[80px] transition-all"
+                  class="flex-1 flex flex-col gap-0.5 py-2 min-w-[85px]"
                   :class="[
-                    selectedSlot === slot.value
-                      ? 'bg-primary text-primary-foreground shadow-md scale-105 font-bold ring-2 ring-primary/20'
-                      : 'bg-card hover:border-primary/50 text-card-foreground hover:shadow-sm',
                     queueMode === 'USS'
                       ? 'opacity-40 pointer-events-none grayscale cursor-default'
                       : '',
@@ -514,8 +501,8 @@ watch(selectedSlot, (newSlot) => {
                     slotStats[slot.value].limit !== null &&
                     slotStats[slot.value].booked >= (slotStats[slot.value].limit || 0) &&
                     queueMode !== 'USS'
-                      ? 'bg-red-500 text-white hover:bg-red-600 data-[state=active]:bg-red-700 data-[state=active]:text-white'
-                      : '',
+                      ? 'bg-red-500 text-white hover:bg-red-600 data-[state=active]:bg-red-700 data-[state=active]:text-white shadow-sm border-red-600'
+                      : 'border-transparent',
                   ]"
                 >
                   <span class="text-xs font-bold leading-none">{{ slot.label }}</span>

@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ClipboardList, FileBox, List, TestTubes, Waves } from 'lucide-vue-next';
+
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
@@ -114,16 +115,8 @@ watch(
         class="w-auto"
         @update:model-value="$emit('update:activeTab', $event)"
       >
-        <TabsList
-          class="bg-muted/40 p-1.5 rounded-xl w-full h-auto flex flex-wrap justify-end gap-2 border border-border/50 shadow-inner"
-        >
-          <TabsTrigger
-            v-for="tab in tabs"
-            :key="tab.id"
-            :value="tab.id"
-            class="gap-2 px-5 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all rounded-lg text-xs font-black uppercase tracking-tight border-2 border-transparent data-[state=active]:border-primary shadow-sm hover:bg-background/80"
-          >
-            <component :is="tab.icon" class="w-4 h-4" v-if="tab.icon" />
+        <TabsList>
+          <TabsTrigger v-for="tab in tabs" :key="tab.id" :value="tab.id" class="gap-2">
             {{ tab.label }}
           </TabsTrigger>
         </TabsList>

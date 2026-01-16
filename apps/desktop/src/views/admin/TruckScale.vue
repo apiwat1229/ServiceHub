@@ -1498,29 +1498,17 @@ onUnmounted(() => {
 
         <div class="flex items-center gap-2 ml-auto">
           <!-- Tabs List -->
-          <TabsList class="h-10 bg-muted/50 p-1 rounded-lg self-start md:self-center">
-            <TabsTrigger
-              value="checkin"
-              class="px-4 text-sm font-medium transition-all data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-md"
-            >
+          <TabsList class="self-start md:self-center">
+            <TabsTrigger value="checkin">
               {{ t('truckScale.checkIn') }}
             </TabsTrigger>
-            <TabsTrigger
-              value="scale-in"
-              class="px-4 text-sm font-medium transition-all data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-md"
-            >
+            <TabsTrigger value="scale-in">
               {{ t('truckScale.weightIn') }}
             </TabsTrigger>
-            <TabsTrigger
-              value="scale-out"
-              class="px-4 text-sm font-medium transition-all data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-md"
-            >
+            <TabsTrigger value="scale-out">
               {{ t('truckScale.weightOut') }}
             </TabsTrigger>
-            <TabsTrigger
-              value="dashboard"
-              class="px-4 text-sm font-medium transition-all data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm rounded-md"
-            >
+            <TabsTrigger value="dashboard">
               {{ t('truckScale.dashboard') }}
             </TabsTrigger>
           </TabsList>

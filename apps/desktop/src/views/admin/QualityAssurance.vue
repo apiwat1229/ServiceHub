@@ -105,6 +105,7 @@ const currentTabLabel = computed(() => {
     { id: 'uss-summary', label: 'qa.tabs.ussSummary', category: 'USS' },
     { id: 'lab-orders', label: 'qa.tabs.labOrders', category: 'JOB_ORDER' },
   ];
+
   return t(allTabs.find((tab) => tab.id === currentTab.value)?.label || '');
 });
 

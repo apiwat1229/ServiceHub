@@ -574,7 +574,7 @@ onMounted(() => {
           </DialogHeader>
 
           <Tabs default-value="basic" class="w-full">
-            <TabsList class="grid w-full grid-cols-4">
+            <TabsList>
               <TabsTrigger value="basic">{{ t('admin.suppliers.basicInfo') }}</TabsTrigger>
               <TabsTrigger value="contact">{{ t('admin.suppliers.contactInfo') }}</TabsTrigger>
               <TabsTrigger value="address">{{ t('admin.suppliers.address') }}</TabsTrigger>

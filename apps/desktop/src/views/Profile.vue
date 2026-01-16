@@ -286,15 +286,9 @@ const uploadCroppedImage = async () => {
     </Card>
 
     <Tabs default-value="general" class="space-y-6">
-      <TabsList class="bg-muted/50 p-1">
-        <TabsTrigger value="general" class="gap-2">
-          <User class="w-4 h-4" />
-          General Info
-        </TabsTrigger>
-        <TabsTrigger value="security" class="gap-2">
-          <Lock class="w-4 h-4" />
-          Security
-        </TabsTrigger>
+      <TabsList>
+        <TabsTrigger value="general" class="gap-2"> General Info </TabsTrigger>
+        <TabsTrigger value="security" class="gap-2"> Security </TabsTrigger>
       </TabsList>
 
       <!-- General Info Tab -->

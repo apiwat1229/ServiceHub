@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Droplets, Sheet } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Cuplump from './Cuplump.vue';
@@ -24,19 +23,12 @@ watch(activeTab, (newVal: string) => {
           </h1>
         </div>
 
-        <TabsList class="grid grid-cols-2 w-full md:w-[400px]">
-          <TabsTrigger
-            value="cuplump"
-            class="gap-2 text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-          >
-            <Droplets class="w-4 h-4" />
+        <TabsList class="w-full md:w-auto">
+          <TabsTrigger value="cuplump">
             {{ t('services.cuplump.name') }}
           </TabsTrigger>
-          <TabsTrigger
-            value="uss"
-            class="gap-2 text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-          >
-            <Sheet class="w-4 h-4" />
+
+          <TabsTrigger value="uss">
             {{ t('services.uss.name') || 'USS' }}
           </TabsTrigger>
         </TabsList>

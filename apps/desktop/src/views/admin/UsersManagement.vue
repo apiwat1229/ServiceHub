@@ -716,7 +716,7 @@ onMounted(() => {
         </DialogHeader>
 
         <Tabs v-model="currentTab" class="w-full">
-          <TabsList class="grid w-full grid-cols-3">
+          <TabsList>
             <TabsTrigger value="basic">{{ t('admin.users.basicInfo') }}</TabsTrigger>
             <TabsTrigger value="work">{{ t('admin.users.workInfo') }}</TabsTrigger>
             <TabsTrigger value="security">{{ t('admin.users.security') }}</TabsTrigger>
