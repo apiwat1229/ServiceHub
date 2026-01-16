@@ -12,8 +12,8 @@ export interface JobOrderLog {
 
 export interface JobOrder {
     id?: string;
-    bookNo: string;
-    no: number;
+    bookNo?: string;
+    no?: number;
     jobOrderNo: string;
     contractNo: string;
     grade: string;

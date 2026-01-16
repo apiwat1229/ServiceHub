@@ -25,6 +25,8 @@ import { RubberTypesModule } from './rubber-types/rubber-types.module';
 import { SuppliersModule } from './suppliers/suppliers.module';
 import { UsersModule } from './users/users.module';
 
+import { JobOrdersModule } from './job-orders/job-orders.module';
+
 @Module({
     imports: [
         ConfigModule.forRoot({
@@ -53,6 +55,7 @@ import { UsersModule } from './users/users.module';
         MaintenanceModule,
         PlcModule,
         PoolsModule,
+        JobOrdersModule,
         // ServeStaticModule.forRoot({
         //     rootPath: join(process.cwd(), 'uploads'),
         //     serveRoot: '/uploads',

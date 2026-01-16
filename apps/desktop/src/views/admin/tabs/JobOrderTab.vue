@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Table,
   TableBody,
@@ -19,9 +22,11 @@ import {
   Clock,
   Eye,
   FileText,
+  Package,
   Plus,
+  Search,
 } from 'lucide-vue-next';
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
 import JobOrderForm from '../components/JobOrderForm.vue';
@@ -37,11 +42,26 @@ const jobOrders = ref<JobOrder[]>([]);
 const isLoading = ref(false);
 const isFormOpen = ref(false);
 const selectedJobOrder = ref<JobOrder | null>(null);
+const searchQuery = ref('');
+const selectedDate = ref<any>(null);
+
+const dateDisplay = computed(() => {
+  if (!selectedDate.value) return format(new Date(), 'dd-MMM-yyyy');
+  const date = new Date(
+    selectedDate.value.year,
+    selectedDate.value.month - 1,
+    selectedDate.value.day
+  );
+  return format(date, 'dd-MMM-yyyy');
+});
+
+const handleDateChange = (date: any) => {
+  selectedDate.value = date;
+};
 
 const fetchJobOrders = async () => {
   isLoading.value = true;
   try {
-    // In a real app, we'd pass filters to the API
     const data = await jobOrdersApi.getAll();
     jobOrders.value = data;
   } catch (error) {
@@ -85,59 +105,46 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="space-y-4">
-    <!-- Summary Stats -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <Card class="bg-primary/5 border-primary/20">
-        <CardContent class="p-4 flex items-center gap-4">
-          <div class="bg-primary/10 p-2 rounded-lg">
-            <FileText class="w-5 h-5 text-primary" />
-          </div>
-          <div>
-            <p class="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-              Total Orders
-            </p>
-            <p class="text-2xl font-black text-primary">{{ jobOrders.length }}</p>
-          </div>
-        </CardContent>
-      </Card>
+  <div class="space-y-6">
+    <!-- Header with Search, Date, and Button -->
+    <div class="space-y-4">
+      <div>
+        <h2 class="text-2xl font-black text-slate-800 flex items-center gap-3">
+          <div class="w-1.5 h-8 bg-gradient-to-b from-primary to-primary/60 rounded-full"></div>
+          Job Orders Management
+        </h2>
+        <p class="text-sm text-slate-500 mt-1 ml-5">Manage and track all production job orders</p>
+      </div>
 
-      <Card class="bg-emerald-50 border-emerald-100">
-        <CardContent class="p-4 flex items-center gap-4">
-          <div class="bg-emerald-100 p-2 rounded-lg">
-            <CheckCircle2 class="w-5 h-5 text-emerald-600" />
-          </div>
-          <div>
-            <p class="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-              Completed
-            </p>
-            <p class="text-2xl font-black text-emerald-600">
-              {{ jobOrders.filter((j) => j.isClosed).length }}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      <!-- Search, Date Picker, and New Button Row -->
+      <div class="flex items-center gap-3">
+        <div class="relative flex-1 max-w-sm">
+          <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Input
+            v-model="searchQuery"
+            placeholder="Search items..."
+            class="pl-9 h-10 bg-white border-slate-200"
+          />
+        </div>
 
-      <Card class="bg-amber-50 border-amber-100">
-        <CardContent class="p-4 flex items-center gap-4">
-          <div class="bg-amber-100 p-2 rounded-lg">
-            <Clock class="w-5 h-5 text-amber-600" />
-          </div>
-          <div>
-            <p class="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-              In Progress
-            </p>
-            <p class="text-2xl font-black text-amber-600">
-              {{ jobOrders.filter((j) => !j.isClosed).length }}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+        <Popover>
+          <PopoverTrigger as-child>
+            <Button
+              variant="outline"
+              class="h-10 px-4 justify-start text-left font-normal bg-white min-w-[160px]"
+            >
+              <CalendarIcon class="mr-2 h-4 w-4 text-slate-500" />
+              <span class="text-slate-700">{{ dateDisplay }}</span>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent class="w-auto p-0" align="start">
+            <Calendar v-model="selectedDate" @update:model-value="handleDateChange" />
+          </PopoverContent>
+        </Popover>
 
-      <div class="flex items-end justify-end">
         <Button
           @click="handleCreate"
-          class="w-full md:w-auto h-12 px-8 bg-primary hover:bg-primary/90 shadow-lg gap-2 text-base font-black uppercase"
+          class="h-10 px-6 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg gap-2 font-black"
         >
           <Plus class="w-5 h-5" />
           New Job Order
@@ -145,109 +152,188 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Job Orders Table -->
-    <div class="border rounded-2xl overflow-hidden bg-white shadow-sm ring-1 ring-slate-200">
-      <Table>
-        <TableHeader class="bg-slate-50">
-          <TableRow class="hover:bg-transparent">
-            <TableHead class="font-bold text-slate-800">Job Order No.</TableHead>
-            <TableHead class="font-bold text-slate-800">Date</TableHead>
-            <TableHead class="font-bold text-slate-800">Contract No.</TableHead>
-            <TableHead class="font-bold text-slate-800">Grade</TableHead>
-            <TableHead class="font-bold text-slate-800">Pallet Specs</TableHead>
-            <TableHead class="font-bold text-slate-800">Status</TableHead>
-            <TableHead class="w-[100px]"></TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          <TableRow v-if="isLoading" v-for="i in 3" :key="i" class="animate-pulse">
-            <TableCell v-for="j in 6" :key="j">
-              <div class="h-4 bg-slate-100 rounded"></div>
-            </TableCell>
-          </TableRow>
+    <!-- Summary Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <Card
+        class="border-l-4 border-l-blue-500 bg-gradient-to-br from-blue-50 to-white hover:shadow-md transition-shadow"
+      >
+        <CardContent class="p-5">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                Total Orders
+              </p>
+              <p class="text-3xl font-black text-blue-600">{{ jobOrders.length }}</p>
+            </div>
+            <div class="bg-blue-100 p-3 rounded-xl">
+              <FileText class="w-6 h-6 text-blue-600" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-          <TableRow v-else-if="jobOrders.length === 0">
-            <TableCell colspan="7" class="h-64 text-center">
-              <div class="flex flex-col items-center justify-center text-muted-foreground">
-                <FileText class="w-12 h-12 mb-4 opacity-20" />
-                <p class="font-bold text-slate-400">No job orders found</p>
-                <Button variant="link" @click="handleCreate" class="text-primary font-bold"
-                  >Create your first order</Button
-                >
-              </div>
-            </TableCell>
-          </TableRow>
-
-          <TableRow
-            v-for="order in jobOrders"
-            :key="order.id"
-            class="group hover:bg-slate-50 transition-colors cursor-pointer"
-            @click="handleEdit(order)"
-          >
-            <TableCell class="font-black text-slate-900">
-              <div class="flex items-center gap-2">
-                <div
-                  class="w-2 h-2 rounded-full"
-                  :class="order.isClosed ? 'bg-emerald-500' : 'bg-amber-500'"
-                ></div>
-                {{ order.jobOrderNo }}
-              </div>
-            </TableCell>
-            <TableCell>
-              <div class="flex items-center gap-2 text-slate-500">
-                <CalendarIcon class="w-3.5 h-3.5 opacity-50" />
-                {{ format(new Date(order.qaDate), 'dd MMM yyyy') }}
-              </div>
-            </TableCell>
-            <TableCell class="font-medium text-slate-600">{{ order.contractNo }}</TableCell>
-            <TableCell>
-              <Badge variant="secondary" class="font-bold bg-slate-100 text-slate-700">
-                {{ order.grade === 'Other' ? order.otherGrade : order.grade }}
-              </Badge>
-            </TableCell>
-            <TableCell>
-              <div class="text-xs flex flex-col gap-0.5">
-                <span class="font-bold">{{ order.palletType }}</span>
-                <span class="text-slate-400"
-                  >{{ order.orderQuantity }} Pallets ({{ order.quantityBale }} bales ea.)</span
-                >
-              </div>
-            </TableCell>
-            <TableCell>
-              <Badge
-                v-if="order.isClosed"
-                class="bg-emerald-100 text-emerald-700 border-emerald-200"
-              >
+      <Card
+        class="border-l-4 border-l-emerald-500 bg-gradient-to-br from-emerald-50 to-white hover:shadow-md transition-shadow"
+      >
+        <CardContent class="p-5">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                 Completed
-              </Badge>
-              <Badge v-else class="bg-amber-100 text-amber-700 border-amber-200">
+              </p>
+              <p class="text-3xl font-black text-emerald-600">
+                {{ jobOrders.filter((j) => j.isClosed).length }}
+              </p>
+            </div>
+            <div class="bg-emerald-100 p-3 rounded-xl">
+              <CheckCircle2 class="w-6 h-6 text-emerald-600" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card
+        class="border-l-4 border-l-amber-500 bg-gradient-to-br from-amber-50 to-white hover:shadow-md transition-shadow"
+      >
+        <CardContent class="p-5">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                 In Progress
-              </Badge>
-            </TableCell>
-            <TableCell>
-              <div
-                class="flex justify-end pr-2 opacity-0 group-hover:opacity-100 transition-opacity"
-              >
+              </p>
+              <p class="text-3xl font-black text-amber-600">
+                {{ jobOrders.filter((j) => !j.isClosed).length }}
+              </p>
+            </div>
+            <div class="bg-amber-100 p-3 rounded-xl">
+              <Clock class="w-6 h-6 text-amber-600" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+
+    <!-- Job Orders Table -->
+    <Card class="border shadow-sm overflow-hidden">
+      <div class="bg-gradient-to-r from-slate-50 to-slate-100 px-6 py-4 border-b">
+        <h3 class="font-black text-slate-700 flex items-center gap-2">
+          <Package class="w-5 h-5" />
+          All Job Orders
+        </h3>
+      </div>
+      <div class="overflow-x-auto">
+        <Table>
+          <TableHeader class="bg-slate-50/50">
+            <TableRow class="hover:bg-transparent border-b-2">
+              <TableHead class="font-black text-slate-700">Job Order No.</TableHead>
+              <TableHead class="font-black text-slate-700">Date</TableHead>
+              <TableHead class="font-black text-slate-700">Contract No.</TableHead>
+              <TableHead class="font-black text-slate-700">Grade</TableHead>
+              <TableHead class="font-black text-slate-700">Pallet Specs</TableHead>
+              <TableHead class="font-black text-slate-700">Status</TableHead>
+              <TableHead class="w-[100px] text-center font-black text-slate-700">Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow v-if="isLoading" v-for="i in 3" :key="i" class="animate-pulse">
+              <TableCell v-for="j in 7" :key="j">
+                <div class="h-4 bg-slate-100 rounded"></div>
+              </TableCell>
+            </TableRow>
+
+            <TableRow v-else-if="jobOrders.length === 0">
+              <TableCell colspan="7" class="h-64 text-center">
+                <div class="flex flex-col items-center justify-center text-muted-foreground">
+                  <div class="bg-slate-100 p-6 rounded-full mb-4">
+                    <FileText class="w-12 h-12 text-slate-300" />
+                  </div>
+                  <p class="font-bold text-slate-400 text-lg mb-2">No job orders found</p>
+                  <Button variant="link" @click="handleCreate" class="text-primary font-bold">
+                    <Plus class="w-4 h-4 mr-2" />
+                    Create your first order
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+
+            <TableRow
+              v-for="order in jobOrders"
+              :key="order.id"
+              class="group hover:bg-slate-50/50 transition-all cursor-pointer border-b"
+              @click="handleEdit(order)"
+            >
+              <TableCell class="font-black text-slate-900">
+                <div class="flex items-center gap-2">
+                  <div
+                    class="w-2 h-2 rounded-full"
+                    :class="
+                      order.isClosed
+                        ? 'bg-emerald-500 shadow-emerald-200 shadow-lg'
+                        : 'bg-amber-500 shadow-amber-200 shadow-lg'
+                    "
+                  ></div>
+                  {{ order.jobOrderNo }}
+                </div>
+              </TableCell>
+              <TableCell>
+                <div class="flex items-center gap-2 text-slate-600">
+                  <CalendarIcon class="w-3.5 h-3.5 opacity-50" />
+                  <span class="font-medium">{{
+                    format(new Date(order.qaDate), 'dd MMM yyyy')
+                  }}</span>
+                </div>
+              </TableCell>
+              <TableCell class="font-bold text-slate-700">{{ order.contractNo }}</TableCell>
+              <TableCell>
+                <Badge
+                  variant="secondary"
+                  class="font-bold bg-blue-100 text-blue-700 border-blue-200"
+                >
+                  {{ order.grade === 'Other' ? order.otherGrade : order.grade }}
+                </Badge>
+              </TableCell>
+              <TableCell>
+                <div class="text-xs flex flex-col gap-0.5">
+                  <span class="font-bold text-slate-700">{{ order.palletType }}</span>
+                  <span class="text-slate-400"
+                    >{{ order.orderQuantity }} Pallets • {{ order.quantityBale }} bales</span
+                  >
+                </div>
+              </TableCell>
+              <TableCell>
+                <Badge
+                  v-if="order.isClosed"
+                  class="bg-emerald-500 text-white border-0 shadow-sm font-bold"
+                >
+                  <CheckCircle2 class="w-3 h-3 mr-1" />
+                  Completed
+                </Badge>
+                <Badge v-else class="bg-amber-500 text-white border-0 shadow-sm font-bold">
+                  <Clock class="w-3 h-3 mr-1" />
+                  In Progress
+                </Badge>
+              </TableCell>
+              <TableCell class="text-center">
                 <Button
                   variant="ghost"
                   size="icon"
-                  class="h-8 w-8 hover:bg-white border hover:shadow-sm"
+                  class="h-9 w-9 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary/10 hover:text-primary"
                 >
-                  <Eye class="w-4 h-4 text-slate-600" />
+                  <Eye class="w-4 h-4" />
                 </Button>
-              </div>
-            </TableCell>
-          </TableRow>
-        </TableBody>
-      </Table>
-    </div>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </div>
+    </Card>
 
     <!-- Form Dialog -->
     <Dialog v-model:open="isFormOpen">
       <DialogContent
-        class="max-w-[70vw] h-[90vh] overflow-y-auto p-0 border-none bg-transparent shadow-none"
+        class="max-w-4xl max-h-[90vh] overflow-y-auto p-0 border-none bg-transparent shadow-none"
       >
-        <div class="bg-white rounded-2xl overflow-hidden shadow-2xl m-4">
+        <div class="bg-white rounded-2xl overflow-hidden shadow-2xl">
           <JobOrderForm
             :initial-data="selectedJobOrder || undefined"
             @save="handleSave"
