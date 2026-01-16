@@ -18,6 +18,7 @@ import QaHeader from './components/QaHeader.vue';
 import ClLabTab from './tabs/ClLabTab.vue';
 import ClPoPriTab from './tabs/ClPoPriTab.vue';
 import ClSummaryTab from './tabs/ClSummaryTab.vue';
+import JobOrderTab from './tabs/JobOrderTab.vue';
 import UssPoPriTab from './tabs/UssPoPriTab.vue';
 
 const { t } = useI18n();
@@ -259,15 +260,7 @@ onMounted(() => {
         </div>
       </div>
       <div v-else-if="currentTab === 'lab-orders'">
-        <div
-          class="flex items-center justify-center h-64 border rounded-lg bg-muted/20 border-dashed"
-        >
-          <div class="text-center">
-            <Search class="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
-            <h3 class="text-lg font-medium text-foreground">{{ t('qa.tabs.labOrders') }}</h3>
-            <p class="text-muted-foreground mt-1">{{ t('qa.comingSoon') }}</p>
-          </div>
-        </div>
+        <JobOrderTab :search-query="searchQuery" :date="selectedDate" />
       </div>
     </div>
   </div>

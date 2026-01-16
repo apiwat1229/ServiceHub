@@ -49,11 +49,15 @@ watch(selectedCategory, (newVal) => {
   localStorage.setItem('qaCategory', newVal);
   emit('update:category', newVal);
 
+  // Switch to the first tab of the new category
+  const firstTab = allTabs.find((tab) => tab.category === newVal);
+  if (firstTab && currentTab.value !== firstTab.id) {
+    currentTab.value = firstTab.id;
+  }
+
   // If we're not on the QA page, go there
   if (window.location.hash.indexOf('/admin/qa') === -1) {
     router.push('/admin/qa');
-  } else {
-    // QualityAssurance.vue will handle internal tab reset if needed
   }
 });
 
