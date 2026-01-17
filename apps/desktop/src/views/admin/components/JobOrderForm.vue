@@ -118,36 +118,43 @@ const handleQaDateSelect = (date: any) => {
           </div>
         </div>
 
-        <!-- Row 2: Pallet Type Selection -->
-        <div class="space-y-3">
-          <Label class="text-xs font-bold uppercase text-slate-500">{{
-            t('qa.jobOrderForm.palletType')
-          }}</Label>
-          <div class="flex flex-wrap gap-x-6 gap-y-3">
-            <div v-for="p in palletTypes" :key="p" class="flex items-center space-x-2">
-              <Checkbox
-                :checked="form.palletType === p"
-                @update:checked="(checked) => checked && (form.palletType = p)"
-                :id="'pallet-' + p"
-              />
-              <Label :for="'pallet-' + p" class="text-sm font-medium cursor-pointer">{{ p }}</Label>
+        <!-- Row 2: Pallet Type & Grade -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <!-- Pallet Type Selection -->
+          <div class="space-y-3">
+            <Label class="text-[10px] font-bold uppercase text-slate-500">{{
+              t('qa.jobOrderForm.palletType')
+            }}</Label>
+            <div class="flex flex-wrap gap-x-4 gap-y-2">
+              <div v-for="p in palletTypes" :key="p" class="flex items-center space-x-2">
+                <Checkbox
+                  :checked="form.palletType === p"
+                  @update:checked="(checked) => checked && (form.palletType = p)"
+                  :id="'pallet-' + p"
+                />
+                <Label :for="'pallet-' + p" class="text-xs font-medium cursor-pointer">{{
+                  p
+                }}</Label>
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- Row 3: Grade Selection -->
-        <div class="space-y-3">
-          <Label class="text-xs font-bold uppercase text-slate-500">{{
-            t('qa.jobOrderForm.grade')
-          }}</Label>
-          <div class="flex flex-wrap gap-x-6 gap-y-3">
-            <div v-for="g in grades" :key="g" class="flex items-center space-x-2">
-              <Checkbox
-                :checked="form.grade === g"
-                @update:checked="(checked) => checked && (form.grade = g)"
-                :id="'grade-' + g"
-              />
-              <Label :for="'grade-' + g" class="text-sm font-medium cursor-pointer">{{ g }}</Label>
+          <!-- Grade Selection -->
+          <div class="space-y-3">
+            <Label class="text-[10px] font-bold uppercase text-slate-500">{{
+              t('qa.jobOrderForm.grade')
+            }}</Label>
+            <div class="flex flex-wrap gap-x-6 gap-y-2">
+              <div v-for="g in grades" :key="g" class="flex items-center space-x-2">
+                <Checkbox
+                  :checked="form.grade === g"
+                  @update:checked="(checked) => checked && (form.grade = g)"
+                  :id="'grade-' + g"
+                />
+                <Label :for="'grade-' + g" class="text-xs font-medium cursor-pointer">{{
+                  g
+                }}</Label>
+              </div>
             </div>
           </div>
         </div>
@@ -203,12 +210,12 @@ const handleQaDateSelect = (date: any) => {
         </div>
 
         <!-- Row 4: Marking & Note -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-end">
           <div class="space-y-1.5">
-            <Label class="text-xs font-bold uppercase text-slate-500">{{
+            <Label class="text-[10px] font-bold uppercase text-slate-500">{{
               t('qa.jobOrderForm.palletMarking')
             }}</Label>
-            <div class="flex h-10 items-center gap-8">
+            <div class="flex h-9 items-center gap-8">
               <div class="flex items-center space-x-2">
                 <Checkbox
                   :checked="form.palletMarking === true"
@@ -221,7 +228,7 @@ const handleQaDateSelect = (date: any) => {
                 />
                 <Label
                   for="marking-yes"
-                  class="text-sm font-bold cursor-pointer text-emerald-600"
+                  class="text-xs font-bold cursor-pointer text-emerald-600"
                   >{{ t('qa.jobOrderForm.markingYes') }}</Label
                 >
               </div>
@@ -235,7 +242,7 @@ const handleQaDateSelect = (date: any) => {
                   "
                   id="marking-no"
                 />
-                <Label for="marking-no" class="text-sm font-bold cursor-pointer text-rose-600">{{
+                <Label for="marking-no" class="text-xs font-bold cursor-pointer text-rose-600">{{
                   t('qa.jobOrderForm.markingNo')
                 }}</Label>
               </div>
@@ -243,11 +250,11 @@ const handleQaDateSelect = (date: any) => {
           </div>
 
           <!-- Note -->
-          <div class="space-y-1.5 pb-2">
-            <Label class="text-xs font-bold uppercase text-slate-500">{{
+          <div class="space-y-1.5">
+            <Label class="text-[10px] font-bold uppercase text-slate-500">{{
               t('qa.jobOrderForm.note')
             }}</Label>
-            <Input v-model="form.note" class="bg-slate-50/50 h-9" />
+            <Input v-model="form.note" class="bg-slate-50/50 h-9 font-medium" />
           </div>
         </div>
 

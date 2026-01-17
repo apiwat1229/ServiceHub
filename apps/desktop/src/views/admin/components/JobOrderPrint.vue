@@ -278,12 +278,15 @@ const tableRows = computed(() => {
 
     <!-- Footer Part -->
     <div class="mt-2 text-[11px] leading-tight">
-      <div class="flex flex-col gap-1.5">
+      <div class="flex flex-col gap-1">
         <!-- Note line -->
         <div class="flex flex-col gap-0.5">
           <div class="flex items-baseline gap-1">
             <span class="font-bold shrink-0">Note :</span>
-            <span class="border-b border-dotted border-slate-700 flex-1 h-3.5"></span>
+            <span
+              class="border-b border-dotted border-slate-700 flex-1 h-3.5 px-2 font-bold text-blue-800"
+              >{{ data.note || '' }}</span
+            >
           </div>
           <div class="flex items-baseline w-full pl-[38px]">
             <span class="border-b border-dotted border-slate-700 flex-1 h-3"></span>
@@ -291,10 +294,10 @@ const tableRows = computed(() => {
         </div>
 
         <!-- Closed status & Production info grouped together -->
-        <div class="flex items-start justify-between mt-1 pl-1">
-          <div class="flex flex-col gap-1.5 pt-0.5">
+        <div class="grid grid-cols-2 gap-4 mt-2 pl-1">
+          <div class="flex flex-col gap-1.5">
             <div class="flex items-center gap-4">
-              <span class="font-bold shrink-0">Closed job order</span>
+              <span class="font-bold shrink-0">Closed job order :</span>
               <div class="flex items-center gap-1.5">
                 <div
                   class="w-3.5 h-3.5 border border-slate-700 flex items-center justify-center relative bg-white"
@@ -306,7 +309,7 @@ const tableRows = computed(() => {
                 </div>
                 <span class="text-[10px] font-black">YES</span>
               </div>
-              <div class="flex items-center gap-1.5 ml-4">
+              <div class="flex items-center gap-1.5 ml-2">
                 <div
                   class="w-3.5 h-3.5 border border-slate-700 flex items-center justify-center relative bg-white"
                 >
@@ -315,35 +318,29 @@ const tableRows = computed(() => {
                     class="w-4 h-4 text-blue-600 absolute"
                   />
                 </div>
-                <span class="text-[10px] font-black mr-1">No.</span>
+                <span class="text-[10px] font-black">No.</span>
                 <span
-                  class="border-b border-dotted border-slate-700 w-40 h-3.5 text-center font-bold text-blue-800"
+                  class="border-b border-dotted border-slate-700 w-28 h-3.5 text-center font-bold text-blue-800"
                   >{{ data.noReason || '' }}</span
                 >
               </div>
             </div>
           </div>
 
-          <div class="flex flex-col items-end gap-1.5 pr-2 overflow-visible">
+          <div class="flex flex-col gap-1.5">
             <div class="flex items-baseline gap-1">
               <span class="font-bold whitespace-nowrap">Production (Dryer & Packing) :</span>
-              <div class="relative w-40 text-center">
-                <span
-                  class="absolute -top-3 left-0 right-0 font-bold text-blue-800 italic h-4 whitespace-nowrap"
-                  >{{ data.productionName || '' }}</span
-                >
-                <span class="block border-b border-dotted border-slate-700 w-full h-3.5"></span>
-              </div>
+              <span
+                class="border-b border-dotted border-slate-700 flex-1 text-center font-bold text-blue-800 italic h-3.5"
+                >{{ data.productionName || '' }}</span
+              >
             </div>
             <div class="flex items-baseline gap-1">
               <span class="font-bold">Date :</span>
-              <div class="relative w-48 text-center">
-                <span
-                  class="absolute -top-3 left-0 right-0 font-bold text-blue-800 h-4 whitespace-nowrap"
-                  >{{ productionDateFormatted }}</span
-                >
-                <span class="block border-b border-dotted border-slate-700 w-full h-3.5"></span>
-              </div>
+              <span
+                class="border-b border-dotted border-slate-700 flex-1 text-center font-bold text-blue-800 h-3.5"
+                >{{ productionDateFormatted }}</span
+              >
             </div>
           </div>
         </div>

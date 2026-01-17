@@ -1,9 +1,10 @@
 import { CreateJobOrderDto, UpdateJobOrderDto } from '@my-app/types';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class JobOrdersService {
+    private readonly logger = new Logger(JobOrdersService.name);
     constructor(private readonly prisma: PrismaService) { }
 
     async findAll() {
@@ -25,60 +26,77 @@ export class JobOrdersService {
     }
 
     async create(data: CreateJobOrderDto) {
-        const { logs, ...jobOrderData } = data;
-        return this.prisma.jobOrder.create({
-            data: {
-                ...jobOrderData,
-                bookNo: jobOrderData.bookNo || '',
-                no: jobOrderData.no || 0,
-                qaDate: new Date(jobOrderData.qaDate),
-                logs: {
-                    create: logs?.map((log) => ({
-                        ...log,
-                        date: new Date(log.date),
-                    })) || [],
+        try {
+            const { logs, ...jobOrderData } = data;
+            return await this.prisma.jobOrder.create({
+                data: {
+                    ...jobOrderData,
+                    bookNo: jobOrderData.bookNo || '',
+                    no: jobOrderData.no || 0,
+                    qaDate: new Date(jobOrderData.qaDate),
+                    logs: {
+                        create: logs?.map((log) => ({
+                            ...log,
+                            date: new Date(log.date),
+                        })) || [],
+                    },
                 },
-            },
-            include: { logs: true },
-        });
+                include: { logs: true },
+            });
+        } catch (error: any) {
+            this.logger.error(`Failed to create job order: ${error.message}`, error.stack);
+            if (error.code === 'P2002') {
+                throw new BadRequestException(`Job Order number already exists: ${data.jobOrderNo}`);
+            }
+            throw new InternalServerErrorException(error.message || 'Failed to create job order');
+        }
     }
 
     async update(id: string, data: UpdateJobOrderDto) {
-        const { logs, ...jobOrderData } = data;
+        try {
+            const { logs, ...jobOrderData } = data;
 
-        // Check if job order exists
-        await this.findOne(id);
+            // Check if job order exists
+            await this.findOne(id);
 
-        const updateData: any = { ...jobOrderData };
-        if (jobOrderData.qaDate) updateData.qaDate = new Date(jobOrderData.qaDate);
-        if (jobOrderData.productionDate) updateData.productionDate = new Date(jobOrderData.productionDate);
+            const updateData: any = { ...jobOrderData };
+            delete updateData.id;
+            if (jobOrderData.qaDate) updateData.qaDate = new Date(jobOrderData.qaDate);
+            if (jobOrderData.productionDate) updateData.productionDate = new Date(jobOrderData.productionDate);
 
-        if (logs) {
-            // Transaction to ensure logs are replaced correctly
-            return this.prisma.$transaction(async (tx) => {
-                await tx.jobOrderLog.deleteMany({ where: { jobOrderId: id } });
+            if (logs) {
+                // Transaction to ensure logs are replaced correctly
+                return await this.prisma.$transaction(async (tx) => {
+                    await tx.jobOrderLog.deleteMany({ where: { jobOrderId: id } });
 
-                return tx.jobOrder.update({
-                    where: { id },
-                    data: {
-                        ...updateData,
-                        logs: {
-                            create: logs.map((log) => ({
-                                ...log,
-                                date: new Date(log.date),
-                            })),
+                    return tx.jobOrder.update({
+                        where: { id },
+                        data: {
+                            ...updateData,
+                            logs: {
+                                create: logs.map((log) => ({
+                                    ...log,
+                                    date: new Date(log.date),
+                                })),
+                            },
                         },
-                    },
-                    include: { logs: true },
+                        include: { logs: true },
+                    });
                 });
-            });
-        }
+            }
 
-        return this.prisma.jobOrder.update({
-            where: { id },
-            data: updateData,
-            include: { logs: true },
-        });
+            return await this.prisma.jobOrder.update({
+                where: { id },
+                data: updateData,
+                include: { logs: true },
+            });
+        } catch (error: any) {
+            this.logger.error(`Failed to update job order ${id}: ${error.message}`, error.stack);
+            if (error.code === 'P2002') {
+                throw new BadRequestException(`Job Order number already exists`);
+            }
+            throw new InternalServerErrorException(error.message || 'Failed to update job order');
+        }
     }
 
     async remove(id: string) {

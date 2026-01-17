@@ -43,6 +43,7 @@
     "clearAllConfirm": "Clear All Notifications?",
     "clearAll": "Clear All",
     "errorLoading": "Failed to load data",
+    "errorSave": "Failed to save data",
     "saveChanges": "Save Changes",
     "saved": "Saved successfully",
     "saveSuccess": "Saved successfully",
