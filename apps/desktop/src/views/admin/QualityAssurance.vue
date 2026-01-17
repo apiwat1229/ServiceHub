@@ -7,7 +7,7 @@ import { bookingsApi } from '@/services/bookings';
 import { rubberTypesApi, type RubberType } from '@/services/rubberTypes';
 import { CalendarDate, getLocalTimeZone, today } from '@internationalized/date';
 import { format } from 'date-fns';
-import { Calendar as CalendarIcon, List, Search, Waves } from 'lucide-vue-next';
+import { Calendar as CalendarIcon, List, PlusCircle, Search, Waves } from 'lucide-vue-next';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
@@ -19,6 +19,7 @@ import ClLabTab from './tabs/ClLabTab.vue';
 import ClPoPriTab from './tabs/ClPoPriTab.vue';
 import ClSummaryTab from './tabs/ClSummaryTab.vue';
 import JobOrderTab from './tabs/JobOrderTab.vue';
+import RawMaterialPlanTab from './tabs/RawMaterialPlanTab.vue';
 import UssPoPriTab from './tabs/UssPoPriTab.vue';
 
 const { t } = useI18n();
@@ -91,7 +92,8 @@ const handleStatsUpdate = (stats: { total: number; complete: number; incomplete:
 const currentTab = ref('cl-po-pri');
 const route = useRoute();
 
-const selectedCategory = ref<'CL' | 'USS' | 'JOB_ORDER'>('CL');
+const selectedCategory = ref<'CL' | 'USS' | 'JOB_ORDER' | 'RAW_MATERIAL_PLAN'>('CL');
+const activeRawPlanSubTab = ref('list');
 
 const currentTabLabel = computed(() => {
   const allTabs = [
@@ -102,6 +104,7 @@ const currentTabLabel = computed(() => {
     { id: 'uss-po-pri', label: 'qa.tabs.ussPoPri', category: 'USS' },
     { id: 'uss-summary', label: 'qa.tabs.ussSummary', category: 'USS' },
     { id: 'lab-orders', label: 'qa.tabs.labOrders', category: 'JOB_ORDER' },
+    { id: 'raw-material-plan', label: 'qa.rawMaterialPlan', category: 'RAW_MATERIAL_PLAN' },
   ];
 
   return t(allTabs.find((tab) => tab.id === currentTab.value)?.label || '');
@@ -119,8 +122,13 @@ watch(
 );
 
 // Watch category changes from header
-const handleCategoryUpdate = (newCat: 'CL' | 'USS' | 'JOB_ORDER') => {
+const handleCategoryUpdate = (newCat: 'CL' | 'USS' | 'JOB_ORDER' | 'RAW_MATERIAL_PLAN') => {
   selectedCategory.value = newCat;
+
+  // If selecting Raw Material Plan from header, ensure currentTab updates if needed
+  if (newCat === 'RAW_MATERIAL_PLAN' && currentTab.value !== 'raw-material-plan') {
+    currentTab.value = 'raw-material-plan';
+  }
 };
 
 const fetchData = async () => {
@@ -149,7 +157,27 @@ onMounted(() => {
 
 <template>
   <div class="h-full flex flex-col space-y-4 p-4 max-w-[1600px] mx-auto w-full">
-    <QaHeader :active-tab="currentTab" @update:category="handleCategoryUpdate" />
+    <QaHeader :active-tab="currentTab" @update:category="handleCategoryUpdate">
+      <!-- Slot for sub-tabs in header (Teleporting/Rendering here for Raw Material Plan) -->
+      <template #extra v-if="selectedCategory === 'RAW_MATERIAL_PLAN'">
+        <Tabs v-model="activeRawPlanSubTab" class="w-auto">
+          <TabsList class="bg-slate-100/50 p-1 h-9">
+            <TabsTrigger
+              value="list"
+              class="data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm px-4 gap-2 font-bold transition-all h-7 text-[11px]"
+            >
+              Plan List
+            </TabsTrigger>
+            <TabsTrigger
+              value="create"
+              class="data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm px-4 gap-2 font-bold transition-all h-7 text-[11px]"
+            >
+              Create Plan
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </template>
+    </QaHeader>
 
     <!-- Filters Bar (Show for all tabs except Job Orders) -->
     <div v-if="currentTab !== 'lab-orders'" class="flex items-center justify-between px-1 mb-2">
@@ -196,6 +224,16 @@ onMounted(() => {
             />
           </PopoverContent>
         </Popover>
+
+        <!-- New Plan Button (Consolidated here) -->
+        <Button
+          v-if="currentTab === 'raw-material-plan' && activeRawPlanSubTab === 'list'"
+          @click="activeRawPlanSubTab = 'create'"
+          class="h-9 gap-2 bg-blue-600 hover:bg-blue-700 shadow-md transition-all font-bold px-4"
+        >
+          <PlusCircle class="w-4 h-4" />
+          {{ t('common.newPlan', 'New Plan') }}
+        </Button>
       </div>
     </div>
 
@@ -260,6 +298,9 @@ onMounted(() => {
       </div>
       <div v-else-if="currentTab === 'lab-orders'">
         <JobOrderTab :search-query="searchQuery" :date="selectedDate" />
+      </div>
+      <div v-else-if="currentTab === 'raw-material-plan'">
+        <RawMaterialPlanTab v-model="activeRawPlanSubTab" />
       </div>
     </div>
   </div>

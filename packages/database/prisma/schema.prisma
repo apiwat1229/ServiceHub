@@ -799,6 +799,86 @@ model ITAsset {
   @@map("it_assets")
 }
 
+model RawMaterialPlan {
+  id              String   @id @default(uuid())
+  planNo          String   @unique @map("plan_no")
+  revisionNo      String   @map("revision_no")
+  refProductionNo String   @map("ref_production_no")
+  issuedDate      DateTime @map("issued_date")
+  
+  rows            RawMaterialPlanRow[]
+  poolDetails     RawMaterialPlanPoolDetail[]
+  
+  creator         String   @map("creator")
+  checker         String?  @map("checker")
+  status          String   @default("DRAFT")
+
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("raw_material_plans")
+}
+
+model RawMaterialPlanRow {
+  id              String   @id @default(uuid())
+  planId          String   @map("plan_id")
+  plan            RawMaterialPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  
+  date            DateTime
+  dayOfWeek       String   @map("day_of_week")
+  shift           String   // "1st", "2nd"
+  grade           String?
+  
+  ratioUSS        Float?   @map("ratio_uss")
+  ratioCL         Float?   @map("ratio_cl")
+  ratioBK         Float?   @map("ratio_bk")
+  
+  productTarget   Float?   @map("product_target")
+  clConsumption   Float?   @map("cl_consumption")
+  ratioBorC       Float?   @map("ratio_b_or_c")
+  
+  // Plan 1
+  plan1Pool       String?  @map("plan1_pool")
+  plan1Note       String?  @map("plan1_note")
+  
+  // Plan 2
+  plan2Pool       String?  @map("plan2_pool")
+  plan2Note       String?  @map("plan2_note")
+  
+  // Plan 3
+  plan3Pool       String?  @map("plan3_pool")
+  plan3Note       String?  @map("plan3_note")
+  
+  cuttingPercent  Float?   @map("cutting_percent")
+  cuttingPalette  Int?     @map("cutting_palette")
+  
+  remarks         String?
+  
+  // Special indicator like "24 hr" in yellow
+  specialIndicator String? @map("special_indicator")
+
+  @@map("raw_material_plan_rows")
+}
+
+model RawMaterialPlanPoolDetail {
+  id              String   @id @default(uuid())
+  planId          String   @map("plan_id")
+  plan            RawMaterialPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  
+  poolNo          String   @map("pool_no")
+  grossWeight     Float?   @map("gross_weight")
+  netWeight       Float?   @map("net_weight")
+  drc             Float?   @map("drc")
+  moisture        Float?   @map("moisture")
+  p0              Float?   @map("p0")
+  pri             Float?   @map("pri")
+  clearDate       DateTime? @map("clear_date")
+  grade           String?  @map("grade")
+  remark          String?
+  
+  @@map("raw_material_plan_pool_details")
+}
+
 model ITTicket {
   id          String   @id @default(uuid())
   ticketNo    String   @unique @map("ticket_no") // e.g. T-1024

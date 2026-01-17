@@ -6,6 +6,7 @@
     "view": "ดู",
     "download": "ดาวน์โหลด",
     "confirmDelete": "ยืนยันการลบ",
+    "deleteWarning": "การกระทำนี้ไม่สามารถย้อนกลับได้ ข้อมูลจะถูกลบออกจากระบบอย่างถาวร",
     "areYouSure": "คุณแน่ใจหรือไม่?",
     "add": "เพิ่ม",
     "edit": "แก้ไข",
@@ -97,6 +98,7 @@
     "cuplump": "ยางก้อนถ้วย",
     "uss": "USS",
     "jobOrder": "ใบงานสั่งผลิต (Job Order)",
+    "rawMaterialPlan": "แผนรับวัตถุดิบ (Raw Material Plan)",
     "tabs": {
       "clPoPri": "PO P30 PRI",
       "clLab": "LAB TEST",
@@ -104,7 +106,7 @@
       "cuplumpPool": "CUPLUMP POOL",
       "ussPoPri": "USS PO PRI",
       "ussSummary": "USS SUMMARY",
-      "labOrders": "LAB ORDERS"
+      "labOrders": "JOB ORDER"
     },
     "searchPlaceholder": "ค้นหารายการ...",
     "pickDate": "เลือกวันที่",
@@ -186,6 +188,8 @@
       "verifyDate": "วันที่ตรวจสอบ",
       "save": "สร้างใบสั่งงาน",
       "update": "อัปเดตใบสั่งงาน",
+      "createSuccess": "สร้างใบสั่งงานสำเร็จ",
+      "updateSuccess": "อัปเดตใบสั่งงานสำเร็จ",
       "markingYes": "ใช่",
       "markingNo": "ไม่ใช่",
       "bale": "ก้อน",

@@ -23,10 +23,6 @@ const props = defineProps<{
 
 const emit = defineEmits(['update:category', 'update:activeTab']);
 
-const selectedCategory = ref<'CL' | 'USS' | 'JOB_ORDER'>('CL');
-
-const currentTab = ref(props.activeTab);
-
 const allTabs = [
   { id: 'cl-po-pri', label: 'qa.tabs.clPoPri', icon: ClipboardList, category: 'CL' },
   { id: 'cl-lab', label: 'qa.tabs.clLab', icon: TestTubes, category: 'CL' },
@@ -36,6 +32,12 @@ const allTabs = [
   { id: 'uss-summary', label: 'qa.tabs.ussSummary', icon: List, category: 'USS' },
   { id: 'lab-orders', label: 'qa.tabs.labOrders', icon: FileBox, category: 'JOB_ORDER' },
 ];
+
+const selectedCategory = ref<'CL' | 'USS' | 'JOB_ORDER' | 'RAW_MATERIAL_PLAN'>(
+  (allTabs.find((t) => t.id === props.activeTab)?.category as any) || 'CL'
+);
+
+const currentTab = ref(props.activeTab);
 
 const tabs = computed(() => {
   return allTabs
@@ -52,6 +54,9 @@ watch(selectedCategory, (newVal) => {
   const firstTab = allTabs.find((tab) => tab.category === newVal);
   if (firstTab && currentTab.value !== firstTab.id) {
     currentTab.value = firstTab.id;
+  } else if (!firstTab && newVal === 'RAW_MATERIAL_PLAN') {
+    // If no specific tabs for Raw Material Plan yet, we might need a default or placeholder
+    currentTab.value = 'raw-material-plan';
   }
 
   // If we're not on the QA page, go there
@@ -76,6 +81,10 @@ watch(
   () => props.activeTab,
   (newTab) => {
     currentTab.value = newTab;
+    const cat = allTabs.find((t) => t.id === newTab)?.category;
+    if (cat && cat !== selectedCategory.value) {
+      selectedCategory.value = cat as any;
+    }
   }
 );
 </script>
@@ -101,24 +110,32 @@ watch(
             <SelectItem value="JOB_ORDER">
               {{ t('qa.jobOrder') }}
             </SelectItem>
+            <SelectItem value="RAW_MATERIAL_PLAN">
+              {{ t('qa.rawMaterialPlan') }}
+            </SelectItem>
           </SelectGroup>
         </SelectContent>
       </Select>
     </div>
 
-    <!-- Tabs ONLY -->
-    <div class="w-full md:w-auto">
-      <Tabs
-        v-model="currentTab"
-        class="w-auto"
-        @update:model-value="$emit('update:activeTab', $event)"
-      >
-        <TabsList>
-          <TabsTrigger v-for="tab in tabs" :key="tab.id" :value="tab.id" class="gap-2">
-            {{ tab.label }}
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
+    <div class="flex items-center gap-4 ml-auto">
+      <!-- Extra content (like sub-tabs) -->
+      <slot name="extra" />
+
+      <!-- Tabs ONLY -->
+      <div v-if="tabs.length > 0" class="w-full md:w-auto">
+        <Tabs
+          v-model="currentTab"
+          class="w-auto"
+          @update:model-value="$emit('update:activeTab', $event)"
+        >
+          <TabsList>
+            <TabsTrigger v-for="tab in tabs" :key="tab.id" :value="tab.id" class="gap-2">
+              {{ tab.label }}
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
     </div>
   </div>
 </template>

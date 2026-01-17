@@ -25,7 +25,8 @@ export interface JobOrder {
     note?: string;
     qaName: string;
     qaDate: string;
-    isClosed: boolean;
+    isClosed?: boolean;
+    noReason?: string;
     productionName?: string;
     productionDate?: string;
     logs: JobOrderLog[];

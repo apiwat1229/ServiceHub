@@ -6,6 +6,7 @@
     "view": "View",
     "download": "Download",
     "confirmDelete": "Confirm Delete",
+    "deleteWarning": "This action cannot be undone. This will permanently delete the record.",
     "areYouSure": "Are you absolutely sure?",
     "add": "Add",
     "edit": "Edit",
@@ -95,6 +96,7 @@
     "cuplump": "Cuplump",
     "uss": "USS",
     "jobOrder": "Job Order",
+    "rawMaterialPlan": "Raw Material Plan",
     "tabs": {
       "clPoPri": "PO P30 PRI",
       "clLab": "LAB TEST",
@@ -102,7 +104,7 @@
       "cuplumpPool": "CUPLUMP POOL",
       "ussPoPri": "USS PO PRI",
       "ussSummary": "USS SUMMARY",
-      "labOrders": "LAB ORDERS"
+      "labOrders": "JOB ORDER"
     },
     "searchPlaceholder": "Search items...",
     "pickDate": "Pick a date",
@@ -156,7 +158,7 @@
       "noOrders": "No job orders found",
       "createFirst": "Create your first order",
       "palletsCount": "Pallets",
-      "balesCount": "bales",
+      "balesCount": "Bales",
       "srTitle": "Job Order Form",
       "srDesc": "Create or edit production job order details",
       "cols": {
@@ -184,10 +186,12 @@
       "verifyDate": "Verification Date",
       "save": "Create Order",
       "update": "Update Order",
+      "createSuccess": "Job order created successfully",
+      "updateSuccess": "Job order updated successfully",
       "markingYes": "Yes",
       "markingNo": "No",
-      "bale": "bale",
-      "bales": "bales",
+      "bale": "Bale",
+      "bales": "Bales",
       "pallets": "Pallets",
       "placeholders": {
         "creator": "Name of creator",

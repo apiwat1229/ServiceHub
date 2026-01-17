@@ -15,21 +15,22 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { jobOrdersApi, type JobOrder } from '@/services/jobOrders';
+import { CalendarDate, getLocalTimeZone, today } from '@internationalized/date';
 import { format } from 'date-fns';
 import {
   Calendar as CalendarIcon,
   CheckCircle2,
   Clock,
-  Eye,
   FileText,
   Package,
   Plus,
   Search,
 } from 'lucide-vue-next';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
 import JobOrderForm from '../components/JobOrderForm.vue';
+import JobOrderPrint from '../components/JobOrderPrint.vue';
 
 const { t } = useI18n();
 
@@ -38,26 +39,81 @@ const props = defineProps<{
   date: string;
 }>();
 
+// Helper to parse string date back to CalendarDate-like object
+const parseDateString = (dateStr: string) => {
+  if (!dateStr) return null;
+  try {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return new CalendarDate(year, month, day);
+  } catch (e) {
+    return null;
+  }
+};
+
 const jobOrders = ref<JobOrder[]>([]);
 const isLoading = ref(false);
 const isFormOpen = ref(false);
 const selectedJobOrder = ref<JobOrder | null>(null);
-const searchQuery = ref('');
-const selectedDate = ref<any>(null);
+
+// Initialize from props
+const searchQuery = ref(props.searchQuery || '');
+const selectedDate = ref<any>(parseDateString(props.date) || today(getLocalTimeZone()));
+const isPrintDialogOpen = ref(false);
+
+// Watch props
+watch(
+  () => props.searchQuery,
+  (newVal) => {
+    searchQuery.value = newVal;
+  }
+);
+
+watch(
+  () => props.date,
+  (newVal) => {
+    if (newVal) {
+      selectedDate.value = parseDateString(newVal);
+    }
+  }
+);
 
 const dateDisplay = computed(() => {
   if (!selectedDate.value) return format(new Date(), 'dd-MMM-yyyy');
-  const date = new Date(
-    selectedDate.value.year,
-    selectedDate.value.month - 1,
-    selectedDate.value.day
-  );
-  return format(date, 'dd-MMM-yyyy');
+  const d = new Date(selectedDate.value.year, selectedDate.value.month - 1, selectedDate.value.day);
+  return format(d, 'dd-MMM-yyyy');
+});
+
+const selectedDateString = computed(() => {
+  if (!selectedDate.value) return today(getLocalTimeZone()).toString();
+  return `${selectedDate.value.year}-${String(selectedDate.value.month).padStart(2, '0')}-${String(selectedDate.value.day).padStart(2, '0')}`;
 });
 
 const handleDateChange = (date: any) => {
   selectedDate.value = date;
 };
+
+const filteredJobOrders = computed(() => {
+  let filtered = jobOrders.value;
+
+  // Filter by date
+  if (selectedDate.value) {
+    const targetDate = `${selectedDate.value.year}-${String(selectedDate.value.month).padStart(2, '0')}-${String(selectedDate.value.day).padStart(2, '0')}`;
+    filtered = filtered.filter((order) => order.qaDate === targetDate);
+  }
+
+  // Filter by search query
+  if (searchQuery.value) {
+    const q = searchQuery.value.toLowerCase();
+    filtered = filtered.filter(
+      (order) =>
+        order.jobOrderNo.toLowerCase().includes(q) ||
+        order.contractNo.toLowerCase().includes(q) ||
+        order.grade.toLowerCase().includes(q)
+    );
+  }
+
+  return filtered;
+});
 
 const fetchJobOrders = async () => {
   isLoading.value = true;
@@ -82,6 +138,15 @@ const handleEdit = (jobOrder: JobOrder) => {
   isFormOpen.value = true;
 };
 
+const handlePrint = (jobOrder: JobOrder) => {
+  selectedJobOrder.value = jobOrder;
+  isPrintDialogOpen.value = true;
+};
+
+const triggerPrint = () => {
+  window.print();
+};
+
 const handleSave = async (formData: JobOrder) => {
   try {
     if (selectedJobOrder.value?.id) {
@@ -96,6 +161,18 @@ const handleSave = async (formData: JobOrder) => {
   } catch (error) {
     console.error('Failed to save job order:', error);
     toast.error(t('common.errorSave') || 'Failed to save job order');
+  }
+};
+
+const handleDelete = async (id: string) => {
+  try {
+    await jobOrdersApi.delete(id);
+    toast.success(t('common.deleteSuccess') || 'Job order deleted successfully');
+    isFormOpen.value = false;
+    fetchJobOrders();
+  } catch (error) {
+    console.error('Failed to delete job order:', error);
+    toast.error(t('common.errorDelete') || 'Failed to delete job order');
   }
 };
 
@@ -178,7 +255,9 @@ onMounted(() => {
                   <span class="text-[10px] font-bold text-slate-500 uppercase">{{
                     t('qa.jobOrderMgmt.total')
                   }}</span>
-                  <span class="text-sm font-black text-blue-600">{{ jobOrders.length }}</span>
+                  <span class="text-sm font-black text-blue-600">{{
+                    filteredJobOrders.length
+                  }}</span>
                 </div>
               </div>
 
@@ -191,7 +270,7 @@ onMounted(() => {
                     t('qa.jobOrderMgmt.completed')
                   }}</span>
                   <span class="text-sm font-black text-emerald-600">{{
-                    jobOrders.filter((j) => j.isClosed).length
+                    filteredJobOrders.filter((j) => j.isClosed).length
                   }}</span>
                 </div>
               </div>
@@ -205,7 +284,7 @@ onMounted(() => {
                     t('qa.jobOrderMgmt.inProgress')
                   }}</span>
                   <span class="text-sm font-black text-amber-600">{{
-                    jobOrders.filter((j) => !j.isClosed).length
+                    filteredJobOrders.filter((j) => !j.isClosed).length
                   }}</span>
                 </div>
               </div>
@@ -217,12 +296,9 @@ onMounted(() => {
         <Table>
           <TableHeader class="bg-slate-50/50">
             <TableRow class="hover:bg-transparent border-b-2">
-              <TableHead class="font-black text-slate-700">{{
-                t('qa.jobOrderMgmt.cols.no')
-              }}</TableHead>
-              <TableHead class="font-black text-slate-700">{{
-                t('qa.jobOrderMgmt.cols.date')
-              }}</TableHead>
+              <TableHead class="font-black text-slate-700">
+                {{ t('qa.jobOrderMgmt.cols.no') }}
+              </TableHead>
               <TableHead class="font-black text-slate-700">{{
                 t('qa.jobOrderMgmt.cols.contract')
               }}</TableHead>
@@ -265,12 +341,12 @@ onMounted(() => {
             </TableRow>
 
             <TableRow
-              v-for="order in jobOrders"
+              v-for="order in filteredJobOrders"
               :key="order.id"
               class="group hover:bg-slate-50/50 transition-all cursor-pointer border-b"
               @click="handleEdit(order)"
             >
-              <TableCell class="font-black text-slate-900">
+              <TableCell class="font-black text-slate-900 py-3">
                 <div class="flex items-center gap-2">
                   <div
                     class="w-2 h-2 rounded-full"
@@ -281,14 +357,6 @@ onMounted(() => {
                     "
                   ></div>
                   {{ order.jobOrderNo }}
-                </div>
-              </TableCell>
-              <TableCell>
-                <div class="flex items-center gap-2 text-slate-600">
-                  <CalendarIcon class="w-3.5 h-3.5 opacity-50" />
-                  <span class="font-medium">{{
-                    format(new Date(order.qaDate), 'dd MMM yyyy')
-                  }}</span>
                 </div>
               </TableCell>
               <TableCell class="font-bold text-slate-700">{{ order.contractNo }}</TableCell>
@@ -303,7 +371,7 @@ onMounted(() => {
               <TableCell>
                 <div class="text-xs flex flex-col gap-0.5">
                   <span class="font-bold text-slate-700">{{ order.palletType }}</span>
-                  <span class="text-slate-400"
+                  <span class="text-slate-600"
                     >{{ order.orderQuantity }} {{ t('qa.jobOrderMgmt.palletsCount') }} •
                     {{ order.quantityBale }} {{ t('qa.jobOrderMgmt.balesCount') }}</span
                   >
@@ -326,9 +394,10 @@ onMounted(() => {
                 <Button
                   variant="ghost"
                   size="icon"
-                  class="h-9 w-9 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary/10 hover:text-primary"
+                  class="h-9 w-9 text-primary hover:bg-primary/10 transition-colors"
+                  @click.stop="handlePrint(order)"
                 >
-                  <Eye class="w-4 h-4" />
+                  <FileText class="w-4 h-4" />
                 </Button>
               </TableCell>
             </TableRow>
@@ -339,6 +408,7 @@ onMounted(() => {
 
     <!-- Form Dialog -->
     <Dialog v-model:open="isFormOpen">
+      <!-- ... existing dialog content ... -->
       <DialogContent
         hide-close
         class="max-w-4xl max-h-[90vh] overflow-y-auto p-0 border-none bg-transparent shadow-none"
@@ -347,10 +417,31 @@ onMounted(() => {
         <DialogDescription class="sr-only">{{ t('qa.jobOrderMgmt.srDesc') }}</DialogDescription>
         <div class="bg-white rounded-2xl overflow-hidden shadow-2xl">
           <JobOrderForm
-            :initial-data="selectedJobOrder || undefined"
+            :initial-data="selectedJobOrder || ({ qaDate: selectedDateString } as any)"
             @save="handleSave"
             @cancel="isFormOpen = false"
+            @delete="handleDelete"
           />
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    <!-- Print Preview Dialog -->
+    <Dialog v-model:open="isPrintDialogOpen">
+      <DialogContent class="max-w-[1000px] p-0 bg-slate-900/10 border-none shadow-none">
+        <DialogHeader
+          class="absolute -top-12 left-0 right-0 flex-row justify-between items-center text-white px-4"
+        >
+          <DialogTitle class="text-lg font-bold">Print Preview</DialogTitle>
+          <DialogDescription class="sr-only"
+            >Preview of the job order for printing</DialogDescription
+          >
+          <Button @click="triggerPrint" class="bg-emerald-500 hover:bg-emerald-600 font-bold px-6">
+            Print Job Order
+          </Button>
+        </DialogHeader>
+        <div class="flex justify-center p-8 bg-slate-100/50 rounded-xl">
+          <JobOrderPrint v-if="selectedJobOrder" :data="selectedJobOrder" />
         </div>
       </DialogContent>
     </Dialog>
