@@ -560,21 +560,36 @@ export class CreateNotificationGroupDto {
     @IsOptional()
     @IsString()
     icon?: string;
+}
+
+export class UpdateNotificationSettingDto {
+    @IsOptional()
+    @IsString()
+    sourceApp?: string;
 
     @IsOptional()
     @IsString()
-    color?: string;
-}
+    actionType?: string;
 
-export interface NotificationSettingDto {
-    id: string;
-    sourceApp: string;
-    actionType: string;
-    isActive: boolean;
+    @IsOptional()
+    @IsBoolean()
+    isActive?: boolean;
+
+    @IsOptional()
+    @IsArray()
     recipientRoles?: string[];
+
+    @IsOptional()
+    @IsArray()
     recipientGroups?: string[];
+
+    @IsOptional()
+    @IsArray()
     recipientUsers?: string[];
-    channels: string[];
+
+    @IsOptional()
+    @IsArray()
+    channels?: string[];
 }
 
 // ==================== Printer Usage DTOs ====================
@@ -766,4 +781,161 @@ export class UpdateITAssetDto {
     @IsOptional()
     @IsString()
     receiver?: string;
+}
+
+// ==================== Job Order DTOs ====================
+
+export class JobOrderLogDto {
+    @IsDateString()
+    date!: string;
+
+    @IsString()
+    @IsNotEmpty()
+    shift!: string;
+
+    @IsString()
+    @IsNotEmpty()
+    lotStart!: string;
+
+    @IsString()
+    @IsNotEmpty()
+    lotEnd!: string;
+
+    @IsNumber()
+    quantity!: number;
+
+    @IsOptional()
+    @IsString()
+    sign?: string;
+}
+
+export class CreateJobOrderDto {
+    @IsOptional()
+    @IsString()
+    bookNo?: string;
+
+    @IsOptional()
+    @IsNumber()
+    no?: number;
+
+    @IsString()
+    @IsNotEmpty()
+    jobOrderNo!: string;
+
+    @IsString()
+    @IsNotEmpty()
+    contractNo!: string;
+
+    @IsString()
+    @IsNotEmpty()
+    grade!: string;
+
+    @IsOptional()
+    @IsString()
+    otherGrade?: string;
+
+    @IsNumber()
+    @IsIn([35, 36])
+    quantityBale!: number;
+
+    @IsString()
+    @IsNotEmpty()
+    palletType!: string;
+
+    @IsNumber()
+    orderQuantity!: number;
+
+    @IsBoolean()
+    palletMarking!: boolean;
+
+    @IsOptional()
+    @IsString()
+    note?: string;
+
+    @IsString()
+    @IsNotEmpty()
+    qaName!: string;
+
+    @IsDateString()
+    qaDate!: string;
+
+    @IsOptional()
+    @IsBoolean()
+    isClosed?: boolean;
+
+    @IsOptional()
+    @IsArray()
+    @Type(() => JobOrderLogDto)
+    logs?: JobOrderLogDto[];
+}
+
+export class UpdateJobOrderDto {
+    @IsOptional()
+    @IsString()
+    bookNo?: string;
+
+    @IsOptional()
+    @IsNumber()
+    no?: number;
+
+    @IsOptional()
+    @IsString()
+    jobOrderNo?: string;
+
+    @IsOptional()
+    @IsString()
+    contractNo?: string;
+
+    @IsOptional()
+    @IsString()
+    grade?: string;
+
+    @IsOptional()
+    @IsString()
+    otherGrade?: string;
+
+    @IsOptional()
+    @IsNumber()
+    quantityBale?: number;
+
+    @IsOptional()
+    @IsString()
+    palletType?: string;
+
+    @IsOptional()
+    @IsNumber()
+    orderQuantity?: number;
+
+    @IsOptional()
+    @IsBoolean()
+    palletMarking?: boolean;
+
+    @IsOptional()
+    @IsString()
+    note?: string;
+
+    @IsOptional()
+    @IsString()
+    qaName?: string;
+
+    @IsOptional()
+    @IsDateString()
+    qaDate?: string;
+
+    @IsOptional()
+    @IsBoolean()
+    isClosed?: boolean;
+
+    @IsOptional()
+    @IsString()
+    productionName?: string;
+
+    @IsOptional()
+    @IsDateString()
+    productionDate?: string;
+
+    @IsOptional()
+    @IsArray()
+    @Type(() => JobOrderLogDto)
+    logs?: JobOrderLogDto[];
 }
