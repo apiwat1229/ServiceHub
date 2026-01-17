@@ -9,6 +9,7 @@
     "deleteWarning": "This action cannot be undone. This will permanently delete the record.",
     "areYouSure": "Are you absolutely sure?",
     "add": "Add",
+    "newPlan": "New Plan",
     "edit": "Edit",
     "create": "Create",
     "createDescription": "Create a new item in the system.",
@@ -103,9 +104,13 @@
       "clLab": "LAB TEST",
       "clSummary": "INCOMING",
       "cuplumpPool": "CUPLUMP POOL",
+      "planList": "PLAN LIST",
+      "createPlan": "CREATE PLAN",
       "ussPoPri": "USS PO PRI",
       "ussSummary": "USS SUMMARY",
-      "labOrders": "JOB ORDER"
+      "labOrders": "JOB ORDER",
+      "jobOrderList": "JOB ORDER LIST",
+      "jobOrderCreate": "CREATE ORDER"
     },
     "searchPlaceholder": "Search items...",
     "pickDate": "Pick a date",

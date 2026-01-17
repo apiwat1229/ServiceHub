@@ -10,7 +10,12 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Edit2, Eye, Printer, Trash2 } from 'lucide-vue-next';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
+
+const props = defineProps<{
+  searchQuery?: string;
+  date?: any;
+}>();
 
 // Mock data for listing
 const plans = ref([
@@ -34,6 +39,17 @@ const plans = ref([
   },
 ]);
 
+const filteredPlans = computed(() => {
+  if (!props.searchQuery) return plans.value;
+  const q = props.searchQuery.toLowerCase();
+  return plans.value.filter(
+    (p) =>
+      p.planNo.toLowerCase().includes(q) ||
+      p.refProductionNo.toLowerCase().includes(q) ||
+      p.status.toLowerCase().includes(q)
+  );
+});
+
 const getStatusVariant = (status: string) => {
   switch (status) {
     case 'APPROVED':
@@ -50,6 +66,10 @@ const getStatusVariant = (status: string) => {
 
 <template>
   <div class="space-y-4">
+    <!-- Independent Header -->
+    <!-- Header Removed (Global Header Used) -->
+
+    <!-- Table Container -->
     <div class="border rounded-lg bg-white shadow-sm overflow-hidden">
       <Table>
         <TableHeader class="bg-slate-50">
@@ -81,7 +101,7 @@ const getStatusVariant = (status: string) => {
         </TableHeader>
         <TableBody>
           <TableRow
-            v-for="plan in plans"
+            v-for="plan in filteredPlans"
             :key="plan.id"
             class="hover:bg-slate-50 transition-colors"
           >

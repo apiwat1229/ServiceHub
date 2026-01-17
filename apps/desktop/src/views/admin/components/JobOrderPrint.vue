@@ -18,14 +18,24 @@ const props = defineProps<{
 const grades = ['P0263', 'P0251', 'H0276', 'P0241'];
 const palletTypes = ['MB3', 'MB4', 'MB5', 'Blue Pallet', 'GPS', 'CIMC', 'Steel Pallet'];
 
+const parseIsoDateSafe = (isoString: string) => {
+  if (!isoString) return null;
+  const cleanDate = isoString.includes('T') ? isoString.split('T')[0] : isoString;
+  const [year, month, day] = cleanDate.split('-').map(Number);
+  if (isNaN(year) || isNaN(month) || isNaN(day)) return null;
+  return new Date(year, month - 1, day);
+};
+
 const formattedDate = computed(() => {
-  if (!props.data?.qaDate) return '';
-  return format(new Date(props.data.qaDate), 'dd / MMM / yy');
+  const date = parseIsoDateSafe(props.data?.qaDate);
+  if (!date) return '';
+  return format(date, 'dd / MMM / yy');
 });
 
 const productionDateFormatted = computed(() => {
-  if (!props.data?.productionDate) return '';
-  return format(new Date(props.data.productionDate), 'dd, MMM, yyyy');
+  const date = parseIsoDateSafe(props.data?.productionDate);
+  if (!date) return '';
+  return format(date, 'dd, MMM, yyyy');
 });
 
 // Helper to fill table rows (up to 3 blocks of 2 shifts = 6 rows as in image)

@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/dialog';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -722,74 +723,95 @@ const categories = computed(() => {
 <template>
   <div class="space-y-6">
     <!-- Header -->
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-      <div>
-        <h1 class="text-3xl font-bold tracking-tight">{{ t('services.itHelp.name') }}</h1>
-        <p class="text-muted-foreground mt-1">
-          {{ t('services.itHelp.subtitle') }}
-        </p>
-      </div>
-      <div class="flex gap-2">
-        <Button variant="outline" class="gap-2" @click="isAssetModalOpen = true">
-          <Package class="w-4 h-4" />
-          {{ t('services.itHelp.requestEquipment') }}
-        </Button>
-        <Button class="gap-2" @click="isTicketModalOpen = true">
-          <Plus class="w-4 h-4" />
-          {{ t('services.itHelp.newTicket') }}
-        </Button>
-      </div>
-    </div>
+    <Tabs defaultValue="kb" class="w-full space-y-6">
+      <!-- Header Refactored -->
+      <div class="flex items-center justify-between space-y-2">
+        <div class="flex items-center gap-3">
+          <!-- Search Popover -->
+          <Popover>
+            <PopoverTrigger as-child>
+              <Button
+                variant="outline"
+                size="icon"
+                class="h-9 w-9 text-muted-foreground hover:text-primary bg-white/50 hover:bg-white shadow-sm border-slate-200"
+              >
+                <Search class="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent class="w-80 p-2" align="start">
+              <div class="flex items-center gap-2">
+                <Search class="h-4 w-4 text-muted-foreground" />
+                <Input
+                  v-model="searchQuery"
+                  :placeholder="t('services.itHelp.searchPlaceholder')"
+                  class="h-8 border-none focus-visible:ring-0 shadow-none"
+                  auto-focus
+                />
+              </div>
+            </PopoverContent>
+          </Popover>
 
-    <!-- Main Content Tabs -->
-    <Tabs defaultValue="kb" class="w-full">
-      <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-4">
-        <TabsList class="bg-muted p-1 rounded-lg">
-          <TabsTrigger
-            value="kb"
-            class="gap-2 px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all"
-          >
-            <BookOpen class="w-4 h-4" /> {{ t('services.itHelp.tabs.kb') }}
-          </TabsTrigger>
-          <TabsTrigger
-            v-if="isITDepartment"
-            value="stock"
-            class="gap-2 px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all"
-          >
-            <Package class="w-4 h-4" /> {{ t('services.itHelp.tabs.stock') }}
-          </TabsTrigger>
-          <TabsTrigger
-            v-if="isITDepartment"
-            value="printer"
-            class="gap-2 px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all"
-          >
-            <LayoutDashboard class="w-4 h-4" /> {{ t('services.itHelp.tabs.printer') }}
-          </TabsTrigger>
-          <TabsTrigger
-            value="assets"
-            class="gap-2 px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all"
-          >
-            <Monitor class="w-4 h-4" /> {{ t('services.itHelp.tabs.assetRequest') }}
-          </TabsTrigger>
-          <TabsTrigger
-            value="tickets"
-            class="gap-2 px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all"
-          >
-            <Ticket class="w-4 h-4" /> {{ t('services.itHelp.tabs.myTickets') }}
-          </TabsTrigger>
-        </TabsList>
-
-        <div class="relative w-full sm:w-64">
-          <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="search"
-            :placeholder="t('services.itHelp.searchPlaceholder')"
-            class="pl-9"
-            v-model="searchQuery"
+          <!-- Date Picker Added Here -->
+          <DateRangePicker
+            v-model="dateRange"
+            class="h-9 w-[280px] justify-center text-foreground font-normal bg-white/50 hover:bg-white shadow-sm transition-all border-slate-200 text-xs"
           />
+        </div>
+
+        <div class="flex items-center space-x-2">
+          <TabsList class="bg-muted/50 p-1 h-10 rounded-lg gap-1">
+            <TabsTrigger
+              value="kb"
+              class="h-9 text-xs font-black uppercase tracking-wide data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm data-[state=active]:border-2 data-[state=active]:border-primary transition-all rounded-md px-3"
+            >
+              <BookOpen class="w-4 h-4 mr-2" /> {{ t('services.itHelp.tabs.kb') }}
+            </TabsTrigger>
+            <TabsTrigger
+              v-if="isITDepartment"
+              value="stock"
+              class="h-9 text-xs font-black uppercase tracking-wide data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm data-[state=active]:border-2 data-[state=active]:border-primary transition-all rounded-md px-3"
+            >
+              <Package class="w-4 h-4 mr-2" /> {{ t('services.itHelp.tabs.stock') }}
+            </TabsTrigger>
+            <TabsTrigger
+              v-if="isITDepartment"
+              value="printer"
+              class="h-9 text-xs font-black uppercase tracking-wide data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm data-[state=active]:border-2 data-[state=active]:border-primary transition-all rounded-md px-3"
+            >
+              <LayoutDashboard class="w-4 h-4 mr-2" /> {{ t('services.itHelp.tabs.printer') }}
+            </TabsTrigger>
+            <TabsTrigger
+              value="assets"
+              class="h-9 text-xs font-black uppercase tracking-wide data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm data-[state=active]:border-2 data-[state=active]:border-primary transition-all rounded-md px-3"
+            >
+              <Monitor class="w-4 h-4 mr-2" /> {{ t('services.itHelp.tabs.assetRequest') }}
+            </TabsTrigger>
+            <TabsTrigger
+              value="tickets"
+              class="h-9 text-xs font-black uppercase tracking-wide data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm data-[state=active]:border-2 data-[state=active]:border-primary transition-all rounded-md px-3"
+            >
+              <Ticket class="w-4 h-4 mr-2" /> {{ t('services.itHelp.tabs.myTickets') }}
+            </TabsTrigger>
+          </TabsList>
+
+          <!-- Action Buttons Moved Here -->
+          <Button
+            variant="outline"
+            size="sm"
+            class="h-9 bg-white/50 hover:bg-white border-slate-200"
+            @click="isAssetModalOpen = true"
+          >
+            <Package class="w-4 h-4 mr-2" />
+            {{ t('services.itHelp.requestEquipment') }}
+          </Button>
+          <Button size="sm" class="h-9" @click="isTicketModalOpen = true">
+            <Plus class="w-4 h-4 mr-2" />
+            {{ t('services.itHelp.newTicket') }}
+          </Button>
         </div>
       </div>
 
+      <!-- Main Content Tabs -->
       <!-- Knowledge Base Tab -->
       <TabsContent value="kb" class="space-y-4">
         <!-- Header -->
@@ -1008,9 +1030,6 @@ const categories = computed(() => {
               <h3 class="text-lg font-medium text-muted-foreground">
                 {{ t('services.itHelp.stats.overview') }}
               </h3>
-              <div class="flex items-center gap-2">
-                <DateRangePicker v-model="dateRange" />
-              </div>
             </div>
 
             <!-- Stats Section -->

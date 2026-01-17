@@ -19,7 +19,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { format } from 'date-fns';
-import { Printer, Save } from 'lucide-vue-next';
+import { Calendar as CalendarIcon, Printer, Save } from 'lucide-vue-next';
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
@@ -256,14 +256,14 @@ const handleSave = () => {
           <TableRow
             class="bg-slate-50 hover:bg-slate-50 text-[10px] font-black text-slate-500 align-middle"
           >
-            <TableHead class="border-r border-slate-200 w-16 text-center">Date</TableHead>
-            <TableHead class="border-r border-slate-200 w-8 text-center px-1">Day</TableHead>
-            <TableHead class="border-r border-slate-200 w-10 text-center">Shift</TableHead>
-            <TableHead class="border-r border-slate-200 w-16 text-center">Grade</TableHead>
+            <TableHead class="border-r border-slate-200 w-24 text-center">Date</TableHead>
+            <TableHead class="border-r border-slate-200 w-12 text-center px-1">Day</TableHead>
+            <TableHead class="border-r border-slate-200 w-14 text-center">Shift</TableHead>
+            <TableHead class="border-r border-slate-200 w-24 text-center">Grade</TableHead>
 
-            <TableHead class="border-r border-slate-200 w-10 text-center">USS</TableHead>
-            <TableHead class="border-r border-slate-200 w-10 text-center">CL</TableHead>
-            <TableHead class="border-r border-slate-200 w-10 text-center">BK</TableHead>
+            <TableHead class="border-r border-slate-200 w-14 text-center">USS</TableHead>
+            <TableHead class="border-r border-slate-200 w-14 text-center">CL</TableHead>
+            <TableHead class="border-r border-slate-200 w-14 text-center">BK</TableHead>
 
             <TableHead class="border-r border-slate-200 w-16 text-center">Output</TableHead>
             <TableHead class="border-r border-slate-200 w-16 text-center">CL Cons.</TableHead>

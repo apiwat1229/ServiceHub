@@ -24,6 +24,7 @@ import { computed, ref, watch } from 'vue';
 
 const props = defineProps<{
   modelValue?: DateRange;
+  class?: string;
 }>();
 
 const emit = defineEmits<{
@@ -111,7 +112,11 @@ const formatDate = (date: Date) => {
       <Button
         variant="outline"
         :class="
-          cn('w-[280px] justify-center text-left font-normal', !value && 'text-muted-foreground')
+          cn(
+            'w-[280px] justify-center text-left font-normal',
+            !value && 'text-muted-foreground',
+            props.class
+          )
         "
       >
         <CalendarIcon class="mr-2 h-4 w-4" />

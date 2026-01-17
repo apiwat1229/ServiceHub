@@ -2,16 +2,7 @@
 import { bookingsApi } from '@/services/bookings';
 import { fromDate, getLocalTimeZone, type DateValue } from '@internationalized/date';
 import { format } from 'date-fns';
-import { enUS, th } from 'date-fns/locale';
-import {
-  Calendar as CalendarIcon,
-  CheckCircle2,
-  Edit2,
-  FileText,
-  Plus,
-  RefreshCw,
-  Trash2,
-} from 'lucide-vue-next';
+import { Calendar as CalendarIcon, FileText, Plus, Search as SearchIcon } from 'lucide-vue-next';
 import { computed, onMounted, ref, watch, type Ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
@@ -31,11 +22,20 @@ import {
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Card } from '@/components/ui/card';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from '@/components/ui/carousel';
+import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import Spinner from '@/components/ui/spinner/Spinner.vue';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuthStore } from '@/stores/auth';
 import { useRoute, useRouter } from 'vue-router';
+import BookingQueueCard from './components/BookingQueueCard.vue';
 
 // --- Constants ---
 const TIME_SLOTS: any[] = [
@@ -82,13 +82,13 @@ const authStore = useAuthStore();
 const route = useRoute();
 const router = useRouter();
 
-const currentLocale = computed(() => (locale.value === 'th' ? th : enUS));
 const selectedDate = ref(fromDate(new Date(), getLocalTimeZone())) as Ref<DateValue>;
 const selectedSlot = ref<string>('08:00-09:00'); // Default slot
 const queues = ref<any[]>([]);
 const dailyQueues = ref<any[]>([]); // All bookings for the day
 const loading = ref(false);
 const calendarPopoverOpen = ref(false); // Add popover state
+const searchQuery = ref(''); // Add search query state
 
 const queueMode = ref<'Cuplump' | 'USS'>('Cuplump'); // Booking Mode
 
@@ -112,13 +112,35 @@ const filteredQueues = computed(() => {
   // queues.value is already set correctly by fetchQueues based on mode
   if (queueMode.value === 'USS') {
     // Ensure sorted by queueNo for USS
-    return [...queues.value].sort((a, b) => a.queueNo - b.queueNo);
+    const list = [...queues.value].sort((a, b) => a.queueNo - b.queueNo);
+
+    if (!searchQuery.value) return list;
+
+    const q = searchQuery.value.toLowerCase();
+    return list.filter(
+      (item) =>
+        item.queueNo?.toString().includes(q) ||
+        item.supplierName?.toLowerCase().includes(q) ||
+        item.supplierCode?.toLowerCase().includes(q) ||
+        item.truckRegister?.toLowerCase().includes(q)
+    );
   }
   // For Cuplump, ensure we filter out any stray USS if API returns mixed (safety check)
-  return queues.value.filter((q) => {
+  const list = queues.value.filter((q) => {
     const isUSS = q.rubberType && q.rubberType.toUpperCase().includes('USS');
     return !isUSS;
   });
+
+  if (!searchQuery.value) return list;
+
+  const q = searchQuery.value.toLowerCase();
+  return list.filter(
+    (item) =>
+      item.queueNo?.toString().includes(q) ||
+      item.supplierName?.toLowerCase().includes(q) ||
+      item.supplierCode?.toLowerCase().includes(q) ||
+      item.truckRegister?.toLowerCase().includes(q)
+  );
 });
 
 const dailyFiltered = computed(() => {
@@ -410,28 +432,69 @@ watch(selectedSlot, (newSlot) => {
   <div class="h-full flex-1 flex-col space-y-4 p-4 md:flex">
     <!-- Header -->
     <div class="flex items-center justify-between space-y-2">
-      <div class="flex items-center gap-4">
-        <div>
-          <h2 class="text-2xl font-bold tracking-tight">{{ t('bookingQueue.title') }}</h2>
-          <p class="text-muted-foreground text-xs">
-            {{ t('bookingQueue.manageQueue') }}
-            {{ format(selectedDateJS, 'dd-MMM-yyyy') }}
-          </p>
-        </div>
+      <div class="flex items-center gap-3">
+        <!-- Search Popover -->
+        <Popover>
+          <PopoverTrigger as-child>
+            <Button
+              variant="outline"
+              size="icon"
+              class="h-9 w-9 text-muted-foreground hover:text-primary bg-white/50 hover:bg-white shadow-sm border-slate-200"
+            >
+              <SearchIcon class="h-4 w-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent class="w-80 p-2" align="start">
+            <div class="flex items-center gap-2">
+              <SearchIcon class="h-4 w-4 text-muted-foreground" />
+              <Input
+                v-model="searchQuery"
+                placeholder="Search items..."
+                class="h-8 border-none focus-visible:ring-0 shadow-none"
+                auto-focus
+              />
+            </div>
+          </PopoverContent>
+        </Popover>
+
+        <!-- Date Popover -->
+        <Popover v-model:open="calendarPopoverOpen">
+          <PopoverTrigger as-child>
+            <Button
+              variant="outline"
+              size="sm"
+              class="h-9 w-[180px] justify-center text-foreground font-normal bg-white/50 hover:bg-white shadow-sm transition-all border-slate-200"
+            >
+              <span class="text-xs font-medium">{{
+                selectedDate ? format(selectedDateJS, 'dd MMM yyyy') : t('bookingQueue.pickDate')
+              }}</span>
+              <CalendarIcon class="ml-3 h-4 w-4 text-muted-foreground" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent class="w-auto p-0" align="start">
+            <Calendar v-model="selectedDate" class="rounded-md border shadow-sm" initial-focus />
+          </PopoverContent>
+        </Popover>
       </div>
 
       <div class="flex items-center space-x-2">
         <Tabs v-model="queueMode" class="w-[250px]">
-          <TabsList class="grid w-full grid-cols-2">
-            <TabsTrigger value="Cuplump"> Cuplump </TabsTrigger>
-            <TabsTrigger value="USS"> USS </TabsTrigger>
+          <TabsList class="grid w-full grid-cols-2 bg-muted/50 p-1 h-10 rounded-lg gap-1">
+            <TabsTrigger
+              value="Cuplump"
+              class="h-9 text-xs font-black uppercase tracking-wide data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm data-[state=active]:border-2 data-[state=active]:border-primary transition-all rounded-md"
+            >
+              Cuplump
+            </TabsTrigger>
+            <TabsTrigger
+              value="USS"
+              class="h-9 text-xs font-black uppercase tracking-wide data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm data-[state=active]:border-2 data-[state=active]:border-primary transition-all rounded-md"
+            >
+              USS
+            </TabsTrigger>
           </TabsList>
         </Tabs>
 
-        <Button variant="outline" size="sm" @click="fetchQueues">
-          <RefreshCw class="mr-2 h-4 w-4" />
-          {{ t('bookingQueue.refresh') }}
-        </Button>
         <Button
           size="sm"
           :disabled="isSlotFull"
@@ -449,40 +512,11 @@ watch(selectedSlot, (newSlot) => {
       <div class="flex flex-col lg:flex-row gap-6 items-center justify-between">
         <!-- Left: Inputs -->
         <div class="flex flex-col sm:flex-row gap-4 flex-1 w-full lg:w-auto">
-          <!-- Date Picker -->
-          <div class="flex flex-col gap-2 min-w-[200px]">
-            <span class="text-sm text-muted-foreground">{{ t('bookingQueue.selectDate') }}</span>
-            <Popover v-model:open="calendarPopoverOpen">
-              <PopoverTrigger as-child>
-                <Button
-                  variant="outline"
-                  class="w-full justify-start text-left font-normal"
-                  :class="!selectedDate && 'text-muted-foreground'"
-                >
-                  <CalendarIcon class="mr-2 h-4 w-4" />
-                  {{
-                    selectedDate
-                      ? format(selectedDateJS, 'dd-MMM-yyyy')
-                      : t('bookingQueue.pickDate')
-                  }}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent class="w-auto p-0" align="start">
-                <Calendar
-                  v-model="selectedDate"
-                  class="rounded-md border shadow-sm"
-                  initial-focus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-
           <!-- Time Slot Tabs -->
           <div class="flex-1 flex flex-col gap-2 w-full">
-            <span class="text-sm text-muted-foreground">{{ t('bookingQueue.timeSlot') }}</span>
             <Tabs v-model="selectedSlot" class="w-full">
               <TabsList
-                class="w-full h-auto flex-wrap"
+                class="w-full h-auto flex-wrap bg-muted/50 p-1 rounded-lg gap-1"
                 :style="{
                   gridTemplateColumns: `repeat(${Math.min(availableSlots.length, 5)}, minmax(0, 1fr))`,
                 }"
@@ -492,7 +526,7 @@ watch(selectedSlot, (newSlot) => {
                   :key="slot.value"
                   :value="slot.value"
                   @click="queueMode !== 'USS' ? (selectedSlot = slot.value) : null"
-                  class="flex-1 flex flex-col gap-0.5 py-2 min-w-[85px]"
+                  class="flex-1 flex flex-col gap-0.5 py-2 min-w-[85px] transition-all rounded-md"
                   :class="[
                     queueMode === 'USS'
                       ? 'opacity-40 pointer-events-none grayscale cursor-default'
@@ -502,7 +536,7 @@ watch(selectedSlot, (newSlot) => {
                     slotStats[slot.value].booked >= (slotStats[slot.value].limit || 0) &&
                     queueMode !== 'USS'
                       ? 'bg-red-500 text-white hover:bg-red-600 data-[state=active]:bg-red-700 data-[state=active]:text-white shadow-sm border-red-600'
-                      : 'border-transparent',
+                      : 'data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm data-[state=active]:border-2 data-[state=active]:border-primary',
                   ]"
                 >
                   <span class="text-xs font-bold leading-none">{{ slot.label }}</span>
@@ -584,155 +618,45 @@ watch(selectedSlot, (newSlot) => {
       <p class="text-muted-foreground mt-1">{{ t('bookingQueue.noBookings') }}</p>
     </div>
 
-    <div v-else class="flex flex-wrap justify-center gap-6">
-      <Card
-        v-for="queue in filteredQueues"
-        :key="queue.id"
-        class="group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border border-slate-300 bg-card/60 backdrop-blur-sm shadow-sm flex flex-col w-full max-w-[310px] min-h-[380px]"
-      >
-        <!-- Card Body -->
-        <div class="p-4 flex-1 flex flex-col">
-          <!-- Header: Label/Status (Left) & Number (Right) -->
-          <div class="flex justify-between items-center mb-4">
-            <!-- Left: Label & Status -->
-            <div class="flex items-center gap-3">
-              <span
-                class="text-[0.625rem] uppercase tracking-widest text-muted-foreground font-bold"
-                >{{ t('bookingQueue.queueNumber') }}</span
-              >
-              <div
-                v-if="queue.status === 'APPROVED'"
-                class="flex items-center text-green-600 bg-green-50 px-2 py-0.5 rounded-full border border-green-100 shadow-sm shrink-0"
-              >
-                <CheckCircle2 class="h-3 w-3 mr-1" />
-                <span class="text-[0.625rem] font-bold uppercase tracking-tight">{{
-                  t('booking.deliveryCompleted') || 'Completed'
-                }}</span>
-              </div>
-            </div>
-
-            <!-- Right: Number -->
-            <span class="text-3xl font-black text-primary leading-none">{{ queue.queueNo }}</span>
-          </div>
-
-          <!-- Main Info List -->
-          <div class="space-y-2.5 flex-1">
-            <!-- Row: Code -->
-            <div class="flex justify-between items-start text-[0.8125rem]">
-              <span class="text-muted-foreground font-medium">{{ t('ticketDialog.code') }}:</span>
-              <span class="font-bold text-blue-600 ml-2 text-right">{{ queue.supplierCode }}</span>
-            </div>
-
-            <!-- Row: Name -->
-            <div class="flex justify-between items-start text-[0.8125rem]">
-              <span class="text-muted-foreground font-medium">{{ t('ticketDialog.name') }}:</span>
-              <span class="font-bold text-foreground ml-2 text-right line-clamp-2">{{
-                queue.supplierName
-              }}</span>
-            </div>
-
-            <!-- Row: Date -->
-            <div class="flex justify-between items-start text-[0.8125rem]">
-              <span class="text-muted-foreground font-medium">{{ t('ticketDialog.date') }}:</span>
-              <span class="font-medium text-foreground ml-2 text-right">
-                ( {{ format(new Date(queue.date), 'EEEE', { locale: currentLocale }) }} )
-                {{ format(new Date(queue.date), 'd MMM yyyy', { locale: currentLocale }) }}
-              </span>
-            </div>
-
-            <!-- Row: Time -->
-            <div class="flex justify-between items-start text-[0.8125rem]">
-              <span class="text-muted-foreground font-medium">{{ t('ticketDialog.time') }}:</span>
-              <span class="font-medium text-foreground ml-2 text-right">{{
-                queue.startTime || queue.slot?.split('-')[0] || '-'
-              }}</span>
-            </div>
-
-            <!-- Row: Truck -->
-            <div class="flex justify-between items-start text-[0.8125rem]">
-              <span class="text-muted-foreground font-medium">{{ t('ticketDialog.truck') }}:</span>
-              <span class="font-bold text-foreground ml-2 text-right">
-                {{ [queue.truckType, queue.truckRegister].filter(Boolean).join(' ') }}
-              </span>
-            </div>
-
-            <!-- Row: Rubber Type -->
-            <div class="flex justify-between items-start text-[0.8125rem]">
-              <span class="text-muted-foreground font-medium">{{ t('ticketDialog.type') }}:</span>
-              <span class="font-bold text-foreground ml-2 text-right">
-                {{ RUBBER_TYPE_MAP[queue.rubberType] || queue.rubberTypeName || queue.rubberType }}
-              </span>
-            </div>
-
-            <!-- Divider -->
-            <div class="border-t border-dashed border-border/60 my-1"></div>
-
-            <!-- Row: Booking Code -->
-            <div class="flex justify-between items-start text-[0.75rem]">
-              <span class="text-muted-foreground">{{ t('ticketDialog.booking') }}:</span>
-              <span class="font-mono font-medium text-muted-foreground ml-2 text-right">{{
-                queue.bookingCode
-              }}</span>
-            </div>
-
-            <!-- Row: Recorder -->
-            <div class="flex justify-between items-start text-[0.75rem]">
-              <span class="text-muted-foreground">{{ t('ticketDialog.recorder') }}:</span>
-              <span class="font-medium text-muted-foreground/80 ml-2 text-right italic">{{
-                queue.recorder || '-'
-              }}</span>
-            </div>
-          </div>
-
-          <!-- Footer Actions -->
-          <div
-            class="pt-3 flex justify-between items-center mt-auto border-t border-dashed border-border/40"
-          >
-            <!-- Left: Edit/Delete -->
-            <div
-              v-if="queue.status !== 'APPROVED'"
-              class="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+    <div v-else>
+      <!-- Carousel View for Unlimited Slots -->
+      <div v-if="currentSlotConfig.limit === null" class="w-full px-12">
+        <Carousel class="w-full max-w-[90vw] mx-auto" :opts="{ align: 'start' }">
+          <CarouselContent class="-ml-4">
+            <CarouselItem
+              v-for="queue in filteredQueues"
+              :key="queue.id"
+              class="pl-4 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 2xl:basis-1/5 pt-1 pb-2"
             >
-              <Button
-                v-if="authStore.hasPermission('bookings:update')"
-                variant="secondary"
-                size="icon"
-                class="h-8 w-8 rounded-full shadow-sm hover:bg-primary hover:text-white transition-colors"
-                @click="handleEdit(queue)"
-              >
-                <Edit2 class="h-3.5 w-3.5" />
-              </Button>
-              <Button
-                v-if="authStore.hasPermission('bookings:delete')"
-                variant="secondary"
-                size="icon"
-                class="h-8 w-8 rounded-full shadow-sm text-destructive hover:bg-destructive hover:text-white transition-colors"
-                @click="handleDeleteClick(queue)"
-              >
-                <Trash2 class="h-3.5 w-3.5" />
-              </Button>
-            </div>
-            <div v-else></div>
+              <BookingQueueCard
+                :queue="queue"
+                :selectedDate="selectedDateJS"
+                :barColor="DAY_COLORS[selectedDateJS.getDay()].queueBg"
+                @edit="handleEdit"
+                @delete="handleDeleteClick"
+                @show-ticket="handleShowTicket"
+                class="h-full"
+              />
+            </CarouselItem>
+          </CarouselContent>
+          <CarouselPrevious />
+          <CarouselNext />
+        </Carousel>
+      </div>
 
-            <!-- Right: Ticket Button -->
-            <Button
-              variant="outline"
-              size="sm"
-              class="h-7 px-3 text-[0.6875rem] font-bold gap-1.5 bg-background shadow-sm hover:bg-primary hover:text-white transition-all rounded-lg"
-              @click="handleShowTicket(queue)"
-            >
-              <FileText class="h-3 w-3" />
-              {{ t('bookingQueue.ticket') }}
-            </Button>
-          </div>
-        </div>
-
-        <!-- Bottom Status Bar (Color by Day) -->
-        <div
-          class="h-1.5 w-full shrink-0"
-          :style="{ backgroundColor: DAY_COLORS[selectedDateJS.getDay()].queueBg }"
-        ></div>
-      </Card>
+      <!-- Grid View for Limited Slots -->
+      <div v-else class="flex flex-wrap justify-center gap-6">
+        <BookingQueueCard
+          v-for="queue in filteredQueues"
+          :key="queue.id"
+          :queue="queue"
+          :selectedDate="selectedDateJS"
+          :barColor="DAY_COLORS[selectedDateJS.getDay()].queueBg"
+          @edit="handleEdit"
+          @delete="handleDeleteClick"
+          @show-ticket="handleShowTicket"
+        />
+      </div>
     </div>
 
     <!-- Modals -->

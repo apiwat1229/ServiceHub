@@ -1,13 +1,9 @@
 <script setup lang="ts">
-import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import { Input } from '@/components/ui/input';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { bookingsApi } from '@/services/bookings';
+import { jobOrdersApi, type JobOrder } from '@/services/jobOrders';
 import { rubberTypesApi, type RubberType } from '@/services/rubberTypes';
 import { CalendarDate, getLocalTimeZone, today } from '@internationalized/date';
-import { format } from 'date-fns';
-import { Calendar as CalendarIcon, List, PlusCircle, Search, Waves } from 'lucide-vue-next';
+import { List } from 'lucide-vue-next';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
@@ -15,11 +11,14 @@ import { toast } from 'vue-sonner';
 
 import QaHeader from './components/QaHeader.vue';
 
+import JobOrderForm from './components/JobOrderForm.vue';
+import CuplumpPoolManagement from './CuplumpPoolManagement.vue';
 import ClLabTab from './tabs/ClLabTab.vue';
 import ClPoPriTab from './tabs/ClPoPriTab.vue';
 import ClSummaryTab from './tabs/ClSummaryTab.vue';
 import JobOrderTab from './tabs/JobOrderTab.vue';
-import RawMaterialPlanTab from './tabs/RawMaterialPlanTab.vue';
+import RawMaterialPlanForm from './tabs/RawMaterialPlanForm.vue';
+import RawMaterialPlanList from './tabs/RawMaterialPlanList.vue';
 import UssPoPriTab from './tabs/UssPoPriTab.vue';
 
 const { t } = useI18n();
@@ -40,8 +39,13 @@ const getInitialDate = () => {
   const storedTodayStr = localStorage.getItem('qa_last_accessed_today');
   const currentTodayStr = now.toString();
 
+  console.log('[QA Date Debug] Now:', currentTodayStr);
+  console.log('[QA Date Debug] Stored Today:', storedTodayStr);
+  console.log('[QA Date Debug] Stored Selection:', storedDateStr);
+
   // If we haven't stored today yet, or if today has changed since last visit
   if (!storedTodayStr || storedTodayStr !== currentTodayStr) {
+    console.log('[QA Date Debug] Resetting to Today because date changed or first visit');
     localStorage.setItem('qa_last_accessed_today', currentTodayStr);
     localStorage.removeItem('qa_selected_date'); // Clear old choice from previous day
     return now;
@@ -51,7 +55,15 @@ const getInitialDate = () => {
   if (storedDateStr) {
     try {
       const d = JSON.parse(storedDateStr);
-      return new CalendarDate(d.year, d.month, d.day);
+      console.log('[QA Date Debug] Restoring selection from storage:', d);
+      // Safety: check if the stored date is actually valid and for the current year
+      // This prevents very old choices from sticking around
+      if (d.year === now.year && d.month === now.month && d.day === now.day) {
+        return new CalendarDate(d.year, d.month, d.day);
+      } else {
+        localStorage.removeItem('qa_selected_date');
+        return now;
+      }
     } catch (e) {
       return now;
     }
@@ -93,41 +105,54 @@ const currentTab = ref('cl-po-pri');
 const route = useRoute();
 
 const selectedCategory = ref<'CL' | 'USS' | 'JOB_ORDER' | 'RAW_MATERIAL_PLAN'>('CL');
-const activeRawPlanSubTab = ref('list');
-
-const currentTabLabel = computed(() => {
-  const allTabs = [
-    { id: 'cl-po-pri', label: 'qa.tabs.clPoPri', category: 'CL' },
-    { id: 'cl-lab', label: 'qa.tabs.clLab', category: 'CL' },
-    { id: 'cl-summary', label: 'qa.tabs.clSummary', category: 'CL' },
-    { id: 'cuplump-pool', label: 'qa.tabs.cuplumpPool', category: 'CL' },
-    { id: 'uss-po-pri', label: 'qa.tabs.ussPoPri', category: 'USS' },
-    { id: 'uss-summary', label: 'qa.tabs.ussSummary', category: 'USS' },
-    { id: 'lab-orders', label: 'qa.tabs.labOrders', category: 'JOB_ORDER' },
-    { id: 'raw-material-plan', label: 'qa.rawMaterialPlan', category: 'RAW_MATERIAL_PLAN' },
-  ];
-
-  return t(allTabs.find((tab) => tab.id === currentTab.value)?.label || '');
-});
 
 // Sync tab with query query
 watch(
   () => route.query.tab,
   (newTab) => {
+    console.log('[QA Debug] Route tab changed to:', newTab);
     if (newTab && typeof newTab === 'string') {
       currentTab.value = newTab;
+      console.log('[QA Debug] Set currentTab to:', currentTab.value);
     }
   },
   { immediate: true }
 );
 
 // Watch category changes from header
+// Watch category changes from header
 const handleCategoryUpdate = (newCat: 'CL' | 'USS' | 'JOB_ORDER' | 'RAW_MATERIAL_PLAN') => {
   selectedCategory.value = newCat;
 
   // If selecting Raw Material Plan from header, ensure currentTab updates if needed
-  if (newCat === 'RAW_MATERIAL_PLAN' && currentTab.value !== 'raw-material-plan') {
-    currentTab.value = 'raw-material-plan';
+  if (newCat === 'RAW_MATERIAL_PLAN' && !currentTab.value.startsWith('raw-material-plan')) {
+    currentTab.value = 'raw-material-plan-list';
+  } else if (newCat === 'JOB_ORDER' && !currentTab.value.startsWith('job-order')) {
+    currentTab.value = 'job-order-list';
+  }
+};
+
+const selectedJobOrder = ref<JobOrder | undefined>(undefined);
+
+const handleJobOrderEdit = (order: JobOrder) => {
+  selectedJobOrder.value = order;
+  currentTab.value = 'job-order-create';
+};
+
+const handleJobOrderSave = async (formData: JobOrder) => {
+  try {
+    if (formData.id) {
+      await jobOrdersApi.update(formData.id, formData);
+      toast.success(t('qa.jobOrderForm.updateSuccess') || 'Job order updated successfully');
+    } else {
+      await jobOrdersApi.create(formData);
+      toast.success(t('qa.jobOrderForm.createSuccess') || 'Job order created successfully');
+    }
+    currentTab.value = 'job-order-list';
+    selectedJobOrder.value = undefined;
+  } catch (error: any) {
+    console.error('Failed to save job order:', error);
+    toast.error(error.response?.data?.message || t('common.errorSave'));
   }
 };
 
@@ -157,101 +182,33 @@ onMounted(() => {
 
 <template>
   <div class="h-full flex flex-col space-y-4 p-4 max-w-[1600px] mx-auto w-full">
-    <QaHeader :active-tab="currentTab" @update:category="handleCategoryUpdate">
-      <!-- Slot for sub-tabs in header (Teleporting/Rendering here for Raw Material Plan) -->
-      <template #extra v-if="selectedCategory === 'RAW_MATERIAL_PLAN'">
-        <Tabs v-model="activeRawPlanSubTab" class="w-auto">
-          <TabsList class="bg-slate-100/50 p-1 h-9">
-            <TabsTrigger
-              value="list"
-              class="data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm px-4 gap-2 font-bold transition-all h-7 text-[11px]"
-            >
-              Plan List
-            </TabsTrigger>
-            <TabsTrigger
-              value="create"
-              class="data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm px-4 gap-2 font-bold transition-all h-7 text-[11px]"
-            >
-              Create Plan
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </template>
-    </QaHeader>
-
-    <!-- Filters Bar (Show for all tabs except Job Orders) -->
-    <div v-if="currentTab !== 'lab-orders'" class="flex items-center justify-between px-1 mb-2">
-      <div class="flex items-center gap-2">
-        <div class="w-1.5 h-6 bg-primary rounded-full mr-1"></div>
-        <h3 class="text-sm font-black uppercase tracking-widest text-foreground">
-          {{ currentTabLabel }}
-        </h3>
-      </div>
-
-      <div class="flex items-center gap-3">
-        <!-- Search Input -->
-        <div class="relative w-64">
-          <Search
-            class="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"
-          />
-          <Input
-            v-model="searchQuery"
-            :placeholder="t('qa.searchPlaceholder')"
-            class="pl-9 h-9 bg-card border-input text-xs"
-          />
-        </div>
-
-        <Popover :open="isDatePopoverOpen" @update:open="isDatePopoverOpen = $event">
-          <PopoverTrigger as-child>
-            <Button
-              variant="outline"
-              class="w-[150px] pl-3 text-left font-normal bg-card h-9 shadow-sm hover:bg-muted/50 transition-all border-input"
-              :class="!selectedDateObject && 'text-muted-foreground'"
-            >
-              {{
-                selectedDateObject
-                  ? format(new Date(selectedDateObject.toString()), 'dd-MMM-yyyy')
-                  : t('qa.pickDate')
-              }}
-              <CalendarIcon class="ml-auto h-4 w-4 text-muted-foreground/50" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent class="w-auto p-0" align="end">
-            <Calendar
-              v-model="selectedDateObject"
-              mode="single"
-              @update:model-value="handleDateSelect"
-            />
-          </PopoverContent>
-        </Popover>
-
-        <!-- New Plan Button (Consolidated here) -->
-        <Button
-          v-if="currentTab === 'raw-material-plan' && activeRawPlanSubTab === 'list'"
-          @click="activeRawPlanSubTab = 'create'"
-          class="h-9 gap-2 bg-blue-600 hover:bg-blue-700 shadow-md transition-all font-bold px-4"
-        >
-          <PlusCircle class="w-4 h-4" />
-          {{ t('common.newPlan', 'New Plan') }}
-        </Button>
-      </div>
-    </div>
+    <QaHeader
+      :active-tab="currentTab"
+      :search-query="searchQuery"
+      :date="selectedDateObject"
+      @update:category="handleCategoryUpdate"
+      @update:search-query="searchQuery = $event"
+      @update:date="handleDateSelect"
+    />
 
     <!-- Tab Content -->
     <!-- Tab Content Area -->
     <div
       class="flex-1 overflow-y-auto pr-2 -mr-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
     >
-      <div v-if="currentTab === 'cl-po-pri'">
+      <!-- DEBUG: Current Tab = {{ currentTab }} -->
+      <div v-if="currentTab === 'cl-po-pri'" key="tab-cl-po-pri">
         <ClPoPriTab
+          key="component-cl-po-pri"
           :search-query="searchQuery"
           :date="selectedDate"
           :status-filter="statusFilter"
           @update:stats="handleStatsUpdate"
         />
       </div>
-      <div v-else-if="currentTab === 'cl-lab'">
+      <div v-else-if="currentTab === 'cl-lab'" key="tab-cl-lab">
         <ClLabTab
+          key="component-cl-lab"
           :search-query="searchQuery"
           :date="selectedDate"
           :status-filter="statusFilter"
@@ -267,15 +224,7 @@ onMounted(() => {
         />
       </div>
       <div v-else-if="currentTab === 'cuplump-pool'">
-        <div
-          class="flex items-center justify-center h-64 border rounded-lg bg-muted/20 border-dashed"
-        >
-          <div class="text-center">
-            <Waves class="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
-            <h3 class="text-lg font-medium text-foreground">{{ t('qa.tabs.cuplumpPool') }}</h3>
-            <p class="text-muted-foreground mt-1">{{ t('qa.comingSoon') }}</p>
-          </div>
-        </div>
+        <CuplumpPoolManagement />
       </div>
       <div v-else-if="currentTab === 'uss-po-pri'">
         <UssPoPriTab
@@ -296,11 +245,29 @@ onMounted(() => {
           </div>
         </div>
       </div>
-      <div v-else-if="currentTab === 'lab-orders'">
-        <JobOrderTab :search-query="searchQuery" :date="selectedDate" />
+      <div v-else-if="currentTab === 'job-order-list'" key="tab-job-order-list">
+        <JobOrderTab
+          key="component-job-order-list"
+          :search-query="searchQuery"
+          :date="selectedDate"
+          @edit="handleJobOrderEdit"
+        />
       </div>
-      <div v-else-if="currentTab === 'raw-material-plan'">
-        <RawMaterialPlanTab v-model="activeRawPlanSubTab" />
+      <div v-else-if="currentTab === 'job-order-create'" key="tab-job-order-create">
+        <JobOrderForm
+          :initial-data="selectedJobOrder"
+          @save="handleJobOrderSave"
+          @cancel="
+            currentTab = 'job-order-list';
+            selectedJobOrder = undefined;
+          "
+        />
+      </div>
+      <div v-if="currentTab === 'raw-material-plan-list'" key="tab-raw-material-plan-list">
+        <RawMaterialPlanList :search-query="searchQuery" :date="selectedDate" />
+      </div>
+      <div v-else-if="currentTab === 'raw-material-plan-create'" key="tab-raw-material-plan-create">
+        <RawMaterialPlanForm />
       </div>
     </div>
   </div>

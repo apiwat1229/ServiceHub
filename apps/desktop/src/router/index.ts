@@ -51,7 +51,7 @@ const routes = [
             },
             {
                 path: 'bookings',
-                name: 'BookingQueue',
+                name: 'Booking Queue',
                 component: () => import('../views/admin/BookingQueue.vue'),
             },
         ]

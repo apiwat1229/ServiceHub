@@ -1,11 +1,8 @@
 <script setup lang="ts">
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Table,
   TableBody,
@@ -16,20 +13,10 @@ import {
 } from '@/components/ui/table';
 import { jobOrdersApi, type JobOrder } from '@/services/jobOrders';
 import { CalendarDate, getLocalTimeZone, today } from '@internationalized/date';
-import { format } from 'date-fns';
-import {
-  Calendar as CalendarIcon,
-  CheckCircle2,
-  Clock,
-  FileText,
-  Package,
-  Plus,
-  Search,
-} from 'lucide-vue-next';
+import { CheckCircle2, Clock, FileText, Package } from 'lucide-vue-next';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
-import JobOrderForm from '../components/JobOrderForm.vue';
 import JobOrderPrint from '../components/JobOrderPrint.vue';
 
 const { t } = useI18n();
@@ -39,11 +26,15 @@ const props = defineProps<{
   date: string;
 }>();
 
+const emit = defineEmits(['edit']);
+
 // Helper to parse string date back to CalendarDate-like object
 const parseDateString = (dateStr: string) => {
   if (!dateStr) return null;
   try {
-    const [year, month, day] = dateStr.split('-').map(Number);
+    const cleanDate = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+    const [year, month, day] = cleanDate.split('-').map(Number);
+    if (isNaN(year) || isNaN(month) || isNaN(day)) return null;
     return new CalendarDate(year, month, day);
   } catch (e) {
     return null;
@@ -52,7 +43,6 @@ const parseDateString = (dateStr: string) => {
 
 const jobOrders = ref<JobOrder[]>([]);
 const isLoading = ref(false);
-const isFormOpen = ref(false);
 const selectedJobOrder = ref<JobOrder | null>(null);
 
 // Initialize from props
@@ -77,28 +67,16 @@ watch(
   }
 );
 
-const dateDisplay = computed(() => {
-  if (!selectedDate.value) return format(new Date(), 'dd-MMM-yyyy');
-  const d = new Date(selectedDate.value.year, selectedDate.value.month - 1, selectedDate.value.day);
-  return format(d, 'dd-MMM-yyyy');
-});
-
-const selectedDateString = computed(() => {
-  if (!selectedDate.value) return today(getLocalTimeZone()).toString();
-  return `${selectedDate.value.year}-${String(selectedDate.value.month).padStart(2, '0')}-${String(selectedDate.value.day).padStart(2, '0')}`;
-});
-
-const handleDateChange = (date: any) => {
-  selectedDate.value = date;
-};
-
 const filteredJobOrders = computed(() => {
   let filtered = jobOrders.value;
 
   // Filter by date
   if (selectedDate.value) {
     const targetDate = `${selectedDate.value.year}-${String(selectedDate.value.month).padStart(2, '0')}-${String(selectedDate.value.day).padStart(2, '0')}`;
-    filtered = filtered.filter((order) => order.qaDate === targetDate);
+    filtered = filtered.filter((order) => {
+      const orderDate = order.qaDate ? order.qaDate.split('T')[0] : '';
+      return orderDate === targetDate;
+    });
   }
 
   // Filter by search query
@@ -128,14 +106,8 @@ const fetchJobOrders = async () => {
   }
 };
 
-const handleCreate = () => {
-  selectedJobOrder.value = null;
-  isFormOpen.value = true;
-};
-
 const handleEdit = (jobOrder: JobOrder) => {
-  selectedJobOrder.value = jobOrder;
-  isFormOpen.value = true;
+  emit('edit', jobOrder);
 };
 
 const handlePrint = (jobOrder: JobOrder) => {
@@ -147,34 +119,7 @@ const triggerPrint = () => {
   window.print();
 };
 
-const handleSave = async (formData: JobOrder) => {
-  try {
-    if (selectedJobOrder.value?.id) {
-      await jobOrdersApi.update(selectedJobOrder.value.id, formData);
-      toast.success(t('qa.jobOrderForm.updateSuccess') || 'Job order updated successfully');
-    } else {
-      await jobOrdersApi.create(formData);
-      toast.success(t('qa.jobOrderForm.createSuccess') || 'Job order created successfully');
-    }
-    isFormOpen.value = false;
-    fetchJobOrders();
-  } catch (error) {
-    console.error('Failed to save job order:', error);
-    toast.error(t('common.errorSave') || 'Failed to save job order');
-  }
-};
-
-const handleDelete = async (id: string) => {
-  try {
-    await jobOrdersApi.delete(id);
-    toast.success(t('common.deleteSuccess') || 'Job order deleted successfully');
-    isFormOpen.value = false;
-    fetchJobOrders();
-  } catch (error) {
-    console.error('Failed to delete job order:', error);
-    toast.error(t('common.errorDelete') || 'Failed to delete job order');
-  }
-};
+// Save and Delete logic moved to parent (QualityAssurance)
 
 onMounted(() => {
   fetchJobOrders();
@@ -183,54 +128,8 @@ onMounted(() => {
 
 <template>
   <div class="space-y-6">
-    <!-- Header with Search, Date, and Button in One Row -->
-    <div class="flex items-center justify-between gap-4">
-      <!-- Left: Title -->
-      <div>
-        <h2 class="text-xl font-black text-slate-800 flex items-center gap-2">
-          <div class="w-1 h-6 bg-gradient-to-b from-primary to-primary/60 rounded-full"></div>
-          {{ t('qa.jobOrderMgmt.title') }}
-        </h2>
-        <p class="text-xs text-slate-500 mt-0.5 ml-4">
-          {{ t('qa.jobOrderMgmt.subtitle') }}
-        </p>
-      </div>
-
-      <!-- Right: Search, Date Picker, and New Button -->
-      <div class="flex items-center gap-3">
-        <div class="relative w-64">
-          <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input
-            v-model="searchQuery"
-            :placeholder="t('qa.searchPlaceholder')"
-            class="pl-9 h-10 bg-white border-slate-200"
-          />
-        </div>
-
-        <Popover>
-          <PopoverTrigger as-child>
-            <Button
-              variant="outline"
-              class="h-10 px-4 justify-start text-left font-normal bg-white min-w-[160px]"
-            >
-              <CalendarIcon class="mr-2 h-4 w-4 text-slate-500" />
-              <span class="text-slate-700">{{ dateDisplay }}</span>
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent class="w-auto p-0" align="start">
-            <Calendar v-model="selectedDate" @update:model-value="handleDateChange" />
-          </PopoverContent>
-        </Popover>
-
-        <Button
-          @click="handleCreate"
-          class="h-10 px-6 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg gap-2 font-black"
-        >
-          <Plus class="w-5 h-5" />
-          {{ t('qa.jobOrderMgmt.newOrder') }}
-        </Button>
-      </div>
-    </div>
+    <!-- Header with Search, Date (Removed Button) -->
+    <!-- Button removed as user requested moving Create to Tab -->
 
     <!-- Job Orders Table -->
     <Card class="border shadow-sm overflow-hidden">
@@ -332,10 +231,6 @@ onMounted(() => {
                   <p class="font-bold text-slate-400 text-lg mb-2">
                     {{ t('qa.jobOrderMgmt.noOrders') }}
                   </p>
-                  <Button variant="link" @click="handleCreate" class="text-primary font-bold">
-                    <Plus class="w-4 h-4 mr-2" />
-                    {{ t('qa.jobOrderMgmt.createFirst') }}
-                  </Button>
                 </div>
               </TableCell>
             </TableRow>
@@ -406,25 +301,7 @@ onMounted(() => {
       </div>
     </Card>
 
-    <!-- Form Dialog -->
-    <Dialog v-model:open="isFormOpen">
-      <!-- ... existing dialog content ... -->
-      <DialogContent
-        hide-close
-        class="max-w-4xl max-h-[90vh] overflow-y-auto p-0 border-none bg-transparent shadow-none"
-      >
-        <DialogTitle class="sr-only">{{ t('qa.jobOrderMgmt.srTitle') }}</DialogTitle>
-        <DialogDescription class="sr-only">{{ t('qa.jobOrderMgmt.srDesc') }}</DialogDescription>
-        <div class="bg-white rounded-2xl overflow-hidden shadow-2xl">
-          <JobOrderForm
-            :initial-data="selectedJobOrder || ({ qaDate: selectedDateString } as any)"
-            @save="handleSave"
-            @cancel="isFormOpen = false"
-            @delete="handleDelete"
-          />
-        </div>
-      </DialogContent>
-    </Dialog>
+    <!-- Form Dialog Removed -->
 
     <!-- Print Preview Dialog -->
     <Dialog v-model:open="isPrintDialogOpen">

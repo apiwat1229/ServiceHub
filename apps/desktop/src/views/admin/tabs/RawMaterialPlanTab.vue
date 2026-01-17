@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { Tabs, TabsContent } from '@/components/ui/tabs';
 import RawMaterialPlanForm from './RawMaterialPlanForm.vue';
 import RawMaterialPlanList from './RawMaterialPlanList.vue';
 
@@ -12,19 +11,15 @@ const emit = defineEmits(['update:modelValue']);
 
 <template>
   <div class="space-y-4">
-    <Tabs
-      :model-value="modelValue"
-      @update:model-value="emit('update:modelValue', $event)"
-      class="w-full"
-    >
-      <TabsContent value="list" class="mt-0 outline-none">
-        <RawMaterialPlanList @create="emit('update:modelValue', 'create')" />
-      </TabsContent>
+    <!-- View: Plan List -->
+    <div v-if="modelValue === 'list'">
+      <RawMaterialPlanList @create="emit('update:modelValue', 'create')" />
+    </div>
 
-      <TabsContent value="create" class="mt-0 outline-none">
-        <RawMaterialPlanForm />
-      </TabsContent>
-    </Tabs>
+    <!-- View: Create/Edit Plan -->
+    <div v-else-if="modelValue === 'create'">
+      <RawMaterialPlanForm />
+    </div>
   </div>
 </template>
 
