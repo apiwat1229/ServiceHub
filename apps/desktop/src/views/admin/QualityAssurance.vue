@@ -91,9 +91,7 @@ const handleStatsUpdate = (stats: { total: number; complete: number; incomplete:
 const currentTab = ref('cl-po-pri');
 const route = useRoute();
 
-const selectedCategory = ref<'CL' | 'USS' | 'JOB_ORDER'>(
-  (localStorage.getItem('qaCategory') as 'CL' | 'USS' | 'JOB_ORDER') || 'CL'
-);
+const selectedCategory = ref<'CL' | 'USS' | 'JOB_ORDER'>('CL');
 
 const currentTabLabel = computed(() => {
   const allTabs = [

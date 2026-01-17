@@ -2,10 +2,10 @@
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   Select,
   SelectContent,
@@ -14,10 +14,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type { JobOrder } from '@/services/jobOrders';
+import { useAuthStore } from '@/stores/auth';
 import { CalendarDate, getLocalTimeZone, today } from '@internationalized/date';
 import { format } from 'date-fns';
 import { CalendarIcon } from 'lucide-vue-next';
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
@@ -44,7 +45,7 @@ const form = ref<JobOrder>({
   logs: [],
 });
 
-const grades = ['P0263', 'P0251', 'H0276', 'Other'];
+const grades = ['P0263', 'P0251', 'H0276', 'P0241', 'Other'];
 const palletTypes = ['MB3', 'MB4', 'MB5', 'Blue Pallet', 'GPS', 'CIMC', 'Steel Pallet'];
 
 const handleSave = () => {
@@ -59,6 +60,14 @@ const qaDateObject = ref<any>(
   )
 );
 
+const authStore = useAuthStore();
+
+onMounted(() => {
+  if (!form.value.qaName && authStore.user) {
+    form.value.qaName = authStore.user.displayName || authStore.user.username;
+  }
+});
+
 const handleQaDateSelect = (date: any) => {
   if (date) {
     form.value.qaDate = date.toString();
@@ -72,25 +81,35 @@ const handleQaDateSelect = (date: any) => {
       <CardHeader class="pb-2 border-b bg-slate-50/50">
         <CardTitle class="text-xl font-black text-slate-800 flex items-center gap-2">
           <div class="w-1 h-6 bg-primary rounded-full"></div>
-          CREATING JOB ORDER (สร้างใบสั่งงาน)
+          {{
+            props.initialData?.id
+              ? t('qa.jobOrderForm.titleEdit')
+              : t('qa.jobOrderForm.titleCreate')
+          }}
         </CardTitle>
       </CardHeader>
       <CardContent class="pt-6 space-y-6">
         <!-- Row 1: Numbers & Basics -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
           <div class="space-y-1.5">
-            <Label class="text-xs font-bold uppercase text-slate-500">Job Order No.</Label>
+            <Label class="text-xs font-bold uppercase text-slate-500">{{
+              t('qa.jobOrderForm.jobOrderNo')
+            }}</Label>
             <Input v-model="form.jobOrderNo" placeholder="E2601-23" class="font-black" />
           </div>
           <div class="space-y-1.5">
-            <Label class="text-xs font-bold uppercase text-slate-500">Contract No.</Label>
+            <Label class="text-xs font-bold uppercase text-slate-500">{{
+              t('qa.jobOrderForm.contractNo')
+            }}</Label>
             <Input v-model="form.contractNo" placeholder="YS14360-4" class="font-black" />
           </div>
           <div class="space-y-1.5">
-            <Label class="text-xs font-bold uppercase text-slate-500">Pallet Type</Label>
+            <Label class="text-xs font-bold uppercase text-slate-500">{{
+              t('qa.jobOrderForm.palletType')
+            }}</Label>
             <Select v-model="form.palletType">
               <SelectTrigger class="font-bold">
-                <SelectValue placeholder="Select Pallet" />
+                <SelectValue :placeholder="t('qa.jobOrderForm.placeholders.selectPallet')" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem v-for="p in palletTypes" :key="p" :value="p">
@@ -102,43 +121,59 @@ const handleQaDateSelect = (date: any) => {
         </div>
 
         <!-- Row 2: Options Selection -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 p-4 bg-slate-50 rounded-xl border">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
           <!-- Grade -->
           <div class="space-y-3">
-            <Label class="text-xs font-bold uppercase text-slate-500">Grade (เกรด)</Label>
-            <RadioGroup v-model="form.grade" class="flex flex-wrap gap-x-6 gap-y-3">
+            <Label class="text-xs font-bold uppercase text-slate-500">{{
+              t('qa.jobOrderForm.grade')
+            }}</Label>
+            <div class="flex flex-wrap gap-x-6 gap-y-3">
               <div v-for="g in grades" :key="g" class="flex items-center space-x-2">
-                <RadioGroupItem :value="g" :id="'grade-' + g" />
+                <Checkbox
+                  :checked="form.grade === g"
+                  @update:checked="(checked) => checked && (form.grade = g)"
+                  :id="'grade-' + g"
+                />
                 <Label :for="'grade-' + g" class="text-sm font-medium cursor-pointer">{{
                   g
                 }}</Label>
               </div>
-            </RadioGroup>
+            </div>
             <Input
               v-if="form.grade === 'Other'"
               v-model="form.otherGrade"
-              placeholder="Specify..."
+              :placeholder="t('qa.jobOrderForm.placeholders.specify')"
               class="h-8 mt-2"
             />
           </div>
 
           <!-- Qty/Pallet -->
-          <div class="space-y-3 border-l md:pl-8">
-            <Label class="text-xs font-bold uppercase text-slate-500">Quantity / Pallet</Label>
-            <RadioGroup
-              :model-value="form.quantityBale.toString()"
-              @update:model-value="form.quantityBale = Number($event) as 35 | 36"
-              class="flex gap-8"
-            >
+          <div class="space-y-3">
+            <Label class="text-xs font-bold uppercase text-slate-500">{{
+              t('qa.jobOrderForm.qtyPallet')
+            }}</Label>
+            <div class="flex gap-8">
               <div class="flex items-center space-x-2">
-                <RadioGroupItem value="35" id="bale-35" />
-                <Label for="bale-35" class="text-sm font-medium cursor-pointer">35 bale</Label>
+                <Checkbox
+                  :checked="form.quantityBale === 35"
+                  @update:checked="(checked) => checked && (form.quantityBale = 35)"
+                  id="bale-35"
+                />
+                <Label for="bale-35" class="text-sm font-medium cursor-pointer"
+                  >35 {{ t('qa.jobOrderForm.bale') }}</Label
+                >
               </div>
               <div class="flex items-center space-x-2">
-                <RadioGroupItem value="36" id="bale-36" />
-                <Label for="bale-36" class="text-sm font-medium cursor-pointer">36 bales</Label>
+                <Checkbox
+                  :checked="form.quantityBale === 36"
+                  @update:checked="(checked) => checked && (form.quantityBale = 36)"
+                  id="bale-36"
+                />
+                <Label for="bale-36" class="text-sm font-medium cursor-pointer"
+                  >36 {{ t('qa.jobOrderForm.bales') }}</Label
+                >
               </div>
-            </RadioGroup>
+            </div>
           </div>
         </div>
 
@@ -146,7 +181,9 @@ const handleQaDateSelect = (date: any) => {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div class="flex items-end gap-3">
             <div class="space-y-1.5 flex-1">
-              <Label class="text-xs font-bold uppercase text-slate-500">Order Quantity</Label>
+              <Label class="text-xs font-bold uppercase text-slate-500">{{
+                t('qa.jobOrderForm.orderQty')
+              }}</Label>
               <div class="flex items-center gap-2">
                 <Input
                   :model-value="form.orderQuantity.toString()"
@@ -154,47 +191,63 @@ const handleQaDateSelect = (date: any) => {
                   type="number"
                   class="font-black"
                 />
-                <span class="text-sm font-bold text-slate-400 w-16">Pallets</span>
+                <span class="text-sm font-bold text-slate-400 w-16">{{
+                  t('qa.jobOrderForm.pallets')
+                }}</span>
               </div>
             </div>
           </div>
           <div class="space-y-1.5">
-            <Label class="text-xs font-bold uppercase text-slate-500">Pallet Marking Attach</Label>
-            <RadioGroup
-              :model-value="form.palletMarking ? 'yes' : 'no'"
-              @update:model-value="form.palletMarking = $event === 'yes'"
-              class="flex h-10 items-center gap-8"
-            >
+            <Label class="text-xs font-bold uppercase text-slate-500">{{
+              t('qa.jobOrderForm.palletMarking')
+            }}</Label>
+            <div class="flex h-10 items-center gap-8">
               <div class="flex items-center space-x-2">
-                <RadioGroupItem value="yes" id="marking-yes" />
-                <Label for="marking-yes" class="text-sm font-bold cursor-pointer text-emerald-600"
-                  >Yes (ติด)</Label
+                <Checkbox
+                  :checked="form.palletMarking === true"
+                  @update:checked="(checked) => checked && (form.palletMarking = true)"
+                  id="marking-yes"
+                />
+                <Label
+                  for="marking-yes"
+                  class="text-sm font-bold cursor-pointer text-emerald-600"
+                  >{{ t('qa.jobOrderForm.markingYes') }}</Label
                 >
               </div>
               <div class="flex items-center space-x-2">
-                <RadioGroupItem value="no" id="marking-no" />
-                <Label for="marking-no" class="text-sm font-bold cursor-pointer text-rose-600"
-                  >No (ไม่ติด)</Label
-                >
+                <Checkbox
+                  :checked="form.palletMarking === false"
+                  @update:checked="(checked) => checked && (form.palletMarking = false)"
+                  id="marking-no"
+                />
+                <Label for="marking-no" class="text-sm font-bold cursor-pointer text-rose-600">{{
+                  t('qa.jobOrderForm.markingNo')
+                }}</Label>
               </div>
-            </RadioGroup>
+            </div>
           </div>
         </div>
 
         <!-- Row 4: Note -->
         <div class="space-y-1.5">
-          <Label class="text-xs font-bold uppercase text-slate-500">Note (หมายเหตุ)</Label>
+          <Label class="text-xs font-bold uppercase text-slate-500">{{
+            t('qa.jobOrderForm.note')
+          }}</Label>
           <Input v-model="form.note" class="bg-slate-50/50" />
         </div>
 
         <!-- Footer: QA & Verification -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t">
           <div class="space-y-1.5">
-            <Label class="text-xs font-bold uppercase text-slate-500">QA Name</Label>
-            <Input v-model="form.qaName" placeholder="Name of checker" />
+            <Label class="text-xs font-bold uppercase text-slate-500">{{
+              t('qa.jobOrderForm.creator')
+            }}</Label>
+            <Input v-model="form.qaName" :placeholder="t('qa.jobOrderForm.placeholders.creator')" />
           </div>
           <div class="space-y-1.5">
-            <Label class="text-xs font-bold uppercase text-slate-500">Verification Date</Label>
+            <Label class="text-xs font-bold uppercase text-slate-500">{{
+              t('qa.jobOrderForm.verifyDate')
+            }}</Label>
             <Popover>
               <PopoverTrigger as-child>
                 <Button
@@ -202,7 +255,11 @@ const handleQaDateSelect = (date: any) => {
                   class="w-full justify-start text-left font-normal bg-white"
                 >
                   <CalendarIcon class="mr-2 h-4 w-4 opacity-50" />
-                  {{ form.qaDate ? format(new Date(form.qaDate), 'dd-MMM-yyyy') : 'Select date' }}
+                  {{
+                    form.qaDate
+                      ? format(new Date(form.qaDate), 'dd-MMM-yyyy')
+                      : t('qa.jobOrderForm.placeholders.selectDate')
+                  }}
                 </Button>
               </PopoverTrigger>
               <PopoverContent class="w-auto p-0">
@@ -214,12 +271,14 @@ const handleQaDateSelect = (date: any) => {
 
         <!-- Actions -->
         <div class="flex justify-end gap-3 pt-6">
-          <Button variant="ghost" @click="emit('cancel')" class="px-8 font-bold"> Cancel </Button>
+          <Button variant="ghost" @click="emit('cancel')" class="px-8 font-bold">
+            {{ t('common.cancel') }}
+          </Button>
           <Button
             @click="handleSave"
             class="px-12 font-black bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg"
           >
-            Create Order
+            {{ props.initialData?.id ? t('qa.jobOrderForm.update') : t('qa.jobOrderForm.save') }}
           </Button>
         </div>
       </CardContent>

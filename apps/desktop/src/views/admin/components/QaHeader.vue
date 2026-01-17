@@ -23,9 +23,7 @@ const props = defineProps<{
 
 const emit = defineEmits(['update:category', 'update:activeTab']);
 
-const selectedCategory = ref<'CL' | 'USS' | 'JOB_ORDER'>(
-  (localStorage.getItem('qaCategory') as 'CL' | 'USS' | 'JOB_ORDER') || 'CL'
-);
+const selectedCategory = ref<'CL' | 'USS' | 'JOB_ORDER'>('CL');
 
 const currentTab = ref(props.activeTab);
 

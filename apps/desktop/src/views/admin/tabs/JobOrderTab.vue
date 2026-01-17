@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Card } from '@/components/ui/card';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
@@ -86,16 +86,16 @@ const handleSave = async (formData: JobOrder) => {
   try {
     if (selectedJobOrder.value?.id) {
       await jobOrdersApi.update(selectedJobOrder.value.id, formData);
-      toast.success('Job order updated successfully');
+      toast.success(t('qa.jobOrderForm.updateSuccess') || 'Job order updated successfully');
     } else {
       await jobOrdersApi.create(formData);
-      toast.success('Job order created successfully');
+      toast.success(t('qa.jobOrderForm.createSuccess') || 'Job order created successfully');
     }
     isFormOpen.value = false;
     fetchJobOrders();
   } catch (error) {
     console.error('Failed to save job order:', error);
-    toast.error('Failed to save job order');
+    toast.error(t('common.errorSave') || 'Failed to save job order');
   }
 };
 
@@ -112,9 +112,11 @@ onMounted(() => {
       <div>
         <h2 class="text-xl font-black text-slate-800 flex items-center gap-2">
           <div class="w-1 h-6 bg-gradient-to-b from-primary to-primary/60 rounded-full"></div>
-          Job Orders Management
+          {{ t('qa.jobOrderMgmt.title') }}
         </h2>
-        <p class="text-xs text-slate-500 mt-0.5 ml-4">Manage and track all production job orders</p>
+        <p class="text-xs text-slate-500 mt-0.5 ml-4">
+          {{ t('qa.jobOrderMgmt.subtitle') }}
+        </p>
       </div>
 
       <!-- Right: Search, Date Picker, and New Button -->
@@ -123,7 +125,7 @@ onMounted(() => {
           <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <Input
             v-model="searchQuery"
-            placeholder="Search items..."
+            :placeholder="t('qa.searchPlaceholder')"
             class="pl-9 h-10 bg-white border-slate-200"
           />
         </div>
@@ -148,7 +150,7 @@ onMounted(() => {
           class="h-10 px-6 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg gap-2 font-black"
         >
           <Plus class="w-5 h-5" />
-          New Job Order
+          {{ t('qa.jobOrderMgmt.newOrder') }}
         </Button>
       </div>
     </div>
@@ -159,7 +161,7 @@ onMounted(() => {
         <div class="flex items-center justify-between">
           <h3 class="font-black text-slate-700 flex items-center gap-2">
             <Package class="w-4 h-4" />
-            All Job Orders
+            {{ t('qa.jobOrderMgmt.tableTitle') }}
           </h3>
 
           <div class="flex items-center gap-4">
@@ -173,7 +175,9 @@ onMounted(() => {
               >
                 <FileText class="w-3.5 h-3.5 text-blue-600" />
                 <div class="flex items-center gap-1">
-                  <span class="text-[10px] font-bold text-slate-500 uppercase">Total</span>
+                  <span class="text-[10px] font-bold text-slate-500 uppercase">{{
+                    t('qa.jobOrderMgmt.total')
+                  }}</span>
                   <span class="text-sm font-black text-blue-600">{{ jobOrders.length }}</span>
                 </div>
               </div>
@@ -183,7 +187,9 @@ onMounted(() => {
               >
                 <CheckCircle2 class="w-3.5 h-3.5 text-emerald-600" />
                 <div class="flex items-center gap-1">
-                  <span class="text-[10px] font-bold text-slate-500 uppercase">Completed</span>
+                  <span class="text-[10px] font-bold text-slate-500 uppercase">{{
+                    t('qa.jobOrderMgmt.completed')
+                  }}</span>
                   <span class="text-sm font-black text-emerald-600">{{
                     jobOrders.filter((j) => j.isClosed).length
                   }}</span>
@@ -195,7 +201,9 @@ onMounted(() => {
               >
                 <Clock class="w-3.5 h-3.5 text-amber-600" />
                 <div class="flex items-center gap-1">
-                  <span class="text-[10px] font-bold text-slate-500 uppercase">In Progress</span>
+                  <span class="text-[10px] font-bold text-slate-500 uppercase">{{
+                    t('qa.jobOrderMgmt.inProgress')
+                  }}</span>
                   <span class="text-sm font-black text-amber-600">{{
                     jobOrders.filter((j) => !j.isClosed).length
                   }}</span>
@@ -209,13 +217,27 @@ onMounted(() => {
         <Table>
           <TableHeader class="bg-slate-50/50">
             <TableRow class="hover:bg-transparent border-b-2">
-              <TableHead class="font-black text-slate-700">Job Order No.</TableHead>
-              <TableHead class="font-black text-slate-700">Date</TableHead>
-              <TableHead class="font-black text-slate-700">Contract No.</TableHead>
-              <TableHead class="font-black text-slate-700">Grade</TableHead>
-              <TableHead class="font-black text-slate-700">Pallet Specs</TableHead>
-              <TableHead class="font-black text-slate-700">Status</TableHead>
-              <TableHead class="w-[100px] text-center font-black text-slate-700">Action</TableHead>
+              <TableHead class="font-black text-slate-700">{{
+                t('qa.jobOrderMgmt.cols.no')
+              }}</TableHead>
+              <TableHead class="font-black text-slate-700">{{
+                t('qa.jobOrderMgmt.cols.date')
+              }}</TableHead>
+              <TableHead class="font-black text-slate-700">{{
+                t('qa.jobOrderMgmt.cols.contract')
+              }}</TableHead>
+              <TableHead class="font-black text-slate-700">{{
+                t('qa.jobOrderMgmt.cols.grade')
+              }}</TableHead>
+              <TableHead class="font-black text-slate-700">{{
+                t('qa.jobOrderMgmt.cols.palletSpecs')
+              }}</TableHead>
+              <TableHead class="font-black text-slate-700">{{
+                t('qa.jobOrderMgmt.cols.status')
+              }}</TableHead>
+              <TableHead class="w-[100px] text-center font-black text-slate-700">{{
+                t('qa.jobOrderMgmt.cols.action')
+              }}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -231,10 +253,12 @@ onMounted(() => {
                   <div class="bg-slate-100 p-6 rounded-full mb-4">
                     <FileText class="w-12 h-12 text-slate-300" />
                   </div>
-                  <p class="font-bold text-slate-400 text-lg mb-2">No job orders found</p>
+                  <p class="font-bold text-slate-400 text-lg mb-2">
+                    {{ t('qa.jobOrderMgmt.noOrders') }}
+                  </p>
                   <Button variant="link" @click="handleCreate" class="text-primary font-bold">
                     <Plus class="w-4 h-4 mr-2" />
-                    Create your first order
+                    {{ t('qa.jobOrderMgmt.createFirst') }}
                   </Button>
                 </div>
               </TableCell>
@@ -280,7 +304,8 @@ onMounted(() => {
                 <div class="text-xs flex flex-col gap-0.5">
                   <span class="font-bold text-slate-700">{{ order.palletType }}</span>
                   <span class="text-slate-400"
-                    >{{ order.orderQuantity }} Pallets • {{ order.quantityBale }} bales</span
+                    >{{ order.orderQuantity }} {{ t('qa.jobOrderMgmt.palletsCount') }} •
+                    {{ order.quantityBale }} {{ t('qa.jobOrderMgmt.balesCount') }}</span
                   >
                 </div>
               </TableCell>
@@ -290,11 +315,11 @@ onMounted(() => {
                   class="bg-emerald-500 text-white border-0 shadow-sm font-bold"
                 >
                   <CheckCircle2 class="w-3 h-3 mr-1" />
-                  Completed
+                  {{ t('qa.jobOrderMgmt.completed') }}
                 </Badge>
                 <Badge v-else class="bg-amber-500 text-white border-0 shadow-sm font-bold">
                   <Clock class="w-3 h-3 mr-1" />
-                  In Progress
+                  {{ t('qa.jobOrderMgmt.inProgress') }}
                 </Badge>
               </TableCell>
               <TableCell class="text-center">
@@ -315,8 +340,11 @@ onMounted(() => {
     <!-- Form Dialog -->
     <Dialog v-model:open="isFormOpen">
       <DialogContent
+        hide-close
         class="max-w-4xl max-h-[90vh] overflow-y-auto p-0 border-none bg-transparent shadow-none"
       >
+        <DialogTitle class="sr-only">{{ t('qa.jobOrderMgmt.srTitle') }}</DialogTitle>
+        <DialogDescription class="sr-only">{{ t('qa.jobOrderMgmt.srDesc') }}</DialogDescription>
         <div class="bg-white rounded-2xl overflow-hidden shadow-2xl">
           <JobOrderForm
             :initial-data="selectedJobOrder || undefined"

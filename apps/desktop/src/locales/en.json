@@ -144,6 +144,57 @@
       "beforeLabDryer": "Before Lab Dryer",
       "afterLabDryer": "After Lab Dryer",
       "afterLab": "After Lab"
+    },
+    "jobOrderMgmt": {
+      "title": "Job Orders Management",
+      "subtitle": "Manage and track all production job orders",
+      "newOrder": "New Job Order",
+      "tableTitle": "All Job Orders",
+      "total": "Total",
+      "completed": "Completed",
+      "inProgress": "In Progress",
+      "noOrders": "No job orders found",
+      "createFirst": "Create your first order",
+      "palletsCount": "Pallets",
+      "balesCount": "bales",
+      "srTitle": "Job Order Form",
+      "srDesc": "Create or edit production job order details",
+      "cols": {
+        "no": "Job Order No.",
+        "date": "Date",
+        "contract": "Contract No.",
+        "grade": "Grade",
+        "palletSpecs": "Pallet Specs",
+        "status": "Status",
+        "action": "Action"
+      }
+    },
+    "jobOrderForm": {
+      "titleCreate": "CREATING JOB ORDER",
+      "titleEdit": "EDITING JOB ORDER",
+      "jobOrderNo": "Job Order No.",
+      "contractNo": "Contract No.",
+      "palletType": "Pallet Type",
+      "grade": "Grade",
+      "qtyPallet": "Quantity / Pallet",
+      "orderQty": "Order Quantity",
+      "palletMarking": "Pallet Marking Attach",
+      "note": "Note",
+      "creator": "Job Order Creator",
+      "verifyDate": "Verification Date",
+      "save": "Create Order",
+      "update": "Update Order",
+      "markingYes": "Yes",
+      "markingNo": "No",
+      "bale": "bale",
+      "bales": "bales",
+      "pallets": "Pallets",
+      "placeholders": {
+        "creator": "Name of creator",
+        "specify": "Specify...",
+        "selectPallet": "Select Pallet",
+        "selectDate": "Select date"
+      }
     }
   },
   "services": {

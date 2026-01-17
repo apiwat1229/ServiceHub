@@ -1,41 +1,10 @@
+import { CreateJobOrderDto, UpdateJobOrderDto } from '@my-app/types';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
-export interface JobOrderLogDto {
-    date: string;
-    shift: string;
-    lotStart: string;
-    lotEnd: string;
-    quantity: number;
-    sign?: string;
-}
-
-export interface CreateJobOrderDto {
-    bookNo?: string;
-    no?: number;
-    jobOrderNo: string;
-    contractNo: string;
-    grade: string;
-    otherGrade?: string;
-    quantityBale: number;
-    palletType: string;
-    orderQuantity: number;
-    palletMarking: boolean;
-    note?: string;
-    qaName: string;
-    qaDate: string;
-    isClosed: boolean;
-    logs: JobOrderLogDto[];
-}
-
-export interface UpdateJobOrderDto extends Partial<CreateJobOrderDto> {
-    productionName?: string;
-    productionDate?: string;
-}
-
 @Injectable()
 export class JobOrdersService {
-    constructor(private prisma: PrismaService) { }
+    constructor(private readonly prisma: PrismaService) { }
 
     async findAll() {
         return this.prisma.jobOrder.findMany({
@@ -49,7 +18,9 @@ export class JobOrdersService {
             where: { id },
             include: { logs: true },
         });
-        if (!jobOrder) throw new NotFoundException('Job Order not found');
+        if (!jobOrder) {
+            throw new NotFoundException(`JobOrder with ID ${id} not found`);
+        }
         return jobOrder;
     }
 
@@ -62,10 +33,10 @@ export class JobOrdersService {
                 no: jobOrderData.no || 0,
                 qaDate: new Date(jobOrderData.qaDate),
                 logs: {
-                    create: logs.map((log) => ({
+                    create: logs?.map((log) => ({
                         ...log,
                         date: new Date(log.date),
-                    })),
+                    })) || [],
                 },
             },
             include: { logs: true },
@@ -75,20 +46,32 @@ export class JobOrdersService {
     async update(id: string, data: UpdateJobOrderDto) {
         const { logs, ...jobOrderData } = data;
 
-        // Simple update for main data
+        // Check if job order exists
+        await this.findOne(id);
+
         const updateData: any = { ...jobOrderData };
         if (jobOrderData.qaDate) updateData.qaDate = new Date(jobOrderData.qaDate);
         if (jobOrderData.productionDate) updateData.productionDate = new Date(jobOrderData.productionDate);
 
-        // If logs are provided, we'll replace them for simplicity in this version
         if (logs) {
-            await this.prisma.jobOrderLog.deleteMany({ where: { jobOrderId: id } });
-            updateData.logs = {
-                create: logs.map((log) => ({
-                    ...log,
-                    date: new Date(log.date),
-                })),
-            };
+            // Transaction to ensure logs are replaced correctly
+            return this.prisma.$transaction(async (tx) => {
+                await tx.jobOrderLog.deleteMany({ where: { jobOrderId: id } });
+
+                return tx.jobOrder.update({
+                    where: { id },
+                    data: {
+                        ...updateData,
+                        logs: {
+                            create: logs.map((log) => ({
+                                ...log,
+                                date: new Date(log.date),
+                            })),
+                        },
+                    },
+                    include: { logs: true },
+                });
+            });
         }
 
         return this.prisma.jobOrder.update({
@@ -99,10 +82,19 @@ export class JobOrdersService {
     }
 
     async remove(id: string) {
-        return this.prisma.jobOrder.delete({ where: { id } });
+        // Check if job order exists
+        await this.findOne(id);
+
+        return this.prisma.$transaction(async (tx) => {
+            await tx.jobOrderLog.deleteMany({ where: { jobOrderId: id } });
+            return tx.jobOrder.delete({ where: { id } });
+        });
     }
 
     async closeJob(id: string, productionInfo: { productionName: string; productionDate: string }) {
+        // Check if job order exists
+        await this.findOne(id);
+
         return this.prisma.jobOrder.update({
             where: { id },
             data: {

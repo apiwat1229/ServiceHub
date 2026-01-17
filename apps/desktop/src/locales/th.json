@@ -146,6 +146,57 @@
       "beforeLabDryer": "ก่อนตู้อบแล็บ",
       "afterLabDryer": "หลังอบ Lab",
       "afterLab": "หลังแล็บ"
+    },
+    "jobOrderMgmt": {
+      "title": "การจัดการใบสั่งงาน (Job Orders)",
+      "subtitle": "จัดการและติดตามใบสั่งงานการผลิตทั้งหมด",
+      "newOrder": "สร้างใบสั่งงานใหม่",
+      "tableTitle": "รายการใบสั่งงานทั้งหมด",
+      "total": "ทั้งหมด",
+      "completed": "เสร็จสมบูรณ์",
+      "inProgress": "กำลังดำเนินการ",
+      "noOrders": "ไม่พบรายการใบสั่งงาน",
+      "createFirst": "สร้างใบสั่งงานรายการแรก",
+      "palletsCount": "พาเลท",
+      "balesCount": "ก้อน",
+      "srTitle": "แบบฟอร์มใบสั่งงาน",
+      "srDesc": "กรอกหรือแก้ไขรายละเอียดใบสั่งงานการผลิต",
+      "cols": {
+        "no": "เลขที่ใบสั่งงาน",
+        "date": "วันที่",
+        "contract": "เลขที่สัญญา",
+        "grade": "เกรด",
+        "palletSpecs": "ข้อมูลพาเลท",
+        "status": "สถานะ",
+        "action": "ดำเนินการ"
+      }
+    },
+    "jobOrderForm": {
+      "titleCreate": "สร้างใบสั่งงานใหม่",
+      "titleEdit": "แก้ไขใบสั่งงาน",
+      "jobOrderNo": "เลขที่ใบสั่งงาน",
+      "contractNo": "เลขที่สัญญา",
+      "palletType": "ประเภทพาเลท",
+      "grade": "เกรด",
+      "qtyPallet": "จำนวน / พาเลท",
+      "orderQty": "จำนวนที่สั่ง",
+      "palletMarking": "การติดเครื่องหมายพาเลท",
+      "note": "หมายเหตุ",
+      "creator": "ผู้สร้างใบสั่งงาน",
+      "verifyDate": "วันที่ตรวจสอบ",
+      "save": "สร้างใบสั่งงาน",
+      "update": "อัปเดตใบสั่งงาน",
+      "markingYes": "ใช่",
+      "markingNo": "ไม่ใช่",
+      "bale": "ก้อน",
+      "bales": "ก้อน",
+      "pallets": "พาเลท",
+      "placeholders": {
+        "creator": "ชื่อผู้สร้าง",
+        "specify": "ระบุ...",
+        "selectPallet": "เลือกพาเลท",
+        "selectDate": "เลือกวันที่"
+      }
     }
   },
   "services": {
