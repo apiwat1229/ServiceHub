@@ -39,8 +39,8 @@ async function bootstrap() {
     app.enableCors({
         origin: true,
         credentials: true,
-        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+        methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+        allowedHeaders: 'Content-Type,Accept,Authorization,X-Requested-With',
     });
 
     // Enable validation
@@ -48,7 +48,7 @@ async function bootstrap() {
         new ValidationPipe({
             whitelist: true,
             transform: true,
-            forbidNonWhitelisted: false, // Allow extra fields (like id, createdAt, etc.)
+            forbidNonWhitelisted: false,
         })
     );
 
@@ -59,7 +59,8 @@ async function bootstrap() {
     await app.listen(port, '0.0.0.0');
 
     console.log(`🚀 API Server is running on: http://localhost:${port}/api`);
-    console.log(`📡 Registered Modules: Base logic, PrinterUsageModule, etc.`);
+    console.log(`🌍 Production URL: https://app.ytrc.co.th/api`);
+    console.log(`🔑 CORS: Enabled (Mirroring Origin)`);
 }
 
 // Port changed to 2530
