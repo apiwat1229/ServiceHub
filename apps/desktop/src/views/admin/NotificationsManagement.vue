@@ -49,8 +49,8 @@ import type {
   CreateBroadcastDto,
   CreateNotificationGroupDto,
   NotificationGroupDto,
-  NotificationSettingDto,
   RoleDto,
+  UpdateNotificationSettingDto,
   UserDto,
 } from '@my-app/types';
 import type { ColumnDef } from '@tanstack/vue-table';
@@ -91,16 +91,6 @@ const ICON_MAP: Record<string, any> = {
 };
 
 const AVAILABLE_ICONS = ['Shield', 'Briefcase', 'Users', 'Layers', 'Lock'];
-
-const AVAILABLE_COLORS = [
-  'bg-blue-600',
-  'bg-purple-600',
-  'bg-emerald-500',
-  'bg-orange-500',
-  'bg-indigo-500',
-  'bg-green-500',
-  'bg-slate-500',
-];
 
 const getGroupGradient = (group: NotificationGroupDto, index: number) => {
   // If group has color, use it (mapped to gradient)
@@ -179,7 +169,7 @@ const hasUnsavedChanges = ref(false);
 const isSaving = ref(false);
 
 // Settings
-const settings = ref<NotificationSettingDto[]>([]);
+const settings = ref<UpdateNotificationSettingDto[]>([]);
 const settingDefinitions = [
   { sourceApp: 'Booking', actionType: 'CREATE', label: 'New Booking Created' },
   { sourceApp: 'Booking', actionType: 'UPDATE', label: 'Booking Updated' },
@@ -248,7 +238,9 @@ const fetchSettings = async () => {
 
 const getSetting = (sourceApp: string, actionType: string) => {
   return (
-    settings.value.find((s) => s.sourceApp === sourceApp && s.actionType === actionType) || {
+    settings.value.find(
+      (s: UpdateNotificationSettingDto) => s.sourceApp === sourceApp && s.actionType === actionType
+    ) || {
       sourceApp,
       actionType,
       isActive: true,
@@ -268,7 +260,7 @@ const handleSettingChange = (
 ) => {
   // Update Local State
   const existingIndex = settings.value.findIndex(
-    (s) => s.sourceApp === sourceApp && s.actionType === actionType
+    (s: UpdateNotificationSettingDto) => s.sourceApp === sourceApp && s.actionType === actionType
   );
 
   const newSetting = {
@@ -279,9 +271,7 @@ const handleSettingChange = (
     recipientGroups: groups,
     recipientUsers: [],
     channels: [], // Default empty channels
-    // Preserve ID if it existed, otherwise it will be undefined (new setting)
-    id: existingIndex > -1 ? settings.value[existingIndex].id : undefined,
-  } as unknown as NotificationSettingDto;
+  } as UpdateNotificationSettingDto;
 
   if (existingIndex > -1) {
     // Update existing
@@ -315,14 +305,16 @@ const saveAllChanges = async () => {
     // (though saving all is safer consistency-wise).
 
     const settingsToSave = selectedCategory.value
-      ? settings.value.filter((s) => s.sourceApp === selectedCategory.value)
+      ? settings.value.filter(
+          (s: UpdateNotificationSettingDto) => s.sourceApp === selectedCategory.value
+        )
       : settings.value;
 
     await Promise.all(
-      settingsToSave.map((setting) =>
+      settingsToSave.map((setting: UpdateNotificationSettingDto) =>
         notificationsApi.updateSetting({
-          sourceApp: setting.sourceApp,
-          actionType: setting.actionType,
+          sourceApp: setting.sourceApp!,
+          actionType: setting.actionType!,
           isActive: setting.isActive,
           recipientRoles: setting.recipientRoles,
           recipientGroups: setting.recipientGroups,
@@ -365,7 +357,6 @@ const groupForm = ref<CreateNotificationGroupDto>({
   description: '',
   memberIds: [],
   icon: 'Users',
-  color: 'bg-blue-600',
 });
 
 // Member Selection Logic
@@ -749,7 +740,6 @@ const handleCreateGroup = () => {
     description: '',
     memberIds: [],
     icon: 'Users',
-    color: 'bg-blue-600',
   };
   isGroupDialogOpen.value = true;
 };
@@ -761,7 +751,6 @@ const handleEditGroup = (group: NotificationGroupDto) => {
     description: group.description,
     memberIds: group.memberIds || [],
     icon: group.icon || 'Users',
-    color: group.color || 'bg-blue-600',
   };
   isGroupDialogOpen.value = true;
 };
@@ -1356,23 +1345,6 @@ onMounted(() => {
                   >
                     <component :is="ICON_MAP[icon]" class="w-5 h-5" />
                   </div>
-                </div>
-              </div>
-
-              <!-- Color Selection -->
-              <div class="space-y-2">
-                <Label>Color</Label>
-                <div class="flex flex-wrap gap-3">
-                  <div
-                    v-for="color in AVAILABLE_COLORS"
-                    :key="color"
-                    @click="groupForm.color = color"
-                    class="h-8 w-8 rounded-full cursor-pointer transition-all hover:scale-110 ring-2 ring-offset-2"
-                    :class="[
-                      color.replace('bg-', 'bg-'),
-                      groupForm.color === color ? 'ring-primary' : 'ring-transparent',
-                    ]"
-                  ></div>
                 </div>
               </div>
             </div>

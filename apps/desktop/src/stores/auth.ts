@@ -69,6 +69,7 @@ export const useAuthStore = defineStore('auth', {
                 this.user = response.data.user;
 
                 // Load preferences
+                // eslint-disable-next-line react-hooks/rules-of-hooks
                 const themeStore = useThemeStore();
                 themeStore.loadFromUser(this.user);
 
@@ -107,6 +108,7 @@ export const useAuthStore = defineStore('auth', {
                 this.user = response.data;
 
                 // Load preferences
+                // eslint-disable-next-line react-hooks/rules-of-hooks
                 const themeStore = useThemeStore();
                 themeStore.loadFromUser(this.user);
 
