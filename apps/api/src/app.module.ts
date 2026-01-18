@@ -59,7 +59,7 @@ import { JobOrdersModule } from './job-orders/job-orders.module';
         PoolsModule,
         JobOrdersModule,
         ServeStaticModule.forRoot({
-            rootPath: join(process.cwd(), 'uploads'),
+            rootPath: join(__dirname, '..', '..', '..', 'uploads'),
             serveRoot: '/api/uploads',
         }),
     ],
