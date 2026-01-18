@@ -25,6 +25,8 @@ import { RubberTypesModule } from './rubber-types/rubber-types.module';
 import { SuppliersModule } from './suppliers/suppliers.module';
 import { UsersModule } from './users/users.module';
 
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 import { JobOrdersModule } from './job-orders/job-orders.module';
 
 @Module({
@@ -56,10 +58,10 @@ import { JobOrdersModule } from './job-orders/job-orders.module';
         PlcModule,
         PoolsModule,
         JobOrdersModule,
-        // ServeStaticModule.forRoot({
-        //     rootPath: join(process.cwd(), 'uploads'),
-        //     serveRoot: '/uploads',
-        // }),
+        ServeStaticModule.forRoot({
+            rootPath: join(process.cwd(), 'uploads'),
+            serveRoot: '/api/uploads',
+        }),
     ],
     controllers: [AppController],
     providers: [AppService],

@@ -44,10 +44,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { itAssetsApi, type ITAsset } from '@/services/it-assets';
 import { itTicketsApi, type ITTicket } from '@/services/it-tickets';
 import { knowledgeBooksApi, type KnowledgeBook } from '@/services/knowledge-books';
+import { useAuthStore } from '@/stores/auth';
 import { getLocalTimeZone, today } from '@internationalized/date';
 import type { ColumnDef } from '@tanstack/vue-table';
 import { format, formatDistanceToNowStrict, intervalToDuration } from 'date-fns';
 import {
+  AlertTriangle,
   ArrowUpDown,
   BookOpen,
   CheckCircle2,
@@ -69,10 +71,9 @@ import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import { toast } from 'vue-sonner';
 
-import { useAuthStore } from '@/stores/auth';
-
 const route = useRoute();
 const router = useRouter();
+const activeTab = ref('kb');
 const isDetailModalOpen = ref(false);
 const selectedTicket = ref<ITTicket | null>(null);
 const loadingTickets = ref(false);
@@ -140,7 +141,6 @@ const selectedBook = ref<KnowledgeBook | null>(null);
 const books = ref<KnowledgeBook[]>([]);
 const loadingBooks = ref(false);
 const selectedCategory = ref<string>('');
-const ebookSearchQuery = ref('');
 const ebookCategories = ref<string[]>([]);
 const loadingCategories = ref(false);
 
@@ -478,6 +478,90 @@ const ticketStats = computed(() => {
     bestResponse: bestTimeHours,
   };
 });
+const assetStats = computed(() => {
+  if (!assetRequests.value.length) {
+    return {
+      total: 0,
+      open: 0,
+      openCount: 0,
+      inProgressCount: 0,
+      resolved: 0,
+      avgResponse: '0.00',
+      bestResponse: '0.00',
+    };
+  }
+
+  // Filter asset requests for the selected date range
+  const filtered = assetRequests.value.filter((t) => {
+    // Exclude Cancelled tickets first
+    if (t.status === 'Cancelled') return false;
+
+    if (!dateRange.value?.start || !dateRange.value?.end) return true;
+
+    const ticketDate = new Date(t.createdAt);
+    const start = dateRange.value.start.toDate(getLocalTimeZone());
+    const end = dateRange.value.end.toDate(getLocalTimeZone());
+    // Add 1 day to end date to include the full end day
+    end.setDate(end.getDate() + 1);
+
+    return ticketDate >= start && ticketDate < end;
+  });
+
+  const openTickets = filtered.filter((t) => t.status === 'Open' || t.status === 'In Progress');
+  const openCount = filtered.filter((t) => t.status === 'Open').length;
+  const inProgressCount = filtered.filter((t) => t.status === 'In Progress').length;
+
+  const resolvedTickets = filtered.filter((t) => t.status === 'Resolved' || t.status === 'Closed');
+
+  let totalResolutionTime = 0;
+  let minTimeMs = Infinity;
+
+  resolvedTickets.forEach((t) => {
+    const created = new Date(t.createdAt);
+    const updated = new Date(t.updatedAt);
+    const diff = updated.getTime() - created.getTime();
+    totalResolutionTime += diff;
+    if (diff < minTimeMs) {
+      minTimeMs = diff;
+    }
+  });
+  const avgTimeMs = resolvedTickets.length ? totalResolutionTime / resolvedTickets.length : 0;
+  const avgTimeHours = (avgTimeMs / (1000 * 60 * 60)).toFixed(2);
+  const bestTimeHours = minTimeMs !== Infinity ? (minTimeMs / (1000 * 60 * 60)).toFixed(2) : '0.00';
+
+  return {
+    total: filtered.length,
+    open: openTickets.length,
+    openCount,
+    inProgressCount,
+    resolved: resolvedTickets.length,
+    avgResponse: avgTimeHours,
+    bestResponse: bestTimeHours,
+  };
+});
+
+const stockStats = computed(() => {
+  if (!itStock.value.length) {
+    return {
+      totalItems: 0,
+      totalStock: 0,
+      lowStock: 0,
+      outOfStock: 0,
+      alerts: 0,
+    };
+  }
+  const totalItems = itStock.value.length;
+  const totalStock = itStock.value.reduce((acc, item) => acc + (item.stock || 0), 0);
+  const lowStock = itStock.value.filter((item) => getStockStatus(item) === 'Low Stock').length;
+  const outOfStock = itStock.value.filter((item) => getStockStatus(item) === 'Out of Stock').length;
+  return {
+    totalItems,
+    totalStock,
+    lowStock,
+    outOfStock,
+    alerts: lowStock + outOfStock,
+  };
+});
 
 const loadITAssets = async () => {
   loadingStock.value = true;
@@ -650,7 +734,7 @@ async function loadBooks() {
   try {
     books.value = await knowledgeBooksApi.getAll({
       category: selectedCategory.value === 'ALL' ? undefined : selectedCategory.value || undefined,
-      search: ebookSearchQuery.value || undefined,
+      search: searchQuery.value || undefined,
     });
   } catch (error) {
     console.error('Failed to load books:', error);
@@ -658,6 +742,20 @@ async function loadBooks() {
     loadingBooks.value = false;
   }
 }
+
+// Watch global search to reload books
+watch(searchQuery, () => {
+  if (activeTab.value === 'kb') {
+    loadBooks();
+  }
+});
+
+// Also reload books when switching back to KB tab
+watch(activeTab, (newTab) => {
+  if (newTab === 'kb') {
+    loadBooks();
+  }
+});
 
 function handleViewBook(book: KnowledgeBook) {
   if (book.fileType !== 'pdf' && book.fileType !== 'pptx') {
@@ -723,7 +821,7 @@ const categories = computed(() => {
 <template>
   <div class="space-y-6">
     <!-- Header -->
-    <Tabs defaultValue="kb" class="w-full space-y-6">
+    <Tabs v-model="activeTab" class="w-full space-y-6">
       <!-- Header Refactored -->
       <div class="flex items-center justify-between space-y-2">
         <div class="flex items-center gap-3">
@@ -793,21 +891,6 @@ const categories = computed(() => {
               <Ticket class="w-4 h-4 mr-2" /> {{ t('services.itHelp.tabs.myTickets') }}
             </TabsTrigger>
           </TabsList>
-
-          <!-- Action Buttons Moved Here -->
-          <Button
-            variant="outline"
-            size="sm"
-            class="h-9 bg-white/50 hover:bg-white border-slate-200"
-            @click="isAssetModalOpen = true"
-          >
-            <Package class="w-4 h-4 mr-2" />
-            {{ t('services.itHelp.requestEquipment') }}
-          </Button>
-          <Button size="sm" class="h-9" @click="isTicketModalOpen = true">
-            <Plus class="w-4 h-4 mr-2" />
-            {{ t('services.itHelp.newTicket') }}
-          </Button>
         </div>
       </div>
 
@@ -820,17 +903,7 @@ const categories = computed(() => {
             <h3 class="text-lg font-semibold">{{ t('services.itHelp.kb.title') }}</h3>
             <p class="text-sm text-muted-foreground">{{ t('services.itHelp.kb.subtitle') }}</p>
           </div>
-          <div class="flex flex-1 items-center gap-3 max-w-2xl">
-            <div class="relative flex-1">
-              <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                :placeholder="t('services.itHelp.kb.searchPlaceholder')"
-                class="pl-9 h-9"
-                v-model="ebookSearchQuery"
-                @input="loadBooks"
-              />
-            </div>
+          <div class="flex items-center gap-3">
             <Select v-model="selectedCategory" @update:model-value="loadBooks">
               <SelectTrigger class="w-[180px] h-9">
                 <SelectValue :placeholder="t('services.itHelp.kb.allCategories')" />
@@ -846,7 +919,7 @@ const categories = computed(() => {
               v-if="isITDepartment"
               size="sm"
               @click="isUploadModalOpen = true"
-              class="gap-2 h-9 whitespace-nowrap"
+              class="gap-2 h-9 whitespace-nowrap bg-primary text-white hover:bg-primary/90 shadow-sm font-bold"
             >
               <Upload class="w-4 h-4" />
               {{ t('services.itHelp.kb.uploadBtn') }}
@@ -864,7 +937,7 @@ const categories = computed(() => {
           <h3 class="text-lg font-medium mb-2">{{ t('services.itHelp.kb.noBooks') }}</h3>
           <p class="text-muted-foreground mb-4">
             {{
-              ebookSearchQuery || selectedCategory
+              searchQuery || selectedCategory
                 ? t('services.itHelp.kb.adjustFilters')
                 : t('services.itHelp.kb.uploadFirst')
             }}
@@ -880,22 +953,111 @@ const categories = computed(() => {
           </Button>
         </div>
 
-        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <KnowledgeBookCard
-            v-for="book in filteredBooks"
-            :key="book.id"
-            :book="book"
-            :can-delete="isITDepartment"
-            @view="handleViewBook(book)"
-            @download="handleDownloadBook(book)"
-            @delete="handleDeleteBook(book)"
-            @edit="handleEditBook(book)"
-          />
+        <div v-else class="relative px-12">
+          <Carousel
+            class="w-full"
+            :opts="{
+              align: 'start',
+              loop: true,
+            }"
+          >
+            <CarouselContent class="-ml-4">
+              <CarouselItem
+                v-for="book in filteredBooks"
+                :key="book.id"
+                class="pl-4 md:basis-1/2 lg:basis-1/3"
+              >
+                <KnowledgeBookCard
+                  :book="book"
+                  :can-delete="isITDepartment"
+                  @view="handleViewBook(book)"
+                  @download="handleDownloadBook(book)"
+                  @delete="handleDeleteBook(book)"
+                  @edit="handleEditBook(book)"
+                />
+              </CarouselItem>
+            </CarouselContent>
+            <CarouselPrevious class="-left-12 h-10 w-10" />
+            <CarouselNext class="-right-12 h-10 w-10" />
+          </Carousel>
         </div>
       </TabsContent>
 
       <!-- IT Stock Tab (Admin/IT Only) -->
       <TabsContent v-if="isITDepartment" value="stock" class="space-y-4">
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-medium text-muted-foreground">Inventory Overview</h3>
+          </div>
+
+          <!-- Stats Section -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <Card>
+              <CardContent class="flex items-center justify-between p-3">
+                <div
+                  class="flex-1 flex flex-col items-center justify-center border-r border-border pr-2"
+                >
+                  <div
+                    class="text-[0.7rem] font-medium text-muted-foreground mb-1 uppercase tracking-tight"
+                  >
+                    Total Hardware
+                  </div>
+                  <div class="text-xl font-bold">{{ stockStats.totalItems }}</div>
+                </div>
+                <div class="flex-1 flex flex-col items-center justify-center pl-2">
+                  <div
+                    class="text-[0.7rem] font-medium text-primary flex items-center gap-1 mb-1 uppercase tracking-tight"
+                  >
+                    <Monitor class="w-3 h-3" /> Total Units
+                  </div>
+                  <div class="text-xl font-bold">{{ stockStats.totalStock }}</div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent class="flex items-center justify-between p-3">
+                <div
+                  class="flex-1 flex flex-col items-center justify-center border-r border-border pr-2"
+                >
+                  <div
+                    class="text-[0.7rem] font-medium text-orange-600 mb-1 uppercase tracking-tight"
+                  >
+                    Low Stock
+                  </div>
+                  <div class="text-xl font-bold text-orange-600">{{ stockStats.lowStock }}</div>
+                </div>
+                <div class="flex-1 flex flex-col items-center justify-center pl-2">
+                  <div class="text-[0.7rem] font-medium text-red-600 mb-1 uppercase tracking-tight">
+                    Out of Stock
+                  </div>
+                  <div class="text-xl font-bold text-red-600">{{ stockStats.outOfStock }}</div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent class="flex items-center justify-between p-3 bg-red-50/50">
+                <div class="flex-1 flex flex-col items-center justify-center">
+                  <div
+                    class="text-[0.7rem] font-medium text-red-700 flex items-center gap-1 mb-1 uppercase tracking-tight"
+                  >
+                    <AlertTriangle class="w-3 h-3" /> Stock Alerts
+                  </div>
+                  <div class="text-2xl font-black text-red-700 line-height-1">
+                    {{ stockStats.alerts }}
+                  </div>
+                  <div
+                    class="text-[0.55rem] text-red-600/70 mt-0.5 uppercase tracking-wider font-bold"
+                  >
+                    Items needing attention
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
         <Card>
           <CardHeader class="flex flex-row items-center justify-between">
             <div class="space-y-1">
@@ -914,7 +1076,11 @@ const categories = computed(() => {
                   </SelectItem>
                 </SelectContent>
               </Select>
-              <Button size="sm" class="gap-2 h-9" @click="handleAddStock">
+              <Button
+                size="sm"
+                class="gap-2 h-9 font-bold bg-primary text-white hover:bg-primary/90 shadow-sm"
+                @click="handleAddStock"
+              >
                 <Plus class="w-4 h-4" /> {{ t('services.itHelp.stock.addItem') }}
               </Button>
             </div>
@@ -934,13 +1100,87 @@ const categories = computed(() => {
 
       <!-- Assets Tab -->
       <TabsContent value="assets" class="space-y-4">
+        <div v-if="isITDepartment && assetRequests.length > 0" class="space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-medium text-muted-foreground">Assets Overview</h3>
+          </div>
+
+          <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            <Card>
+              <CardContent class="p-3 text-center">
+                <p class="text-[0.7rem] font-medium text-muted-foreground uppercase tracking-tight">
+                  Total
+                </p>
+                <h4 class="text-xl font-bold">{{ assetStats.total }}</h4>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent class="p-3 text-center">
+                <p class="text-[0.7rem] font-medium text-blue-600 uppercase tracking-tight">Open</p>
+                <h4 class="text-xl font-bold text-blue-600">{{ assetStats.openCount }}</h4>
+              </CardContent>
+            </Card>
+            <Card class="border-l-4 border-l-primary overflow-hidden">
+              <CardContent class="p-3 text-center">
+                <p
+                  class="text-[0.7rem] font-medium text-primary uppercase tracking-tight flex items-center justify-center gap-1"
+                >
+                  <Clock class="w-3 h-3" /> In Progress
+                </p>
+                <h4 class="text-xl font-bold">{{ assetStats.inProgressCount }}</h4>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent class="p-3 text-center bg-green-50/30">
+                <p
+                  class="text-[0.7rem] font-medium text-green-600 uppercase tracking-tight flex items-center justify-center gap-1"
+                >
+                  <CheckCircle2 class="w-3 h-3" /> Resolved
+                </p>
+                <h4 class="text-xl font-bold text-green-600">{{ assetStats.resolved }}</h4>
+              </CardContent>
+            </Card>
+            <Card class="col-span-1">
+              <CardContent class="p-3 text-center">
+                <p class="text-[0.7rem] font-medium text-muted-foreground uppercase tracking-tight">
+                  Avg Time
+                </p>
+                <h4 class="text-lg font-bold">{{ assetStats.avgResponse }}h</h4>
+              </CardContent>
+            </Card>
+            <Card class="col-span-1">
+              <CardContent class="p-3 text-center bg-primary/5">
+                <p
+                  class="text-[0.7rem] font-medium text-primary uppercase tracking-tight flex items-center justify-center gap-1"
+                >
+                  <Zap class="w-3 h-3 font-bold" /> Best
+                </p>
+                <h4 class="text-lg font-bold text-primary">{{ assetStats.bestResponse }}h</h4>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
         <template v-if="assetRequests.length > 0">
           <Card>
-            <CardHeader class="pb-3 border-b border-muted">
+            <CardHeader
+              class="pb-3 border-b border-muted flex flex-row items-center justify-between"
+            >
               <div class="space-y-1">
-                <CardTitle class="text-xl font-bold">My Asset Requests</CardTitle>
+                <CardTitle class="text-xl font-bold">{{
+                  t('services.itHelp.tabs.assetRequest')
+                }}</CardTitle>
                 <CardDescription> Track your equipment and hardware requests. </CardDescription>
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                class="h-9 border-2 border-primary/20 text-primary hover:bg-primary hover:text-white transition-all font-bold"
+                @click="isAssetModalOpen = true"
+              >
+                <Package class="w-4 h-4 mr-2" />
+                {{ t('services.itHelp.requestEquipment') }}
+              </Button>
             </CardHeader>
             <CardContent class="p-0">
               <div class="divide-y divide-border/50">
@@ -1033,70 +1273,88 @@ const categories = computed(() => {
             </div>
 
             <!-- Stats Section -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
               <Card>
-                <CardContent class="flex items-center justify-between p-6">
-                  <div
-                    class="flex-1 flex flex-col items-center justify-center border-r border-border pr-4"
+                <CardContent class="p-3 text-center">
+                  <p
+                    class="text-[0.7rem] font-medium text-muted-foreground uppercase tracking-tight"
                   >
-                    <div class="text-sm font-medium text-muted-foreground mb-2">Total Tickets</div>
-                    <div class="text-3xl font-bold">{{ ticketStats.total }}</div>
-                  </div>
-                  <div class="flex-1 flex flex-col items-center justify-center pl-4">
-                    <div class="text-sm font-medium text-green-600 flex items-center gap-1 mb-2">
-                      <CheckCircle2 class="w-4 h-4" /> Total Resolved
-                    </div>
-                    <div class="text-3xl font-bold text-green-600">{{ ticketStats.resolved }}</div>
-                  </div>
+                    Total Tickets
+                  </p>
+                  <h4 class="text-xl font-bold">{{ ticketStats.total }}</h4>
+                </CardContent>
+              </Card>
+              <Card class="border-l-4 border-l-blue-600 overflow-hidden">
+                <CardContent class="p-3 text-center">
+                  <p class="text-[0.7rem] font-medium text-blue-600 uppercase tracking-tight">
+                    Open
+                  </p>
+                  <h4 class="text-xl font-bold text-blue-600">{{ ticketStats.openCount }}</h4>
+                </CardContent>
+              </Card>
+              <Card class="border-l-4 border-l-primary overflow-hidden">
+                <CardContent class="p-3 text-center">
+                  <p class="text-[0.7rem] font-medium text-primary uppercase tracking-tight">
+                    In Progress
+                  </p>
+                  <h4 class="text-xl font-bold text-primary">{{ ticketStats.inProgressCount }}</h4>
                 </CardContent>
               </Card>
 
               <Card>
-                <CardContent class="flex items-center justify-between p-6">
-                  <div
-                    class="flex-1 flex flex-col items-center justify-center border-r border-border pr-4"
+                <CardContent class="p-3 text-center bg-green-50/30">
+                  <p
+                    class="text-[0.7rem] font-medium text-green-600 uppercase tracking-tight flex items-center justify-center gap-1"
                   >
-                    <div class="text-sm font-medium text-blue-600 mb-2">Open</div>
-                    <div class="text-3xl font-bold text-blue-600">{{ ticketStats.openCount }}</div>
-                  </div>
-                  <div class="flex-1 flex flex-col items-center justify-center pl-4">
-                    <div class="text-sm font-medium text-yellow-600 mb-2">In Progress</div>
-                    <div class="text-3xl font-bold text-yellow-600">
-                      {{ ticketStats.inProgressCount }}
-                    </div>
-                  </div>
+                    <CheckCircle2 class="w-3 h-3" /> Resolved
+                  </p>
+                  <h4 class="text-xl font-bold text-green-600">{{ ticketStats.resolved }}</h4>
                 </CardContent>
               </Card>
 
               <Card>
-                <CardContent class="flex items-center justify-between p-6">
-                  <div
-                    class="flex-1 flex flex-col items-center justify-center border-r border-border pr-4"
+                <CardContent class="p-3 text-center">
+                  <p
+                    class="text-[0.7rem] font-medium text-muted-foreground uppercase tracking-tight"
                   >
-                    <div class="text-sm font-medium text-muted-foreground mb-2">
-                      {{ t('services.itHelp.stats.avgResponse') }}
-                    </div>
-                    <div class="text-3xl font-bold">{{ ticketStats.avgResponse }}h</div>
-                  </div>
-                  <div class="flex-1 flex flex-col items-center justify-center pl-4">
-                    <div class="text-sm font-medium text-green-600 flex items-center gap-1 mb-2">
-                      <Zap class="w-4 h-4" /> Best Time
-                    </div>
-                    <div class="text-3xl font-bold text-green-600">
-                      {{ ticketStats.bestResponse }}h
-                    </div>
-                  </div>
+                    Avg Time
+                  </p>
+                  <h4 class="text-lg font-bold">{{ ticketStats.avgResponse }}h</h4>
+                </CardContent>
+              </Card>
+
+              <Card class="col-span-1 bg-primary/5 border-primary/20">
+                <CardContent class="p-3 text-center">
+                  <p
+                    class="text-[0.7rem] font-medium text-primary uppercase tracking-tight flex items-center justify-center gap-1"
+                  >
+                    <Zap class="w-3 h-3 font-bold" /> Best
+                  </p>
+                  <h4 class="text-lg font-bold text-primary">{{ ticketStats.bestResponse }}h</h4>
                 </CardContent>
               </Card>
             </div>
           </template>
 
           <Card>
-            <CardHeader class="pb-3 border-b border-muted">
+            <CardHeader
+              class="pb-3 border-b border-muted flex flex-row items-center justify-between"
+            >
               <div class="space-y-1">
-                <CardTitle class="text-xl font-bold">Support Tickets</CardTitle>
-                <CardDescription>Report an issue or request assistance.</CardDescription>
+                <CardTitle class="text-xl font-bold">{{
+                  t('services.itHelp.tickets.title')
+                }}</CardTitle>
+                <CardDescription>{{ t('services.itHelp.tickets.subtitle') }}</CardDescription>
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                class="h-9 border-2 border-primary/20 text-primary hover:bg-primary hover:text-white transition-all font-bold"
+                @click="isTicketModalOpen = true"
+              >
+                <Plus class="w-4 h-4 mr-2" />
+                {{ t('services.itHelp.newTicket') }}
+              </Button>
             </CardHeader>
             <CardContent class="p-0">
               <div class="divide-y divide-border/50">

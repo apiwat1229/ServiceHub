@@ -168,7 +168,7 @@ const routes = [
             },
             {
                 path: 'helpdesk',
-                name: 'HelpDesk',
+                name: 'Help Desk',
                 component: () => import('../views/admin/HelpDesk.vue'),
             },
         ]

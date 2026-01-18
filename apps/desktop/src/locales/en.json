@@ -835,7 +835,7 @@
       "description": "Technical Support ticketing and asset management.",
       "subtitle": "Submit tickets, browse knowledge base, or manage assets.",
       "requestEquipment": "Request Equipment",
-      "newTicket": "New Ticket",
+      "newTicket": "Request Repair",
       "stats": {
         "openTickets": "Open Tickets",
         "avgResponse": "Avg. Response Time",
@@ -843,7 +843,7 @@
         "overview": "Statistics Overview"
       },
       "tabs": {
-        "myTickets": "My Tickets",
+        "myTickets": "Repair Status",
         "assetRequest": "Asset Request",
         "kb": "Knowledge Center",
         "stock": "IT Stock Management",
@@ -936,7 +936,7 @@
       },
       "searchPlaceholder": "Search tickets or articles...",
       "tickets": {
-        "title": "Support Tickets",
+        "title": "Request Repair",
         "subtitle": "Report an issue or request assistance.",
         "subject": "Subject",
         "subjectPlaceholder": "Brief summary of the issue",
