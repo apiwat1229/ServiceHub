@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
-import { existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { AccessControlModule } from './access-control/access-control.module';
 import { AnalyticsModule } from './analytics/analytics.module';
@@ -29,21 +28,6 @@ import { SuppliersModule } from './suppliers/suppliers.module';
 import { UsersModule } from './users/users.module';
 
 import { JobOrdersModule } from './job-orders/job-orders.module';
-
-// Ensure upload directories exist at startup
-const uploadDirs = [
-    'uploads',
-    'uploads/avatars',
-    'uploads/it-asset',
-    'uploads/knowledge-books',
-];
-
-uploadDirs.forEach(dir => {
-    const fullPath = join(process.cwd(), dir);
-    if (!existsSync(fullPath)) {
-        mkdirSync(fullPath, { recursive: true });
-    }
-});
 
 @Module({
     imports: [

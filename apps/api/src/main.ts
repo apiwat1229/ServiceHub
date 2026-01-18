@@ -1,8 +1,28 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { existsSync, mkdirSync } from 'fs';
+import { join } from 'path';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
+    // Ensure upload directories exist safely
+    try {
+        const uploadDirs = [
+            'uploads',
+            'uploads/avatars',
+            'uploads/it-asset',
+            'uploads/knowledge-books',
+        ];
+        uploadDirs.forEach(dir => {
+            const fullPath = join(process.cwd(), dir);
+            if (!existsSync(fullPath)) {
+                mkdirSync(fullPath, { recursive: true });
+            }
+        });
+    } catch (e: any) {
+        console.warn('Could not create upload directories:', e.message);
+    }
+
     const app = await NestFactory.create(AppModule);
 
     // Enable CORS
