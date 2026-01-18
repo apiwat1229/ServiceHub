@@ -182,7 +182,18 @@ const getImageUrl = (path: string | null | undefined) => {
   if (!path) return undefined;
   if (path.startsWith('http') || path.startsWith('data:')) return path;
   const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:2530';
-  return `${baseUrl}${path.startsWith('/') ? '' : '/'}${path}`;
+  const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+
+  if (
+    cleanBaseUrl.includes('app.ytrc.co.th') &&
+    !cleanBaseUrl.endsWith('/api') &&
+    !cleanPath.startsWith('/api')
+  ) {
+    return `${cleanBaseUrl}/api${cleanPath}`;
+  }
+
+  return `${cleanBaseUrl}${cleanPath}`;
 };
 </script>
 

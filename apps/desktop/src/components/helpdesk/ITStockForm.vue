@@ -61,7 +61,20 @@ const getImageUrl = (path: string | null) => {
   if (!path) return null;
   if (path.startsWith('http') || path.startsWith('data:')) return path;
   const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:2530';
-  return `${baseUrl}${path.startsWith('/') ? '' : '/'}${path}`;
+  const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+
+  // If we're in production (https) and the baseUrl doesn't have /api, but the path doesn't either,
+  // we might need to inject it for the Nginx proxy to catch it.
+  if (
+    cleanBaseUrl.includes('app.ytrc.co.th') &&
+    !cleanBaseUrl.endsWith('/api') &&
+    !cleanPath.startsWith('/api')
+  ) {
+    return `${cleanBaseUrl}/api${cleanPath}`;
+  }
+
+  return `${cleanBaseUrl}${cleanPath}`;
 };
 const imagePreview = ref<string | null>(getImageUrl(props.initialData?.image || null));
 const fileInput = ref<HTMLInputElement | null>(null);

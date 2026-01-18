@@ -15,7 +15,13 @@ export const useAuthStore = defineStore('auth', {
             if (!state.user?.avatar) return '';
             if (state.user.avatar.startsWith('http')) return state.user.avatar;
             const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:2530';
-            return `${apiUrl}${state.user.avatar}`;
+            const cleanBaseUrl = apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
+            const avatarPath = state.user.avatar.startsWith('/') ? state.user.avatar : `/${state.user.avatar}`;
+
+            if (cleanBaseUrl.includes('app.ytrc.co.th') && !cleanBaseUrl.endsWith('/api') && !avatarPath.startsWith('/api')) {
+                return `${cleanBaseUrl}/api${avatarPath}`;
+            }
+            return `${cleanBaseUrl}${avatarPath}`;
         },
         /**
          * Get user's permissions array
