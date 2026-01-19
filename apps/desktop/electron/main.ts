@@ -120,4 +120,76 @@ ipcMain.on('window-close', () => {
   win?.close();
 });
 
-app.whenReady().then(createWindow)
+// ============================================
+// Auto-Update Configuration
+// ============================================
+import log from 'electron-log'
+import { autoUpdater } from 'electron-updater'
+
+// Configure logging for auto-updater
+log.transports.file.level = 'info'
+autoUpdater.logger = log
+
+// Auto-update settings
+autoUpdater.autoDownload = false // Let user choose to download
+autoUpdater.autoInstallOnAppQuit = true // Install when app quits
+
+// Auto-update event handlers
+autoUpdater.on('checking-for-update', () => {
+  log.info('Checking for update...')
+  win?.webContents.send('update-checking')
+})
+
+autoUpdater.on('update-available', (info) => {
+  log.info('Update available:', info)
+  win?.webContents.send('update-available', info)
+})
+
+autoUpdater.on('update-not-available', (info) => {
+  log.info('Update not available:', info)
+  win?.webContents.send('update-not-available', info)
+})
+
+autoUpdater.on('download-progress', (progressObj) => {
+  log.info('Download progress:', progressObj)
+  win?.webContents.send('download-progress', progressObj)
+})
+
+autoUpdater.on('update-downloaded', (info) => {
+  log.info('Update downloaded:', info)
+  win?.webContents.send('update-downloaded', info)
+})
+
+autoUpdater.on('error', (err) => {
+  log.error('Update error:', err)
+  win?.webContents.send('update-error', err.message)
+})
+
+// IPC handlers for auto-update
+ipcMain.on('check-for-updates', () => {
+  if (!VITE_DEV_SERVER_URL) {
+    autoUpdater.checkForUpdates()
+  } else {
+    log.info('Skipping update check in development mode')
+  }
+})
+
+ipcMain.on('download-update', () => {
+  autoUpdater.downloadUpdate()
+})
+
+ipcMain.on('install-update', () => {
+  autoUpdater.quitAndInstall()
+})
+
+app.whenReady().then(() => {
+  createWindow()
+
+  // Check for updates on startup (production only)
+  if (!VITE_DEV_SERVER_URL) {
+    setTimeout(() => {
+      log.info('Checking for updates on startup...')
+      autoUpdater.checkForUpdates()
+    }, 3000) // Wait 3 seconds after app starts
+  }
+})

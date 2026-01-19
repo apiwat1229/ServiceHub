@@ -18,6 +18,7 @@ onUnmounted(() => {
 <template>
   <GlobalBackground />
   <router-view />
+  <UpdateNotification />
   <Toaster
     position="top-center"
     :duration="5000"

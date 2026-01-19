@@ -3,6 +3,8 @@ name: Deploy Production
 on:
   push:
     branches: [main]
+    tags:
+      - 'v*.*.*'  # Trigger on version tags like v1.0.0
 
 jobs:
   deploy:
@@ -40,3 +42,30 @@ jobs:
           cp -r apps/desktop/dist/* /var/www/ytrc-app/
 
           echo "Deployment Complete!"
+
+      - name: Build Desktop App (Linux)
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          cd /home/admin/Desktop/Desktop-NestJS
+          
+          # Build Linux AppImage
+          echo "Building Desktop App for Linux..."
+          npm run build:linux --workspace=apps/desktop
+          
+      - name: Deploy Desktop Updates
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          cd /home/admin/Desktop/Desktop-NestJS
+          
+          # Create updates directory if not exists
+          mkdir -p /var/www/ytrc-updates
+          
+          # Copy built files to update server
+          cp apps/desktop/release/*/YTRC-Desktop-Linux-*.AppImage /var/www/ytrc-updates/ || true
+          cp apps/desktop/release/*/latest-linux.yml /var/www/ytrc-updates/ || true
+          
+          # Set proper permissions
+          chmod 644 /var/www/ytrc-updates/* || true
+          
+          echo "Desktop app deployed to update server!"
+          echo "Update URL: https://app.ytrc.co.th/updates/"
