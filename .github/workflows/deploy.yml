@@ -57,15 +57,34 @@ jobs:
         run: |
           cd /home/admin/Desktop/Desktop-NestJS
           
+          # Extract version from tag (v1.0.1 -> 1.0.1)
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "Deploying version: $VERSION"
+          
           # Create updates directory if not exists
           mkdir -p /var/www/ytrc-updates
           
           # Copy built files to update server
-          cp apps/desktop/release/*/YTRC-Desktop-Linux-*.AppImage /var/www/ytrc-updates/ || true
-          cp apps/desktop/release/*/latest-linux.yml /var/www/ytrc-updates/ || true
+          if [ -f "apps/desktop/release/${VERSION}/YTRC-Desktop-Linux-${VERSION}.AppImage" ]; then
+            cp "apps/desktop/release/${VERSION}/YTRC-Desktop-Linux-${VERSION}.AppImage" /var/www/ytrc-updates/
+            echo "✅ Copied AppImage"
+          else
+            echo "⚠️  AppImage not found for version ${VERSION}"
+            ls -la apps/desktop/release/
+          fi
+          
+          if [ -f "apps/desktop/release/${VERSION}/latest-linux.yml" ]; then
+            cp "apps/desktop/release/${VERSION}/latest-linux.yml" /var/www/ytrc-updates/
+            echo "✅ Copied latest-linux.yml"
+          else
+            echo "⚠️  latest-linux.yml not found"
+          fi
           
           # Set proper permissions
-          chmod 644 /var/www/ytrc-updates/* || true
+          chmod 644 /var/www/ytrc-updates/* 2>/dev/null || true
           
+          echo ""
           echo "Desktop app deployed to update server!"
           echo "Update URL: https://app.ytrc.co.th/updates/"
+          echo "Files:"
+          ls -lh /var/www/ytrc-updates/
