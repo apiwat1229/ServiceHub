@@ -1,10 +1,11 @@
 import { app, BrowserWindow } from 'electron'
-// import { createRequire } from 'node:module'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 
-// const require = createRequire(import.meta.url)
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
+// In Electron, use app.getAppPath() to get the application directory
+// This works reliably in both development and production
+const __dirname = app.isPackaged
+  ? path.dirname(app.getPath('exe'))
+  : path.join(process.cwd(), 'apps/desktop')
 
 // The built directory structure
 //
@@ -126,13 +127,7 @@ ipcMain.on('window-close', () => {
 import log from 'electron-log'
 import { autoUpdater } from 'electron-updater'
 
-// Configure logging for auto-updater
-log.transports.file.level = 'info'
-autoUpdater.logger = log
-
-// Auto-update settings
-autoUpdater.autoDownload = false // Let user choose to download
-autoUpdater.autoInstallOnAppQuit = true // Install when app quits
+// Auto-update settings will be configured in app.whenReady()
 
 // Auto-update event handlers
 autoUpdater.on('checking-for-update', () => {
@@ -183,6 +178,17 @@ ipcMain.on('install-update', () => {
 })
 
 app.whenReady().then(() => {
+  // Configure logging for auto-updater (must be done after app is ready)
+  // Check if log.transports.file exists before configuring
+  if (log.transports && log.transports.file) {
+    log.transports.file.level = 'info'
+  }
+  autoUpdater.logger = log
+
+  // Auto-update settings
+  autoUpdater.autoDownload = false // Let user choose to download
+  autoUpdater.autoInstallOnAppQuit = true // Install when app quits
+
   createWindow()
 
   // Check for updates on startup (production only)

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import TicketDialog from '@/components/booking/TicketDialog.vue';
 import LanguageSwitcher from '@/components/LanguageSwitcher.vue';
 import AppearanceSettings from '@/components/settings/AppearanceSettings.vue';
 import {
@@ -52,6 +53,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import { toast } from 'vue-sonner';
+import MobileSidebar from './MobileSidebar.vue';
 
 const authStore = useAuthStore();
 const router = useRouter();

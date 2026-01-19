@@ -16,6 +16,7 @@
     "dev:vite": "npm run dev:web --workspace=apps/desktop",
     "dev:db": "docker-compose up -d",
     "kill": "lsof -ti :2530 -ti :5173 | xargs kill -9 2>/dev/null || true",
+    "kill:win": "taskkill /F /IM node.exe /T",
     "kill:all": "killall node || true",
     "db:studio": "npm run studio --workspace=packages/database",
     "build": "npm run build --workspaces",
