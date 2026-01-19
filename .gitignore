@@ -61,3 +61,4 @@ apps/desktop/dist/
 .turbo
 apps/desktop/dist-electron/
 apps/api/uploads/
+apps/desktop/release/
