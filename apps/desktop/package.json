@@ -8,6 +8,9 @@
     "dev:web": "cross-env ELECTRON_DISABLE=1 vite --mode development --host",
     "build": "vue-tsc && vite build && electron-builder",
     "build:web": "vite build",
+    "build:win": "vue-tsc && vite build && electron-builder --win",
+    "build:mac": "vue-tsc && vite build && electron-builder --mac",
+    "build:linux": "vue-tsc && vite build && electron-builder --linux",
     "preview": "vite preview"
   },
   "dependencies": {
