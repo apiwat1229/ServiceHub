@@ -1,9 +1,9 @@
 import { app, BrowserWindow } from 'electron'
 import path from 'node:path'
-// In Electron, use app.getAppPath() to get the application directory
-// This works reliably in both development and production
+// In Electron, use process.resourcesPath for packaged apps
+// This correctly points to the resources folder in the installed app
 const __dirname = app.isPackaged
-  ? path.dirname(app.getPath('exe'))
+  ? process.resourcesPath
   : path.join(app.getAppPath(), 'dist-electron')
 
 // The built directory structure
@@ -15,7 +15,7 @@ const __dirname = app.isPackaged
 // │ │ ├── main.js
 // │ │ └── preload.mjs
 // │
-process.env.APP_ROOT = path.join(__dirname, '..')
+process.env.APP_ROOT = app.isPackaged ? process.resourcesPath : path.join(__dirname, '..')
 
 // 🚧 Use ['ENV_NAME'] avoid vite:define plugin - Vite@2.x
 export const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL']
@@ -37,7 +37,9 @@ function createWindow() {
     height: 800,
     center: true,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.mjs'),
+      preload: app.isPackaged
+        ? path.join(__dirname, 'dist-electron', 'preload.mjs')
+        : path.join(__dirname, 'preload.mjs'),
     },
     ...bounds,
   })
@@ -68,6 +70,8 @@ function createWindow() {
   } else {
     // win.loadFile('dist/index.html')
     win.loadFile(path.join(RENDERER_DIST, 'index.html'))
+    // Open DevTools in production for debugging
+    win.webContents.openDevTools()
   }
 }
 

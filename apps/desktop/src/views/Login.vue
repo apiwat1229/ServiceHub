@@ -97,8 +97,8 @@ function handlePasswordChangeSuccess() {
 </script>
 
 <template>
-  <div class="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
-    <div class="w-full max-w-sm">
+  <div class="flex min-h-svh w-full items-center justify-center p-6 md:p-10 app-drag-region">
+    <div class="w-full max-w-sm app-no-drag">
       <!-- Error Alert -->
       <Alert v-if="loginError" variant="destructive" class="mb-4">
         <AlertCircle class="h-4 w-4" />
@@ -117,3 +117,13 @@ function handlePasswordChangeSuccess() {
     />
   </div>
 </template>
+
+<style scoped>
+.app-drag-region {
+  -webkit-app-region: drag;
+}
+
+.app-no-drag {
+  -webkit-app-region: no-drag;
+}
+</style>
