@@ -18,6 +18,10 @@
     "confirm": "ยืนยัน",
     "approve": "อนุมัติ",
     "approved": "อนุมัติแล้ว",
+    "scoop": "ตัก",
+    "selectDate": "เลือกวันที่",
+    "printPlan": "พิมพ์แผน",
+    "saveChanges": "บันทึกการเปลี่ยนแปลง",
     "close": "ปิด",
     "search": "ค้นหา",
     "bookingCode": "รหัสการจอง",
@@ -45,7 +49,6 @@
     "clearAll": "ล้างทั้งหมด",
     "errorLoading": "โหลดข้อมูลไม่สำเร็จ",
     "errorSave": "บันทึกข้อมูลไม่สำเร็จ",
-    "saveChanges": "บันทึกการเปลี่ยนแปลง",
     "saved": "บันทึกสำเร็จ",
     "saveSuccess": "บันทึกสำเร็จ",
     "deleteSuccess": "ลบสำเร็จ",
@@ -98,18 +101,19 @@
   "qa": {
     "title": "การประกันคุณภาพ",
     "cuplump": "ยางก้อนถ้วย",
-    "uss": "USS",
-    "jobOrder": "ใบงานสั่งผลิต (Job Order)",
-    "rawMaterialPlan": "แผนรับวัตถุดิบ (Raw Material Plan)",
+    "uss": "ยางแผ่น",
+    "jobOrder": "ใบงานสั่งผลิต",
+    "rawMaterialPlan": "แผนรับวัตถุดิบ",
+    "productionPlanningAllocation": "การวางแผนและจัดสรรการผลิต",
     "tabs": {
       "clPoPri": "PO P30 PRI",
       "clLab": "LAB TEST",
       "clSummary": "INCOMING",
-      "cuplumpPool": "บ่อพักเศษยาง",
+      "cuplumpPool": "บ่อยางก้อนถ้วย",
       "planList": "รายการแผน",
       "createPlan": "สร้างแผน",
-      "ussPoPri": "USS PO PRI",
-      "ussSummary": "USS SUMMARY",
+      "ussPoPri": "ยางแผ่น PO PRI",
+      "ussSummary": "สรุปยางแผ่น",
       "labOrders": "JOB ORDER",
       "jobOrderList": "รายการใบสั่งผลิต",
       "jobOrderCreate": "สร้างใบสั่งผลิต"
@@ -119,6 +123,12 @@
     "comingSoon": "ฟีเจอร์กำลังตามมาเร็วๆ นี้",
     "noSummaryData": "ไม่พบข้อมูลสรุปยางก้อนถ้วย",
     "noSummaryDesc": "ไม่พบผลการทดสอบแล็บสำหรับวันที่นี้ โปรดตรวจสอบว่ามีการบันทึกข้อมูลในแท็บแล็บแล้ว",
+    "fields": {
+      "planNo": "เลขที่แผน",
+      "revision": "แก้ไขครั้งที่",
+      "issuedDate": "วันที่ออกเอกสาร",
+      "refProduction": "อ้างอิงใบสั่งผลิต"
+    },
     "columns": {
       "lotNumber": "เลขล็อต",
       "supplier": "ซัพพลายเออร์",
@@ -128,7 +138,43 @@
       "avgPri": "เฉลี่ย PRI",
       "grade": "เกรด",
       "netWeight": "น้ำหนักเนื้อยางแห้ง",
-      "date": "วันที่"
+      "date": "วันที่",
+      "switchToNormal": "เปลี่ยนกลับเป็นโหมดการผลิตแบบปกติหรือไม่?",
+      "switchTo24Hr": "เปิดใช้งานโหมดการผลิต 24 ชั่วโมงหรือไม่?",
+      "day": "วัน",
+      "shift": "กะ",
+      "target": "เป้าหมาย",
+      "clCons": "การใช้ CL",
+      "ratioBC": "สัดส่วน B/C",
+      "palletShift": "พาเลท/กะ",
+      "remarks": "หมายเหตุ",
+      "poolNo": "เลขที่บ่อ",
+      "grossTon": "รวม (ตัน)",
+      "netTon": "สุทธิ (ตัน)",
+      "drc": "DRC",
+      "moist": "ความชื้น",
+      "po": "P0",
+      "pri": "PRI"
+    },
+    "productionModes": {
+      "normal": "ปกติ",
+      "mode24Hr": "24 ชม.",
+      "holiday": "วันหยุด"
+    },
+    "sections": {
+      "poolPropertiesValidation": "คุณสมบัติบ่อ & การตรวจสอบ"
+    },
+    "footer": {
+      "issueBy": "ออกโดย",
+      "verifiedBy": "ตรวจสอบโดย"
+    },
+    "headers": {
+      "productionPlan": "แผนการผลิต",
+      "ratios": "สัดส่วน (%)",
+      "productionTargets": "เป้าหมายการผลิต",
+      "clAllocationPlan": "แผนจัดสรรวัตถุดิบ",
+      "cutting": "การตัด",
+      "docs": "เอกสาร"
     },
     "labels": {
       "mainTruck": "รถหลัก",
@@ -217,8 +263,8 @@
       "description": "การวางแผนความต้องการวัสดุสำหรับการผลิตและสินค้าคงคลัง"
     },
     "cuplump": {
-      "name": "Cuplump Pool",
-      "description": "ระบบจัดการ Cuplump Pool"
+      "name": "บ่อยางก้อนถ้วย",
+      "description": "ระบบจัดการบ่อยางก้อนถ้วย"
     },
     "booking": {
       "name": "คิวการจอง",
@@ -528,7 +574,7 @@
       "description": "QR ติดตามตัวอย่าง, ผลการตรวจสอบ & การอนุมัติ"
     },
     "myMachine": {
-      "name": "My Machine",
+      "name": "เครื่องจักรของฉัน",
       "description": "ระบบจัดการเครื่องจักรแบบครบวงจร",
       "filterPlaceholder": "เลือกหมวดหมู่",
       "assetSpecifications": "ข้อมูลจำเพาะของทรัพย์สิน",
@@ -819,7 +865,7 @@
       }
     },
     "itHelp": {
-      "name": "IT Help Desk",
+      "name": "แจ้งปัญหาไอที",
       "description": "ระบบแจ้งซ่อมและเบิกอุปกรณ์ไอที",
       "subtitle": "แจ้งปัญหาการใช้งาน, ค้นหาคู่มือ หรือเบิกอุปกรณ์ไอที",
       "requestEquipment": "แจ้งเบิกอุปกรณ์",
@@ -1109,8 +1155,8 @@
       }
     },
     "uss": {
-      "name": "ยางแผ่นรมควัน",
-      "description": "ระบบจัดการและติดตามยางแผ่นรมควัน"
+      "name": "ยางแผ่น",
+      "description": "ระบบจัดการและติดตามยางแผ่น"
     },
     "shipping": {
       "name": "การจัดส่งสินค้า",
@@ -1958,10 +2004,10 @@
     }
   },
   "cuplump": {
-    "title": "Cuplump Pool",
-    "detailTitle": "รายละเอียด Cuplump Pool",
-    "pageTitle": "Cuplump Pool",
-    "pageDescription": "ระบบจัดการและติดตาม Cuplump Pool",
+    "title": "บ่อยางก้อนถ้วย",
+    "detailTitle": "รายละเอียดบ่อยางก้อนถ้วย",
+    "pageTitle": "บ่อยางก้อนถ้วย",
+    "pageDescription": "ระบบจัดการและติดตามบ่อยางก้อนถ้วย",
     "lotNo": "หมายเลขล็อต",
     "supplier": "ผู้จัดจำหน่าย",
     "truck": "รถบรรทุก",
@@ -2020,8 +2066,8 @@
   },
   "uss": {
     "action": "การดำเนินการ",
-    "title": "ยางแผ่นรมควัน",
-    "detailTitle": "รายละเอียดการรับยางแผ่นรมควัน",
+    "title": "ยางแผ่น",
+    "detailTitle": "รายละเอียดการรับยางแผ่น",
     "lotNo": "หมายเลขล็อต",
     "lotNumber": "หมายเลขล็อต",
     "supplier": "ผู้จัดจำหน่าย",
@@ -2261,7 +2307,7 @@
   "ticketDialog": {
     "title": "รายละเอียดตั๋ว",
     "description": "ตัวอย่างรายละเอียดตั๋วการจอง",
-    "queueTicket": "คิว Cuplump",
+    "queueTicket": "คิวบ่อยางก้อนถ้วย",
     "code": "รหัส",
     "name": "ชื่อ",
     "date": "วันที่",

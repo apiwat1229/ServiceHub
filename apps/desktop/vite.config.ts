@@ -8,7 +8,7 @@ import electron from 'vite-plugin-electron/simple'
 export default defineConfig(({ mode }) => {
   const isWebOnly = process.env.ELECTRON_DISABLE === '1'
 
-  const plugins = [
+  const plugins: any[] = [
     vue(),
     Components({
       dts: true,
@@ -116,6 +116,20 @@ export default defineConfig(({ mode }) => {
       alias: {
         '@': path.resolve(__dirname, './src'),
       },
+    },
+    optimizeDeps: {
+      include: [
+        'vue',
+        'pinia',
+        'vue-router',
+        'axios',
+        'date-fns',
+        'dayjs',
+        'lucide-vue-next',
+        'vue-i18n',
+        'clsx',
+        'tailwind-merge'
+      ],
     },
     server: {
       host: true,

@@ -15,6 +15,7 @@
     "dev:desktop": "npm run dev --workspace=apps/desktop",
     "dev:vite": "npm run dev:web --workspace=apps/desktop",
     "dev:db": "docker-compose up -d",
+    "dev:fix": "rimraf node_modules/.vite apps/desktop/node_modules/.vite && npm run dev -- --force",
     "kill": "lsof -ti :2530 -ti :5173 | xargs kill -9 2>/dev/null || true",
     "kill:win": "taskkill /F /IM node.exe /T",
     "kill:all": "killall node || true",

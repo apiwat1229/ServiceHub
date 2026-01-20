@@ -333,7 +333,7 @@ const handleQaDateSelect = (date: any) => {
 
         <!-- Actions -->
         <div class="flex justify-between items-center w-full pt-8 border-t mt-4">
-          <div class="flex items-center">
+          <div class="flex items-center" v-if="props.initialData?.id">
             <AlertDialog>
               <AlertDialogTrigger as-child>
                 <Button
@@ -363,7 +363,7 @@ const handleQaDateSelect = (date: any) => {
               </AlertDialogContent>
             </AlertDialog>
           </div>
-          <div class="flex items-center gap-3">
+          <div class="flex items-center gap-3 ml-auto">
             <Button variant="ghost" @click="emit('cancel')" class="px-8 font-bold">
               {{ t('common.cancel') }}
             </Button>

@@ -18,6 +18,10 @@
     "confirm": "Confirm",
     "approve": "Approve",
     "approved": "Approved",
+    "scoop": "Scoop",
+    "selectDate": "Select Date",
+    "printPlan": "Print Plan",
+    "saveChanges": "Save Changes",
     "close": "Close",
     "search": "Search",
     "bookingCode": "Booking Code",
@@ -45,7 +49,6 @@
     "clearAll": "Clear All",
     "errorLoading": "Failed to load data",
     "errorSave": "Failed to save data",
-    "saveChanges": "Save Changes",
     "saved": "Saved successfully",
     "saveSuccess": "Saved successfully",
     "confirmSaveAll": "Are you sure you want to save {count} item(s)?",
@@ -99,6 +102,7 @@
     "uss": "USS",
     "jobOrder": "Job Order",
     "rawMaterialPlan": "Raw Material Plan",
+    "productionPlanningAllocation": "Production Planning & Allocation",
     "tabs": {
       "clPoPri": "PO P30 PRI",
       "clLab": "LAB TEST",
@@ -117,6 +121,12 @@
     "comingSoon": "Feature coming soon",
     "noSummaryData": "No Cuplump Summary Data",
     "noSummaryDesc": "We couldn't find any recorded lab samples for this date. Make sure samples are recorded in the Lab tab.",
+    "fields": {
+      "planNo": "Plan No",
+      "revision": "Revision",
+      "issuedDate": "Issued Date",
+      "refProduction": "Ref. Production"
+    },
     "columns": {
       "lotNumber": "Lot Number",
       "supplier": "Supplier",
@@ -126,7 +136,43 @@
       "avgPri": "AVG PRI",
       "grade": "Grade",
       "netWeight": "Net Weight",
-      "date": "Date"
+      "date": "Date",
+      "switchToNormal": "Switch back to Normal production mode?",
+      "switchTo24Hr": "Switch to 24 HR Production Mode?",
+      "day": "Day",
+      "shift": "Shift",
+      "target": "Target",
+      "clCons": "CL Cons.",
+      "ratioBC": "Ratio B/C",
+      "palletShift": "Pallet/Shift",
+      "remarks": "Remarks",
+      "poolNo": "Pool No.",
+      "grossTon": "Gross (Ton)",
+      "netTon": "Net (Ton)",
+      "drc": "DRC",
+      "moist": "Moist.",
+      "po": "P0",
+      "pri": "PRI"
+    },
+    "productionModes": {
+      "normal": "Normal",
+      "mode24Hr": "24 Hour",
+      "holiday": "Holiday"
+    },
+    "sections": {
+      "poolPropertiesValidation": "Pool Properties & Validation"
+    },
+    "footer": {
+      "issueBy": "Issue By",
+      "verifiedBy": "Verified By"
+    },
+    "headers": {
+      "productionPlan": "Production Plan",
+      "ratios": "Ratios (%)",
+      "productionTargets": "Production Targets",
+      "clAllocationPlan": "CL Allocation Plan",
+      "cutting": "Cutting",
+      "docs": "Docs"
     },
     "labels": {
       "mainTruck": "Main Truck",

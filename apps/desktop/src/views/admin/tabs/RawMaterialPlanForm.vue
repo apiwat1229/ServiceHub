@@ -18,132 +18,158 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { format } from 'date-fns';
+import { addDays, format } from 'date-fns';
 import { Calendar as CalendarIcon, Printer, Save } from 'lucide-vue-next';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
 
+const validPoolGrades = ['AA', 'A', 'B', 'C', 'D'];
+
+const togglePoolGrade = (pool: any, grade: string) => {
+  if (pool.grade.includes(grade)) {
+    pool.grade = pool.grade.filter((g: string) => g !== grade);
+  } else {
+    // Sort logic: use validPoolGrades index
+    const newGrades = [...pool.grade, grade];
+    newGrades.sort((a, b) => validPoolGrades.indexOf(a) - validPoolGrades.indexOf(b));
+    pool.grade = newGrades;
+  }
+};
+
 // Mock initial state for a 7-day plan (14 shifts)
 const plan = ref({
-  planNo: '2024#PL03',
-  revisionNo: '01',
-  refProductionNo: '2024#P03',
-  issuedDate: '17-Jan-24',
+  planNo: '',
+  revisionNo: '',
+  refProductionNo: '',
+  issuedDate: format(new Date(), 'dd MMM yy'),
   rows: Array.from({ length: 14 }, (_, idx) => {
-    const isHoliday = idx === 12 || idx === 13;
+    const startDate = new Date();
+    const currentDate = addDays(startDate, Math.floor(idx / 2));
+
     return {
-      date: idx % 2 === 0 ? (idx < 12 ? `${17 + idx / 2} Jan 26` : '23 Jan 26') : '',
-      dayOfWeek: idx % 2 === 0 ? ['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'][idx / 2] : '',
+      date: idx % 2 === 0 ? format(currentDate, 'dd MMM yy') : '',
+      dayOfWeek: idx % 2 === 0 ? format(currentDate, 'eee') : '',
       shift: idx % 2 === 0 ? '1st' : '2nd',
-      is24hr: idx === 1 || idx === 3 || idx === 5,
-      isHoliday,
-      grade: isHoliday ? 'Holiday' : idx < 2 ? 'P0241' : 'P0263',
-      gradeColor: isHoliday ? '' : idx < 2 ? 'bg-fuchsia-400' : 'bg-blue-300',
-      ratioUSS: isHoliday ? 0 : 0,
-      ratioCL: isHoliday ? 0 : 100,
-      ratioBK: isHoliday ? 0 : 0,
-      productTarget: isHoliday ? 0 : 156,
-      clConsumption: isHoliday ? 0 : 156,
-      ratioBorC: 0,
-      plan1Pool: isHoliday ? '' : idx === 1 ? '7 (AA)' : '13 (AA)',
-      plan1Note: isHoliday ? '' : '3 ตัก',
-      plan2Pool: isHoliday ? '' : '1 (A)',
-      plan2Note: isHoliday ? '' : '2 ตัก',
-      plan3Pool: '',
-      plan3Note: '',
-      cuttingPercent: 0,
-      cuttingPalette: 0,
+      productionMode: 'normal',
+      grade: '',
+      gradeColor: '',
+      ratioUSS: '-',
+      ratioCL: '-',
+      ratioBK: '-',
+      productTarget: '-',
+      clConsumption: '-',
+      ratioBorC: '-',
+      plan1Pool: [] as string[],
+      plan1Scoops: '',
+      plan1Grades: [] as string[],
+      plan2Pool: [] as string[],
+      plan2Scoops: '',
+      plan2Grades: [] as string[],
+      plan3Pool: [] as string[],
+      plan3Scoops: '',
+      plan3Grades: [] as string[],
+      cuttingPercent: '-',
+      cuttingPalette: '',
       remarks: '',
     };
   }),
-  poolDetails: [
-    {
-      poolNo: '12',
-      grossWeight: 443,
-      netWeight: 278,
-      drc: 66.1,
-      moisture: 26.0,
-      p0: 40.8,
-      pri: 36.4,
-      clearDate: '2 Dec 25',
-      grade: 'B+C',
-    },
-    {
-      poolNo: '8',
-      grossWeight: 159,
-      netWeight: 99,
-      drc: 69.6,
-      moisture: 22.0,
-      p0: 35.7,
-      pri: 29.5,
-      clearDate: '8 Jan 26',
-      grade: 'C',
-    },
-    {
-      poolNo: '16',
-      grossWeight: 605,
-      netWeight: 375,
-      drc: 67.9,
-      moisture: 23.6,
-      p0: 35.3,
-      pri: 29.7,
-      clearDate: '19 Dec 25',
-      grade: 'C',
-    },
-    {
-      poolNo: '7',
-      grossWeight: 291,
-      netWeight: 187,
-      drc: 69.9,
-      moisture: 23.0,
-      p0: 45.4,
-      pri: 64.5,
-      clearDate: '19 Dec 25',
-      grade: 'AA',
-    },
-    {
-      poolNo: '13',
-      grossWeight: 416,
-      netWeight: 267,
-      drc: 66.7,
-      moisture: 25.7,
-      p0: 44.6,
-      pri: 71.2,
-      clearDate: '13 Oct 25',
-      grade: 'AA',
-    },
-    {
-      poolNo: '3',
-      grossWeight: 425,
-      netWeight: 271,
-      drc: 65.7,
-      moisture: 27.2,
-      p0: 46.5,
-      pri: 64.3,
-      clearDate: '18 Nov 25',
-      grade: 'AA',
-    },
-    {
-      poolNo: '1',
-      grossWeight: 394,
-      netWeight: 268,
-      drc: 74.9,
-      moisture: 19.5,
-      p0: 44.4,
-      pri: 53.3,
-      clearDate: '14 Jan 26',
-      grade: 'A',
-    },
-  ],
+  poolDetails: Array.from({ length: 7 }, () => ({
+    poolNo: '-',
+    grossWeight: '-',
+    netWeight: '-',
+    drc: '-',
+    moisture: '-',
+    p0: '-',
+    pri: '-',
+    clearDate: '',
+    grade: [] as string[],
+  })),
 });
 
-const grades = ref(['P0263', 'P0251', 'H0276', 'P0241', 'AA', 'A', 'B+C', 'C', 'Holiday']);
+const plainPoolOptions = computed(() => {
+  return Array.from({ length: 23 }, (_, i) => String(i + 1));
+});
+
+const getPlanPoolLabel = (row: any, planIndex: number) => {
+  const pools = row[`plan${planIndex}Pool`];
+  const grades = row[`plan${planIndex}Grades`];
+  if (!pools || pools.length === 0) return '';
+  const poolStr = pools.join(' / ');
+  const gradeStr = grades && grades.length ? ` (${grades.join(' + ')})` : '';
+  return `${poolStr}${gradeStr}`;
+};
+
+const togglePlanPool = (row: any, planIndex: number, pool: string) => {
+  const key = `plan${planIndex}Pool`;
+  if (row[key].includes(pool)) {
+    row[key] = row[key].filter((p: string) => p !== pool);
+  } else {
+    const newPools = [...row[key], pool];
+    newPools.sort((a: string, b: string) => parseInt(a) - parseInt(b));
+    row[key] = newPools;
+  }
+};
+
+const togglePlanGrade = (row: any, planIndex: number, grade: string) => {
+  const key = `plan${planIndex}Grades`;
+  if (row[key].includes(grade)) {
+    row[key] = row[key].filter((g: string) => g !== grade);
+  } else {
+    const newGrades = [...row[key], grade];
+    newGrades.sort((a, b) => validPoolGrades.indexOf(a) - validPoolGrades.indexOf(b));
+    row[key] = newGrades;
+  }
+};
+
+const getGradeColor = (grade: string) => {
+  switch (grade) {
+    case 'P0241':
+      return 'bg-fuchsia-400';
+    case 'P0263':
+      return 'bg-blue-300';
+    case 'P0251':
+      return 'bg-green-300';
+    case 'H0276':
+      return 'bg-orange-300';
+    default:
+      return '';
+  }
+};
+
+const grades = ref(['P0263', 'P0251', 'H0276', 'P0241']);
 
 const formatDate = (date: any) => {
   if (!date) return '';
-  return format(new Date(date.toString()), 'dd-MMM-yyyy');
+  return format(new Date(date.toString()), 'dd MMM yy');
+};
+
+const handleDateUpdate = (newDate: any) => {
+  if (!newDate) return;
+  const startDate = new Date(newDate);
+
+  // Update all rows (assuming 7 days / 14 shifts)
+  for (let i = 0; i < 7; i++) {
+    const currentDate = addDays(startDate, i);
+    const dateStr = format(currentDate, 'dd MMM yy');
+    const dayStr = format(currentDate, 'eee');
+
+    // 1st Shift (Even Rows)
+    if (i * 2 < plan.value.rows.length) {
+      const row = plan.value.rows[i * 2];
+      row.date = dateStr;
+      row.dayOfWeek = dayStr;
+    }
+
+    // 2nd Shift (Odd Rows) - Optional: Sync dayOfWeek if needed, though usually visually implicit
+    // Assuming 2nd shift shares the same day logic
+    if (i * 2 + 1 < plan.value.rows.length) {
+      const rowOdd = plan.value.rows[i * 2 + 1];
+      // rowOdd.date = ''; // Keep empty as it's the 24h toggle slot
+      rowOdd.dayOfWeek = ''; // Keep empty or replicate dayStr if design changes
+    }
+  }
 };
 
 const handleSave = () => {
@@ -162,7 +188,7 @@ const handleSave = () => {
             {{ t('qa.rawMaterialPlan') }}
           </h2>
           <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">
-            Production Planning & Allocation
+            {{ t('qa.productionPlanningAllocation') }}
           </p>
         </div>
       </div>
@@ -170,14 +196,18 @@ const handleSave = () => {
       <div class="col-span-2 grid grid-cols-2 gap-4">
         <div class="grid grid-cols-2 gap-2">
           <div class="space-y-1">
-            <label class="text-[10px] font-black text-slate-400 uppercase">Plan No</label>
+            <label class="text-[10px] font-black text-slate-400 uppercase">{{
+              t('qa.fields.planNo')
+            }}</label>
             <Input
               v-model="plan.planNo"
               class="h-8 text-xs font-bold border-slate-200 focus-visible:ring-0 focus-visible:ring-offset-0"
             />
           </div>
           <div class="space-y-1">
-            <label class="text-[10px] font-black text-slate-400 uppercase">Revision</label>
+            <label class="text-[10px] font-black text-slate-400 uppercase">{{
+              t('qa.fields.revision')
+            }}</label>
             <Input
               v-model="plan.revisionNo"
               class="h-8 text-xs font-bold border-slate-200 focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -186,7 +216,9 @@ const handleSave = () => {
         </div>
         <div class="grid grid-cols-2 gap-2">
           <div class="space-y-1">
-            <label class="text-[10px] font-black text-slate-400 uppercase">Issued Date</label>
+            <label class="text-[10px] font-black text-slate-400 uppercase">{{
+              t('qa.fields.issuedDate')
+            }}</label>
             <Popover>
               <PopoverTrigger as-child>
                 <Button
@@ -195,7 +227,7 @@ const handleSave = () => {
                   :class="!plan.issuedDate && 'text-muted-foreground'"
                 >
                   <CalendarIcon class="mr-2 h-3 w-3 text-slate-400" />
-                  {{ plan.issuedDate || 'Select Date' }}
+                  {{ plan.issuedDate || t('common.selectDate') }}
                 </Button>
               </PopoverTrigger>
               <PopoverContent class="w-auto p-0" align="start">
@@ -207,7 +239,9 @@ const handleSave = () => {
             </Popover>
           </div>
           <div class="space-y-1">
-            <label class="text-[10px] font-black text-slate-400 uppercase">Ref. Production</label>
+            <label class="text-[10px] font-black text-slate-400 uppercase">{{
+              t('qa.fields.refProduction')
+            }}</label>
             <Input
               v-model="plan.refProductionNo"
               class="h-8 text-xs font-bold border-slate-200 focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -226,31 +260,31 @@ const handleSave = () => {
             <TableHead
               colspan="4"
               class="text-center text-white font-black border-r border-slate-700 h-8 uppercase tracking-widest bg-amber-500/90"
-              >Production Plan</TableHead
+              >{{ t('qa.headers.productionPlan') }}</TableHead
             >
             <TableHead
               colspan="3"
               class="text-center text-white font-black border-r border-slate-700 h-8 uppercase tracking-widest bg-slate-400/90"
-              >Ratios (%)</TableHead
+              >{{ t('qa.headers.ratios') }}</TableHead
             >
             <TableHead
               colspan="3"
               class="text-center text-white font-black border-r border-slate-700 h-8 uppercase tracking-widest bg-slate-500/90"
-              >Production Targets</TableHead
+              >{{ t('qa.headers.productionTargets') }}</TableHead
             >
             <TableHead
               colspan="6"
               class="text-center text-white font-black border-r border-slate-700 h-8 uppercase tracking-widest bg-blue-500/90"
-              >CL Allocation Plan</TableHead
+              >{{ t('qa.headers.clAllocationPlan') }}</TableHead
             >
             <TableHead
               colspan="2"
               class="text-center text-white font-black border-r border-slate-700 h-8 uppercase tracking-widest bg-indigo-500/90"
-              >Cutting</TableHead
+              >{{ t('qa.headers.cutting') }}</TableHead
             >
-            <TableHead class="text-center text-white font-black h-8 bg-slate-600/90"
-              >Docs</TableHead
-            >
+            <TableHead class="text-center text-white font-black h-8 bg-slate-600/90">{{
+              t('qa.headers.docs')
+            }}</TableHead>
           </TableRow>
 
           <TableRow
@@ -265,22 +299,37 @@ const handleSave = () => {
             <TableHead class="border-r border-slate-200 w-14 text-center">CL</TableHead>
             <TableHead class="border-r border-slate-200 w-14 text-center">BK</TableHead>
 
-            <TableHead class="border-r border-slate-200 w-16 text-center">Output</TableHead>
+            <TableHead class="border-r border-slate-200 w-16 text-center">Target</TableHead>
             <TableHead class="border-r border-slate-200 w-16 text-center">CL Cons.</TableHead>
             <TableHead class="border-r border-slate-200 w-16 text-center">Ratio B/C</TableHead>
 
-            <TableHead colspan="2" class="border-r border-slate-200 text-center bg-blue-50/50"
-              >#1 Pool / Note</TableHead
-            >
-            <TableHead colspan="2" class="border-r border-slate-200 text-center bg-blue-50/50"
-              >#2 Pool / Note</TableHead
-            >
-            <TableHead colspan="2" class="border-r border-slate-200 text-center bg-blue-50/50"
-              >#3 Pool / Note</TableHead
-            >
+            <TableHead colspan="2" class="border-r border-slate-200 text-center bg-blue-50/50">
+              <div class="flex flex-col items-center justify-center leading-tight py-1">
+                <span class="font-black text-xs">#1</span>
+                <span class="text-[9px] text-slate-500 font-bold"
+                  >Pool / {{ t('common.scoop') }}</span
+                >
+              </div>
+            </TableHead>
+            <TableHead colspan="2" class="border-r border-slate-200 text-center bg-blue-50/50">
+              <div class="flex flex-col items-center justify-center leading-tight py-1">
+                <span class="font-black text-xs">#2</span>
+                <span class="text-[9px] text-slate-500 font-bold"
+                  >Pool / {{ t('common.scoop') }}</span
+                >
+              </div>
+            </TableHead>
+            <TableHead colspan="2" class="border-r border-slate-200 text-center bg-blue-50/50">
+              <div class="flex flex-col items-center justify-center leading-tight py-1">
+                <span class="font-black text-xs">#3</span>
+                <span class="text-[9px] text-slate-500 font-bold"
+                  >Pool / {{ t('common.scoop') }}</span
+                >
+              </div>
+            </TableHead>
 
-            <TableHead class="border-r border-slate-200 w-10 text-center">%</TableHead>
-            <TableHead class="border-r border-slate-200 w-10 text-center">Pallet</TableHead>
+            <TableHead class="border-r border-slate-200 w-20 text-center">%</TableHead>
+            <TableHead class="border-r border-slate-200 w-20 text-center">Pallet/Shift</TableHead>
 
             <TableHead class="text-center">Remarks</TableHead>
           </TableRow>
@@ -293,31 +342,62 @@ const handleSave = () => {
             class="h-8 hover:bg-slate-50/80 transition-colors"
           >
             <!-- Date/Meta -->
-            <TableCell class="border-r border-slate-100 p-0 text-center">
-              <Popover>
+            <TableCell
+              class="border-r border-slate-100 p-0 text-center"
+              :colspan="idx % 2 !== 0 ? 2 : 1"
+            >
+              <!-- First Row: Date Picker (Driver) -->
+              <Popover v-if="idx === 0">
                 <PopoverTrigger as-child>
                   <Button
                     variant="ghost"
-                    class="h-7 w-full text-[10px] border-none shadow-none font-bold justify-center px-1"
+                    class="h-7 w-full text-[10px] border-none shadow-none font-bold justify-center px-1 hover:bg-blue-50 text-blue-700"
                   >
-                    {{ row.date || 'Select' }}
+                    {{ row.date || 'Select Date' }}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent class="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
-                    @update:model-value="(val: any) => (row.date = formatDate(val))"
+                    @update:model-value="(val: any) => handleDateUpdate(val)"
                   />
                 </PopoverContent>
               </Popover>
-            </TableCell>
-            <TableCell class="border-r border-slate-100 text-center p-1 text-slate-400 relative">
+
+              <!-- Even Rows > 0: Read-only Date -->
               <div
-                v-if="row.is24hr"
-                class="absolute -left-3 top-1/2 -translate-y-1/2 bg-yellow-400 text-black text-[8px] font-black px-1.5 py-0.5 rounded shadow-sm z-10 whitespace-nowrap border border-yellow-500 uppercase tracking-tighter"
+                v-else-if="idx % 2 === 0"
+                class="h-7 flex items-center justify-center text-[10px] font-bold text-slate-600 bg-slate-50/50"
               >
-                24 hr
+                {{ row.date }}
               </div>
+
+              <!-- Odd Rows: 24 HR Toggle (Merged Cell) -->
+              <div v-else class="h-7 flex items-center justify-center">
+                <Select v-model="row.productionMode">
+                  <SelectTrigger
+                    class="h-6 w-[90%] text-[9px] font-black border-none shadow-none justify-center px-1 rounded-[10px]"
+                    :class="{
+                      'bg-yellow-400 hover:bg-yellow-500 text-black':
+                        row.productionMode === 'mode24Hr',
+                      'bg-red-100 text-red-700': row.productionMode === 'holiday',
+                      'text-slate-300 hover:text-slate-500': row.productionMode === 'normal',
+                    }"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="normal">{{ t('qa.productionModes.normal') }}</SelectItem>
+                    <SelectItem value="mode24Hr">{{ t('qa.productionModes.mode24Hr') }}</SelectItem>
+                    <SelectItem value="holiday">{{ t('qa.productionModes.holiday') }}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </TableCell>
+            <TableCell
+              v-if="idx % 2 === 0"
+              class="border-r border-slate-100 text-center p-1 text-slate-400 relative"
+            >
               {{ row.dayOfWeek }}
             </TableCell>
             <TableCell
@@ -325,11 +405,14 @@ const handleSave = () => {
               :class="row.shift === '1st' ? 'text-blue-600' : 'text-orange-600'"
               >{{ row.shift }}</TableCell
             >
-            <TableCell class="border-r border-slate-100 p-0 px-1" :class="row.gradeColor">
+            <TableCell
+              class="border-r border-slate-100 p-0 px-1 transition-colors duration-200"
+              :class="getGradeColor(row.grade)"
+            >
               <Select v-model="row.grade">
                 <SelectTrigger
-                  class="h-6 text-[10px] border-none shadow-none text-center font-bold focus:ring-0 focus:ring-offset-0 bg-transparent px-1"
-                  :class="row.isHoliday ? 'text-slate-400' : 'text-slate-900'"
+                  class="h-6 w-full text-[10px] border-none shadow-none text-center justify-center font-bold focus:ring-0 focus:ring-offset-0 bg-transparent px-1"
+                  :class="row.productionMode === 'holiday' ? 'text-slate-400' : 'text-slate-900'"
                 >
                   <SelectValue placeholder="Grade" />
                 </SelectTrigger>
@@ -344,80 +427,308 @@ const handleSave = () => {
             <!-- Ratios -->
             <TableCell class="border-r border-slate-100 p-0"
               ><Input
-                v-model.number="row.ratioUSS"
+                v-model="row.ratioUSS"
                 class="h-6 text-[10px] border-none shadow-none text-center focus-visible:ring-0 focus-visible:ring-offset-0"
             /></TableCell>
             <TableCell class="border-r border-slate-100 p-0"
               ><Input
-                v-model.number="row.ratioCL"
+                v-model="row.ratioCL"
                 class="h-6 text-[10px] border-none shadow-none text-center font-bold focus-visible:ring-0 focus-visible:ring-offset-0"
             /></TableCell>
             <TableCell class="border-r border-slate-100 p-0"
               ><Input
-                v-model.number="row.ratioBK"
+                v-model="row.ratioBK"
                 class="h-6 text-[10px] border-none shadow-none text-center focus-visible:ring-0 focus-visible:ring-offset-0"
             /></TableCell>
 
             <!-- Targets -->
             <TableCell class="border-r border-slate-100 p-0"
               ><Input
-                v-model.number="row.productTarget"
+                v-model="row.productTarget"
                 class="h-6 text-[10px] border-none shadow-none text-center focus-visible:ring-0 focus-visible:ring-offset-0"
             /></TableCell>
             <TableCell class="border-r border-slate-100 p-0"
               ><Input
-                v-model.number="row.clConsumption"
+                v-model="row.clConsumption"
                 class="h-6 text-[10px] border-none shadow-none text-center focus-visible:ring-0 focus-visible:ring-offset-0"
             /></TableCell>
             <TableCell class="border-r border-slate-100 p-0"
               ><Input
-                v-model.number="row.ratioBorC"
+                v-model="row.ratioBorC"
                 class="h-6 text-[10px] border-none shadow-none text-center focus-visible:ring-0 focus-visible:ring-offset-0"
             /></TableCell>
 
             <!-- Plans -->
-            <TableCell class="border-r border-slate-100 p-0 w-12 bg-blue-50/20"
-              ><Input
-                v-model="row.plan1Pool"
-                class="h-6 text-[10px] border-none shadow-none text-center font-black text-blue-700 focus-visible:ring-0 focus-visible:ring-offset-0"
-            /></TableCell>
-            <TableCell class="border-r border-slate-100 p-0 bg-blue-50/20"
-              ><Input
-                v-model="row.plan1Note"
-                class="h-6 text-[10px] border-none shadow-none text-slate-500 focus-visible:ring-0 focus-visible:ring-offset-0"
-            /></TableCell>
+            <!-- Plans -->
+            <TableCell class="border-r border-slate-100 p-0 w-20 bg-blue-50/20">
+              <Popover>
+                <PopoverTrigger as-child>
+                  <Button
+                    variant="ghost"
+                    class="h-6 w-full text-[10px] border-none shadow-none justify-center px-1 font-black text-blue-700"
+                    :class="!getPlanPoolLabel(row, 1) && 'text-slate-400 font-normal'"
+                  >
+                    {{ getPlanPoolLabel(row, 1) || 'Select' }}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent class="w-48 p-2" align="start">
+                  <div class="space-y-2">
+                    <div class="space-y-1">
+                      <label class="text-xs font-bold text-slate-500">Pool</label>
+                      <div class="grid grid-cols-4 gap-1">
+                        <div
+                          v-for="opt in plainPoolOptions"
+                          :key="opt"
+                          class="flex items-center gap-1.5 px-0.5 py-1 hover:bg-slate-100 rounded cursor-pointer transition-colors"
+                          @click.stop="togglePlanPool(row, 1, opt)"
+                        >
+                          <Checkbox
+                            :checked="row.plan1Pool.includes(opt)"
+                            @update:checked="() => {}"
+                            class="h-3 w-3 rounded-full data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 flex-shrink-0"
+                          />
+                          <span
+                            class="text-[10px] font-medium leading-none"
+                            :class="
+                              row.plan1Pool.includes(opt)
+                                ? 'font-bold text-blue-600'
+                                : 'text-slate-600'
+                            "
+                          >
+                            {{ opt }}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="space-y-1">
+                      <label class="text-xs font-bold text-slate-500">Grades</label>
+                      <div class="grid grid-cols-2 gap-1">
+                        <div
+                          v-for="g in validPoolGrades"
+                          :key="g"
+                          class="flex items-center gap-2 px-1 py-1 hover:bg-slate-100 rounded cursor-pointer transition-colors"
+                          @click.stop="togglePlanGrade(row, 1, g)"
+                        >
+                          <Checkbox
+                            :checked="row.plan1Grades.includes(g)"
+                            @update:checked="() => {}"
+                            class="h-4 w-4 rounded-full data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                          />
+                          <span
+                            class="text-[10px] font-medium leading-none"
+                            :class="
+                              row.plan1Grades.includes(g)
+                                ? 'font-bold text-blue-600'
+                                : 'text-slate-600'
+                            "
+                          >
+                            {{ g }}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </TableCell>
+            <TableCell class="border-r border-slate-100 p-0 bg-blue-50/20">
+              <Select v-model="row.plan1Scoops">
+                <SelectTrigger
+                  class="h-6 w-full text-[10px] border-none shadow-none text-center justify-center text-slate-500 focus:ring-0 focus:ring-offset-0 bg-transparent px-1"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem v-for="i in 10" :key="i" :value="String(i)">
+                    {{ i }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </TableCell>
 
-            <TableCell class="border-r border-slate-100 p-0 w-12 bg-blue-50/20"
-              ><Input
-                v-model="row.plan2Pool"
-                class="h-6 text-[10px] border-none shadow-none text-center font-black text-blue-700 focus-visible:ring-0 focus-visible:ring-offset-0"
-            /></TableCell>
-            <TableCell class="border-r border-slate-100 p-0 bg-blue-50/20"
-              ><Input
-                v-model="row.plan2Note"
-                class="h-6 text-[10px] border-none shadow-none text-slate-500 focus-visible:ring-0 focus-visible:ring-offset-0"
-            /></TableCell>
+            <!-- Plan 2 -->
+            <TableCell class="border-r border-slate-100 p-0 w-20 bg-blue-50/20">
+              <Popover>
+                <PopoverTrigger as-child>
+                  <Button
+                    variant="ghost"
+                    class="h-6 w-full text-[10px] border-none shadow-none justify-center px-1 font-black text-blue-700"
+                    :class="!getPlanPoolLabel(row, 2) && 'text-slate-400 font-normal'"
+                  >
+                    {{ getPlanPoolLabel(row, 2) || 'Select' }}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent class="w-48 p-2" align="start">
+                  <div class="space-y-2">
+                    <div class="space-y-1">
+                      <label class="text-xs font-bold text-slate-500">Pool</label>
+                      <div class="grid grid-cols-4 gap-1">
+                        <div
+                          v-for="opt in plainPoolOptions"
+                          :key="opt"
+                          class="flex items-center gap-1.5 px-0.5 py-1 hover:bg-slate-100 rounded cursor-pointer transition-colors"
+                          @click.stop="togglePlanPool(row, 2, opt)"
+                        >
+                          <Checkbox
+                            :checked="row.plan2Pool.includes(opt)"
+                            @update:checked="() => {}"
+                            class="h-3 w-3 rounded-full data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 flex-shrink-0"
+                          />
+                          <span
+                            class="text-[10px] font-medium leading-none"
+                            :class="
+                              row.plan2Pool.includes(opt)
+                                ? 'font-bold text-blue-600'
+                                : 'text-slate-600'
+                            "
+                          >
+                            {{ opt }}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="space-y-1">
+                      <label class="text-xs font-bold text-slate-500">Grades</label>
+                      <div class="grid grid-cols-2 gap-1">
+                        <div
+                          v-for="g in validPoolGrades"
+                          :key="g"
+                          class="flex items-center gap-2 px-1 py-1 hover:bg-slate-100 rounded cursor-pointer transition-colors"
+                          @click.stop="togglePlanGrade(row, 2, g)"
+                        >
+                          <Checkbox
+                            :checked="row.plan2Grades.includes(g)"
+                            @update:checked="() => {}"
+                            class="h-4 w-4 rounded-full data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                          />
+                          <span
+                            class="text-[10px] font-medium leading-none"
+                            :class="
+                              row.plan2Grades.includes(g)
+                                ? 'font-bold text-blue-600'
+                                : 'text-slate-600'
+                            "
+                          >
+                            {{ g }}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </TableCell>
+            <TableCell class="border-r border-slate-100 p-0 bg-blue-50/20">
+              <Select v-model="row.plan2Scoops">
+                <SelectTrigger
+                  class="h-6 w-full text-[10px] border-none shadow-none text-center justify-center text-slate-500 focus:ring-0 focus:ring-offset-0 bg-transparent px-1"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem v-for="i in 10" :key="i" :value="String(i)">
+                    {{ i }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </TableCell>
 
-            <TableCell class="border-r border-slate-100 p-0 w-12 bg-blue-50/20"
-              ><Input
-                v-model="row.plan3Pool"
-                class="h-6 text-[10px] border-none shadow-none text-center font-black text-blue-700 focus-visible:ring-0 focus-visible:ring-offset-0"
-            /></TableCell>
-            <TableCell class="border-r border-slate-100 p-0 bg-blue-50/20"
-              ><Input
-                v-model="row.plan3Note"
-                class="h-6 text-[10px] border-none shadow-none text-slate-500 focus-visible:ring-0 focus-visible:ring-offset-0"
-            /></TableCell>
+            <!-- Plan 3 -->
+            <TableCell class="border-r border-slate-100 p-0 w-20 bg-blue-50/20">
+              <Popover>
+                <PopoverTrigger as-child>
+                  <Button
+                    variant="ghost"
+                    class="h-6 w-full text-[10px] border-none shadow-none justify-center px-1 font-black text-blue-700"
+                    :class="!getPlanPoolLabel(row, 3) && 'text-slate-400 font-normal'"
+                  >
+                    {{ getPlanPoolLabel(row, 3) || 'Select' }}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent class="w-48 p-2" align="start">
+                  <div class="space-y-2">
+                    <div class="space-y-1">
+                      <label class="text-xs font-bold text-slate-500">Pool</label>
+                      <div class="grid grid-cols-4 gap-1">
+                        <div
+                          v-for="opt in plainPoolOptions"
+                          :key="opt"
+                          class="flex items-center gap-1.5 px-0.5 py-1 hover:bg-slate-100 rounded cursor-pointer transition-colors"
+                          @click.stop="togglePlanPool(row, 3, opt)"
+                        >
+                          <Checkbox
+                            :checked="row.plan3Pool.includes(opt)"
+                            @update:checked="() => {}"
+                            class="h-3 w-3 rounded-full data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 flex-shrink-0"
+                          />
+                          <span
+                            class="text-[10px] font-medium leading-none"
+                            :class="
+                              row.plan3Pool.includes(opt)
+                                ? 'font-bold text-blue-600'
+                                : 'text-slate-600'
+                            "
+                          >
+                            {{ opt }}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="space-y-1">
+                      <label class="text-xs font-bold text-slate-500">Grades</label>
+                      <div class="grid grid-cols-2 gap-1">
+                        <div
+                          v-for="g in validPoolGrades"
+                          :key="g"
+                          class="flex items-center gap-2 px-1 py-1 hover:bg-slate-100 rounded cursor-pointer transition-colors"
+                          @click.stop="togglePlanGrade(row, 3, g)"
+                        >
+                          <Checkbox
+                            :checked="row.plan3Grades.includes(g)"
+                            @update:checked="() => {}"
+                            class="h-4 w-4 rounded-full data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                          />
+                          <span
+                            class="text-[10px] font-medium leading-none"
+                            :class="
+                              row.plan3Grades.includes(g)
+                                ? 'font-bold text-blue-600'
+                                : 'text-slate-600'
+                            "
+                          >
+                            {{ g }}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </TableCell>
+            <TableCell class="border-r border-slate-100 p-0 bg-blue-50/20">
+              <Select v-model="row.plan3Scoops">
+                <SelectTrigger
+                  class="h-6 w-full text-[10px] border-none shadow-none text-center justify-center text-slate-500 focus:ring-0 focus:ring-offset-0 bg-transparent px-1"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem v-for="i in 10" :key="i" :value="String(i)">
+                    {{ i }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </TableCell>
 
             <!-- Cutting -->
             <TableCell class="border-r border-slate-100 p-0"
               ><Input
-                v-model.number="row.cuttingPercent"
+                v-model="row.cuttingPercent"
                 class="h-6 text-[10px] border-none shadow-none text-center focus-visible:ring-0 focus-visible:ring-offset-0"
             /></TableCell>
             <TableCell class="border-r border-slate-100 p-0"
               ><Input
-                v-model.number="row.cuttingPalette"
+                v-model="row.cuttingPalette"
                 class="h-6 text-[10px] border-none shadow-none text-center focus-visible:ring-0 focus-visible:ring-offset-0"
             /></TableCell>
 
@@ -436,7 +747,7 @@ const handleSave = () => {
       <div class="flex items-center gap-2">
         <div class="w-1 h-5 bg-blue-500 rounded-full"></div>
         <h4 class="text-xs font-black uppercase tracking-widest text-slate-700">
-          Pool Properties & Validation
+          {{ t('qa.sections.poolPropertiesValidation') }}
         </h4>
       </div>
 
@@ -444,31 +755,31 @@ const handleSave = () => {
         <Table class="text-[10px]">
           <TableHeader class="bg-slate-50">
             <TableRow>
-              <TableHead class="w-16 border-r border-slate-200 font-black text-center"
-                >Pool No.</TableHead
-              >
-              <TableHead class="w-20 border-r border-slate-200 font-black text-center"
-                >Gross (Ton)</TableHead
-              >
-              <TableHead class="w-20 border-r border-slate-200 font-black text-center"
-                >Net (Ton)</TableHead
-              >
-              <TableHead class="w-16 border-r border-slate-200 font-black text-center"
-                >DRC</TableHead
-              >
-              <TableHead class="w-16 border-r border-slate-200 font-black text-center"
-                >Moist.</TableHead
-              >
-              <TableHead class="w-16 border-r border-slate-200 font-black text-center"
-                >P0</TableHead
-              >
-              <TableHead class="w-16 border-r border-slate-200 font-black text-center"
-                >PRI</TableHead
-              >
-              <TableHead class="w-24 border-r border-slate-200 font-black text-center"
-                >Date</TableHead
-              >
-              <TableHead class="w-16 font-black text-center">Grade</TableHead>
+              <TableHead class="w-16 border-r border-slate-200 font-black text-center">{{
+                t('qa.columns.poolNo')
+              }}</TableHead>
+              <TableHead class="w-20 border-r border-slate-200 font-black text-center">{{
+                t('qa.columns.grossTon')
+              }}</TableHead>
+              <TableHead class="w-20 border-r border-slate-200 font-black text-center">{{
+                t('qa.columns.netTon')
+              }}</TableHead>
+              <TableHead class="w-16 border-r border-slate-200 font-black text-center">{{
+                t('qa.columns.drc')
+              }}</TableHead>
+              <TableHead class="w-16 border-r border-slate-200 font-black text-center">{{
+                t('qa.columns.moist')
+              }}</TableHead>
+              <TableHead class="w-16 border-r border-slate-200 font-black text-center">{{
+                t('qa.columns.po')
+              }}</TableHead>
+              <TableHead class="w-16 border-r border-slate-200 font-black text-center">{{
+                t('qa.columns.pri')
+              }}</TableHead>
+              <TableHead class="w-24 border-r border-slate-200 font-black text-center">{{
+                t('qa.columns.date')
+              }}</TableHead>
+              <TableHead class="w-16 font-black text-center">{{ t('qa.columns.grade') }}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -484,32 +795,32 @@ const handleSave = () => {
               /></TableCell>
               <TableCell class="border-r border-slate-100 p-0"
                 ><Input
-                  v-model.number="p.grossWeight"
+                  v-model="p.grossWeight"
                   class="h-7 text-[10px] border-none shadow-none text-center focus-visible:ring-0 focus-visible:ring-offset-0"
               /></TableCell>
               <TableCell class="border-r border-slate-100 p-0"
                 ><Input
-                  v-model.number="p.netWeight"
+                  v-model="p.netWeight"
                   class="h-7 text-[10px] border-none shadow-none text-center font-bold text-slate-700 focus-visible:ring-0 focus-visible:ring-offset-0"
               /></TableCell>
               <TableCell class="border-r border-slate-100 p-0"
                 ><Input
-                  v-model.number="p.drc"
+                  v-model="p.drc"
                   class="h-7 text-[10px] border-none shadow-none text-center focus-visible:ring-0 focus-visible:ring-offset-0"
               /></TableCell>
               <TableCell class="border-r border-slate-100 p-0"
                 ><Input
-                  v-model.number="p.moisture"
+                  v-model="p.moisture"
                   class="h-7 text-[10px] border-none shadow-none text-center focus-visible:ring-0 focus-visible:ring-offset-0"
               /></TableCell>
               <TableCell class="border-r border-slate-100 p-0"
                 ><Input
-                  v-model.number="p.p0"
+                  v-model="p.p0"
                   class="h-7 text-[10px] border-none shadow-none text-center focus-visible:ring-0 focus-visible:ring-offset-0"
               /></TableCell>
               <TableCell class="border-r border-slate-100 p-0"
                 ><Input
-                  v-model.number="p.pri"
+                  v-model="p.pri"
                   class="h-7 text-[10px] border-none shadow-none text-center focus-visible:ring-0 focus-visible:ring-offset-0"
               /></TableCell>
               <TableCell class="border-r border-slate-100 p-0 text-center">
@@ -532,18 +843,41 @@ const handleSave = () => {
                 </Popover>
               </TableCell>
               <TableCell class="p-0 px-1">
-                <Select v-model="p.grade">
-                  <SelectTrigger
-                    class="h-7 text-[10px] border-none shadow-none font-bold focus:ring-0 focus:ring-offset-0 bg-transparent text-center px-1"
-                  >
-                    <SelectValue placeholder="Grade" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem v-for="g in grades" :key="g" :value="g">
-                      {{ g }}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                <Popover>
+                  <PopoverTrigger as-child>
+                    <Button
+                      variant="ghost"
+                      class="h-7 w-full text-[10px] border-none shadow-none font-bold justify-center px-1"
+                      :class="!p.grade?.length && 'text-slate-400'"
+                    >
+                      {{ p.grade?.length ? p.grade.join(' + ') : 'Select Grade' }}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent class="w-32 p-1" align="end">
+                    <div class="space-y-0.5">
+                      <div
+                        v-for="g in validPoolGrades"
+                        :key="g"
+                        class="flex items-center gap-2 px-2 py-1.5 hover:bg-slate-100 rounded cursor-pointer transition-colors"
+                        @click.stop="togglePoolGrade(p, g)"
+                      >
+                        <Checkbox
+                          :checked="p.grade.includes(g)"
+                          @update:checked="() => {}"
+                          class="h-4 w-4 rounded-full data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                        />
+                        <span
+                          class="text-xs font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                          :class="
+                            p.grade.includes(g) ? 'font-bold text-blue-600' : 'text-slate-600'
+                          "
+                        >
+                          {{ g }}
+                        </span>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </TableCell>
             </TableRow>
           </TableBody>
@@ -555,7 +889,9 @@ const handleSave = () => {
     <div class="flex items-center justify-between pt-6 border-t border-slate-100">
       <div class="flex items-center gap-6">
         <div class="flex items-center gap-2 border-r border-slate-200 pr-6">
-          <label class="text-[10px] font-black text-slate-400 uppercase">Issue By</label>
+          <label class="text-[10px] font-black text-slate-400 uppercase">{{
+            t('qa.footer.issueBy')
+          }}</label>
           <Input
             class="h-8 w-40 text-xs font-bold bg-slate-50 border-none"
             value="ระบบบริหารจัดการ"
@@ -563,7 +899,9 @@ const handleSave = () => {
           />
         </div>
         <div class="flex items-center gap-2">
-          <label class="text-[10px] font-black text-slate-400 uppercase">Verified By</label>
+          <label class="text-[10px] font-black text-slate-400 uppercase">{{
+            t('qa.footer.verifiedBy')
+          }}</label>
           <Input
             class="h-8 w-40 text-xs font-bold bg-slate-50 border-none"
             value="รอการอนุมัติ"
@@ -572,17 +910,17 @@ const handleSave = () => {
         </div>
       </div>
 
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-3 no-print">
         <Button variant="outline" class="h-10 gap-2 font-bold text-slate-600 shadow-sm">
           <Printer class="w-4 h-4" />
-          Print Plan
+          {{ t('common.printPlan') }}
         </Button>
         <Button
           @click="handleSave"
           class="h-10 gap-2 font-bold px-8 bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-200"
         >
           <Save class="w-4 h-4" />
-          Save Changes
+          {{ t('common.saveChanges') }}
         </Button>
       </div>
     </div>
@@ -590,6 +928,73 @@ const handleSave = () => {
 </template>
 
 <style scoped>
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 5mm;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  /* Reset container constraints */
+  .max-w-\[1600px\] {
+    max-width: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* Formatting for print */
+  body,
+  .p-4 {
+    padding: 0 !important;
+    background: white !important;
+  }
+
+  /* Table tweaks */
+  table {
+    width: 100% !important;
+    font-size: 9px !important;
+  }
+
+  /* Hide scrollbars & borders that look bad on print */
+  .overflow-x-auto {
+    overflow: visible !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Inputs look like text */
+  input,
+  select {
+    border: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    height: auto !important;
+  }
+
+  /* Select triggers */
+  button[role='combobox'] {
+    border: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* Remove background colors if better for B&W print, or keep for color print.
+     User didn't specify B&W. Standard is keep color.
+     But borders might need to be sharper.
+  */
+  .border-slate-100,
+  .border-slate-200 {
+    border-color: #000 !important;
+  }
+}
+
 /* Force border collapsing for table looks */
 :deep(table) {
   border-collapse: collapse;

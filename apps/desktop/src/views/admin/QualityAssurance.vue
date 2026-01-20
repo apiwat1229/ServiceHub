@@ -156,6 +156,20 @@ const handleJobOrderSave = async (formData: JobOrder) => {
   }
 };
 
+const handleJobOrderDelete = async (id: string) => {
+  try {
+    await jobOrdersApi.delete(id);
+    toast.success(t('common.deleteSuccess') || 'Job order deleted successfully');
+    currentTab.value = 'job-order-list';
+    selectedJobOrder.value = undefined;
+    // Refresh list if needed, but switching tab usually re-mounts or we might need to refresh data
+    // Ideally JobOrderTab fetches on mount, so switching back should suffice.
+  } catch (error: any) {
+    console.error('Failed to delete job order:', error);
+    toast.error(error.response?.data?.message || t('common.errorDelete'));
+  }
+};
+
 const fetchData = async () => {
   isLoading.value = true;
   try {
@@ -257,6 +271,7 @@ onMounted(() => {
         <JobOrderForm
           :initial-data="selectedJobOrder"
           @save="handleJobOrderSave"
+          @delete="handleJobOrderDelete"
           @cancel="
             currentTab = 'job-order-list';
             selectedJobOrder = undefined;
