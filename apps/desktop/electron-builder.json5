@@ -17,15 +17,8 @@
     "url": "https://app.ytrc.co.th/updates"
   },
   "win": {
-    "target": [
-      {
-        "target": "nsis",
-        "arch": ["x64"]
-      }
-    ],
-    "artifactName": "${productName}-Windows-${version}-Setup.${ext}",
-    "publisherName": "YTRC",
-    "verifyUpdateCodeSignature": false
+    "target": "nsis",
+    "artifactName": "${productName}-Windows-${version}-Setup.${ext}"
   },
   "nsis": {
     "oneClick": false,
