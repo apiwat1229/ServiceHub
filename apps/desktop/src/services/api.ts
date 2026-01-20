@@ -3,7 +3,7 @@ import router from '../router';
 import { storage } from '../services/storage';
 
 const getBaseUrl = () => {
-    let url = import.meta.env.VITE_API_URL || 'http://localhost:2530';
+    let url = import.meta.env.VITE_API_URL || 'https://app.ytrc.co.th';
     // Remove trailing slash if present
     if (url.endsWith('/')) {
         url = url.slice(0, -1);

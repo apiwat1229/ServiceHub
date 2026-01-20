@@ -17,7 +17,7 @@ const fetchRepairData = async () => {
     console.log('[API] Fetching repair log for ID:', route.params.id);
 
     // Get Base API URL and ensure it has /api prefix
-    let apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:2530';
+    let apiUrl = import.meta.env.VITE_API_URL || 'https://app.ytrc.co.th';
     if (apiUrl.endsWith('/')) apiUrl = apiUrl.slice(0, -1);
     if (!apiUrl.endsWith('/api')) apiUrl += '/api';
 
@@ -116,7 +116,9 @@ const getCategoryColor = (cost: number) => {
         <!-- Main Info Row -->
         <div class="grid grid-cols-2 gap-4 pb-6 border-b border-slate-100">
           <div class="space-y-1.5">
-            <p class="text-[0.5625rem] font-bold text-slate-400 uppercase tracking-widest">Technician</p>
+            <p class="text-[0.5625rem] font-bold text-slate-400 uppercase tracking-widest">
+              Technician
+            </p>
             <div class="flex items-center gap-2">
               <div class="h-7 w-7 rounded-lg bg-slate-100 flex items-center justify-center">
                 <User class="h-3.5 w-3.5 text-slate-500" />
@@ -125,7 +127,9 @@ const getCategoryColor = (cost: number) => {
             </div>
           </div>
           <div class="space-y-1.5 text-right">
-            <p class="text-[0.5625rem] font-bold text-slate-400 uppercase tracking-widest">Category</p>
+            <p class="text-[0.5625rem] font-bold text-slate-400 uppercase tracking-widest">
+              Category
+            </p>
             <Badge
               variant="outline"
               :class="`h-7 px-2.5 rounded-lg text-[0.5625rem] font-bold uppercase tracking-wider ${getCategoryColor(repair.totalCost)}`"

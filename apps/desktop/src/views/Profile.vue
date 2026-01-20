@@ -22,7 +22,7 @@ import 'vue-advanced-cropper/dist/style.css';
 import { toast } from 'vue-sonner';
 
 // Get API URL from env or default
-// const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:2530';
+// const apiUrl = import.meta.env.VITE_API_URL || 'https://app.ytrc.co.th';
 
 const authStore = useAuthStore();
 const isLoading = ref(false);

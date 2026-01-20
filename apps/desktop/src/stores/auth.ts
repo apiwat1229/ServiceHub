@@ -14,7 +14,7 @@ export const useAuthStore = defineStore('auth', {
         userAvatarUrl: (state) => {
             if (!state.user?.avatar) return '';
             if (state.user.avatar.startsWith('http')) return state.user.avatar;
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:2530';
+            const apiUrl = import.meta.env.VITE_API_URL || 'https://app.ytrc.co.th';
             const cleanBaseUrl = apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
             const avatarPath = state.user.avatar.startsWith('/') ? state.user.avatar : `/${state.user.avatar}`;
 

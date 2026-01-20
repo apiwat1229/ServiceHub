@@ -60,7 +60,7 @@ const isEditingBarcode = ref(false);
 const getImageUrl = (path: string | null) => {
   if (!path) return null;
   if (path.startsWith('http') || path.startsWith('data:')) return path;
-  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:2530';
+  const baseUrl = import.meta.env.VITE_API_URL || 'https://app.ytrc.co.th';
   const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
 

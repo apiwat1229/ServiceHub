@@ -3,7 +3,7 @@
   "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
   "appId": "com.ytrc.desktop-app",
   "productName": "YTRC-Desktop",
-  "asar": true,
+  "asar": false,
   "directories": {
     "output": "release/${version}"
   },

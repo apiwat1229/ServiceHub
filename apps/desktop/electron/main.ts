@@ -33,15 +33,16 @@ function createWindow() {
     icon: path.join(process.env.VITE_PUBLIC, 'electron-vite.svg'),
     frame: false,
     titleBarStyle: 'hidden',
-    width: 1200,
-    height: 800,
-    center: true,
+    center: true, // Force center on every launch as requested
     webPreferences: {
       preload: app.isPackaged
         ? path.join(__dirname, 'dist-electron', 'preload.mjs')
         : path.join(__dirname, 'preload.mjs'),
     },
-    ...bounds,
+    // Only restore size, not position, to ensure it always starts in the center
+    // ...bounds, 
+    width: bounds?.width || 1200,
+    height: bounds?.height || 800,
   })
 
   // Save window state

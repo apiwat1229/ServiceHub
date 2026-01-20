@@ -18,7 +18,7 @@ class SocketService {
             return;
         }
 
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:2530';
+        const apiUrl = import.meta.env.VITE_API_URL || 'https://app.ytrc.co.th';
         const socketUrl = apiUrl.replace('/api', '');
 
         console.log('SocketService: Connecting to', socketUrl);
