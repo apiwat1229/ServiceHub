@@ -88,6 +88,9 @@ export const useThemeStore = defineStore('theme', () => {
         root.style.setProperty('--primary', color.primary);
         root.style.setProperty('--primary-foreground', color.primaryForeground);
 
+        // Also update ring color to match primary for consistent focus states
+        root.style.setProperty('--ring', color.primary);
+
         // Apply Font Size
         const size = fontSizes[fontSize.value] || fontSizes.medium;
         root.style.fontSize = size;

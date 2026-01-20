@@ -1,11 +1,10 @@
 import { app, BrowserWindow } from 'electron'
 import path from 'node:path'
-
 // In Electron, use app.getAppPath() to get the application directory
 // This works reliably in both development and production
 const __dirname = app.isPackaged
   ? path.dirname(app.getPath('exe'))
-  : path.join(process.cwd(), 'apps/desktop')
+  : path.join(app.getAppPath(), 'dist-electron')
 
 // The built directory structure
 //
@@ -34,6 +33,9 @@ function createWindow() {
     icon: path.join(process.env.VITE_PUBLIC, 'electron-vite.svg'),
     frame: false,
     titleBarStyle: 'hidden',
+    width: 1200,
+    height: 800,
+    center: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
     },
