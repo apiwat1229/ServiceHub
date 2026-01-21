@@ -146,4 +146,70 @@ export class RawMaterialPlansService {
             }
         });
     }
+
+    async update(id: string, updateDto: CreateRawMaterialPlanDto) {
+        const { rows, poolDetails, ...mainData } = updateDto;
+
+        try {
+            return await this.prisma.$transaction(async (tx) => {
+                // 1. Delete children
+                await tx.rawMaterialPlanRow.deleteMany({ where: { planId: id } });
+                await tx.rawMaterialPlanPoolDetail.deleteMany({ where: { planId: id } });
+
+                // 2. Update parent
+                const plan = await tx.rawMaterialPlan.update({
+                    where: { id },
+                    data: {
+                        ...mainData,
+                        issuedDate: new Date(mainData.issuedDate),
+                        rows: {
+                            create: (rows || []).map(r => ({
+                                ...r,
+                                date: r.date ? new Date(r.date) : null,
+                                ratioUSS: Number(r.ratioUSS) || 0,
+                                ratioCL: Number(r.ratioCL) || 0,
+                                ratioBK: Number(r.ratioBK) || 0,
+                                productTarget: Number(r.productTarget) || 0,
+                                clConsumption: Number(r.clConsumption) || 0,
+                                ratioBorC: Number(r.ratioBorC) || 0,
+                                plan1Scoops: Number(r.plan1Scoops) || 0,
+                                plan2Scoops: Number(r.plan2Scoops) || 0,
+                                plan3Scoops: Number(r.plan3Scoops) || 0,
+                                cuttingPercent: Number(r.cuttingPercent) || 0,
+                                cuttingPalette: Math.floor(Number(r.cuttingPalette)) || 0,
+                                plan1Pool: Array.isArray(r.plan1Pool) ? r.plan1Pool.join(',') : String(r.plan1Pool || ''),
+                                plan1Grades: Array.isArray(r.plan1Grades) ? r.plan1Grades.join(',') : String(r.plan1Grades || ''),
+                                plan2Pool: Array.isArray(r.plan2Pool) ? r.plan2Pool.join(',') : String(r.plan2Pool || ''),
+                                plan2Grades: Array.isArray(r.plan2Grades) ? r.plan2Grades.join(',') : String(r.plan2Grades || ''),
+                                plan3Pool: Array.isArray(r.plan3Pool) ? r.plan3Pool.join(',') : String(r.plan3Pool || ''),
+                                plan3Grades: Array.isArray(r.plan3Grades) ? r.plan3Grades.join(',') : String(r.plan3Grades || ''),
+                            }))
+                        },
+                        poolDetails: {
+                            create: (poolDetails || []).map(p => ({
+                                ...p,
+                                grossWeight: Number(p.grossWeight) || 0,
+                                netWeight: Number(p.netWeight) || 0,
+                                drc: Number(p.drc) || 0,
+                                moisture: Number(p.moisture) || 0,
+                                p0: Number(p.p0) || 0,
+                                pri: Number(p.pri) || 0,
+                                clearDate: p.clearDate ? new Date(p.clearDate) : null,
+                                grade: Array.isArray(p.grade) ? p.grade.join(',') : String(p.grade || '')
+                            }))
+                        }
+                    },
+                    include: {
+                        rows: true,
+                        poolDetails: true
+                    }
+                });
+
+                return plan;
+            });
+        } catch (error: any) {
+            console.error('[RawMaterialPlansService] Error updating plan:', error);
+            throw new InternalServerErrorException(`Failed to update plan: ${error.message || 'Unknown error'}`);
+        }
+    }
 }

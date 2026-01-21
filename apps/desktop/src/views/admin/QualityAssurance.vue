@@ -139,6 +139,13 @@ const handleJobOrderEdit = (order: JobOrder) => {
   currentTab.value = 'job-order-create';
 };
 
+const selectedRawMaterialPlan = ref<any>(undefined);
+
+const handleRawMaterialPlanEdit = (plan: any) => {
+  selectedRawMaterialPlan.value = plan;
+  currentTab.value = 'raw-material-plan-create';
+};
+
 const handleJobOrderSave = async (formData: JobOrder) => {
   try {
     if (formData.id) {
@@ -203,6 +210,10 @@ onMounted(() => {
       @update:category="handleCategoryUpdate"
       @update:search-query="searchQuery = $event"
       @update:date="handleDateSelect"
+      @create-plan="
+        selectedRawMaterialPlan = undefined;
+        currentTab = 'raw-material-plan-create';
+      "
     />
 
     <!-- Tab Content -->
@@ -279,10 +290,20 @@ onMounted(() => {
         />
       </div>
       <div v-if="currentTab === 'raw-material-plan-list'" key="tab-raw-material-plan-list">
-        <RawMaterialPlanList :search-query="searchQuery" :date="selectedDate" />
+        <RawMaterialPlanList
+          :search-query="searchQuery"
+          :date="selectedDate"
+          @edit="handleRawMaterialPlanEdit"
+        />
       </div>
       <div v-else-if="currentTab === 'raw-material-plan-create'" key="tab-raw-material-plan-create">
-        <RawMaterialPlanForm />
+        <RawMaterialPlanForm
+          :initial-data="selectedRawMaterialPlan"
+          @cancel="
+            currentTab = 'raw-material-plan-list';
+            selectedRawMaterialPlan = undefined;
+          "
+        />
       </div>
     </div>
   </div>

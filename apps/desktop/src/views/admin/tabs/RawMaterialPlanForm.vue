@@ -30,12 +30,20 @@ import api from '@/services/api';
 import { useAuthStore } from '@/stores/auth';
 import { addDays, format } from 'date-fns';
 import { Calendar as CalendarIcon, Printer, Save } from 'lucide-vue-next';
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useRouter } from 'vue-router';
 import { toast } from 'vue-sonner';
+
+const props = defineProps<{
+  initialData?: any;
+}>();
+
+const emit = defineEmits(['cancel']);
 
 const { t } = useI18n();
 const authStore = useAuthStore();
+const router = useRouter();
 
 const validPoolGrades = ['AA', 'A', 'B', 'C', 'D'];
 
@@ -98,6 +106,74 @@ const plan = ref({
     clearDate: '',
     grade: [] as string[],
   })),
+});
+
+onMounted(() => {
+  if (props.initialData) {
+    const data = props.initialData;
+    plan.value.planNo = data.planNo || '';
+    plan.value.revisionNo = data.revisionNo || '';
+    plan.value.refProductionNo = data.refProductionNo || '';
+    if (data.issuedDate) {
+      plan.value.issuedDate = format(new Date(data.issuedDate), 'dd MMM yy');
+    }
+
+    if (data.rows && data.rows.length > 0) {
+      plan.value.rows = data.rows.map((r: any) => {
+        return {
+          ...r,
+          date: r.date ? format(new Date(r.date), 'dd MMM yy') : '',
+          plan1Pool:
+            typeof r.plan1Pool === 'string'
+              ? r.plan1Pool.split(',').filter(Boolean)
+              : r.plan1Pool || [],
+          plan1Grades:
+            typeof r.plan1Grades === 'string'
+              ? r.plan1Grades.split(',').filter(Boolean)
+              : r.plan1Grades || [],
+          plan2Pool:
+            typeof r.plan2Pool === 'string'
+              ? r.plan2Pool.split(',').filter(Boolean)
+              : r.plan2Pool || [],
+          plan2Grades:
+            typeof r.plan2Grades === 'string'
+              ? r.plan2Grades.split(',').filter(Boolean)
+              : r.plan2Grades || [],
+          plan3Pool:
+            typeof r.plan3Pool === 'string'
+              ? r.plan3Pool.split(',').filter(Boolean)
+              : r.plan3Pool || [],
+          plan3Grades:
+            typeof r.plan3Grades === 'string'
+              ? r.plan3Grades.split(',').filter(Boolean)
+              : r.plan3Grades || [],
+          // Convert numeric fields back to strings for better input handling if they are numbers
+          ratioUSS: String(r.ratioUSS ?? '0'),
+          ratioCL: String(r.ratioCL ?? '0'),
+          ratioBK: String(r.ratioBK ?? '0'),
+          productTarget: String(r.productTarget ?? '0'),
+          clConsumption: String(r.clConsumption ?? '0'),
+          ratioBorC: String(r.ratioBorC ?? '0'),
+          cuttingPercent: String(r.cuttingPercent ?? '0'),
+          cuttingPalette: String(r.cuttingPalette ?? ''),
+        };
+      });
+    }
+
+    if (data.poolDetails && data.poolDetails.length > 0) {
+      plan.value.poolDetails = data.poolDetails.map((p: any) => ({
+        ...p,
+        clearDate: p.clearDate ? format(new Date(p.clearDate), 'dd MMM yy') : '',
+        grade: typeof p.grade === 'string' ? p.grade.split(',').filter(Boolean) : p.grade || [],
+        grossWeight: String(p.grossWeight ?? '0'),
+        netWeight: String(p.netWeight ?? '0'),
+        drc: String(p.drc ?? '0'),
+        moisture: String(p.moisture ?? '0'),
+        p0: String(p.p0 ?? '0'),
+        pri: String(p.pri ?? '0'),
+      }));
+    }
+  }
 });
 
 const plainPoolOptions = computed(() => {
@@ -218,23 +294,22 @@ const handleSave = async () => {
       })),
     };
 
-    console.log('[RawMaterialPlanForm] Target API Base URL:', api.defaults.baseURL);
     console.log('[RawMaterialPlanForm] Saving payload:', payload);
 
-    const response = await api.post('/raw-material-plans', payload);
-    console.log('Save response:', response.data);
+    if (props.initialData?.id) {
+      await api.patch(`/raw-material-plans/${props.initialData.id}`, payload);
+      toast.success('Successfully updated Raw Material Plan');
+    } else {
+      await api.post('/raw-material-plans', payload);
+      toast.success('Successfully created Raw Material Plan');
+    }
 
-    toast.success('Successfully saved Raw Material Plan');
-    isSubmitting.value = false;
+    // Redirect back to list
+    router.push({ path: '/admin/qa', query: { tab: 'raw-material-plan-list' } });
   } catch (error: any) {
     console.error('Failed to save plan:', error);
     const errorMsg = error.response?.data?.message || error.message || 'Unknown error occurred';
-    const errorDetail = error.response?.data
-      ? JSON.stringify(error.response.data)
-      : 'No response data';
-    console.error('Detailed Error Response:', error.response?.data);
-    toast.error(`Failed to save plan: ${errorMsg} | Detail: ${errorDetail}`);
-    isSubmitting.value = false;
+    toast.error(`Failed to save plan: ${errorMsg}`);
   } finally {
     isSubmitting.value = false;
   }

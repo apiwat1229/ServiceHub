@@ -11,9 +11,10 @@ import {
 } from '@/components/ui/table';
 import api from '@/services/api';
 import { format } from 'date-fns';
-import { Edit2, Eye, Loader2, Printer, RefreshCw, Trash2 } from 'lucide-vue-next';
+import { FileText, Loader2, Printer, RefreshCw } from 'lucide-vue-next';
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import RawMaterialPlanViewModal from './RawMaterialPlanViewModal.vue';
 
 const { t } = useI18n();
 const props = defineProps<{
@@ -21,10 +22,23 @@ const props = defineProps<{
   date?: any;
 }>();
 
+const emit = defineEmits<{
+  (e: 'edit', plan: any): void;
+}>();
+
 // Data states
 const plans = ref<any[]>([]);
 const isLoading = ref(false);
 const error = ref<string | null>(null);
+
+// Modal state
+const isViewModalOpen = ref(false);
+const selectedPlanId = ref<string | null>(null);
+
+const openViewModal = (id: string) => {
+  selectedPlanId.value = id;
+  isViewModalOpen.value = true;
+};
 
 const fetchPlans = async () => {
   isLoading.value = true;
@@ -114,6 +128,9 @@ const getStatusVariant = (status: string) => {
       <Table>
         <TableHeader class="bg-slate-50">
           <TableRow>
+            <TableHead class="w-32 font-black text-slate-700 uppercase tracking-tighter text-[10px]"
+              >Date</TableHead
+            >
             <TableHead class="w-24 font-black text-slate-700 uppercase tracking-tighter text-[10px]"
               >Plan No.</TableHead
             >
@@ -122,9 +139,6 @@ const getStatusVariant = (status: string) => {
             >
             <TableHead class="font-black text-slate-700 uppercase tracking-tighter text-[10px]"
               >Reference Production</TableHead
-            >
-            <TableHead class="font-black text-slate-700 uppercase tracking-tighter text-[10px]"
-              >Issued Date</TableHead
             >
             <TableHead class="font-black text-slate-700 uppercase tracking-tighter text-[10px]"
               >Created By</TableHead
@@ -145,10 +159,19 @@ const getStatusVariant = (status: string) => {
             :key="plan.id"
             class="hover:bg-slate-50 transition-colors"
           >
-            <TableCell class="font-bold text-primary">{{ plan.planNo }}</TableCell>
+            <TableCell class="font-medium text-slate-500">{{
+              formatDate(plan.issuedDate)
+            }}</TableCell>
+            <TableCell>
+              <span
+                class="font-bold text-primary cursor-pointer hover:underline"
+                @click="emit('edit', plan)"
+              >
+                {{ plan.planNo }}
+              </span>
+            </TableCell>
             <TableCell class="text-center font-mono">{{ plan.revisionNo }}</TableCell>
             <TableCell>{{ plan.refProductionNo }}</TableCell>
-            <TableCell>{{ formatDate(plan.issuedDate) }}</TableCell>
             <TableCell class="text-muted-foreground">{{ plan.creator }}</TableCell>
             <TableCell class="text-center">
               <Badge
@@ -163,28 +186,16 @@ const getStatusVariant = (status: string) => {
                 <Button
                   variant="ghost"
                   size="icon"
-                  class="h-8 w-8 text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                  class="h-8 w-8 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors"
+                  @click="openViewModal(plan.id)"
                 >
-                  <Eye class="w-4 h-4" />
+                  <FileText class="w-4 h-4" />
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
-                  class="h-8 w-8 text-muted-foreground hover:bg-primary/10 hover:text-primary"
-                >
-                  <Edit2 class="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  class="h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                >
-                  <Trash2 class="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  class="h-8 w-8 text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                  class="h-8 w-8 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors"
+                  @click="openViewModal(plan.id)"
                 >
                   <Printer class="w-4 h-4" />
                 </Button>
@@ -208,5 +219,12 @@ const getStatusVariant = (status: string) => {
         </TableBody>
       </Table>
     </div>
+
+    <!-- View/Print Modal -->
+    <RawMaterialPlanViewModal
+      v-if="selectedPlanId"
+      :plan-id="selectedPlanId"
+      v-model:open="isViewModalOpen"
+    />
   </div>
 </template>

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
 import { CreateRawMaterialPlanDto } from './dto/create-raw-material-plan.dto';
 import { RawMaterialPlansService } from './raw-material-plans.service';
 
@@ -19,5 +19,10 @@ export class RawMaterialPlansController {
     @Get(':id')
     findOne(@Param('id') id: string) {
         return this.rawMaterialPlansService.findOne(id);
+    }
+
+    @Patch(':id')
+    update(@Param('id') id: string, @Body() updateDto: CreateRawMaterialPlanDto) {
+        return this.rawMaterialPlansService.update(id, updateDto);
     }
 }
