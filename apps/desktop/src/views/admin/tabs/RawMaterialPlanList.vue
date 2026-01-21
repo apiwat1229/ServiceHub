@@ -9,35 +9,49 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Edit2, Eye, Printer, Trash2 } from 'lucide-vue-next';
-import { computed, ref } from 'vue';
+import api from '@/services/api';
+import { format } from 'date-fns';
+import { Edit2, Eye, Loader2, Printer, RefreshCw, Trash2 } from 'lucide-vue-next';
+import { computed, onMounted, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 
+const { t } = useI18n();
 const props = defineProps<{
   searchQuery?: string;
   date?: any;
 }>();
 
-// Mock data for listing
-const plans = ref([
-  {
-    id: '1',
-    planNo: '2024#PL03',
-    revisionNo: '01',
-    issuedDate: '17-Jan-24',
-    refProductionNo: '2024#P03',
-    status: 'APPROVED',
-    creator: 'Admin System',
-  },
-  {
-    id: '2',
-    planNo: '2024#PL02',
-    revisionNo: '00',
-    issuedDate: '10-Jan-24',
-    refProductionNo: '2024#P02',
-    status: 'CLOSED',
-    creator: 'Admin System',
-  },
-]);
+// Data states
+const plans = ref<any[]>([]);
+const isLoading = ref(false);
+const error = ref<string | null>(null);
+
+const fetchPlans = async () => {
+  isLoading.value = true;
+  error.value = null;
+  try {
+    const response = await api.get('/raw-material-plans');
+    plans.value = response.data;
+  } catch (err: any) {
+    console.error('Failed to fetch plans:', err);
+    error.value = 'Failed to load plans. Please try again.';
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+onMounted(() => {
+  fetchPlans();
+});
+
+const formatDate = (date: string | Date) => {
+  if (!date) return '-';
+  try {
+    return format(new Date(date), 'dd-MMM-yy');
+  } catch (e) {
+    return date;
+  }
+};
 
 const filteredPlans = computed(() => {
   if (!props.searchQuery) return plans.value;
@@ -45,8 +59,10 @@ const filteredPlans = computed(() => {
   return plans.value.filter(
     (p) =>
       p.planNo.toLowerCase().includes(q) ||
-      p.refProductionNo.toLowerCase().includes(q) ||
-      p.status.toLowerCase().includes(q)
+      p.refProductionNo?.toLowerCase().includes(q) ||
+      p.status.toLowerCase().includes(q) ||
+      p.creator?.toLowerCase().includes(q) ||
+      p.revisionNo?.toLowerCase().includes(q)
   );
 });
 
@@ -67,7 +83,31 @@ const getStatusVariant = (status: string) => {
 <template>
   <div class="space-y-4">
     <!-- Independent Header -->
-    <!-- Header Removed (Global Header Used) -->
+    <!-- Header with Refresh Button -->
+    <div class="flex items-center justify-between px-1">
+      <div class="flex items-center gap-2">
+        <h3 class="text-sm font-black text-slate-800 uppercase tracking-tight">
+          {{ t('qa.tabs.planList') }}
+        </h3>
+        <Badge
+          v-if="filteredPlans.length"
+          variant="outline"
+          class="text-[10px] h-5 px-1.5 font-bold"
+        >
+          {{ filteredPlans.length }} plans
+        </Badge>
+      </div>
+      <Button
+        variant="ghost"
+        size="sm"
+        @click="fetchPlans"
+        :disabled="isLoading"
+        class="h-8 gap-2 text-xs font-bold text-slate-500 hover:text-primary transition-all rounded-md"
+      >
+        <RefreshCw :class="{ 'animate-spin': isLoading }" class="w-3.5 h-3.5" />
+        {{ t('common.refresh') || 'Refresh' }}
+      </Button>
+    </div>
 
     <!-- Table Container -->
     <div class="border rounded-lg bg-white shadow-sm overflow-hidden">
@@ -108,7 +148,7 @@ const getStatusVariant = (status: string) => {
             <TableCell class="font-bold text-primary">{{ plan.planNo }}</TableCell>
             <TableCell class="text-center font-mono">{{ plan.revisionNo }}</TableCell>
             <TableCell>{{ plan.refProductionNo }}</TableCell>
-            <TableCell>{{ plan.issuedDate }}</TableCell>
+            <TableCell>{{ formatDate(plan.issuedDate) }}</TableCell>
             <TableCell class="text-muted-foreground">{{ plan.creator }}</TableCell>
             <TableCell class="text-center">
               <Badge
@@ -151,9 +191,18 @@ const getStatusVariant = (status: string) => {
               </div>
             </TableCell>
           </TableRow>
-          <TableRow v-if="plans.length === 0">
+          <TableRow v-if="plans.length === 0 && !isLoading">
             <TableCell colspan="7" class="h-32 text-center text-slate-400 italic">
-              No plans found.
+              {{ error || 'No plans found.' }}
+              <Button v-if="error" variant="link" @click="fetchPlans" class="ml-2"> Retry </Button>
+            </TableCell>
+          </TableRow>
+          <TableRow v-if="isLoading">
+            <TableCell colspan="7" class="h-32 text-center">
+              <div class="flex flex-col items-center justify-center gap-2">
+                <Loader2 class="w-8 h-8 animate-spin text-primary/40" />
+                <span class="text-xs text-muted-foreground animate-pulse">Loading data...</span>
+              </div>
             </TableCell>
           </TableRow>
         </TableBody>

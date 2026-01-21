@@ -8,14 +8,14 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev:desktop\" \"npm run dev:vite\"",
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:desktop\"",
     "dev:web": "npm run dev:vite",
     "dev:app": "npm run dev:desktop",
     "dev:api": "cross-env API_PORT=2530 npm run start:dev --workspace=apps/api",
     "dev:desktop": "npm run dev --workspace=apps/desktop",
     "dev:vite": "npm run dev:web --workspace=apps/desktop",
     "dev:db": "docker-compose up -d",
-    "dev:fix": "rimraf node_modules/.vite apps/desktop/node_modules/.vite && npm run dev -- --force",
+    "dev:fix": "npm run kill:win && rimraf node_modules/.vite apps/desktop/node_modules/.vite* && npm run dev -- --force",
     "kill": "lsof -ti :2530 -ti :5173 | xargs kill -9 2>/dev/null || true",
     "kill:win": "taskkill /F /IM node.exe /T",
     "kill:all": "killall node || true",

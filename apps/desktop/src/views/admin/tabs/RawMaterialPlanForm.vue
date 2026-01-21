@@ -1,8 +1,15 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import { NumberField, NumberFieldContent, NumberFieldInput } from '@/components/ui/number-field';
+import {
+  NumberField,
+  NumberFieldContent,
+  NumberFieldDecrement,
+  NumberFieldIncrement,
+  NumberFieldInput,
+} from '@/components/ui/number-field';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Select,
@@ -19,11 +26,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import api from '@/services/api';
 import { useAuthStore } from '@/stores/auth';
 import { addDays, format } from 'date-fns';
 import { Calendar as CalendarIcon, Printer, Save } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { toast } from 'vue-sonner';
 
 const { t } = useI18n();
 const authStore = useAuthStore();
@@ -58,12 +67,12 @@ const plan = ref({
       productionMode: 'normal',
       grade: '',
       gradeColor: '',
-      ratioUSS: '-',
-      ratioCL: '-',
-      ratioBK: '-',
-      productTarget: '-',
-      clConsumption: '-',
-      ratioBorC: '-',
+      ratioUSS: '0',
+      ratioCL: '0',
+      ratioBK: '0',
+      productTarget: '0',
+      clConsumption: '0',
+      ratioBorC: '0',
       plan1Pool: [] as string[],
       plan1Scoops: 0,
       plan1Grades: [] as string[],
@@ -73,19 +82,19 @@ const plan = ref({
       plan3Pool: [] as string[],
       plan3Scoops: 0,
       plan3Grades: [] as string[],
-      cuttingPercent: '-',
+      cuttingPercent: '0',
       cuttingPalette: '',
       remarks: '',
     };
   }),
   poolDetails: Array.from({ length: 7 }, () => ({
-    poolNo: '-',
-    grossWeight: '-',
-    netWeight: '-',
-    drc: '-',
-    moisture: '-',
-    p0: '-',
-    pri: '-',
+    poolNo: '0',
+    grossWeight: '0',
+    netWeight: '0',
+    drc: '0',
+    moisture: '0',
+    p0: '0',
+    pri: '0',
     clearDate: '',
     grade: [] as string[],
   })),
@@ -178,44 +187,41 @@ const handleDateUpdate = (newDate: any) => {
 const isSubmitting = ref(false); // Added based on instruction's usage
 
 const handleSave = async () => {
+  if (!plan.value.planNo) {
+    toast.error('Please enter Plan No.');
+    return;
+  }
+
   try {
     isSubmitting.value = true;
     // Format the payload
     const payload = {
       ...plan.value,
-      issueBy: authStore.user?.id, // Send user ID or username depending on backend requirement
+      issueBy: authStore.user?.displayName || authStore.user?.username || 'System',
       verifiedBy: null, // Pending verification
-      // Ensure numeric fields are numbers, dates are formatted standardly if needed
+      // Ensure numeric fields are numbers
       rows: plan.value.rows.map((row) => ({
         ...row,
-        // Convert string inputs to numbers where appropriate if they aren't already
         plan1Scoops: Number(row.plan1Scoops) || 0,
         plan2Scoops: Number(row.plan2Scoops) || 0,
         plan3Scoops: Number(row.plan3Scoops) || 0,
       })),
     };
 
-    // Assuming 'api' is an imported axios instance or similar
-    // For this example, I'll use a placeholder 'api' object.
-    // In a real application, you would import it: `import api from '@/lib/axios';`
-    const api = {
-      post: (url: string, data: any) => {
-        console.log(`Mock API POST to ${url} with data:`, data);
-        return new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
-      },
-    };
+    console.log('[RawMaterialPlanForm] Target API Base URL:', api.defaults.baseURL);
+    console.log('[RawMaterialPlanForm] Saving payload:', payload);
 
-    await api.post('/raw-material-plans', payload);
+    const response = await api.post('/raw-material-plans', payload);
+    console.log('Save response:', response.data);
 
-    // Success notification
-    // Assuming you have a toast/notify utility, otherwise console for now or use window.alert as fallback
-    // Based on package.json, we have 'vue-sonner', let's use toast if imported, or just alert for now if import is missing.
-    // I will add the import in a separate edit if needed, but for now let's assume simple alert/log or try to use a global if available.
-    // Better to use window.alert temporarily until I confirm toast import.
-    alert(t('common.saveSuccess'));
-  } catch (error) {
+    toast.success(t('common.saveSuccess'));
+
+    // Optionally redirect back to list
+    // router.push({ query: { tab: 'raw-material-plan-list' } });
+  } catch (error: any) {
     console.error('Failed to save plan:', error);
-    alert(t('common.errorSave'));
+    const errorMsg = error.response?.data?.message || t('common.errorSave');
+    toast.error(errorMsg);
   } finally {
     isSubmitting.value = false;
   }

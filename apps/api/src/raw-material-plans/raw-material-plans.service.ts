@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { isValid, parse } from 'date-fns';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateRawMaterialPlanDto } from './dto/create-raw-material-plan.dto';
@@ -36,76 +36,89 @@ export class RawMaterialPlansService {
             issuedDate,
             ...mainData
         } = createDto;
+        console.log('[RawMaterialPlansService] Creating plan:', createDto.planNo);
 
-        // Transform Row Data
-        const formattedRows = rows.map(row => ({
-            date: this.parseDate(row.date),
-            dayOfWeek: row.dayOfWeek,
-            shift: row.shift,
-            grade: row.grade,
+        try {
+            // Transform Row Data
+            let lastValidDate: Date | null = null;
+            const formattedRows = rows.map((row, idx) => {
+                const currentDate = row.date ? this.parseDate(row.date) : lastValidDate;
+                if (row.date) lastValidDate = currentDate;
 
-            ratioUSS: this.cleanNumber(row.ratioUSS),
-            ratioCL: this.cleanNumber(row.ratioCL),
-            ratioBK: this.cleanNumber(row.ratioBK),
-            productTarget: this.cleanNumber(row.productTarget),
-            clConsumption: this.cleanNumber(row.clConsumption),
-            ratioBorC: this.cleanNumber(row.ratioBorC),
+                return {
+                    date: currentDate || new Date(),
+                    dayOfWeek: row.dayOfWeek,
+                    shift: row.shift,
+                    grade: row.grade,
 
-            // Handle Arrays to Strings
-            plan1Pool: Array.isArray(row.plan1Pool) ? row.plan1Pool.join(',') : row.plan1Pool,
-            // Note: Schema doesn't have plan1Scoops logic specifically mapped to separate columns except maybe notes?
-            // Schema has: plan1Pool, plan1Note. 
-            // User frontend has scoops and grades. I'll store scoops/grades in note or similar if needed.
-            // Wait, Schema has NO scoops column?
-            // Looking at Schema: plan1Pool (String), plan1Note (String).
-            // I will combine Scoops/Grades into plan1Note for now: "Scoops: 5, Grades: A,B"
-            plan1Note: `Scoops: ${row.plan1Scoops || 0}, Grades: ${Array.isArray(row.plan1Grades) ? row.plan1Grades.join(',') : ''}`,
+                    ratioUSS: this.cleanNumber(row.ratioUSS),
+                    ratioCL: this.cleanNumber(row.ratioCL),
+                    ratioBK: this.cleanNumber(row.ratioBK),
+                    productTarget: this.cleanNumber(row.productTarget),
+                    clConsumption: this.cleanNumber(row.clConsumption),
+                    ratioBorC: this.cleanNumber(row.ratioBorC),
 
-            plan2Pool: Array.isArray(row.plan2Pool) ? row.plan2Pool.join(',') : row.plan2Pool,
-            plan2Note: `Scoops: ${row.plan2Scoops || 0}, Grades: ${Array.isArray(row.plan2Grades) ? row.plan2Grades.join(',') : ''}`,
+                    // Handle Arrays to Strings
+                    plan1Pool: Array.isArray(row.plan1Pool) ? row.plan1Pool.join(',') : row.plan1Pool,
+                    plan1Note: `Scoops: ${row.plan1Scoops || 0}, Grades: ${Array.isArray(row.plan1Grades) ? row.plan1Grades.join(',') : ''}`,
 
-            plan3Pool: Array.isArray(row.plan3Pool) ? row.plan3Pool.join(',') : row.plan3Pool,
-            plan3Note: `Scoops: ${row.plan3Scoops || 0}, Grades: ${Array.isArray(row.plan3Grades) ? row.plan3Grades.join(',') : ''}`,
+                    plan2Pool: Array.isArray(row.plan2Pool) ? row.plan2Pool.join(',') : row.plan2Pool,
+                    plan2Note: `Scoops: ${row.plan2Scoops || 0}, Grades: ${Array.isArray(row.plan2Grades) ? row.plan2Grades.join(',') : ''}`,
 
-            cuttingPercent: this.cleanNumber(row.cuttingPercent),
-            cuttingPalette: this.cleanNumber(row.cuttingPalette) ? Number(row.cuttingPalette) : null,
+                    plan3Pool: Array.isArray(row.plan3Pool) ? row.plan3Pool.join(',') : row.plan3Pool,
+                    plan3Note: `Scoops: ${row.plan3Scoops || 0}, Grades: ${Array.isArray(row.plan3Grades) ? row.plan3Grades.join(',') : ''}`,
 
-            remarks: row.remarks,
-            specialIndicator: row.productionMode // Mapping productionMode to specialIndicator
-        }));
+                    cuttingPercent: this.cleanNumber(row.cuttingPercent),
+                    cuttingPalette: this.cleanNumber(row.cuttingPalette) !== null ? Math.round(Number(this.cleanNumber(row.cuttingPalette))) : null,
 
-        // Transform Pool Details
-        const formattedPools = poolDetails.map(pool => ({
-            poolNo: pool.poolNo,
-            grossWeight: this.cleanNumber(pool.grossWeight),
-            netWeight: this.cleanNumber(pool.netWeight),
-            drc: this.cleanNumber(pool.drc),
-            moisture: this.cleanNumber(pool.moisture),
-            p0: this.cleanNumber(pool.p0),
-            pri: this.cleanNumber(pool.pri),
-            clearDate: pool.clearDate ? this.parseDate(pool.clearDate) : null,
-            grade: Array.isArray(pool.grade) ? pool.grade.join(',') : pool.grade,
-        }));
+                    remarks: row.remarks,
+                    specialIndicator: row.productionMode // Mapping productionMode to specialIndicator
+                };
+            });
 
-        return this.prisma.rawMaterialPlan.create({
-            data: {
-                ...mainData,
-                issuedDate: this.parseDate(issuedDate),
-                creator: issueBy || 'System',
-                checker: verifiedBy,
-                status: 'DRAFT',
-                rows: {
-                    create: formattedRows
+            // Transform Pool Details
+            const formattedPools = poolDetails.map(pool => ({
+                poolNo: pool.poolNo,
+                grossWeight: this.cleanNumber(pool.grossWeight),
+                netWeight: this.cleanNumber(pool.netWeight),
+                drc: this.cleanNumber(pool.drc),
+                moisture: this.cleanNumber(pool.moisture),
+                p0: this.cleanNumber(pool.p0),
+                pri: this.cleanNumber(pool.pri),
+                clearDate: pool.clearDate ? this.parseDate(pool.clearDate) : null,
+                grade: Array.isArray(pool.grade) ? pool.grade.join(',') : pool.grade,
+            }));
+
+            const result = await this.prisma.rawMaterialPlan.create({
+                data: {
+                    ...mainData,
+                    issuedDate: this.parseDate(issuedDate),
+                    creator: issueBy || 'System',
+                    checker: verifiedBy,
+                    status: 'DRAFT',
+                    rows: {
+                        create: formattedRows
+                    },
+                    poolDetails: {
+                        create: formattedPools
+                    }
                 },
-                poolDetails: {
-                    create: formattedPools
+                include: {
+                    rows: true,
+                    poolDetails: true
                 }
-            },
-            include: {
-                rows: true,
-                poolDetails: true
+            });
+            console.log('[RawMaterialPlansService] Plan created successfully:', result.id);
+            return result;
+        } catch (error: any) {
+            console.error('[RawMaterialPlansService] FATAL ERROR creating plan:', error);
+            if (error.code === 'P2002') {
+                throw new ConflictException(`Plan number "${createDto.planNo}" already exists in the system.`);
             }
-        });
+            // Return a more descriptive error if possible
+            const message = error.message || 'Unknown database error occurred';
+            throw new InternalServerErrorException(`Backend Error: ${message}. Please check if database migrations are up to date.`);
+        }
     }
 
     async findAll() {

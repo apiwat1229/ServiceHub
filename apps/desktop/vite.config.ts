@@ -111,6 +111,7 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
+    cacheDir: isWebOnly ? 'node_modules/.vite-web' : 'node_modules/.vite-electron',
     plugins,
     resolve: {
       alias: {
@@ -128,7 +129,9 @@ export default defineConfig(({ mode }) => {
         'lucide-vue-next',
         'vue-i18n',
         'clsx',
-        'tailwind-merge'
+        'tailwind-merge',
+        'radix-vue',
+        'reka-ui'
       ],
     },
     server: {
