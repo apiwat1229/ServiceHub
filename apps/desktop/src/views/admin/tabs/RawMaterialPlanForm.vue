@@ -206,6 +206,16 @@ const handleSave = async () => {
         plan2Scoops: Number(row.plan2Scoops) || 0,
         plan3Scoops: Number(row.plan3Scoops) || 0,
       })),
+      poolDetails: plan.value.poolDetails.map((pool) => ({
+        ...pool,
+        grossWeight: Number(pool.grossWeight) || 0,
+        netWeight: Number(pool.netWeight) || 0,
+        drc: Number(pool.drc) || 0,
+        moisture: Number(pool.moisture) || 0,
+        p0: Number(pool.p0) || 0,
+        pri: Number(pool.pri) || 0,
+        clearDate: pool.clearDate || null,
+      })),
     };
 
     console.log('[RawMaterialPlanForm] Target API Base URL:', api.defaults.baseURL);

@@ -40,11 +40,14 @@ export class RawMaterialPlansService {
         // Ensure we don't accidentally pass id or other clashing fields to Prisma
         const { id: _, status: __, createdAt: ___, updatedAt: ____, ...mainData } = mainRemaining as any;
         console.log('[RawMaterialPlansService] Creating plan:', createDto.planNo);
+        console.log('[RawMaterialPlansService] Incoming DTO keys:', Object.keys(createDto));
+        console.log('[RawMaterialPlansService] Rows count:', rows?.length);
+        console.log('[RawMaterialPlansService] PoolDetails count:', poolDetails?.length);
 
         try {
-            // Transform Row Data
+            // Transform Row Data (with safety guard)
             let lastValidDate: Date | null = null;
-            const formattedRows = rows.map((row, idx) => {
+            const formattedRows = (rows || []).map((row, idx) => {
                 const currentDate = row.date ? this.parseDate(row.date) : lastValidDate;
                 if (row.date) lastValidDate = currentDate;
 
@@ -79,8 +82,8 @@ export class RawMaterialPlansService {
                 };
             });
 
-            // Transform Pool Details
-            const formattedPools = poolDetails.map(pool => ({
+            // Transform Pool Details (with safety guard)
+            const formattedPools = (poolDetails || []).map(pool => ({
                 poolNo: pool.poolNo,
                 grossWeight: this.cleanNumber(pool.grossWeight),
                 netWeight: this.cleanNumber(pool.netWeight),
