@@ -370,7 +370,7 @@ const handleSave = async () => {
     }
 
     // Redirect back to list
-    router.push({ path: '/admin/qa', query: { tab: 'raw-material-plan-list' } });
+    handleCancel();
   } catch (error: any) {
     console.error('Failed to save plan:', error);
     const errorMsg = error.response?.data?.message || error.message || 'Unknown error occurred';

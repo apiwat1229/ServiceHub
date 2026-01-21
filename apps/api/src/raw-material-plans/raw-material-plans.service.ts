@@ -66,13 +66,13 @@ export class RawMaterialPlansService {
 
                     // Handle Arrays to Strings
                     plan1Pool: Array.isArray(row.plan1Pool) ? row.plan1Pool.join(',') : row.plan1Pool,
-                    plan1Note: `Scoops: ${row.plan1Scoops || 0}, Grades: ${Array.isArray(row.plan1Grades) ? row.plan1Grades.join(',') : ''}`,
+                    plan1Note: `Scoops: ${row.plan1Scoops || 0}, Grades: ${Array.isArray(row.plan1Grades) ? row.plan1Grades.join(',') : (row.plan1Grades || '')}`,
 
                     plan2Pool: Array.isArray(row.plan2Pool) ? row.plan2Pool.join(',') : row.plan2Pool,
-                    plan2Note: `Scoops: ${row.plan2Scoops || 0}, Grades: ${Array.isArray(row.plan2Grades) ? row.plan2Grades.join(',') : ''}`,
+                    plan2Note: `Scoops: ${row.plan2Scoops || 0}, Grades: ${Array.isArray(row.plan2Grades) ? row.plan2Grades.join(',') : (row.plan2Grades || '')}`,
 
                     plan3Pool: Array.isArray(row.plan3Pool) ? row.plan3Pool.join(',') : row.plan3Pool,
-                    plan3Note: `Scoops: ${row.plan3Scoops || 0}, Grades: ${Array.isArray(row.plan3Grades) ? row.plan3Grades.join(',') : ''}`,
+                    plan3Note: `Scoops: ${row.plan3Scoops || 0}, Grades: ${Array.isArray(row.plan3Grades) ? row.plan3Grades.join(',') : (row.plan3Grades || '')}`,
 
                     cuttingPercent: this.cleanNumber(row.cuttingPercent),
                     cuttingPalette: this.cleanNumber(row.cuttingPalette) !== null ? Math.round(Number(this.cleanNumber(row.cuttingPalette))) : null,
@@ -217,11 +217,11 @@ export class RawMaterialPlansService {
                                 clConsumption: this.cleanNumber(r.clConsumption),
                                 ratioBorC: this.cleanNumber(r.ratioBorC),
                                 plan1Pool: Array.isArray(r.plan1Pool) ? r.plan1Pool.join(',') : String(r.plan1Pool || ''),
-                                plan1Note: `Scoops: ${r.plan1Scoops || 0}, Grades: ${Array.isArray(r.plan1Grades) ? r.plan1Grades.join(',') : ''}`,
+                                plan1Note: `Scoops: ${r.plan1Scoops || 0}, Grades: ${Array.isArray(r.plan1Grades) ? r.plan1Grades.join(',') : (r.plan1Grades || '')}`,
                                 plan2Pool: Array.isArray(r.plan2Pool) ? r.plan2Pool.join(',') : String(r.plan2Pool || ''),
-                                plan2Note: `Scoops: ${r.plan2Scoops || 0}, Grades: ${Array.isArray(r.plan2Grades) ? r.plan2Grades.join(',') : ''}`,
+                                plan2Note: `Scoops: ${r.plan2Scoops || 0}, Grades: ${Array.isArray(r.plan2Grades) ? r.plan2Grades.join(',') : (r.plan2Grades || '')}`,
                                 plan3Pool: Array.isArray(r.plan3Pool) ? r.plan3Pool.join(',') : String(r.plan3Pool || ''),
-                                plan3Note: `Scoops: ${r.plan3Scoops || 0}, Grades: ${Array.isArray(r.plan3Grades) ? r.plan3Grades.join(',') : ''}`,
+                                plan3Note: `Scoops: ${r.plan3Scoops || 0}, Grades: ${Array.isArray(r.plan3Grades) ? r.plan3Grades.join(',') : (r.plan3Grades || '')}`,
                                 cuttingPercent: this.cleanNumber(r.cuttingPercent),
                                 cuttingPalette: this.cleanNumber(r.cuttingPalette) !== null ? Math.floor(Number(this.cleanNumber(r.cuttingPalette))) : null,
                                 remarks: r.remarks,
