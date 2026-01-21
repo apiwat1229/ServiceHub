@@ -148,7 +148,17 @@ export class RawMaterialPlansService {
     }
 
     async update(id: string, updateDto: CreateRawMaterialPlanDto) {
-        const { rows, poolDetails, ...mainData } = updateDto;
+        const {
+            rows,
+            poolDetails,
+            issueBy,
+            verifiedBy,
+            issuedDate,
+            ...mainRemaining
+        } = updateDto;
+
+        // Ensure we don't accidentally pass id or other clashing fields to Prisma
+        const { id: _, status: __, createdAt: ___, updatedAt: ____, ...mainData } = mainRemaining as any;
 
         try {
             return await this.prisma.$transaction(async (tx) => {
@@ -161,39 +171,42 @@ export class RawMaterialPlansService {
                     where: { id },
                     data: {
                         ...mainData,
-                        issuedDate: new Date(mainData.issuedDate),
+                        creator: issueBy,
+                        checker: verifiedBy,
+                        issuedDate: new Date(issuedDate),
                         rows: {
                             create: (rows || []).map(r => ({
-                                ...r,
-                                date: r.date ? new Date(r.date) : null,
-                                ratioUSS: Number(r.ratioUSS) || 0,
-                                ratioCL: Number(r.ratioCL) || 0,
-                                ratioBK: Number(r.ratioBK) || 0,
-                                productTarget: Number(r.productTarget) || 0,
-                                clConsumption: Number(r.clConsumption) || 0,
-                                ratioBorC: Number(r.ratioBorC) || 0,
-                                plan1Scoops: Number(r.plan1Scoops) || 0,
-                                plan2Scoops: Number(r.plan2Scoops) || 0,
-                                plan3Scoops: Number(r.plan3Scoops) || 0,
-                                cuttingPercent: Number(r.cuttingPercent) || 0,
-                                cuttingPalette: Math.floor(Number(r.cuttingPalette)) || 0,
+                                date: r.date ? new Date(r.date) : new Date(),
+                                dayOfWeek: r.dayOfWeek,
+                                shift: r.shift,
+                                grade: r.grade,
+                                ratioUSS: this.cleanNumber(r.ratioUSS),
+                                ratioCL: this.cleanNumber(r.ratioCL),
+                                ratioBK: this.cleanNumber(r.ratioBK),
+                                productTarget: this.cleanNumber(r.productTarget),
+                                clConsumption: this.cleanNumber(r.clConsumption),
+                                ratioBorC: this.cleanNumber(r.ratioBorC),
                                 plan1Pool: Array.isArray(r.plan1Pool) ? r.plan1Pool.join(',') : String(r.plan1Pool || ''),
-                                plan1Grades: Array.isArray(r.plan1Grades) ? r.plan1Grades.join(',') : String(r.plan1Grades || ''),
+                                plan1Note: `Scoops: ${r.plan1Scoops || 0}, Grades: ${Array.isArray(r.plan1Grades) ? r.plan1Grades.join(',') : ''}`,
                                 plan2Pool: Array.isArray(r.plan2Pool) ? r.plan2Pool.join(',') : String(r.plan2Pool || ''),
-                                plan2Grades: Array.isArray(r.plan2Grades) ? r.plan2Grades.join(',') : String(r.plan2Grades || ''),
+                                plan2Note: `Scoops: ${r.plan2Scoops || 0}, Grades: ${Array.isArray(r.plan2Grades) ? r.plan2Grades.join(',') : ''}`,
                                 plan3Pool: Array.isArray(r.plan3Pool) ? r.plan3Pool.join(',') : String(r.plan3Pool || ''),
-                                plan3Grades: Array.isArray(r.plan3Grades) ? r.plan3Grades.join(',') : String(r.plan3Grades || ''),
+                                plan3Note: `Scoops: ${r.plan3Scoops || 0}, Grades: ${Array.isArray(r.plan3Grades) ? r.plan3Grades.join(',') : ''}`,
+                                cuttingPercent: this.cleanNumber(r.cuttingPercent),
+                                cuttingPalette: this.cleanNumber(r.cuttingPalette) !== null ? Math.floor(Number(this.cleanNumber(r.cuttingPalette))) : null,
+                                remarks: r.remarks,
+                                specialIndicator: r.productionMode
                             }))
                         },
                         poolDetails: {
                             create: (poolDetails || []).map(p => ({
-                                ...p,
-                                grossWeight: Number(p.grossWeight) || 0,
-                                netWeight: Number(p.netWeight) || 0,
-                                drc: Number(p.drc) || 0,
-                                moisture: Number(p.moisture) || 0,
-                                p0: Number(p.p0) || 0,
-                                pri: Number(p.pri) || 0,
+                                poolNo: p.poolNo,
+                                grossWeight: this.cleanNumber(p.grossWeight),
+                                netWeight: this.cleanNumber(p.netWeight),
+                                drc: this.cleanNumber(p.drc),
+                                moisture: this.cleanNumber(p.moisture),
+                                p0: this.cleanNumber(p.p0),
+                                pri: this.cleanNumber(p.pri),
                                 clearDate: p.clearDate ? new Date(p.clearDate) : null,
                                 grade: Array.isArray(p.grade) ? p.grade.join(',') : String(p.grade || '')
                             }))
