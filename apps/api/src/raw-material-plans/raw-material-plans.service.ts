@@ -138,13 +138,43 @@ export class RawMaterialPlansService {
     }
 
     async findOne(id: string) {
-        return this.prisma.rawMaterialPlan.findUnique({
+        const plan = await this.prisma.rawMaterialPlan.findUnique({
             where: { id },
             include: {
                 rows: true,
                 poolDetails: true
             }
         });
+
+        if (!plan) return null;
+
+        return {
+            ...plan,
+            rows: plan.rows.map(row => {
+                const parseNote = (note: string | null) => {
+                    const scoopsMatch = note?.match(/Scoops: (\d+)/);
+                    const gradesMatch = note?.match(/Grades: (.*)/);
+                    return {
+                        scoops: scoopsMatch ? Number(scoopsMatch[1]) : 0,
+                        grades: gradesMatch && gradesMatch[1] ? gradesMatch[1] : '' // Keep as string or array based on frontend need. Frontend splits by comma string.
+                    };
+                };
+
+                const p1 = parseNote(row.plan1Note);
+                const p2 = parseNote(row.plan2Note);
+                const p3 = parseNote(row.plan3Note);
+
+                return {
+                    ...row,
+                    plan1Scoops: p1.scoops,
+                    plan1Grades: p1.grades,
+                    plan2Scoops: p2.scoops,
+                    plan2Grades: p2.grades,
+                    plan3Scoops: p3.scoops,
+                    plan3Grades: p3.grades,
+                };
+            })
+        };
     }
 
     async update(id: string, updateDto: CreateRawMaterialPlanDto) {
