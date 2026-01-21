@@ -34,8 +34,11 @@ export class RawMaterialPlansService {
             issueBy,
             verifiedBy,
             issuedDate,
-            ...mainData
+            ...mainRemaining
         } = createDto;
+
+        // Ensure we don't accidentally pass id or other clashing fields to Prisma
+        const { id: _, status: __, createdAt: ___, updatedAt: ____, ...mainData } = mainRemaining as any;
         console.log('[RawMaterialPlansService] Creating plan:', createDto.planNo);
 
         try {

@@ -214,14 +214,13 @@ const handleSave = async () => {
     const response = await api.post('/raw-material-plans', payload);
     console.log('Save response:', response.data);
 
-    toast.success(t('common.saveSuccess'));
-
-    // Optionally redirect back to list
-    // router.push({ query: { tab: 'raw-material-plan-list' } });
+    toast.success('Successfully saved Raw Material Plan');
+    isSubmitting.value = false;
   } catch (error: any) {
     console.error('Failed to save plan:', error);
-    const errorMsg = error.response?.data?.message || t('common.errorSave');
-    toast.error(errorMsg);
+    const errorMsg = error.response?.data?.message || error.message || 'Unknown error occurred';
+    toast.error(`Failed to save plan: ${errorMsg}`);
+    isSubmitting.value = false;
   } finally {
     isSubmitting.value = false;
   }
