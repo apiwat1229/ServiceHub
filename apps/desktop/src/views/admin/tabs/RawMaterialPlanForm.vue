@@ -1,4 +1,14 @@
 <script setup lang="ts">
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -29,7 +39,16 @@ import {
 import api from '@/services/api';
 import { useAuthStore } from '@/stores/auth';
 import { addDays, format } from 'date-fns';
-import { Calendar as CalendarIcon, Printer, Save } from 'lucide-vue-next';
+import {
+  Calendar as CalendarIcon,
+  FileEdit,
+  PlusCircle,
+  Printer,
+  RotateCcw,
+  Save,
+  Trash2,
+  X,
+} from 'lucide-vue-next';
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
@@ -45,21 +64,16 @@ const { t } = useI18n();
 const authStore = useAuthStore();
 const router = useRouter();
 
-const validPoolGrades = ['AA', 'A', 'B', 'C', 'D'];
+const isEditMode = computed(() => !!props.initialData?.id);
+const isDeleteAlertOpen = ref(false);
+const isResetAlertOpen = ref(false);
 
-const togglePoolGrade = (pool: any, grade: string) => {
-  if (pool.grade.includes(grade)) {
-    pool.grade = pool.grade.filter((g: string) => g !== grade);
-  } else {
-    // Sort logic: use validPoolGrades index
-    const newGrades = [...pool.grade, grade];
-    newGrades.sort((a, b) => validPoolGrades.indexOf(a) - validPoolGrades.indexOf(b));
-    pool.grade = newGrades;
-  }
+const handleCancel = () => {
+  emit('cancel');
+  router.push({ query: { tab: 'raw-material-plan-list' } });
 };
 
-// Mock initial state for a 7-day plan (14 shifts)
-const plan = ref({
+const getDefaultPlan = () => ({
   planNo: '',
   revisionNo: '',
   refProductionNo: '',
@@ -108,71 +122,122 @@ const plan = ref({
   })),
 });
 
+const handleReset = () => {
+  if (isEditMode.value && props.initialData) {
+    // Reset to initial edited data
+    const data = props.initialData;
+    // ... (Reuse the mapping logic from onMounted ideally, but for now copying is fine or we can extract it)
+    // To avoid duplication, I'll just reload the page or re-run the mount logic function if I extract it.
+    // For simplicity, let's just reset to initialData by calling the same logic.
+    initializeData(data);
+  } else {
+    // Reset to default
+    plan.value = getDefaultPlan();
+  }
+  isResetAlertOpen.value = false;
+  toast.info('Form has been reset.');
+};
+
+const handleDelete = async () => {
+  if (!props.initialData?.id) return;
+
+  try {
+    isSubmitting.value = true;
+    await api.delete(`/raw-material-plans/${props.initialData.id}`);
+    toast.success('Plan deleted successfully');
+    isDeleteAlertOpen.value = false;
+    handleCancel(); // Redirect
+  } catch (error: any) {
+    const errorMsg = error.response?.data?.message || error.message || 'Unknown error occurred';
+    toast.error(`Failed to delete plan: ${errorMsg}`);
+  } finally {
+    isSubmitting.value = false;
+  }
+};
+
+const initializeData = (data: any) => {
+  plan.value.planNo = data.planNo || '';
+  plan.value.revisionNo = data.revisionNo || '';
+  plan.value.refProductionNo = data.refProductionNo || '';
+  if (data.issuedDate) {
+    plan.value.issuedDate = format(new Date(data.issuedDate), 'dd MMM yy');
+  }
+
+  if (data.rows && data.rows.length > 0) {
+    plan.value.rows = data.rows.map((r: any) => {
+      return {
+        ...r,
+        date: r.date ? format(new Date(r.date), 'dd MMM yy') : '',
+        plan1Pool:
+          typeof r.plan1Pool === 'string'
+            ? r.plan1Pool.split(',').filter(Boolean)
+            : r.plan1Pool || [],
+        plan1Grades:
+          typeof r.plan1Grades === 'string'
+            ? r.plan1Grades.split(',').filter(Boolean)
+            : r.plan1Grades || [],
+        plan2Pool:
+          typeof r.plan2Pool === 'string'
+            ? r.plan2Pool.split(',').filter(Boolean)
+            : r.plan2Pool || [],
+        plan2Grades:
+          typeof r.plan2Grades === 'string'
+            ? r.plan2Grades.split(',').filter(Boolean)
+            : r.plan2Grades || [],
+        plan3Pool:
+          typeof r.plan3Pool === 'string'
+            ? r.plan3Pool.split(',').filter(Boolean)
+            : r.plan3Pool || [],
+        plan3Grades:
+          typeof r.plan3Grades === 'string'
+            ? r.plan3Grades.split(',').filter(Boolean)
+            : r.plan3Grades || [],
+        ratioUSS: String(r.ratioUSS ?? '0'),
+        ratioCL: String(r.ratioCL ?? '0'),
+        ratioBK: String(r.ratioBK ?? '0'),
+        productTarget: String(r.productTarget ?? '0'),
+        clConsumption: String(r.clConsumption ?? '0'),
+        ratioBorC: String(r.ratioBorC ?? '0'),
+        cuttingPercent: String(r.cuttingPercent ?? '0'),
+        cuttingPalette: String(r.cuttingPalette ?? ''),
+      };
+    });
+  }
+
+  if (data.poolDetails && data.poolDetails.length > 0) {
+    plan.value.poolDetails = data.poolDetails.map((p: any) => ({
+      ...p,
+      clearDate: p.clearDate ? format(new Date(p.clearDate), 'dd MMM yy') : '',
+      grade: typeof p.grade === 'string' ? p.grade.split(',').filter(Boolean) : p.grade || [],
+      grossWeight: String(p.grossWeight ?? '0'),
+      netWeight: String(p.netWeight ?? '0'),
+      drc: String(p.drc ?? '0'),
+      moisture: String(p.moisture ?? '0'),
+      p0: String(p.p0 ?? '0'),
+      pri: String(p.pri ?? '0'),
+    }));
+  }
+};
+
+const validPoolGrades = ['AA', 'A', 'B', 'C', 'D'];
+
+const togglePoolGrade = (pool: any, grade: string) => {
+  if (pool.grade.includes(grade)) {
+    pool.grade = pool.grade.filter((g: string) => g !== grade);
+  } else {
+    // Sort logic: use validPoolGrades index
+    const newGrades = [...pool.grade, grade];
+    newGrades.sort((a, b) => validPoolGrades.indexOf(a) - validPoolGrades.indexOf(b));
+    pool.grade = newGrades;
+  }
+};
+
+// Mock initial state for a 7-day plan (14 shifts)
+const plan = ref(getDefaultPlan());
+
 onMounted(() => {
   if (props.initialData) {
-    const data = props.initialData;
-    plan.value.planNo = data.planNo || '';
-    plan.value.revisionNo = data.revisionNo || '';
-    plan.value.refProductionNo = data.refProductionNo || '';
-    if (data.issuedDate) {
-      plan.value.issuedDate = format(new Date(data.issuedDate), 'dd MMM yy');
-    }
-
-    if (data.rows && data.rows.length > 0) {
-      plan.value.rows = data.rows.map((r: any) => {
-        return {
-          ...r,
-          date: r.date ? format(new Date(r.date), 'dd MMM yy') : '',
-          plan1Pool:
-            typeof r.plan1Pool === 'string'
-              ? r.plan1Pool.split(',').filter(Boolean)
-              : r.plan1Pool || [],
-          plan1Grades:
-            typeof r.plan1Grades === 'string'
-              ? r.plan1Grades.split(',').filter(Boolean)
-              : r.plan1Grades || [],
-          plan2Pool:
-            typeof r.plan2Pool === 'string'
-              ? r.plan2Pool.split(',').filter(Boolean)
-              : r.plan2Pool || [],
-          plan2Grades:
-            typeof r.plan2Grades === 'string'
-              ? r.plan2Grades.split(',').filter(Boolean)
-              : r.plan2Grades || [],
-          plan3Pool:
-            typeof r.plan3Pool === 'string'
-              ? r.plan3Pool.split(',').filter(Boolean)
-              : r.plan3Pool || [],
-          plan3Grades:
-            typeof r.plan3Grades === 'string'
-              ? r.plan3Grades.split(',').filter(Boolean)
-              : r.plan3Grades || [],
-          // Convert numeric fields back to strings for better input handling if they are numbers
-          ratioUSS: String(r.ratioUSS ?? '0'),
-          ratioCL: String(r.ratioCL ?? '0'),
-          ratioBK: String(r.ratioBK ?? '0'),
-          productTarget: String(r.productTarget ?? '0'),
-          clConsumption: String(r.clConsumption ?? '0'),
-          ratioBorC: String(r.ratioBorC ?? '0'),
-          cuttingPercent: String(r.cuttingPercent ?? '0'),
-          cuttingPalette: String(r.cuttingPalette ?? ''),
-        };
-      });
-    }
-
-    if (data.poolDetails && data.poolDetails.length > 0) {
-      plan.value.poolDetails = data.poolDetails.map((p: any) => ({
-        ...p,
-        clearDate: p.clearDate ? format(new Date(p.clearDate), 'dd MMM yy') : '',
-        grade: typeof p.grade === 'string' ? p.grade.split(',').filter(Boolean) : p.grade || [],
-        grossWeight: String(p.grossWeight ?? '0'),
-        netWeight: String(p.netWeight ?? '0'),
-        drc: String(p.drc ?? '0'),
-        moisture: String(p.moisture ?? '0'),
-        p0: String(p.p0 ?? '0'),
-        pri: String(p.pri ?? '0'),
-      }));
-    }
+    initializeData(props.initialData);
   }
 });
 
@@ -322,8 +387,17 @@ const handleSave = async () => {
     <div class="grid grid-cols-3 gap-8 pb-4 border-b border-slate-100">
       <div class="space-y-4">
         <div>
-          <h2 class="text-2xl font-black text-slate-800 uppercase tracking-tight">
-            {{ t('qa.rawMaterialPlan') }}
+          <h2
+            class="text-2xl font-black text-slate-800 uppercase tracking-tight flex items-center gap-3"
+          >
+            <span v-if="isEditMode" class="flex items-center gap-2">
+              <FileEdit class="w-6 h-6 text-blue-600" />
+              Edit Plan: <span class="text-blue-600">{{ plan.planNo }}</span>
+            </span>
+            <span v-else class="flex items-center gap-2">
+              <PlusCircle class="w-6 h-6 text-emerald-600" />
+              Create Raw Material Plan
+            </span>
           </h2>
           <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">
             {{ t('qa.productionPlanningAllocation') }}
@@ -1052,9 +1126,36 @@ const handleSave = async () => {
       </div>
 
       <div class="flex items-center gap-3 no-print">
+        <Button variant="ghost" class="h-10 gap-2 text-slate-500" @click="handleCancel">
+          <X class="w-4 h-4" />
+          Cancel
+        </Button>
+
+        <Button
+          variant="outline"
+          class="h-10 gap-2 text-slate-600 border-dashed"
+          @click="isResetAlertOpen = true"
+        >
+          <RotateCcw class="w-4 h-4" />
+          Reset
+        </Button>
+
+        <div class="flex-1"></div>
+
         <Button variant="outline" class="h-10 gap-2 font-bold text-slate-600 shadow-sm">
           <Printer class="w-4 h-4" />
           {{ t('common.printPlan') }}
+        </Button>
+
+        <Button
+          v-if="isEditMode"
+          variant="destructive"
+          class="h-10 gap-2 mr-2"
+          @click="isDeleteAlertOpen = true"
+          :disabled="isSubmitting"
+        >
+          <Trash2 class="w-4 h-4" />
+          Delete
         </Button>
         <Button
           @click="handleSave"
@@ -1062,11 +1163,51 @@ const handleSave = async () => {
           class="h-10 gap-2 font-bold px-8 bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-200"
         >
           <Save class="w-4 h-4" />
-          {{ isSubmitting ? t('common.loading') : t('common.saveChanges') }}
+          {{ isSubmitting ? t('common.loading') : isEditMode ? 'Update Changes' : 'Create Plan' }}
         </Button>
       </div>
     </div>
   </div>
+
+  <!-- Delete Confirmation Dialog -->
+  <AlertDialog :open="isDeleteAlertOpen" @update:open="isDeleteAlertOpen = $event">
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+        <AlertDialogDescription>
+          This action cannot be undone. This will permanently delete the Raw Material Plan
+          <span class="font-bold text-red-600">{{ plan.planNo }}</span> and remove data from our
+          servers.
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogCancel>Cancel</AlertDialogCancel>
+        <AlertDialogAction
+          @click="handleDelete"
+          class="bg-red-600 hover:bg-red-700 text-white border-red-600"
+        >
+          Delete Plan
+        </AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
+
+  <!-- Reset Confirmation Dialog -->
+  <AlertDialog :open="isResetAlertOpen" @update:open="isResetAlertOpen = $event">
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>Reset Form?</AlertDialogTitle>
+        <AlertDialogDescription>
+          This will revert all fields to their {{ isEditMode ? 'initial' : 'default' }} values. Any
+          unsaved changes will be lost.
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogCancel>Cancel</AlertDialogCancel>
+        <AlertDialogAction @click="handleReset"> Continue Reset </AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
 </template>
 
 <style scoped>

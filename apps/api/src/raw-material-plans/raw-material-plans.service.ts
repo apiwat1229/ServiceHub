@@ -225,4 +225,14 @@ export class RawMaterialPlansService {
             throw new InternalServerErrorException(`Failed to update plan: ${error.message || 'Unknown error'}`);
         }
     }
+    async remove(id: string) {
+        try {
+            return await this.prisma.rawMaterialPlan.delete({
+                where: { id }
+            });
+        } catch (error: any) {
+            console.error('[RawMaterialPlansService] Error deleting plan:', error);
+            throw new InternalServerErrorException(`Failed to delete plan: ${error.message || 'Unknown error'}`);
+        }
+    }
 }
