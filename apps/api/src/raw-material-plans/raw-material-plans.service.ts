@@ -128,13 +128,14 @@ export class RawMaterialPlansService {
     }
 
     async findAll() {
-        return this.prisma.rawMaterialPlan.findMany({
+        const plans = await this.prisma.rawMaterialPlan.findMany({
             orderBy: { createdAt: 'desc' },
             include: {
                 rows: true,
                 poolDetails: true
             }
         });
+        return plans.map(plan => this.transformPlan(plan));
     }
 
     async findOne(id: string) {
@@ -148,15 +149,19 @@ export class RawMaterialPlansService {
 
         if (!plan) return null;
 
+        return this.transformPlan(plan);
+    }
+
+    private transformPlan(plan: any) {
         return {
             ...plan,
-            rows: plan.rows.map(row => {
+            rows: plan.rows.map((row: any) => {
                 const parseNote = (note: string | null) => {
                     const scoopsMatch = note?.match(/Scoops: (\d+)/);
                     const gradesMatch = note?.match(/Grades: (.*)/);
                     return {
                         scoops: scoopsMatch ? Number(scoopsMatch[1]) : 0,
-                        grades: gradesMatch && gradesMatch[1] ? gradesMatch[1] : '' // Keep as string or array based on frontend need. Frontend splits by comma string.
+                        grades: gradesMatch && gradesMatch[1] ? gradesMatch[1] : ''
                     };
                 };
 
