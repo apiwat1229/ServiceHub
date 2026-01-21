@@ -114,7 +114,9 @@
       "ussSummary": "USS SUMMARY",
       "labOrders": "JOB ORDER",
       "jobOrderList": "JOB ORDER LIST",
-      "jobOrderCreate": "CREATE ORDER"
+      "jobOrderCreate": "CREATE ORDER",
+      "editPlan": "EDIT PLAN",
+      "editJobOrder": "EDIT ORDER"
     },
     "searchPlaceholder": "Search items...",
     "pickDate": "Pick a date",

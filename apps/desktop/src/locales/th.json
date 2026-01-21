@@ -116,7 +116,9 @@
       "ussSummary": "สรุปยางแผ่น",
       "labOrders": "JOB ORDER",
       "jobOrderList": "รายการใบสั่งผลิต",
-      "jobOrderCreate": "สร้างใบสั่งผลิต"
+      "jobOrderCreate": "สร้างใบสั่งผลิต",
+      "editPlan": "แก้ไขแผน",
+      "editJobOrder": "แก้ไขใบสั่งผลิต"
     },
     "searchPlaceholder": "ค้นหารายการ...",
     "pickDate": "เลือกวันที่",

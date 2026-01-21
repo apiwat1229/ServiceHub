@@ -34,6 +34,7 @@ const props = defineProps<{
   activeTab: string;
   searchQuery?: string;
   date?: string | DateValue | null;
+  isEditing?: boolean;
 }>();
 
 const emit = defineEmits([
@@ -123,7 +124,14 @@ const currentTab = ref(props.activeTab);
 const tabs = computed(() => {
   return allTabs
     .filter((tab) => tab.category === selectedCategory.value)
-    .map((tab) => ({ ...tab, label: t(tab.label) }));
+    .map((tab) => {
+      let label = t(tab.label);
+      if (props.isEditing && tab.id === props.activeTab) {
+        if (tab.id === 'raw-material-plan-create') label = t('qa.tabs.editPlan');
+        if (tab.id === 'job-order-create') label = t('qa.tabs.editJobOrder');
+      }
+      return { ...tab, label };
+    });
 });
 
 // Watch category change

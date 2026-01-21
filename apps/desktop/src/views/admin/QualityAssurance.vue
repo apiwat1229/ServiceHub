@@ -6,7 +6,7 @@ import { CalendarDate, getLocalTimeZone, today } from '@internationalized/date';
 import { List } from 'lucide-vue-next';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { toast } from 'vue-sonner';
 
 import QaHeader from './components/QaHeader.vue';
@@ -103,6 +103,7 @@ const handleStatsUpdate = (stats: { total: number; complete: number; incomplete:
 
 const currentTab = ref('cl-po-pri');
 const route = useRoute();
+const router = useRouter();
 
 const selectedCategory = ref<'CL' | 'USS' | 'JOB_ORDER' | 'RAW_MATERIAL_PLAN'>('CL');
 
@@ -136,15 +137,25 @@ const selectedJobOrder = ref<JobOrder | undefined>(undefined);
 
 const handleJobOrderEdit = (order: JobOrder) => {
   selectedJobOrder.value = order;
-  currentTab.value = 'job-order-create';
+  router.push({ query: { tab: 'job-order-create' } });
 };
 
 const selectedRawMaterialPlan = ref<any>(undefined);
 
 const handleRawMaterialPlanEdit = (plan: any) => {
   selectedRawMaterialPlan.value = plan;
-  currentTab.value = 'raw-material-plan-create';
+  router.push({ query: { tab: 'raw-material-plan-create' } });
 };
+
+// Clear selection when switching away from create/edit tabs
+watch(currentTab, (newTab) => {
+  if (newTab !== 'raw-material-plan-create') {
+    selectedRawMaterialPlan.value = undefined;
+  }
+  if (newTab !== 'job-order-create') {
+    selectedJobOrder.value = undefined;
+  }
+});
 
 const handleJobOrderSave = async (formData: JobOrder) => {
   try {
@@ -199,6 +210,11 @@ const fetchData = async () => {
 onMounted(() => {
   fetchData();
 });
+const isEditing = computed(() => {
+  if (currentTab.value === 'raw-material-plan-create') return !!selectedRawMaterialPlan.value;
+  if (currentTab.value === 'job-order-create') return !!selectedJobOrder.value;
+  return false;
+});
 </script>
 
 <template>
@@ -207,6 +223,7 @@ onMounted(() => {
       :active-tab="currentTab"
       :search-query="searchQuery"
       :date="selectedDateObject"
+      :is-editing="isEditing"
       @update:category="handleCategoryUpdate"
       @update:search-query="searchQuery = $event"
       @update:date="handleDateSelect"
