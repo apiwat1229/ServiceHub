@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/table';
 import api from '@/services/api';
 import { format } from 'date-fns';
-import { Loader2, Printer, X } from 'lucide-vue-next';
+import { Download, Loader2, Printer, X } from 'lucide-vue-next';
 import { nextTick, onMounted, ref } from 'vue';
 
 const props = defineProps<{
@@ -62,7 +62,43 @@ const handlePrint = () => {
       window.onafterprint = null;
     };
   }
-  window.print();
+  // Small delay to ensure rendering completion before print dialog opens
+  setTimeout(() => {
+    window.print();
+  }, 500);
+};
+
+const isDownloading = ref(false);
+const handleDownload = async () => {
+  if (!plan.value) return;
+  isDownloading.value = true;
+  try {
+    const html2canvas = (await import('html2canvas')).default;
+    const { jsPDF } = await import('jspdf');
+
+    const element = document.querySelector('.raw-material-plan-print-preview') as HTMLElement;
+    if (!element) return;
+
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+    });
+
+    const imgData = canvas.toDataURL('image/png');
+    // A4 dimensions in mm: 210 x 297
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const imgProps = pdf.getImageProperties(imgData);
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    pdf.save(`Raw-Material-Plan-${plan.value.planNo}.pdf`);
+  } catch (error) {
+    console.error('Failed to download PDF:', error);
+  } finally {
+    isDownloading.value = false;
+  }
 };
 
 const formatDate = (date: string | Date) => {
@@ -117,7 +153,7 @@ const getPlanPoolLabel = (row: any, planIndex: number) => {
 <template>
   <Dialog :open="open" @update:open="emit('update:open', $event)">
     <DialogContent
-      :class="`max-w-[850px] w-full h-[96vh] overflow-y-auto p-0 gap-0 border-none shadow-2xl transition-opacity duration-300 ${autoPrint && !isLoading ? 'opacity-0 pointer-events-none' : ''}`"
+      :class="`max-w-[850px] w-full h-[96vh] overflow-y-auto p-0 gap-0 border-none shadow-2xl transition-opacity duration-300 ${autoPrint && !isLoading ? 'pointer-events-none' : ''}`"
     >
       <DialogHeader class="sr-only">
         <DialogTitle>Raw Material Plan View</DialogTitle>
@@ -139,12 +175,22 @@ const getPlanPoolLabel = (row: any, planIndex: number) => {
         </div>
         <div class="flex items-center gap-2">
           <Button
+            @click="handleDownload"
+            variant="outline"
+            :disabled="isDownloading"
+            class="h-9 gap-2 font-bold px-4 border-blue-200 hover:bg-blue-50 text-blue-700"
+          >
+            <Loader2 v-if="isDownloading" class="w-4 h-4 animate-spin" />
+            <Download v-else class="w-4 h-4" />
+            Download
+          </Button>
+          <Button
             @click="handlePrint"
             variant="default"
             class="h-9 gap-2 font-bold px-6 bg-blue-600 hover:bg-blue-700"
           >
             <Printer class="w-4 h-4" />
-            Print This Plan
+            Print
           </Button>
           <Button @click="emit('update:open', false)" variant="ghost" size="icon" class="h-9 w-9">
             <X class="w-4 h-4" />
@@ -307,10 +353,34 @@ const getPlanPoolLabel = (row: any, planIndex: number) => {
                   >
                     <TableCell
                       v-if="Number(idx) % 2 === 0"
-                      class="border-r border-slate-950 text-center font-bold px-1"
+                      class="border-r border-slate-950 text-center font-bold px-1 relative !overflow-visible"
                       rowspan="2"
                     >
-                      {{ formatDate(row.date) }}
+                      <div class="py-1">
+                        {{ formatDate(row.date) }}
+                      </div>
+
+                      <!-- Production Mode Indicator: Centered on the horizontal line between days -->
+                      <!-- Fixed for both Preview and Print visibility -->
+                      <div
+                        v-if="row.productionMode !== 'normal'"
+                        class="absolute bottom-0 left-0 w-full flex justify-center translate-y-1/2 z-[100]"
+                      >
+                        <div
+                          v-if="row.productionMode === 'mode24Hr'"
+                          class="bg-yellow-400 text-black text-[7.5px] font-black px-2 py-0.5 uppercase shadow-sm border border-yellow-500 whitespace-nowrap"
+                          style="-webkit-print-color-adjust: exact; print-color-adjust: exact"
+                        >
+                          24 Hour
+                        </div>
+                        <div
+                          v-else-if="row.productionMode === 'holiday'"
+                          class="bg-red-500 text-white text-[7.5px] font-black px-2 py-0.5 uppercase shadow-sm border border-red-600 whitespace-nowrap"
+                          style="-webkit-print-color-adjust: exact; print-color-adjust: exact"
+                        >
+                          Holiday
+                        </div>
+                      </div>
                     </TableCell>
                     <TableCell
                       v-if="Number(idx) % 2 === 0"
@@ -319,6 +389,7 @@ const getPlanPoolLabel = (row: any, planIndex: number) => {
                     >
                       {{ row.dayOfWeek }}
                     </TableCell>
+
                     <TableCell
                       class="border-r border-slate-950 text-center font-black text-[9px]"
                       :class="row.shift === '1st' ? 'text-blue-600' : 'text-orange-600'"
@@ -330,23 +401,10 @@ const getPlanPoolLabel = (row: any, planIndex: number) => {
                       :class="getGradeColor(row.grade)"
                     >
                       <div
-                        class="h-full flex flex-col items-center justify-center min-h-[32px] gap-0.5"
+                        class="h-full flex items-center justify-center min-h-[24px] font-black"
+                        :class="row.productionMode === 'holiday' ? 'text-slate-400' : ''"
                       >
-                        <div
-                          v-if="row.productionMode === 'mode24Hr'"
-                          class="bg-yellow-400 text-black text-[7px] font-black px-1 rounded shadow-[0_0_5px_rgba(250,204,21,0.5)] uppercase"
-                        >
-                          24 Hour
-                        </div>
-                        <div
-                          v-else-if="row.productionMode === 'holiday'"
-                          class="bg-red-100 text-red-700 text-[7px] font-black px-1 rounded uppercase"
-                        >
-                          Holiday
-                        </div>
-                        <div :class="row.productionMode === 'holiday' ? 'text-slate-400' : ''">
-                          {{ row.grade || '-' }}
-                        </div>
+                        {{ row.grade || '-' }}
                       </div>
                     </TableCell>
                     <TableCell class="border-r border-slate-100 text-center">{{
@@ -578,6 +636,7 @@ const getPlanPoolLabel = (row: any, planIndex: number) => {
   .raw-material-plan-print-preview,
   .raw-material-plan-print-preview * {
     visibility: visible !important;
+    opacity: 1 !important;
   }
 
   .raw-material-plan-print-preview {

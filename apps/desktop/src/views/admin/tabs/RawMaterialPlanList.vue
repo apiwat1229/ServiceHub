@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/table';
 import api from '@/services/api';
 import { format } from 'date-fns';
-import { FileText, Loader2, Printer, RefreshCw } from 'lucide-vue-next';
+import { FileText, Loader2, RefreshCw } from 'lucide-vue-next';
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import RawMaterialPlanViewModal from './RawMaterialPlanViewModal.vue';
@@ -192,14 +192,6 @@ const getStatusVariant = (status: string) => {
                   @click="openViewModal(plan.id, false)"
                 >
                   <FileText class="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  class="h-8 w-8 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors"
-                  @click="openViewModal(plan.id, true)"
-                >
-                  <Printer class="w-4 h-4" />
                 </Button>
               </div>
             </TableCell>

@@ -560,8 +560,9 @@ const handleSave = async () => {
             >
               <!-- Date/Meta -->
               <TableCell
-                class="border-r border-slate-100 p-0 text-center"
-                :colspan="idx % 2 !== 0 ? 2 : 1"
+                v-if="idx % 2 === 0"
+                class="border-r border-slate-100 p-0 text-center relative"
+                rowspan="2"
               >
                 <!-- First Row: Date Picker (Driver) -->
                 <Popover v-if="idx === 0">
@@ -581,24 +582,28 @@ const handleSave = async () => {
                   </PopoverContent>
                 </Popover>
 
-                <!-- Even Rows > 0: Read-only Date -->
+                <!-- Other Even Rows: Read-only Date -->
                 <div
-                  v-else-if="idx % 2 === 0"
+                  v-else
                   class="h-7 flex items-center justify-center text-[10px] font-bold text-slate-600 bg-slate-50/50"
                 >
                   {{ row.date }}
                 </div>
 
-                <!-- Odd Rows: 24 HR Toggle (Merged Cell) -->
-                <div v-else class="h-7 flex items-center justify-center">
+                <!-- Centered Production Mode Selector on bottom line -->
+                <div
+                  class="absolute bottom-0 left-0 w-full flex justify-center translate-y-1/2 z-50 px-1"
+                >
                   <Select v-model="row.productionMode">
                     <SelectTrigger
-                      class="h-6 w-[90%] text-[9px] font-black border-none shadow-none justify-center px-1 rounded-[10px]"
+                      class="h-5 w-auto min-w-[50px] text-[8px] font-black border-none justify-center px-1.5 rounded-none z-10 uppercase tracking-tighter transition-all bg-white shadow-sm"
                       :class="{
-                        'bg-yellow-400 hover:bg-yellow-500 text-black shadow-[0_0_10px_rgba(250,204,21,0.5)]':
+                        'bg-yellow-400 hover:bg-yellow-500 text-black border border-yellow-500':
                           row.productionMode === 'mode24Hr',
-                        'bg-red-100 text-red-700': row.productionMode === 'holiday',
-                        'text-slate-300 hover:text-slate-500': row.productionMode === 'normal',
+                        'bg-red-500 hover:bg-red-600 text-white border border-red-600':
+                          row.productionMode === 'holiday',
+                        'text-slate-300 hover:text-slate-500 border border-slate-200':
+                          row.productionMode === 'normal',
                       }"
                     >
                       <SelectValue />
@@ -613,9 +618,11 @@ const handleSave = async () => {
                   </Select>
                 </div>
               </TableCell>
+
               <TableCell
                 v-if="idx % 2 === 0"
-                class="border-r border-slate-100 text-center p-1 text-slate-400 relative"
+                class="border-r border-slate-100 text-center p-1 text-slate-400"
+                rowspan="2"
               >
                 {{ row.dayOfWeek }}
               </TableCell>
