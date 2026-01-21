@@ -123,8 +123,7 @@ export class RawMaterialPlansService {
             }
             // Return a more descriptive error if possible
             const message = error.message || 'Unknown database error occurred';
-            const stack = error.stack || 'No stack trace';
-            throw new InternalServerErrorException(`Backend Error: ${message} | Stack: ${stack.substring(0, 500)}`);
+            throw new InternalServerErrorException(`Backend Error: ${message}. Please check if database migrations are up to date.`);
         }
     }
 
