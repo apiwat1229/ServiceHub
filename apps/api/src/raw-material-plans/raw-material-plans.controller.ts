@@ -16,6 +16,11 @@ export class RawMaterialPlansController {
         return this.rawMaterialPlansService.findAll();
     }
 
+    @Get('next-plan-no')
+    generateNextPlanNo() {
+        return this.rawMaterialPlansService.generateNextPlanNo();
+    }
+
     @Get(':id')
     findOne(@Param('id') id: string) {
         return this.rawMaterialPlansService.findOne(id);

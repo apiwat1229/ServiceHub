@@ -34,9 +34,11 @@ const error = ref<string | null>(null);
 // Modal state
 const isViewModalOpen = ref(false);
 const selectedPlanId = ref<string | null>(null);
+const isAutoPrint = ref(false);
 
-const openViewModal = (id: string) => {
+const openViewModal = (id: string, autoPrint = false) => {
   selectedPlanId.value = id;
+  isAutoPrint.value = autoPrint;
   isViewModalOpen.value = true;
 };
 
@@ -187,7 +189,7 @@ const getStatusVariant = (status: string) => {
                   variant="ghost"
                   size="icon"
                   class="h-8 w-8 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors"
-                  @click="openViewModal(plan.id)"
+                  @click="openViewModal(plan.id, false)"
                 >
                   <FileText class="w-4 h-4" />
                 </Button>
@@ -195,7 +197,7 @@ const getStatusVariant = (status: string) => {
                   variant="ghost"
                   size="icon"
                   class="h-8 w-8 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors"
-                  @click="openViewModal(plan.id)"
+                  @click="openViewModal(plan.id, true)"
                 >
                   <Printer class="w-4 h-4" />
                 </Button>
@@ -225,6 +227,7 @@ const getStatusVariant = (status: string) => {
       v-if="selectedPlanId"
       :plan-id="selectedPlanId"
       v-model:open="isViewModalOpen"
+      :auto-print="isAutoPrint"
     />
   </div>
 </template>

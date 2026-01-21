@@ -19,11 +19,12 @@ import {
 import api from '@/services/api';
 import { format } from 'date-fns';
 import { Loader2, Printer, X } from 'lucide-vue-next';
-import { onMounted, ref } from 'vue';
+import { nextTick, onMounted, ref } from 'vue';
 
 const props = defineProps<{
   planId: string | null;
   open: boolean;
+  autoPrint?: boolean;
 }>();
 
 const emit = defineEmits(['update:open']);
@@ -40,6 +41,11 @@ const fetchPlanDetails = async (id: string) => {
     console.error('Failed to fetch plan details:', error);
   } finally {
     isLoading.value = false;
+    if (plan.value && props.autoPrint) {
+      nextTick(() => {
+        handlePrint();
+      });
+    }
   }
 };
 
@@ -50,6 +56,12 @@ onMounted(() => {
 });
 
 const handlePrint = () => {
+  if (props.autoPrint) {
+    window.onafterprint = () => {
+      emit('update:open', false);
+      window.onafterprint = null;
+    };
+  }
   window.print();
 };
 
@@ -63,20 +75,49 @@ const formatDate = (date: string | Date) => {
 };
 
 const getGradeColor = (grade: string) => {
-  if (!grade) return '';
+  if (!grade) return 'font-black';
   const g = grade.toUpperCase();
-  if (g.includes('AA')) return 'bg-emerald-50 text-emerald-700';
-  if (g.includes('A')) return 'bg-blue-50 text-blue-700';
-  if (g.includes('B')) return 'bg-amber-50 text-amber-700';
-  if (g.includes('C')) return 'bg-orange-50 text-orange-700';
-  return 'bg-slate-50 text-slate-600';
+  if (g.includes('P0241')) return 'bg-[#ff00ff] text-white font-black';
+  if (g.includes('P0263')) return 'bg-[#b3d9ff] text-slate-900 font-black';
+  if (g.includes('P0251')) return 'bg-[#c3e6cb] text-emerald-900 font-black';
+  if (g.includes('H0276')) return 'bg-[#ffeeba] text-amber-900 font-black';
+
+  // Fallbacks for generic grades
+  if (g.includes('AA')) return 'bg-[#c3e6cb] text-emerald-900 font-black';
+  if (g.includes('A')) return 'bg-[#b3d9ff] text-slate-900 font-black';
+  if (g.includes('B')) return 'bg-[#ffeeba] text-amber-900 font-black';
+  if (g.includes('C')) return 'bg-[#f8d7da] text-red-900 font-black';
+  return 'font-black';
+};
+
+const getPlanPoolLabel = (row: any, planIndex: number) => {
+  const pools = row[`plan${planIndex}Pool`];
+  const grades = row[`plan${planIndex}Grades`];
+
+  let poolStr = '';
+  if (typeof pools === 'string') {
+    poolStr = pools;
+  } else if (Array.isArray(pools)) {
+    poolStr = pools.join(' / ');
+  }
+
+  if (!poolStr) return '-';
+
+  let gradeStr = '';
+  if (typeof grades === 'string' && grades) {
+    gradeStr = ` (${grades})`;
+  } else if (Array.isArray(grades) && grades.length) {
+    gradeStr = ` (${grades.join('+')})`;
+  }
+
+  return `${poolStr}${gradeStr}`;
 };
 </script>
 
 <template>
   <Dialog :open="open" @update:open="emit('update:open', $event)">
     <DialogContent
-      class="max-w-[98vw] w-full h-[96vh] overflow-y-auto p-0 gap-0 border-none shadow-2xl"
+      :class="`max-w-[850px] w-full h-[96vh] overflow-y-auto p-0 gap-0 border-none shadow-2xl transition-opacity duration-300 ${autoPrint && !isLoading ? 'opacity-0 pointer-events-none' : ''}`"
     >
       <DialogHeader class="sr-only">
         <DialogTitle>Raw Material Plan View</DialogTitle>
@@ -93,7 +134,7 @@ const getGradeColor = (grade: string) => {
             variant="outline"
             class="font-black py-1 px-3 uppercase tracking-widest text-[10px]"
           >
-            Preview Mode (A4 Landscape)
+            Preview Mode (A4 Portrait)
           </Badge>
         </div>
         <div class="flex items-center gap-2">
@@ -120,7 +161,7 @@ const getGradeColor = (grade: string) => {
 
         <div
           v-else-if="plan"
-          class="a4-container bg-white shadow-xl mx-auto print:shadow-none print:w-full"
+          class="a4-container bg-white shadow-xl mx-auto print:shadow-none print:w-full raw-material-plan-print-preview"
         >
           <div class="p-8 space-y-6">
             <!-- Header Segment -->
@@ -203,45 +244,59 @@ const getGradeColor = (grade: string) => {
                   <TableRow
                     class="bg-slate-50 hover:bg-slate-50 text-[9px] font-black text-slate-600 align-middle"
                   >
-                    <TableHead class="border-r border-slate-950 w-24 text-center">Date</TableHead>
-                    <TableHead class="border-r border-slate-950 w-10 text-center px-1"
+                    <TableHead class="border-r border-slate-950 w-[65px] text-center px-1"
+                      >Date</TableHead
+                    >
+                    <TableHead class="border-r border-slate-950 w-[25px] text-center px-0.5"
                       >Day</TableHead
                     >
-                    <TableHead class="border-r border-slate-950 w-12 text-center">Shift</TableHead>
+                    <TableHead class="border-r border-slate-950 w-[30px] text-center px-0.5"
+                      >Shift</TableHead
+                    >
                     <TableHead
-                      class="border-r border-slate-950 w-20 text-center font-black text-slate-900"
+                      class="border-r border-slate-950 w-[60px] text-center font-black text-slate-900 px-1"
                       >Grade</TableHead
                     >
-                    <TableHead class="border-r border-slate-950 w-12 text-center">USS</TableHead>
-                    <TableHead class="border-r border-slate-950 w-12 text-center">CL</TableHead>
-                    <TableHead class="border-r border-slate-950 w-12 text-center">BK</TableHead>
-                    <TableHead class="border-r border-slate-950 w-14 text-center">Target</TableHead>
-                    <TableHead class="border-r border-slate-950 w-14 text-center px-0.5"
+                    <TableHead class="border-r border-slate-950 w-[25px] text-center px-0.5"
+                      >USS</TableHead
+                    >
+                    <TableHead class="border-r border-slate-950 w-[25px] text-center px-0.5"
+                      >CL</TableHead
+                    >
+                    <TableHead class="border-r border-slate-950 w-[25px] text-center px-0.5"
+                      >BK</TableHead
+                    >
+                    <TableHead class="border-r border-slate-950 w-[35px] text-center px-0.5"
+                      >Target</TableHead
+                    >
+                    <TableHead class="border-r border-slate-950 w-[35px] text-center px-0.5"
                       >CL Cons.</TableHead
                     >
-                    <TableHead class="border-r border-slate-950 w-14 text-center px-0.5"
+                    <TableHead class="border-r border-slate-950 w-[35px] text-center px-0.5"
                       >Ratio B/C</TableHead
                     >
                     <TableHead
                       colspan="2"
-                      class="border-r border-slate-950 text-center bg-blue-50/50"
+                      class="border-r border-slate-950 text-center bg-blue-50/50 min-w-[80px]"
                       >#1 (P/S)</TableHead
                     >
                     <TableHead
                       colspan="2"
-                      class="border-r border-slate-950 text-center bg-blue-50/50"
+                      class="border-r border-slate-950 text-center bg-blue-50/50 min-w-[80px]"
                       >#2 (P/S)</TableHead
                     >
                     <TableHead
                       colspan="2"
-                      class="border-r border-slate-950 text-center bg-blue-50/50"
+                      class="border-r border-slate-950 text-center bg-blue-50/50 min-w-[80px]"
                       >#3 (P/S)</TableHead
                     >
-                    <TableHead class="border-r border-slate-950 w-14 text-center">%</TableHead>
-                    <TableHead class="border-r border-slate-950 w-14 text-center px-0.5"
+                    <TableHead class="border-r border-slate-950 w-[30px] text-center px-0.5"
+                      >%</TableHead
+                    >
+                    <TableHead class="border-r border-slate-950 w-[40px] text-center px-0.5"
                       >Plt/Shft</TableHead
                     >
-                    <TableHead class="text-center">Remarks</TableHead>
+                    <TableHead class="text-center min-w-[100px]">Remarks</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -271,10 +326,28 @@ const getGradeColor = (grade: string) => {
                       {{ row.shift }}
                     </TableCell>
                     <TableCell
-                      class="border-r border-slate-950 text-center font-black"
+                      class="border-r border-slate-950 text-center p-0 transition-colors duration-200"
                       :class="getGradeColor(row.grade)"
                     >
-                      {{ row.grade || '-' }}
+                      <div
+                        class="h-full flex flex-col items-center justify-center min-h-[32px] gap-0.5"
+                      >
+                        <div
+                          v-if="row.productionMode === 'mode24Hr'"
+                          class="bg-yellow-400 text-black text-[7px] font-black px-1 rounded shadow-[0_0_5px_rgba(250,204,21,0.5)] uppercase"
+                        >
+                          24 Hour
+                        </div>
+                        <div
+                          v-else-if="row.productionMode === 'holiday'"
+                          class="bg-red-100 text-red-700 text-[7px] font-black px-1 rounded uppercase"
+                        >
+                          Holiday
+                        </div>
+                        <div :class="row.productionMode === 'holiday' ? 'text-slate-400' : ''">
+                          {{ row.grade || '-' }}
+                        </div>
+                      </div>
                     </TableCell>
                     <TableCell class="border-r border-slate-100 text-center">{{
                       row.ratioUSS
@@ -294,25 +367,28 @@ const getGradeColor = (grade: string) => {
                     <TableCell class="border-r border-slate-950 text-center">{{
                       row.ratioBorC
                     }}</TableCell>
-                    <TableCell class="border-r border-slate-100 text-center bg-blue-50/10">{{
-                      row.plan1Pool
-                    }}</TableCell>
                     <TableCell
-                      class="border-r border-slate-950 text-center font-bold text-blue-700 bg-blue-50/10"
+                      class="border-r border-slate-100 text-center bg-blue-50/10 text-[9px] px-0.5"
+                      >{{ getPlanPoolLabel(row, 1) }}</TableCell
+                    >
+                    <TableCell
+                      class="border-r border-slate-950 text-center font-bold text-blue-700 bg-blue-50/10 w-[25px]"
                       >{{ row.plan1Scoops }}</TableCell
                     >
-                    <TableCell class="border-r border-slate-100 text-center bg-blue-50/10">{{
-                      row.plan2Pool
-                    }}</TableCell>
                     <TableCell
-                      class="border-r border-slate-950 text-center font-bold text-blue-700 bg-blue-50/10"
+                      class="border-r border-slate-100 text-center bg-blue-50/10 text-[9px] px-0.5"
+                      >{{ getPlanPoolLabel(row, 2) }}</TableCell
+                    >
+                    <TableCell
+                      class="border-r border-slate-950 text-center font-bold text-blue-700 bg-blue-50/10 w-[25px]"
                       >{{ row.plan2Scoops }}</TableCell
                     >
-                    <TableCell class="border-r border-slate-100 text-center bg-blue-50/10">{{
-                      row.plan3Pool
-                    }}</TableCell>
                     <TableCell
-                      class="border-r border-slate-950 text-center font-bold text-blue-700 bg-blue-50/10"
+                      class="border-r border-slate-100 text-center bg-blue-50/10 text-[9px] px-0.5"
+                      >{{ getPlanPoolLabel(row, 3) }}</TableCell
+                    >
+                    <TableCell
+                      class="border-r border-slate-950 text-center font-bold text-blue-700 bg-blue-50/10 w-[25px]"
                       >{{ row.plan3Scoops }}</TableCell
                     >
                     <TableCell class="border-r border-slate-100 text-center">{{
@@ -454,38 +530,17 @@ const getGradeColor = (grade: string) => {
 
 <style scoped>
 .a4-container {
-  width: 100%;
-  max-width: 297mm;
-  min-height: 210mm;
+  width: 210mm;
+  min-height: 297mm;
   background: white;
   position: relative;
+  zoom: 0.8; /* Visual scale for preview modal */
+  transform-origin: top center;
 }
 
 @media print {
-  @page {
-    size: A4 landscape;
-    margin: 0;
-  }
-
-  body {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-
   .no-print {
     display: none !important;
-  }
-
-  .print\:shadow-none {
-    box-shadow: none !important;
-  }
-
-  .print\:p-0 {
-    padding: 0 !important;
-  }
-
-  .bg-slate-50 {
-    background-color: #f8fafc !important;
   }
 }
 
@@ -497,5 +552,148 @@ const getGradeColor = (grade: string) => {
 :deep(td) {
   padding: 0 !important;
   border-color: #000 !important;
+}
+</style>
+
+<style>
+@media print {
+  @page {
+    size: A4 portrait !important;
+    margin: 3mm !important;
+  }
+
+  /* Hide everything by default */
+  html,
+  body {
+    width: 210mm !important;
+    height: 297mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    visibility: hidden !important;
+    background: white !important;
+  }
+
+  /* Only show our target area */
+  .raw-material-plan-print-preview,
+  .raw-material-plan-print-preview * {
+    visibility: visible !important;
+  }
+
+  .raw-material-plan-print-preview {
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    display: block !important;
+    width: 290mm !important; /* Design width */
+    zoom: 0.72 !important; /* 290mm * 0.72 = ~209mm (A4) */
+    transform-origin: top left;
+    margin: 0 !important;
+    padding: 2mm !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: white !important;
+  }
+
+  .raw-material-plan-print-preview table {
+    width: 100% !important;
+    table-layout: fixed !important;
+    border-collapse: collapse !important;
+  }
+
+  .raw-material-plan-print-preview table th,
+  .raw-material-plan-print-preview table td {
+    padding: 2px 1px !important;
+    font-size: 12px !important; /* ~8.6px after zoom */
+    border: 1px solid #000 !important;
+    word-break: break-all !important;
+    height: auto !important;
+  }
+
+  /* Full 19-column precise calculation for A4 Portrait (290mm design width) */
+  .raw-material-plan-print-preview table th:nth-child(1),
+  .raw-material-plan-print-preview table td:nth-child(1) {
+    width: 17mm !important;
+  } /* Date */
+  .raw-material-plan-print-preview table th:nth-child(2),
+  .raw-material-plan-print-preview table td:nth-child(2) {
+    width: 5mm !important;
+  } /* Day */
+  .raw-material-plan-print-preview table th:nth-child(3),
+  .raw-material-plan-print-preview table td:nth-child(3) {
+    width: 5mm !important;
+  } /* Shift */
+  .raw-material-plan-print-preview table th:nth-child(4),
+  .raw-material-plan-print-preview table td:nth-child(4) {
+    width: 13mm !important;
+  } /* Grade */
+
+  .raw-material-plan-print-preview table th:nth-child(5),
+  .raw-material-plan-print-preview table td:nth-child(5) {
+    width: 5mm !important;
+  } /* USS */
+  .raw-material-plan-print-preview table th:nth-child(6),
+  .raw-material-plan-print-preview table td:nth-child(6) {
+    width: 5mm !important;
+  } /* CL */
+  .raw-material-plan-print-preview table th:nth-child(7),
+  .raw-material-plan-print-preview table td:nth-child(7) {
+    width: 5mm !important;
+  } /* BK */
+
+  .raw-material-plan-print-preview table th:nth-child(8),
+  .raw-material-plan-print-preview table td:nth-child(8) {
+    width: 8mm !important;
+  } /* Target */
+  .raw-material-plan-print-preview table th:nth-child(9),
+  .raw-material-plan-print-preview table td:nth-child(9) {
+    width: 8mm !important;
+  } /* CL Cons */
+  .raw-material-plan-print-preview table th:nth-child(10),
+  .raw-material-plan-print-preview table td:nth-child(10) {
+    width: 8mm !important;
+  } /* Ratio B/C */
+
+  /* Allocation plan sets EXPANDED for V3 */
+  .raw-material-plan-print-preview table th:nth-child(11),
+  .raw-material-plan-print-preview table td:nth-child(11),
+  .raw-material-plan-print-preview table th:nth-child(13),
+  .raw-material-plan-print-preview table td:nth-child(13),
+  .raw-material-plan-print-preview table th:nth-child(15),
+  .raw-material-plan-print-preview table td:nth-child(15) {
+    width: 37mm !important;
+  } /* Pool Label */
+
+  .raw-material-plan-print-preview table th:nth-child(12),
+  .raw-material-plan-print-preview table td:nth-child(12),
+  .raw-material-plan-print-preview table th:nth-child(14),
+  .raw-material-plan-print-preview table td:nth-child(14),
+  .raw-material-plan-print-preview table th:nth-child(16),
+  .raw-material-plan-print-preview table td:nth-child(16) {
+    width: 8mm !important;
+  } /* Scoops */
+
+  /* Cutting & Docs */
+  .raw-material-plan-print-preview table th:nth-child(17),
+  .raw-material-plan-print-preview table td:nth-child(17) {
+    width: 10mm !important;
+  } /* % */
+  .raw-material-plan-print-preview table th:nth-child(18),
+  .raw-material-plan-print-preview table td:nth-child(18) {
+    width: 12mm !important;
+  } /* Plt/Shft */
+  .raw-material-plan-print-preview table th:nth-child(19),
+  .raw-material-plan-print-preview table td:nth-child(19) {
+    width: auto !important;
+  } /* Remarks */
+
+  .no-print {
+    display: none !important;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
 }
 </style>

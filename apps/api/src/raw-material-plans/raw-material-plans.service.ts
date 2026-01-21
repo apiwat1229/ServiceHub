@@ -1,5 +1,5 @@
 import { ConflictException, Injectable, InternalServerErrorException } from '@nestjs/common';
-import { isValid, parse } from 'date-fns';
+import { format, isValid, parse } from 'date-fns';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateRawMaterialPlanDto } from './dto/create-raw-material-plan.dto';
 
@@ -171,6 +171,7 @@ export class RawMaterialPlansService {
 
                 return {
                     ...row,
+                    productionMode: row.specialIndicator || 'normal',
                     plan1Scoops: p1.scoops,
                     plan1Grades: p1.grades,
                     plan2Scoops: p2.scoops,
@@ -260,6 +261,43 @@ export class RawMaterialPlansService {
             throw new InternalServerErrorException(`Failed to update plan: ${error.message || 'Unknown error'}`);
         }
     }
+    async generateNextPlanNo() {
+        const today = new Date();
+        const dateStr = format(today, 'yyyyMMdd');
+        const prefix = `RMP-${dateStr}-`;
+
+        // Find the latest plan number today using prefix search
+        const latestPlan = await this.prisma.rawMaterialPlan.findFirst({
+            where: {
+                planNo: {
+                    startsWith: prefix,
+                },
+            },
+            orderBy: {
+                planNo: 'desc',
+            },
+            select: {
+                planNo: true,
+            },
+        });
+
+        if (!latestPlan) {
+            return `${prefix}001`;
+        }
+
+        // Extract and increment the counter
+        const parts = latestPlan.planNo.split('-');
+        const lastPart = parts[parts.length - 1];
+        const currentNum = parseInt(lastPart, 10);
+
+        if (isNaN(currentNum)) {
+            return `${prefix}001`; // Fallback case
+        }
+
+        const nextNum = (currentNum + 1).toString().padStart(3, '0');
+        return `${prefix}${nextNum}`;
+    }
+
     async remove(id: string) {
         try {
             return await this.prisma.rawMaterialPlan.delete({
