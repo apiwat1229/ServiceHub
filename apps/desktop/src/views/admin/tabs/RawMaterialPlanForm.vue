@@ -219,7 +219,11 @@ const handleSave = async () => {
   } catch (error: any) {
     console.error('Failed to save plan:', error);
     const errorMsg = error.response?.data?.message || error.message || 'Unknown error occurred';
-    toast.error(`Failed to save plan: ${errorMsg}`);
+    const errorDetail = error.response?.data
+      ? JSON.stringify(error.response.data)
+      : 'No response data';
+    console.error('Detailed Error Response:', error.response?.data);
+    toast.error(`Failed to save plan: ${errorMsg} | Detail: ${errorDetail}`);
     isSubmitting.value = false;
   } finally {
     isSubmitting.value = false;
