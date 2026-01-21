@@ -8,13 +8,11 @@ import { Moon, Sun } from 'lucide-vue-next';
 const themeStore = useThemeStore();
 
 const colors = [
-  { name: 'Zinc', value: 'zinc', bg: 'bg-zinc-900' },
-  { name: 'Red', value: 'red', bg: 'bg-red-600' },
-  { name: 'Cyan', value: 'cyan', bg: 'bg-cyan-500' },
-  { name: 'Orange', value: 'orange', bg: 'bg-orange-500' },
+  { name: 'Teal', value: 'teal', bg: 'bg-teal-500' },
   { name: 'Green', value: 'green', bg: 'bg-green-600' },
   { name: 'Blue', value: 'blue', bg: 'bg-blue-600' },
-  { name: 'Yellow', value: 'yellow', bg: 'bg-yellow-500' },
+  { name: 'Pink', value: 'pink', bg: 'bg-pink-500' },
+  { name: 'Rose', value: 'rose', bg: 'bg-rose-500' },
   { name: 'Violet', value: 'violet', bg: 'bg-violet-600' },
 ];
 
@@ -71,7 +69,7 @@ const fontFamilies = [
           v-for="color in colors"
           :key="color.value"
           @click="themeStore.themeColor = color.value"
-          class="flex items-center gap-2 rounded-md border p-2 hover:bg-accent transition-colors"
+          class="flex items-center gap-2 rounded-md border p-2 hover:bg-primary/10 hover:text-primary transition-colors"
           :class="{ 'border-primary ring-1 ring-primary': themeStore.themeColor === color.value }"
         >
           <div class="h-4 w-4 rounded-full shrink-0" :class="color.bg" />

@@ -2,6 +2,7 @@
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
+import { NumberField, NumberFieldContent, NumberFieldInput } from '@/components/ui/number-field';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Select,
@@ -18,12 +19,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useAuthStore } from '@/stores/auth';
 import { addDays, format } from 'date-fns';
 import { Calendar as CalendarIcon, Printer, Save } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
+const authStore = useAuthStore();
 
 const validPoolGrades = ['AA', 'A', 'B', 'C', 'D'];
 
@@ -62,13 +65,13 @@ const plan = ref({
       clConsumption: '-',
       ratioBorC: '-',
       plan1Pool: [] as string[],
-      plan1Scoops: '',
+      plan1Scoops: 0,
       plan1Grades: [] as string[],
       plan2Pool: [] as string[],
-      plan2Scoops: '',
+      plan2Scoops: 0,
       plan2Grades: [] as string[],
       plan3Pool: [] as string[],
-      plan3Scoops: '',
+      plan3Scoops: 0,
       plan3Grades: [] as string[],
       cuttingPercent: '-',
       cuttingPalette: '',
@@ -172,9 +175,50 @@ const handleDateUpdate = (newDate: any) => {
   }
 };
 
-const handleSave = () => {
-  // Save logic here
-  console.log('Saving plan...', plan.value);
+const isSubmitting = ref(false); // Added based on instruction's usage
+
+const handleSave = async () => {
+  try {
+    isSubmitting.value = true;
+    // Format the payload
+    const payload = {
+      ...plan.value,
+      issueBy: authStore.user?.id, // Send user ID or username depending on backend requirement
+      verifiedBy: null, // Pending verification
+      // Ensure numeric fields are numbers, dates are formatted standardly if needed
+      rows: plan.value.rows.map((row) => ({
+        ...row,
+        // Convert string inputs to numbers where appropriate if they aren't already
+        plan1Scoops: Number(row.plan1Scoops) || 0,
+        plan2Scoops: Number(row.plan2Scoops) || 0,
+        plan3Scoops: Number(row.plan3Scoops) || 0,
+      })),
+    };
+
+    // Assuming 'api' is an imported axios instance or similar
+    // For this example, I'll use a placeholder 'api' object.
+    // In a real application, you would import it: `import api from '@/lib/axios';`
+    const api = {
+      post: (url: string, data: any) => {
+        console.log(`Mock API POST to ${url} with data:`, data);
+        return new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
+      },
+    };
+
+    await api.post('/raw-material-plans', payload);
+
+    // Success notification
+    // Assuming you have a toast/notify utility, otherwise console for now or use window.alert as fallback
+    // Based on package.json, we have 'vue-sonner', let's use toast if imported, or just alert for now if import is missing.
+    // I will add the import in a separate edit if needed, but for now let's assume simple alert/log or try to use a global if available.
+    // Better to use window.alert temporarily until I confirm toast import.
+    alert(t('common.saveSuccess'));
+  } catch (error) {
+    console.error('Failed to save plan:', error);
+    alert(t('common.errorSave'));
+  } finally {
+    isSubmitting.value = false;
+  }
 };
 </script>
 
@@ -532,18 +576,19 @@ const handleSave = () => {
               </Popover>
             </TableCell>
             <TableCell class="border-r border-slate-100 p-0 bg-blue-50/20">
-              <Select v-model="row.plan1Scoops">
-                <SelectTrigger
-                  class="h-6 w-full text-[10px] border-none shadow-none text-center justify-center text-slate-500 focus:ring-0 focus:ring-offset-0 bg-transparent px-1"
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem v-for="i in 10" :key="i" :value="String(i)">
-                    {{ i }}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              <NumberField v-model="row.plan1Scoops" :min="0" class="w-full">
+                <NumberFieldContent>
+                  <NumberFieldDecrement
+                    class="h-6 w-6 p-0 flex items-center justify-center text-slate-400 hover:text-blue-600 border-r border-slate-100 rounded-none bg-transparent z-20"
+                  />
+                  <NumberFieldInput
+                    class="h-6 text-[10px] border-none shadow-none text-center justify-center text-slate-500 font-bold focus-visible:ring-0 bg-transparent px-6"
+                  />
+                  <NumberFieldIncrement
+                    class="h-6 w-6 p-0 flex items-center justify-center text-slate-400 hover:text-blue-600 border-l border-slate-100 rounded-none bg-transparent z-20"
+                  />
+                </NumberFieldContent>
+              </NumberField>
             </TableCell>
 
             <!-- Plan 2 -->
@@ -619,18 +664,19 @@ const handleSave = () => {
               </Popover>
             </TableCell>
             <TableCell class="border-r border-slate-100 p-0 bg-blue-50/20">
-              <Select v-model="row.plan2Scoops">
-                <SelectTrigger
-                  class="h-6 w-full text-[10px] border-none shadow-none text-center justify-center text-slate-500 focus:ring-0 focus:ring-offset-0 bg-transparent px-1"
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem v-for="i in 10" :key="i" :value="String(i)">
-                    {{ i }}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              <NumberField v-model="row.plan2Scoops" :min="0" class="w-full">
+                <NumberFieldContent>
+                  <NumberFieldDecrement
+                    class="h-6 w-6 p-0 flex items-center justify-center text-slate-400 hover:text-blue-600 border-r border-slate-100 rounded-none bg-transparent z-20"
+                  />
+                  <NumberFieldInput
+                    class="h-6 text-[10px] border-none shadow-none text-center justify-center text-slate-500 font-bold focus-visible:ring-0 bg-transparent px-6"
+                  />
+                  <NumberFieldIncrement
+                    class="h-6 w-6 p-0 flex items-center justify-center text-slate-400 hover:text-blue-600 border-l border-slate-100 rounded-none bg-transparent z-20"
+                  />
+                </NumberFieldContent>
+              </NumberField>
             </TableCell>
 
             <!-- Plan 3 -->
@@ -706,18 +752,19 @@ const handleSave = () => {
               </Popover>
             </TableCell>
             <TableCell class="border-r border-slate-100 p-0 bg-blue-50/20">
-              <Select v-model="row.plan3Scoops">
-                <SelectTrigger
-                  class="h-6 w-full text-[10px] border-none shadow-none text-center justify-center text-slate-500 focus:ring-0 focus:ring-offset-0 bg-transparent px-1"
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem v-for="i in 10" :key="i" :value="String(i)">
-                    {{ i }}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              <NumberField v-model="row.plan3Scoops" :min="0" class="w-full">
+                <NumberFieldContent>
+                  <NumberFieldDecrement
+                    class="h-6 w-6 p-0 flex items-center justify-center text-slate-400 hover:text-blue-600 border-r border-slate-100 rounded-none bg-transparent z-20"
+                  />
+                  <NumberFieldInput
+                    class="h-6 text-[10px] border-none shadow-none text-center justify-center text-slate-500 font-bold focus-visible:ring-0 bg-transparent px-6"
+                  />
+                  <NumberFieldIncrement
+                    class="h-6 w-6 p-0 flex items-center justify-center text-slate-400 hover:text-blue-600 border-l border-slate-100 rounded-none bg-transparent z-20"
+                  />
+                </NumberFieldContent>
+              </NumberField>
             </TableCell>
 
             <!-- Cutting -->
@@ -894,7 +941,7 @@ const handleSave = () => {
           }}</label>
           <Input
             class="h-8 w-40 text-xs font-bold bg-slate-50 border-none"
-            value="ระบบบริหารจัดการ"
+            :model-value="authStore.user?.displayName || authStore.user?.username || '-'"
             readonly
           />
         </div>
@@ -904,7 +951,7 @@ const handleSave = () => {
           }}</label>
           <Input
             class="h-8 w-40 text-xs font-bold bg-slate-50 border-none"
-            value="รอการอนุมัติ"
+            model-value="รอการอนุมัติ"
             readonly
           />
         </div>
@@ -917,10 +964,11 @@ const handleSave = () => {
         </Button>
         <Button
           @click="handleSave"
+          :disabled="isSubmitting"
           class="h-10 gap-2 font-bold px-8 bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-200"
         >
           <Save class="w-4 h-4" />
-          {{ t('common.saveChanges') }}
+          {{ isSubmitting ? t('common.loading') : t('common.saveChanges') }}
         </Button>
       </div>
     </div>

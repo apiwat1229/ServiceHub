@@ -105,11 +105,11 @@ const getStatusVariant = (status: string) => {
             :key="plan.id"
             class="hover:bg-slate-50 transition-colors"
           >
-            <TableCell class="font-bold text-blue-600">{{ plan.planNo }}</TableCell>
+            <TableCell class="font-bold text-primary">{{ plan.planNo }}</TableCell>
             <TableCell class="text-center font-mono">{{ plan.revisionNo }}</TableCell>
             <TableCell>{{ plan.refProductionNo }}</TableCell>
             <TableCell>{{ plan.issuedDate }}</TableCell>
-            <TableCell class="text-slate-500">{{ plan.creator }}</TableCell>
+            <TableCell class="text-muted-foreground">{{ plan.creator }}</TableCell>
             <TableCell class="text-center">
               <Badge
                 :variant="getStatusVariant(plan.status)"
@@ -123,28 +123,28 @@ const getStatusVariant = (status: string) => {
                 <Button
                   variant="ghost"
                   size="icon"
-                  class="h-8 w-8 text-slate-400 hover:text-blue-600"
+                  class="h-8 w-8 text-muted-foreground hover:bg-primary/10 hover:text-primary"
                 >
                   <Eye class="w-4 h-4" />
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
-                  class="h-8 w-8 text-slate-400 hover:text-amber-600"
+                  class="h-8 w-8 text-muted-foreground hover:bg-primary/10 hover:text-primary"
                 >
                   <Edit2 class="w-4 h-4" />
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
-                  class="h-8 w-8 text-slate-400 hover:text-red-500"
+                  class="h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                 >
                   <Trash2 class="w-4 h-4" />
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
-                  class="h-8 w-8 text-slate-400 hover:text-slate-900"
+                  class="h-8 w-8 text-muted-foreground hover:bg-primary/10 hover:text-primary"
                 >
                   <Printer class="w-4 h-4" />
                 </Button>

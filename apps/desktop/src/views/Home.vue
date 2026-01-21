@@ -29,6 +29,7 @@ interface ServiceModule {
   icon: LucideIcon;
   color: string;
   bgColor: string;
+  borderColor: string;
   hoverBorder: string;
   route: string;
   permission?: string; // Optional permission required to access this module
@@ -45,6 +46,7 @@ const modules = computed<ServiceModule[]>(() => [
     icon: Box,
     color: 'text-blue-600',
     bgColor: 'bg-blue-50/50 group-hover:bg-blue-100/50',
+    borderColor: 'border-blue-200',
     hoverBorder: 'group-hover:border-blue-500',
     route: '/mrp',
     permission: 'mrp:read',
@@ -56,6 +58,7 @@ const modules = computed<ServiceModule[]>(() => [
     icon: Droplets,
     color: 'text-orange-600',
     bgColor: 'bg-orange-50/50 group-hover:bg-orange-100/50',
+    borderColor: 'border-orange-200',
     hoverBorder: 'group-hover:border-orange-500',
     route: '/cuplump-pool',
     permission: 'bookings:read', // Cuplump is part of booking system
@@ -67,6 +70,7 @@ const modules = computed<ServiceModule[]>(() => [
     icon: Calendar,
     color: 'text-green-600',
     bgColor: 'bg-green-50/50 group-hover:bg-green-100/50',
+    borderColor: 'border-green-200',
     hoverBorder: 'group-hover:border-green-500',
     route: '/admin/bookings',
     permission: 'bookings:read',
@@ -78,6 +82,7 @@ const modules = computed<ServiceModule[]>(() => [
     icon: Truck,
     color: 'text-emerald-600',
     bgColor: 'bg-emerald-50/50 group-hover:bg-emerald-100/50',
+    borderColor: 'border-emerald-200',
     hoverBorder: 'group-hover:border-emerald-500',
     route: '/scale',
     permission: 'truckScale:read',
@@ -89,6 +94,7 @@ const modules = computed<ServiceModule[]>(() => [
     icon: Wrench,
     color: 'text-red-500',
     bgColor: 'bg-red-50/50 group-hover:bg-red-100/50',
+    borderColor: 'border-red-200',
     hoverBorder: 'group-hover:border-red-500',
     route: '/maintenance',
   },
@@ -99,6 +105,7 @@ const modules = computed<ServiceModule[]>(() => [
     icon: Headset,
     color: 'text-purple-600',
     bgColor: 'bg-purple-50/50 group-hover:bg-purple-100/50',
+    borderColor: 'border-purple-200',
     hoverBorder: 'group-hover:border-purple-500',
     route: '/admin/helpdesk',
   },
@@ -109,6 +116,7 @@ const modules = computed<ServiceModule[]>(() => [
     icon: Clock,
     color: 'text-indigo-600',
     bgColor: 'bg-indigo-50/50 group-hover:bg-indigo-100/50',
+    borderColor: 'border-indigo-200',
     hoverBorder: 'group-hover:border-indigo-500',
     route: '/admin/project-timeline',
   },
@@ -119,6 +127,7 @@ const modules = computed<ServiceModule[]>(() => [
     icon: FileText,
     color: 'text-rose-600',
     bgColor: 'bg-rose-50/50 group-hover:bg-rose-100/50',
+    borderColor: 'border-rose-200',
     hoverBorder: 'group-hover:border-rose-500',
     route: '/admin/contracts',
   },
@@ -256,14 +265,16 @@ const sortedModules = computed(() => {
         :to="module.route"
         @click="trackModuleUsage(module.id)"
         :class="[
-          'group relative overflow-hidden rounded-2xl border border-border bg-card/20 backdrop-blur-md p-6 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 block',
-          module.hoverBorder,
+          'group relative overflow-hidden rounded-2xl bg-card border p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 block',
+          module.borderColor,
+          module.hoverBorder, // Direct border color transition
+          'focus:outline-none focus:ring-2 focus:ring-primary/20', // Ensure focus is clean
         ]"
       >
         <!-- Large Background Icon (Watermark) -->
         <component
           :is="module.icon"
-          class="absolute -right-8 -bottom-8 w-40 h-40 opacity-[0.03] rotate-[-15deg] transition-transform duration-500 group-hover:scale-110 group-hover:rotate-[-5deg]"
+          class="absolute -right-10 -bottom-10 w-40 h-40 opacity-[0.05] rotate-[15deg] transition-transform duration-500 group-hover:scale-[1.6] group-hover:rotate-[30deg] group-hover:opacity-[0.1]"
           :class="module.color"
         />
 
@@ -271,39 +282,47 @@ const sortedModules = computed(() => {
         <div
           class="absolute top-6 right-6 flex items-center gap-2 opacity-0 -translate-x-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0"
         >
-          <span class="text-xs font-bold tracking-wider uppercase" :class="module.color">{{
-            t('services.accessModule')
-          }}</span>
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
+          <span
+            class="text-[10px] font-black tracking-widest uppercase opacity-70"
+            :class="module.color"
+            >{{ t('services.accessModule') || 'OPEN' }}</span
+          >
+          <div
+            class="h-6 w-6 rounded-full flex items-center justify-center bg-background shadow-sm"
             :class="module.color"
           >
-            <path d="M5 12h14" />
-            <path d="M12 5l7 7-7 7" />
-          </svg>
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="3"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M5 12h14" />
+              <path d="M12 5l7 7-7 7" />
+            </svg>
+          </div>
         </div>
 
         <div class="relative z-10 flex flex-col h-full">
           <!-- Small Icon -->
           <div
-            class="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl transition-colors duration-300"
-            :class="module.bgColor"
+            class="mb-5 inline-flex h-14 w-14 items-center justify-center rounded-2xl transition-all duration-300 shadow-sm group-hover:shadow-md group-hover:scale-110 group-hover:animate-wiggle"
+            :class="[module.bgColor]"
           >
-            <component :is="module.icon" :class="['h-6 w-6', module.color]" />
+            <component :is="module.icon" :class="['h-7 w-7', module.color]" />
           </div>
 
-          <h3 class="mb-2 text-xl font-semibold tracking-tight text-foreground">
+          <h3
+            class="mb-3 text-xl font-bold tracking-tight text-foreground group-hover:text-foreground/90"
+          >
             {{ module.title }}
           </h3>
 
-          <p class="text-sm text-muted-foreground leading-relaxed flex-grow">
+          <p class="text-sm text-muted-foreground leading-relaxed flex-grow pr-4">
             {{ module.description }}
           </p>
         </div>
@@ -325,3 +344,22 @@ const sortedModules = computed(() => {
     </div>
   </div>
 </template>
+
+<style scoped>
+@keyframes wiggle {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-10deg);
+  }
+  75% {
+    transform: rotate(10deg);
+  }
+}
+
+.group:hover .group-hover\:animate-wiggle {
+  animation: wiggle 0.5s ease-in-out both;
+}
+</style>
