@@ -1031,3 +1031,66 @@ model StorageLocation {
 
   @@map("storage_locations")
 }
+
+// ==========================================
+// Production & Quality Daily Report (Dryer C)
+// ==========================================
+
+model ProductionReport {
+  id              String   @id @default(uuid())
+  dryerName       String   @map("dryer_name") // e.g., "Dryer C"
+  bookNo          String   @map("book_no")
+  pageNo          String   @map("page_no")
+  productionDate  DateTime @map("production_date")
+  shift           String   // "1st", "2nd"
+  grade           String
+  
+  ratioCL         Float?   @map("ratio_cl")
+  ratioUSS        Float?   @map("ratio_uss")
+  ratioCutting    Float?   @map("ratio_cutting")
+  
+  weightPalletRemained Float? @map("weight_pallet_remained")
+  
+  // Accumulated samples for Pallet 1-5
+  sampleAccum1    Int? @map("sample_accum_1")
+  sampleAccum2    Int? @map("sample_accum_2")
+  sampleAccum3    Int? @map("sample_accum_3")
+  sampleAccum4    Int? @map("sample_accum_4")
+  sampleAccum5    Int? @map("sample_accum_5")
+
+  rows            ProductionReportRow[]
+  
+  baleBagLotNo    String?  @map("bale_bag_lot_no")
+  
+  checkedBy       String?  @map("checked_by")
+  judgedBy        String?  @map("judged_by")
+  issuedBy        String?  @map("issued_by")
+  issuedAt        DateTime? @map("issued_at")
+
+  status          String   @default("DRAFT")
+
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("production_reports")
+}
+
+model ProductionReportRow {
+  id              String   @id @default(uuid())
+  reportId        String   @map("report_id")
+  report          ProductionReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  
+  startTime       String   @map("start_time")
+  palletType      String   @map("pallet_type") // MB5, MB4, GPS, Blue
+  lotNo           String   @map("lot_no")
+  
+  weight1         Float?   @map("weight_1")
+  weight2         Float?   @map("weight_2")
+  weight3         Float?   @map("weight_3")
+  weight4         Float?   @map("weight_4")
+  weight5         Float?   @map("weight_5")
+  
+  sampleCount     Int?     @map("sample_count")
+
+  @@map("production_report_rows")
+}

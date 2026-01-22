@@ -255,6 +255,46 @@
       }
     }
   },
+  "production": {
+    "title": "Production & Quality Daily Report",
+    "subtitle": "Manage and record daily production reports",
+    "reportList": "Report List",
+    "createReport": "Create New Report",
+    "dryerName": "Dryer Name",
+    "bookNo": "Book No",
+    "pageNo": "Page No",
+    "productionDate": "Production Date",
+    "shift": "Shift",
+    "grade": "Grade",
+    "ratios": "Ratios",
+    "ratioCL": "CL",
+    "ratioUSS": "USS",
+    "ratioCutting": "Cutting",
+    "weightPalletRemained": "Weight Pallet Remained (kg)",
+    "sampleAccum": "Accumulated Samples (Lot)",
+    "pallet": "Pallet {n}",
+    "table": {
+      "startTime": "Time",
+      "palletType": "Pallet Type",
+      "lotNo": "Lot No",
+      "weight": "Weight Pallet {n}",
+      "sampleCount": "Sample Count",
+      "totalSample": "Total Sample"
+    },
+    "footer": {
+      "baleBagLotNo": "Bale Bag Lot No",
+      "checkedBy": "Checked by Production",
+      "judgedBy": "Judged by Laboratory",
+      "issuedBy": "Issued",
+      "qa": "QA",
+      "production": "Production",
+      "warehouse": "Warehouse"
+    },
+    "history": {
+      "title": "Production Report History",
+      "empty": "No production reports found"
+    }
+  },
   "services": {
     "title": "Services & Modules",
     "subtitle": "Select a module to access specialized tools.",

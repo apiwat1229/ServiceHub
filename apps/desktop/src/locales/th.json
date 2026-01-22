@@ -257,6 +257,46 @@
       }
     }
   },
+  "production": {
+    "title": "รายงานการผลิตและคุณภาพประจำวัน",
+    "subtitle": "จัดการและบันทึกรายงานการผลิตประจำวัน",
+    "reportList": "รายการรายงาน",
+    "createReport": "สร้างรายงานใหม่",
+    "dryerName": "ชื่อตู้อบ",
+    "bookNo": "เล่มที่",
+    "pageNo": "เลขที่",
+    "productionDate": "วันที่ผลิต",
+    "shift": "กะ",
+    "grade": "เกรด",
+    "ratios": "อัตราส่วน",
+    "ratioCL": "CL",
+    "ratioUSS": "USS",
+    "ratioCutting": "Cutting",
+    "weightPalletRemained": "น้ำหนักลวดค้างในพาเลท (กก.)",
+    "sampleAccum": "จำนวนตัวอย่างสะสม (ล็อต)",
+    "pallet": "พาเลท {n}",
+    "table": {
+      "startTime": "เวลา",
+      "palletType": "ประเภทพาเลท",
+      "lotNo": "ล็อตที่",
+      "weight": "น้ำหนักพาเลท {n}",
+      "sampleCount": "จำนวนตัวอย่าง",
+      "totalSample": "รวมตัวอย่าง"
+    },
+    "footer": {
+      "baleBagLotNo": "หมายเลขล็อตถุงที่ใช้",
+      "checkedBy": "Checked by Production",
+      "judgedBy": "Judged by Laboratory",
+      "issuedBy": "Issued",
+      "qa": "QA",
+      "production": "Production",
+      "warehouse": "Warehouse"
+    },
+    "history": {
+      "title": "ประวัติรายงานการผลิต",
+      "empty": "ไม่พบรายงานการผลิต"
+    }
+  },
   "services": {
     "title": "บริการและโมดูล",
     "subtitle": "เลือกโมดูลเพื่อเข้าถึงเครื่องมือเฉพาะทาง",

@@ -28,6 +28,7 @@ import { SuppliersModule } from './suppliers/suppliers.module';
 import { UsersModule } from './users/users.module';
 
 import { JobOrdersModule } from './job-orders/job-orders.module';
+import { ProductionReportsModule } from './production-reports/production-reports.module';
 import { RawMaterialPlansModule } from './raw-material-plans/raw-material-plans.module';
 
 @Module({
@@ -60,6 +61,7 @@ import { RawMaterialPlansModule } from './raw-material-plans/raw-material-plans.
         PoolsModule,
         JobOrdersModule,
         RawMaterialPlansModule,
+        ProductionReportsModule,
         ServeStaticModule.forRoot({
             rootPath: join(__dirname, '..', '..', '..', 'uploads'),
             serveRoot: '/api/uploads',

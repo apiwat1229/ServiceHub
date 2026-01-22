@@ -18,9 +18,7 @@ import {
 } from '@/components/ui/table';
 import api from '@/services/api';
 import { format } from 'date-fns';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
-import { Download, Loader2, Printer, X } from 'lucide-vue-next';
+import { Loader2, Printer, X } from 'lucide-vue-next';
 import QrcodeVue from 'qrcode.vue';
 import { computed, nextTick, onMounted, ref } from 'vue';
 
@@ -74,45 +72,6 @@ const handlePrint = () => {
   setTimeout(() => {
     window.print();
   }, 500);
-};
-
-const isDownloading = ref(false);
-const handleDownload = async () => {
-  if (!plan.value) return;
-  isDownloading.value = true;
-  try {
-    const element = document.querySelector('.raw-material-plan-print-preview') as HTMLElement;
-    if (!element) return;
-
-    // Apply temporary class for export layout
-    element.classList.add('is-exporting');
-
-    // Small delay to ensure styles are applied
-    await new Promise((resolve) => setTimeout(resolve, 100));
-
-    const canvas = await html2canvas(element, {
-      scale: 2,
-      useCORS: true,
-      logging: false,
-    });
-
-    // Remove temporary class
-    element.classList.remove('is-exporting');
-
-    const imgData = canvas.toDataURL('image/png');
-    // A4 dimensions in mm: 210 x 297
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const imgProps = pdf.getImageProperties(imgData);
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-    pdf.save(`Raw-Material-Plan-${plan.value.planNo}.pdf`);
-  } catch (error) {
-    console.error('Failed to download PDF:', error);
-  } finally {
-    isDownloading.value = false;
-  }
 };
 
 const formatDate = (date: string | Date) => {
@@ -188,16 +147,6 @@ const getPlanPoolLabel = (row: any, planIndex: number) => {
           </Badge>
         </div>
         <div class="flex items-center gap-2">
-          <Button
-            @click="handleDownload"
-            variant="outline"
-            :disabled="isDownloading"
-            class="h-9 gap-2 font-bold px-4 border-blue-200 hover:bg-blue-50 text-blue-700"
-          >
-            <Loader2 v-if="isDownloading" class="w-4 h-4 animate-spin" />
-            <Download v-else class="w-4 h-4" />
-            Download
-          </Button>
           <Button
             @click="handlePrint"
             variant="default"
@@ -648,35 +597,28 @@ const getPlanPoolLabel = (row: any, planIndex: number) => {
   border-color: #000 !important;
 }
 
-/* Fix for html2canvas/Download Layout */
-.raw-material-plan-print-preview.is-exporting {
-  width: 294mm !important;
-  zoom: 0.71 !important;
-  padding: 1.5mm !important;
-}
-
-.raw-material-plan-print-preview.is-exporting table,
+/* Shared column styles for Export and Print */
 @media print {
   .raw-material-plan-print-preview table {
     width: 100% !important;
-    table-layout: auto !important; /* Allow natural sizing with explicit widths */
+    table-layout: fixed !important; /* Force fixed layout for perfect alignment */
+    border-collapse: collapse !important;
   }
 
-  /* Shared column styles for Export and Print */
   .col-date {
-    width: 17mm !important;
+    width: 23mm !important;
   }
   .col-day,
   .col-shift {
-    width: 7mm !important;
+    width: 9mm !important;
   }
   .col-grade {
-    width: 16mm !important;
+    width: 21mm !important;
   }
   .col-uss,
   .col-cl,
   .col-bk {
-    width: 7mm !important;
+    width: 9mm !important;
   }
   .col-target,
   .col-cons,
@@ -696,7 +638,17 @@ const getPlanPoolLabel = (row: any, planIndex: number) => {
     width: 14mm !important;
   }
   .col-remarks {
-    width: auto !important;
+    width: 76mm !important;
+    white-space: nowrap !important;
+  }
+
+  .raw-material-plan-print-preview table th,
+  .raw-material-plan-print-preview table td {
+    padding: 2px 1px !important;
+    font-size: 12px !important;
+    border: 1px solid #000 !important;
+    word-break: break-all !important;
+    height: auto !important;
   }
 
   .pool-prop-container {
@@ -750,57 +702,7 @@ const getPlanPoolLabel = (row: any, planIndex: number) => {
     background: white !important;
   }
 
-  .raw-material-plan-print-preview table {
-    width: 100% !important;
-    table-layout: auto !important;
-    border-collapse: collapse !important;
-  }
-
-  /* Robust class-based column widths for Print */
-  .col-date {
-    width: 23mm !important;
-  }
-  .col-day,
-  .col-shift {
-    width: 9mm !important;
-  }
-  .col-grade {
-    width: 21mm !important;
-  }
-  .col-uss,
-  .col-cl,
-  .col-bk {
-    width: 9mm !important;
-  }
-  .col-target,
-  .col-cons,
-  .col-ratio-bc {
-    width: 9mm !important;
-  }
-  .col-plan-label {
-    width: 20mm !important;
-  }
-  .col-plan-scoops {
-    width: 6mm !important;
-  }
-  .col-percent {
-    width: 10mm !important;
-  }
-  .col-pallet {
-    width: 14mm !important;
-  }
-  .col-remarks {
-    width: auto !important;
-  }
-
-  .raw-material-plan-print-preview table th,
-  .raw-material-plan-print-preview table td {
-    padding: 2px 1px !important;
-    font-size: 12px !important; /* ~8.6px after zoom */
-    border: 1px solid #000 !important;
-    word-break: break-all !important;
-    height: auto !important;
-  }
+  /* Column widths and cell styles are inherited from the shared block above */
 
   .no-print {
     display: none !important;
