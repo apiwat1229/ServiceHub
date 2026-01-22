@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -18,9 +17,9 @@ import {
 } from '@/components/ui/table';
 import api from '@/services/api';
 import { format } from 'date-fns';
-import { Loader2, Printer, X } from 'lucide-vue-next';
+import { Loader2, X } from 'lucide-vue-next';
 import QrcodeVue from 'qrcode.vue';
-import { computed, nextTick, onMounted, ref } from 'vue';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
 
 const props = defineProps<{
   planId: string | null;
@@ -32,6 +31,7 @@ const emit = defineEmits(['update:open']);
 
 const plan = ref<any>(null);
 const isLoading = ref(false);
+const isProcessing = ref(false);
 
 const planUrl = computed(() => {
   if (!plan.value?.id) return '';
@@ -40,6 +40,9 @@ const planUrl = computed(() => {
 
 const fetchPlanDetails = async (id: string) => {
   isLoading.value = true;
+  if (props.autoPrint) {
+    isProcessing.value = true;
+  }
   try {
     const response = await api.get(`/raw-material-plans/${id}`);
     plan.value = response.data;
@@ -55,22 +58,57 @@ const fetchPlanDetails = async (id: string) => {
   }
 };
 
+watch(
+  () => props.planId,
+  (newId) => {
+    if (newId) {
+      fetchPlanDetails(newId);
+    }
+  }
+);
+
 onMounted(() => {
   if (props.planId) {
     fetchPlanDetails(props.planId);
   }
 });
 
-const handlePrint = () => {
+const handlePrint = async () => {
   if (props.autoPrint) {
-    window.onafterprint = () => {
-      emit('update:open', false);
-      window.onafterprint = null;
-    };
+    isProcessing.value = true;
   }
+
   // Small delay to ensure rendering completion before print dialog opens
-  setTimeout(() => {
-    window.print();
+  setTimeout(async () => {
+    // @ts-ignore
+    if (window.ipcRenderer) {
+      // @ts-ignore
+      const title = props.planId ? plan.value?.planNo : 'Raw Material Plan';
+
+      // Temporarily change document title for PDF metadata (appears in PDF viewer toolbar)
+      const originalTitle = document.title;
+      document.title = 'Preview';
+
+      // @ts-ignore
+      const success = await window.ipcRenderer.invoke('preview-window', title);
+
+      // Restore original title
+      document.title = originalTitle;
+
+      if (success && props.autoPrint) {
+        emit('update:open', false);
+      }
+      isProcessing.value = false;
+    } else {
+      window.print();
+      isProcessing.value = false;
+      if (props.autoPrint) {
+        window.onafterprint = () => {
+          emit('update:open', false);
+          window.onafterprint = null;
+        };
+      }
+    }
   }, 500);
 };
 
@@ -126,7 +164,7 @@ const getPlanPoolLabel = (row: any, planIndex: number) => {
 <template>
   <Dialog :open="open" @update:open="emit('update:open', $event)">
     <DialogContent
-      :class="`max-w-[850px] w-full h-[96vh] overflow-y-auto p-0 gap-0 border-none shadow-2xl transition-opacity duration-300 ${autoPrint && !isLoading ? 'pointer-events-none' : ''}`"
+      :class="`max-w-[850px] w-full h-[96vh] overflow-y-auto p-0 gap-0 border-none shadow-2xl transition-opacity duration-300 ${autoPrint ? 'invisible pointer-events-none' : ''}`"
     >
       <DialogHeader class="sr-only">
         <DialogTitle>Raw Material Plan View</DialogTitle>
@@ -139,22 +177,11 @@ const getPlanPoolLabel = (row: any, planIndex: number) => {
         class="sticky top-0 z-50 flex items-center justify-between p-4 bg-white border-b no-print"
       >
         <div class="flex items-center gap-3">
-          <Badge
-            variant="outline"
-            class="font-black py-1 px-3 uppercase tracking-widest text-[10px]"
-          >
-            Preview Mode (A4 Portrait)
-          </Badge>
+          <h3 class="text-lg font-black text-slate-800 uppercase tracking-tight">
+            Preview {{ plan?.planNo }}
+          </h3>
         </div>
         <div class="flex items-center gap-2">
-          <Button
-            @click="handlePrint"
-            variant="default"
-            class="h-9 gap-2 font-bold px-6 bg-blue-600 hover:bg-blue-700"
-          >
-            <Printer class="w-4 h-4" />
-            Print
-          </Button>
           <Button @click="emit('update:open', false)" variant="ghost" size="icon" class="h-9 w-9">
             <X class="w-4 h-4" />
           </Button>
@@ -163,13 +190,18 @@ const getPlanPoolLabel = (row: any, planIndex: number) => {
 
       <!-- Printable Content Area -->
       <div class="p-[10mm] bg-slate-50 min-h-full print:bg-white print:p-0">
-        <div v-if="isLoading" class="flex flex-col items-center justify-center h-64 gap-3">
+        <div
+          v-if="isLoading"
+          class="flex flex-col items-center justify-center h-64 gap-3 print:hidden"
+        >
           <Loader2 class="w-10 h-10 animate-spin text-primary/40" />
-          <span class="text-sm font-bold text-slate-400 animate-pulse">Fetching Plan Data...</span>
+          <span class="text-sm font-bold text-slate-400 animate-pulse">
+            Fetching Plan Data...
+          </span>
         </div>
 
         <div
-          v-else-if="plan"
+          v-if="plan"
           class="a4-container bg-white shadow-xl mx-auto print:shadow-none print:w-full raw-material-plan-print-preview"
         >
           <div class="p-8 space-y-6">
@@ -222,31 +254,31 @@ const getPlanPoolLabel = (row: any, planIndex: number) => {
                   <TableRow class="bg-slate-950 hover:bg-slate-950 border-none h-8">
                     <TableHead
                       colspan="4"
-                      class="text-center text-white font-black border-r border-slate-700 uppercase tracking-widest bg-amber-600/90"
+                      class="text-center text-white font-black border-r border-slate-700 uppercase tracking-widest bg-amber-600"
                       >Production Plan</TableHead
                     >
                     <TableHead
                       colspan="3"
-                      class="text-center text-white font-black border-r border-slate-700 uppercase tracking-widest bg-slate-600/90"
+                      class="text-center text-white font-black border-r border-slate-700 uppercase tracking-widest bg-slate-600"
                       >Ratios</TableHead
                     >
                     <TableHead
                       colspan="3"
-                      class="text-center text-white font-black border-r border-slate-700 uppercase tracking-widest bg-slate-700/90"
+                      class="text-center text-white font-black border-r border-slate-700 uppercase tracking-widest bg-slate-700"
                       >Targets</TableHead
                     >
                     <TableHead
                       colspan="6"
-                      class="text-center text-white font-black border-r border-slate-700 uppercase tracking-widest bg-blue-700/90"
+                      class="text-center text-white font-black border-r border-slate-700 uppercase tracking-widest bg-blue-700"
                       >CL Allocation Plan</TableHead
                     >
                     <TableHead
                       colspan="2"
-                      class="text-center text-white font-black border-r border-slate-700 uppercase tracking-widest bg-indigo-700/90"
+                      class="text-center text-white font-black border-r border-slate-700 uppercase tracking-widest bg-indigo-700"
                       >Cutting</TableHead
                     >
                     <TableHead
-                      class="text-center text-white font-black uppercase tracking-widest bg-slate-800/90"
+                      class="text-center text-white font-black uppercase tracking-widest bg-slate-800"
                       >Docs</TableHead
                     >
                   </TableRow>
@@ -644,6 +676,8 @@ const getPlanPoolLabel = (row: any, planIndex: number) => {
 
   .raw-material-plan-print-preview table th,
   .raw-material-plan-print-preview table td {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
     padding: 2px 1px !important;
     font-size: 12px !important;
     border: 1px solid #000 !important;

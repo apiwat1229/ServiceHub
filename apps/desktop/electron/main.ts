@@ -1,4 +1,6 @@
 import { app, BrowserWindow } from 'electron'
+import fs from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 // In Electron, use process.resourcesPath for packaged apps
 // This correctly points to the resources folder in the installed app
@@ -126,6 +128,84 @@ ipcMain.on('window-maximize', () => {
 
 ipcMain.on('window-close', () => {
   win?.close();
+});
+
+// Print Handler
+ipcMain.on('print-window', (event) => {
+  const window = BrowserWindow.fromWebContents(event.sender);
+  if (window) {
+    window.webContents.print({
+      silent: false,
+      printBackground: true,
+      margins: {
+        marginType: 'none'
+      }
+    }, (success, errorType) => {
+      if (!success) {
+        console.log('Print failed:', errorType);
+      }
+    });
+  }
+});
+
+// Preview Handler
+ipcMain.handle('preview-window', async (event, title) => {
+  const window = BrowserWindow.fromWebContents(event.sender);
+  if (!window) return false;
+
+  try {
+    const data = await window.webContents.printToPDF({
+      printBackground: true,
+      margins: {
+        top: 0,
+        bottom: 0,
+        left: 0,
+        right: 0
+      },
+      pageSize: 'A4'
+    });
+
+    // Sanitize title to create a valid filename
+    const safeTitle = (title || 'Print-Preview').replace(/[^a-z0-9\u0E00-\u0E7F\-\_\s]/gi, '').trim();
+    const filename = `${safeTitle}.pdf`;
+    const tempPath = path.join(os.tmpdir(), filename);
+
+    fs.writeFileSync(tempPath, data);
+
+    const previewWindow = new BrowserWindow({
+      width: 1000,
+      height: 900,
+      title: title || 'Print Preview',
+      icon: path.join(process.env.VITE_PUBLIC, 'electron-vite.svg'),
+      webPreferences: {
+        plugins: true // Enable PDF viewer
+      }
+    });
+
+    // Prevent PDF viewer from changing the title
+    previewWindow.on('page-title-updated', (e) => {
+      e.preventDefault();
+    });
+
+    // Clean up file when window closes
+    previewWindow.on('closed', () => {
+      // Small delay to allow file release if needed
+      setTimeout(() => {
+        fs.unlink(tempPath, (err) => {
+          if (err) console.error('Failed to cleanup temp PDF:', err);
+        });
+      }, 1000);
+    });
+
+    previewWindow.setMenu(null);
+    previewWindow.loadURL(`file://${tempPath}`);
+
+    return true;
+
+  } catch (error) {
+    console.error('Failed to generate PDF preview:', error);
+    return false;
+  }
 });
 
 // ============================================

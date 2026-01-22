@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/table';
 import api from '@/services/api';
 import { format } from 'date-fns';
-import { FileText, Loader2, RefreshCw } from 'lucide-vue-next';
+import { FileText, Loader2, Printer, RefreshCw } from 'lucide-vue-next';
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import RawMaterialPlanViewModal from './RawMaterialPlanViewModal.vue';
@@ -35,11 +35,28 @@ const error = ref<string | null>(null);
 const isViewModalOpen = ref(false);
 const selectedPlanId = ref<string | null>(null);
 const isAutoPrint = ref(false);
+const processingId = ref<string | null>(null);
 
 const openViewModal = (id: string, autoPrint = false) => {
+  if (processingId.value) return; // Prevent multiple clicks
+
   selectedPlanId.value = id;
   isAutoPrint.value = autoPrint;
+  if (autoPrint) {
+    processingId.value = id;
+  }
   isViewModalOpen.value = true;
+};
+
+const handleModalClose = (val: boolean) => {
+  isViewModalOpen.value = val;
+  if (!val) {
+    // Reset processing state when modal closes (print finished)
+    // Small delay to ensure smoother UI transition
+    setTimeout(() => {
+      processingId.value = null;
+    }, 300);
+  }
 };
 
 const fetchPlans = async () => {
@@ -193,6 +210,19 @@ const getStatusVariant = (status: string) => {
                 >
                   <FileText class="w-4 h-4" />
                 </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  class="h-8 w-8 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors"
+                  :disabled="!!processingId"
+                  @click="openViewModal(plan.id, true)"
+                >
+                  <Loader2
+                    v-if="processingId === plan.id"
+                    class="w-4 h-4 animate-spin text-primary"
+                  />
+                  <Printer v-else class="w-4 h-4" />
+                </Button>
               </div>
             </TableCell>
           </TableRow>
@@ -218,7 +248,8 @@ const getStatusVariant = (status: string) => {
     <RawMaterialPlanViewModal
       v-if="selectedPlanId"
       :plan-id="selectedPlanId"
-      v-model:open="isViewModalOpen"
+      :open="isViewModalOpen"
+      @update:open="handleModalClose"
       :auto-print="isAutoPrint"
     />
   </div>
