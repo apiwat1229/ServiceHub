@@ -18,8 +18,11 @@ import {
 } from '@/components/ui/table';
 import api from '@/services/api';
 import { format } from 'date-fns';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 import { Download, Loader2, Printer, X } from 'lucide-vue-next';
-import { nextTick, onMounted, ref } from 'vue';
+import QrcodeVue from 'qrcode.vue';
+import { computed, nextTick, onMounted, ref } from 'vue';
 
 const props = defineProps<{
   planId: string | null;
@@ -31,6 +34,11 @@ const emit = defineEmits(['update:open']);
 
 const plan = ref<any>(null);
 const isLoading = ref(false);
+
+const planUrl = computed(() => {
+  if (!plan.value?.id) return '';
+  return `${window.location.origin}/#/admin/qa?tab=raw-material-plan-list&id=${plan.value.id}`;
+});
 
 const fetchPlanDetails = async (id: string) => {
   isLoading.value = true;
@@ -73,17 +81,23 @@ const handleDownload = async () => {
   if (!plan.value) return;
   isDownloading.value = true;
   try {
-    const html2canvas = (await import('html2canvas')).default;
-    const { jsPDF } = await import('jspdf');
-
     const element = document.querySelector('.raw-material-plan-print-preview') as HTMLElement;
     if (!element) return;
+
+    // Apply temporary class for export layout
+    element.classList.add('is-exporting');
+
+    // Small delay to ensure styles are applied
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     const canvas = await html2canvas(element, {
       scale: 2,
       useCORS: true,
       logging: false,
     });
+
+    // Remove temporary class
+    element.classList.remove('is-exporting');
 
     const imgData = canvas.toDataURL('image/png');
     // A4 dimensions in mm: 210 x 297
@@ -290,59 +304,65 @@ const getPlanPoolLabel = (row: any, planIndex: number) => {
                   <TableRow
                     class="bg-slate-50 hover:bg-slate-50 text-[9px] font-black text-slate-600 align-middle"
                   >
-                    <TableHead class="border-r border-slate-950 w-[65px] text-center px-1"
+                    <TableHead class="border-r border-slate-950 w-[65px] text-center px-1 col-date"
                       >Date</TableHead
                     >
-                    <TableHead class="border-r border-slate-950 w-[25px] text-center px-0.5"
+                    <TableHead class="border-r border-slate-950 w-[25px] text-center px-0.5 col-day"
                       >Day</TableHead
                     >
-                    <TableHead class="border-r border-slate-950 w-[30px] text-center px-0.5"
+                    <TableHead
+                      class="border-r border-slate-950 w-[30px] text-center px-0.5 col-shift"
                       >Shift</TableHead
                     >
                     <TableHead
-                      class="border-r border-slate-950 w-[60px] text-center font-black text-slate-900 px-1"
+                      class="border-r border-slate-950 w-[60px] text-center font-black text-slate-900 px-1 col-grade"
                       >Grade</TableHead
                     >
-                    <TableHead class="border-r border-slate-950 w-[25px] text-center px-0.5"
+                    <TableHead class="border-r border-slate-950 w-[25px] text-center px-0.5 col-uss"
                       >USS</TableHead
                     >
-                    <TableHead class="border-r border-slate-950 w-[25px] text-center px-0.5"
+                    <TableHead class="border-r border-slate-950 w-[25px] text-center px-0.5 col-cl"
                       >CL</TableHead
                     >
-                    <TableHead class="border-r border-slate-950 w-[25px] text-center px-0.5"
+                    <TableHead class="border-r border-slate-950 w-[25px] text-center px-0.5 col-bk"
                       >BK</TableHead
                     >
-                    <TableHead class="border-r border-slate-950 w-[35px] text-center px-0.5"
+                    <TableHead
+                      class="border-r border-slate-950 w-[35px] text-center px-0.5 col-target"
                       >Target</TableHead
                     >
-                    <TableHead class="border-r border-slate-950 w-[35px] text-center px-0.5"
+                    <TableHead
+                      class="border-r border-slate-950 w-[35px] text-center px-0.5 col-cons"
                       >CL Cons.</TableHead
                     >
-                    <TableHead class="border-r border-slate-950 w-[35px] text-center px-0.5"
+                    <TableHead
+                      class="border-r border-slate-950 w-[35px] text-center px-0.5 col-ratio-bc"
                       >Ratio B/C</TableHead
                     >
                     <TableHead
                       colspan="2"
-                      class="border-r border-slate-950 text-center bg-blue-50/50 min-w-[80px]"
+                      class="border-r border-slate-950 text-center bg-blue-50/50 min-w-[80px] col-plan-header"
                       >#1 (P/S)</TableHead
                     >
                     <TableHead
                       colspan="2"
-                      class="border-r border-slate-950 text-center bg-blue-50/50 min-w-[80px]"
+                      class="border-r border-slate-950 text-center bg-blue-50/50 min-w-[80px] col-plan-header"
                       >#2 (P/S)</TableHead
                     >
                     <TableHead
                       colspan="2"
-                      class="border-r border-slate-950 text-center bg-blue-50/50 min-w-[80px]"
+                      class="border-r border-slate-950 text-center bg-blue-50/50 min-w-[80px] col-plan-header"
                       >#3 (P/S)</TableHead
                     >
-                    <TableHead class="border-r border-slate-950 w-[30px] text-center px-0.5"
+                    <TableHead
+                      class="border-r border-slate-950 w-[30px] text-center px-0.5 col-percent"
                       >%</TableHead
                     >
-                    <TableHead class="border-r border-slate-950 w-[40px] text-center px-0.5"
+                    <TableHead
+                      class="border-r border-slate-950 w-[40px] text-center px-0.5 col-pallet"
                       >Plt/Shft</TableHead
                     >
-                    <TableHead class="text-center min-w-[100px]">Remarks</TableHead>
+                    <TableHead class="text-center min-w-[100px] col-remarks">Remarks</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -353,7 +373,7 @@ const getPlanPoolLabel = (row: any, planIndex: number) => {
                   >
                     <TableCell
                       v-if="Number(idx) % 2 === 0"
-                      class="border-r border-slate-950 text-center font-bold px-1 relative !overflow-visible"
+                      class="border-r border-slate-950 text-center font-bold px-1 relative !overflow-visible col-date"
                       rowspan="2"
                     >
                       <div class="py-1">
@@ -384,20 +404,20 @@ const getPlanPoolLabel = (row: any, planIndex: number) => {
                     </TableCell>
                     <TableCell
                       v-if="Number(idx) % 2 === 0"
-                      class="border-r border-slate-950 text-center font-bold text-slate-400"
+                      class="border-r border-slate-950 text-center font-bold text-slate-400 col-day"
                       rowspan="2"
                     >
                       {{ row.dayOfWeek }}
                     </TableCell>
 
                     <TableCell
-                      class="border-r border-slate-950 text-center font-black text-[9px]"
+                      class="border-r border-slate-950 text-center font-black text-[9px] col-shift"
                       :class="row.shift === '1st' ? 'text-blue-600' : 'text-orange-600'"
                     >
                       {{ row.shift }}
                     </TableCell>
                     <TableCell
-                      class="border-r border-slate-950 text-center p-0 transition-colors duration-200"
+                      class="border-r border-slate-950 text-center p-0 transition-colors duration-200 col-grade"
                       :class="getGradeColor(row.grade)"
                     >
                       <div
@@ -407,55 +427,55 @@ const getPlanPoolLabel = (row: any, planIndex: number) => {
                         {{ row.grade || '-' }}
                       </div>
                     </TableCell>
-                    <TableCell class="border-r border-slate-100 text-center">{{
+                    <TableCell class="border-r border-slate-100 text-center col-uss">{{
                       row.ratioUSS
                     }}</TableCell>
-                    <TableCell class="border-r border-slate-100 text-center font-bold">{{
+                    <TableCell class="border-r border-slate-100 text-center font-bold col-cl">{{
                       row.ratioCL
                     }}</TableCell>
-                    <TableCell class="border-r border-slate-950 text-center">{{
+                    <TableCell class="border-r border-slate-950 text-center col-bk">{{
                       row.ratioBK
                     }}</TableCell>
-                    <TableCell class="border-r border-slate-100 text-center">{{
+                    <TableCell class="border-r border-slate-100 text-center col-target">{{
                       row.productTarget
                     }}</TableCell>
-                    <TableCell class="border-r border-slate-100 text-center">{{
+                    <TableCell class="border-r border-slate-100 text-center col-cons">{{
                       row.clConsumption
                     }}</TableCell>
-                    <TableCell class="border-r border-slate-950 text-center">{{
+                    <TableCell class="border-r border-slate-950 text-center col-ratio-bc">{{
                       row.ratioBorC
                     }}</TableCell>
                     <TableCell
-                      class="border-r border-slate-100 text-center bg-blue-50/10 text-[9px] px-0.5"
+                      class="border-r border-slate-100 text-center bg-blue-50/10 text-[9px] px-0.5 col-plan-label"
                       >{{ getPlanPoolLabel(row, 1) }}</TableCell
                     >
                     <TableCell
-                      class="border-r border-slate-950 text-center font-bold text-blue-700 bg-blue-50/10 w-[25px]"
+                      class="border-r border-slate-950 text-center font-bold text-blue-700 bg-blue-50/10 w-[25px] col-plan-scoops"
                       >{{ row.plan1Scoops }}</TableCell
                     >
                     <TableCell
-                      class="border-r border-slate-100 text-center bg-blue-50/10 text-[9px] px-0.5"
+                      class="border-r border-slate-100 text-center bg-blue-50/10 text-[9px] px-0.5 col-plan-label"
                       >{{ getPlanPoolLabel(row, 2) }}</TableCell
                     >
                     <TableCell
-                      class="border-r border-slate-950 text-center font-bold text-blue-700 bg-blue-50/10 w-[25px]"
+                      class="border-r border-slate-950 text-center font-bold text-blue-700 bg-blue-50/10 w-[25px] col-plan-scoops"
                       >{{ row.plan2Scoops }}</TableCell
                     >
                     <TableCell
-                      class="border-r border-slate-100 text-center bg-blue-50/10 text-[9px] px-0.5"
+                      class="border-r border-slate-100 text-center bg-blue-50/10 text-[9px] px-0.5 col-plan-label"
                       >{{ getPlanPoolLabel(row, 3) }}</TableCell
                     >
                     <TableCell
-                      class="border-r border-slate-950 text-center font-bold text-blue-700 bg-blue-50/10 w-[25px]"
+                      class="border-r border-slate-950 text-center font-bold text-blue-700 bg-blue-50/10 w-[25px] col-plan-scoops"
                       >{{ row.plan3Scoops }}</TableCell
                     >
-                    <TableCell class="border-r border-slate-100 text-center">{{
+                    <TableCell class="border-r border-slate-100 text-center col-percent">{{
                       row.cuttingPercent
                     }}</TableCell>
-                    <TableCell class="border-r border-slate-950 text-center font-bold">{{
+                    <TableCell class="border-r border-slate-950 text-center font-bold col-pallet">{{
                       row.cuttingPalette
                     }}</TableCell>
-                    <TableCell class="px-2 italic text-slate-500">{{
+                    <TableCell class="px-2 italic text-slate-500 col-remarks text-center">{{
                       row.remarks || '-'
                     }}</TableCell>
                   </TableRow>
@@ -471,8 +491,10 @@ const getPlanPoolLabel = (row: any, planIndex: number) => {
                 <span class="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>
                 Pool Properties & Validation
               </h4>
-              <div class="overflow-hidden border border-slate-950 rounded-[4px] w-fit">
-                <Table class="text-[9px]">
+              <div
+                class="overflow-hidden border border-slate-950 rounded-[4px] w-full pool-prop-container"
+              >
+                <Table class="text-[9px] pool-prop-table">
                   <TableHeader class="bg-slate-50">
                     <TableRow class="h-7 border-b border-slate-950">
                       <TableHead
@@ -553,30 +575,44 @@ const getPlanPoolLabel = (row: any, planIndex: number) => {
             </div>
 
             <!-- Signatures etc -->
-            <div class="flex items-center justify-between pt-10 px-2">
-              <div
-                class="flex flex-col items-center gap-1 border-t border-slate-300 pt-1 w-48 text-center leading-tight"
-              >
-                <span class="text-xs font-bold text-slate-800">{{ plan.creator }}</span>
-                <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest"
-                  >Issued By</span
-                >
+            <div class="flex items-end justify-between pt-10 px-2 min-h-[180px]">
+              <div class="flex flex-col items-center w-52 text-center">
+                <div class="flex flex-col items-center justify-end h-40 w-full leading-tight">
+                  <div class="w-full border-t border-slate-300 pt-3 flex flex-col items-center">
+                    <span class="text-xs font-bold text-slate-800">{{ plan.creator }}</span>
+                    <span
+                      class="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1"
+                      >Issued By</span
+                    >
+                    <span class="text-[8px] text-slate-400 mt-1"
+                      >Date: {{ formatDate(plan.issuedDate) }}</span
+                    >
+                  </div>
+                </div>
               </div>
-              <div
-                class="flex flex-col items-center gap-1 border-t border-slate-300 pt-1 w-48 text-center leading-tight"
-              >
-                <span class="text-xs font-bold text-slate-300 italic">Waiting Approval</span>
-                <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest"
-                  >Verified By</span
-                >
+              <div class="flex flex-col items-center w-52 text-center">
+                <div class="flex flex-col items-center justify-end h-40 w-full leading-tight">
+                  <div class="w-full border-t border-slate-300 pt-3 flex flex-col items-center">
+                    <span class="text-xs font-bold text-slate-300 italic">Waiting Approval</span>
+                    <span
+                      class="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1"
+                      >Verified By</span
+                    >
+                    <span class="text-[8px] text-slate-400 mt-1"
+                      >Date: ................................</span
+                    >
+                  </div>
+                </div>
               </div>
-              <div
-                class="flex flex-col items-center gap-1 border-t border-slate-300 pt-1 w-48 text-center leading-tight"
-              >
-                <span class="text-xs font-bold text-slate-300 opacity-0">.</span>
-                <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest"
-                  >Factory Manager</span
-                >
+              <div class="flex flex-col items-center w-36 text-center no-print-margin">
+                <div class="flex flex-col items-center justify-center h-40">
+                  <div class="p-1.5 bg-white border border-slate-100 shadow-sm rounded-sm mb-4">
+                    <QrcodeVue :value="planUrl" :size="120" level="H" render-as="svg" />
+                  </div>
+                  <span class="text-[8px] text-slate-400 uppercase tracking-widest"
+                    >Scan for Details</span
+                  >
+                </div>
               </div>
             </div>
           </div>
@@ -611,13 +647,73 @@ const getPlanPoolLabel = (row: any, planIndex: number) => {
   padding: 0 !important;
   border-color: #000 !important;
 }
+
+/* Fix for html2canvas/Download Layout */
+.raw-material-plan-print-preview.is-exporting {
+  width: 294mm !important;
+  zoom: 0.71 !important;
+  padding: 1.5mm !important;
+}
+
+.raw-material-plan-print-preview.is-exporting table,
+@media print {
+  .raw-material-plan-print-preview table {
+    width: 100% !important;
+    table-layout: auto !important; /* Allow natural sizing with explicit widths */
+  }
+
+  /* Shared column styles for Export and Print */
+  .col-date {
+    width: 17mm !important;
+  }
+  .col-day,
+  .col-shift {
+    width: 7mm !important;
+  }
+  .col-grade {
+    width: 16mm !important;
+  }
+  .col-uss,
+  .col-cl,
+  .col-bk {
+    width: 7mm !important;
+  }
+  .col-target,
+  .col-cons,
+  .col-ratio-bc {
+    width: 9mm !important;
+  }
+  .col-plan-label {
+    width: 20mm !important;
+  }
+  .col-plan-scoops {
+    width: 6mm !important;
+  }
+  .col-percent {
+    width: 10mm !important;
+  }
+  .col-pallet {
+    width: 14mm !important;
+  }
+  .col-remarks {
+    width: auto !important;
+  }
+
+  .pool-prop-container {
+    width: 100% !important;
+  }
+  .pool-prop-table {
+    width: 100% !important;
+    table-layout: fixed !important;
+  }
+}
 </style>
 
 <style>
 @media print {
   @page {
     size: A4 portrait !important;
-    margin: 3mm !important;
+    margin: 1.5mm !important;
   }
 
   /* Hide everything by default */
@@ -644,11 +740,11 @@ const getPlanPoolLabel = (row: any, planIndex: number) => {
     left: 0 !important;
     top: 0 !important;
     display: block !important;
-    width: 290mm !important; /* Design width */
-    zoom: 0.72 !important; /* 290mm * 0.72 = ~209mm (A4) */
+    width: 294mm !important; /* Design width (maximized) */
+    zoom: 0.71 !important; /* ~209.5mm total width */
     transform-origin: top left;
     margin: 0 !important;
-    padding: 2mm !important;
+    padding: 1.5mm !important;
     box-shadow: none !important;
     border: none !important;
     background: white !important;
@@ -656,8 +752,45 @@ const getPlanPoolLabel = (row: any, planIndex: number) => {
 
   .raw-material-plan-print-preview table {
     width: 100% !important;
-    table-layout: fixed !important;
+    table-layout: auto !important;
     border-collapse: collapse !important;
+  }
+
+  /* Robust class-based column widths for Print */
+  .col-date {
+    width: 23mm !important;
+  }
+  .col-day,
+  .col-shift {
+    width: 9mm !important;
+  }
+  .col-grade {
+    width: 21mm !important;
+  }
+  .col-uss,
+  .col-cl,
+  .col-bk {
+    width: 9mm !important;
+  }
+  .col-target,
+  .col-cons,
+  .col-ratio-bc {
+    width: 9mm !important;
+  }
+  .col-plan-label {
+    width: 20mm !important;
+  }
+  .col-plan-scoops {
+    width: 6mm !important;
+  }
+  .col-percent {
+    width: 10mm !important;
+  }
+  .col-pallet {
+    width: 14mm !important;
+  }
+  .col-remarks {
+    width: auto !important;
   }
 
   .raw-material-plan-print-preview table th,
@@ -668,83 +801,6 @@ const getPlanPoolLabel = (row: any, planIndex: number) => {
     word-break: break-all !important;
     height: auto !important;
   }
-
-  /* Full 19-column precise calculation for A4 Portrait (290mm design width) */
-  .raw-material-plan-print-preview table th:nth-child(1),
-  .raw-material-plan-print-preview table td:nth-child(1) {
-    width: 17mm !important;
-  } /* Date */
-  .raw-material-plan-print-preview table th:nth-child(2),
-  .raw-material-plan-print-preview table td:nth-child(2) {
-    width: 5mm !important;
-  } /* Day */
-  .raw-material-plan-print-preview table th:nth-child(3),
-  .raw-material-plan-print-preview table td:nth-child(3) {
-    width: 5mm !important;
-  } /* Shift */
-  .raw-material-plan-print-preview table th:nth-child(4),
-  .raw-material-plan-print-preview table td:nth-child(4) {
-    width: 13mm !important;
-  } /* Grade */
-
-  .raw-material-plan-print-preview table th:nth-child(5),
-  .raw-material-plan-print-preview table td:nth-child(5) {
-    width: 5mm !important;
-  } /* USS */
-  .raw-material-plan-print-preview table th:nth-child(6),
-  .raw-material-plan-print-preview table td:nth-child(6) {
-    width: 5mm !important;
-  } /* CL */
-  .raw-material-plan-print-preview table th:nth-child(7),
-  .raw-material-plan-print-preview table td:nth-child(7) {
-    width: 5mm !important;
-  } /* BK */
-
-  .raw-material-plan-print-preview table th:nth-child(8),
-  .raw-material-plan-print-preview table td:nth-child(8) {
-    width: 8mm !important;
-  } /* Target */
-  .raw-material-plan-print-preview table th:nth-child(9),
-  .raw-material-plan-print-preview table td:nth-child(9) {
-    width: 8mm !important;
-  } /* CL Cons */
-  .raw-material-plan-print-preview table th:nth-child(10),
-  .raw-material-plan-print-preview table td:nth-child(10) {
-    width: 8mm !important;
-  } /* Ratio B/C */
-
-  /* Allocation plan sets EXPANDED for V3 */
-  .raw-material-plan-print-preview table th:nth-child(11),
-  .raw-material-plan-print-preview table td:nth-child(11),
-  .raw-material-plan-print-preview table th:nth-child(13),
-  .raw-material-plan-print-preview table td:nth-child(13),
-  .raw-material-plan-print-preview table th:nth-child(15),
-  .raw-material-plan-print-preview table td:nth-child(15) {
-    width: 37mm !important;
-  } /* Pool Label */
-
-  .raw-material-plan-print-preview table th:nth-child(12),
-  .raw-material-plan-print-preview table td:nth-child(12),
-  .raw-material-plan-print-preview table th:nth-child(14),
-  .raw-material-plan-print-preview table td:nth-child(14),
-  .raw-material-plan-print-preview table th:nth-child(16),
-  .raw-material-plan-print-preview table td:nth-child(16) {
-    width: 8mm !important;
-  } /* Scoops */
-
-  /* Cutting & Docs */
-  .raw-material-plan-print-preview table th:nth-child(17),
-  .raw-material-plan-print-preview table td:nth-child(17) {
-    width: 10mm !important;
-  } /* % */
-  .raw-material-plan-print-preview table th:nth-child(18),
-  .raw-material-plan-print-preview table td:nth-child(18) {
-    width: 12mm !important;
-  } /* Plt/Shft */
-  .raw-material-plan-print-preview table th:nth-child(19),
-  .raw-material-plan-print-preview table td:nth-child(19) {
-    width: auto !important;
-  } /* Remarks */
 
   .no-print {
     display: none !important;
