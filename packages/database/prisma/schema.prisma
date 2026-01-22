@@ -1094,3 +1094,5 @@ model ProductionReportRow {
 
   @@map("production_report_rows")
 }
+
+// Force update
