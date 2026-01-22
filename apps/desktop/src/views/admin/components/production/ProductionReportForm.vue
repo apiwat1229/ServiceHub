@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -116,24 +116,6 @@ onMounted(() => {
     </div>
 
     <Card>
-      <CardHeader>
-        <div class="flex items-center justify-between">
-          <div class="space-y-1">
-            <CardTitle class="text-2xl font-bold text-primary">{{ form.dryerName }}</CardTitle>
-            <CardDescription>Production & Quality Daily Report</CardDescription>
-          </div>
-          <div class="flex gap-4">
-            <div class="space-y-1">
-              <Label>{{ t('production.bookNo') }}</Label>
-              <Input v-model="form.bookNo" class="w-24" />
-            </div>
-            <div class="space-y-1">
-              <Label>{{ t('production.pageNo') }}</Label>
-              <Input v-model="form.pageNo" class="w-24" />
-            </div>
-          </div>
-        </div>
-      </CardHeader>
       <CardContent class="space-y-6">
         <!-- Header Info -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
