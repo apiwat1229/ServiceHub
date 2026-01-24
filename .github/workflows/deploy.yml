@@ -49,6 +49,8 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -65,12 +67,18 @@ jobs:
           npm run build:win
 
       - name: Deploy to Update Server
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ secrets.REMOTE_HOST }}
-          username: ${{ secrets.REMOTE_USER }}
-          key: ${{ secrets.REMOTE_SSH_KEY }}
-          source: 'apps/desktop/release/**/latest.yml,apps/desktop/release/**/*.exe'
-          target: '/var/www/ytrc-updates/'
-          strip_components: 4
-          overwrite: true
+        shell: bash
+        env:
+          SSH_KEY: ${{ secrets.REMOTE_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          # Add remote host to known_hosts to avoid interaction
+          ssh-keyscan -p ${{ secrets.REMOTE_PORT || '22' }} ${{ secrets.REMOTE_HOST }} >> ~/.ssh/known_hosts
+
+          # Use scp to transfer files
+          # Note: We use find to get the files and then scp them to preserve directory structure if needed, 
+          # but based on the original config, it seems they want to strip 4 components: apps/desktop/release/
+          cd apps/desktop/release
+          scp -P ${{ secrets.REMOTE_PORT || '22' }} -i ~/.ssh/id_rsa -r **/latest.yml **/*.exe ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }}:/var/www/ytrc-updates/
