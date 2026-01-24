@@ -116,17 +116,17 @@
             @click="downloadUpdate"
             class="btn-primary"
           >
-            ดาวน์โหลดอัปเดต
+            Download Update
           </button>
           <button v-if="updateState === 'downloaded'" @click="installUpdate" class="btn-success">
-            ติดตั้งและรีสตาร์ท
+            Install & Restart
           </button>
           <button
             v-if="updateState === 'downloaded'"
             @click="closeNotification"
             class="btn-secondary"
           >
-            ติดตั้งภายหลัง
+            Install Later
           </button>
         </div>
       </div>
@@ -191,24 +191,24 @@ onMounted(() => {
     const unsubChecking = window.ipcRenderer.autoUpdate.onChecking(() => {
       showNotification.value = true;
       updateState.value = 'checking';
-      title.value = 'กำลังตรวจสอบอัปเดต...';
-      message.value = 'กรุณารอสักครู่';
+      title.value = 'Checking for updates...';
+      message.value = 'Please wait...';
     });
 
     // Update available
     const unsubAvailable = window.ipcRenderer.autoUpdate.onUpdateAvailable((info: UpdateInfo) => {
       showNotification.value = true;
       updateState.value = 'available';
-      title.value = 'มีเวอร์ชันใหม่!';
-      message.value = `เวอร์ชัน ${info.version} พร้อมให้ดาวน์โหลดแล้ว`;
+      title.value = 'New version available!';
+      message.value = `Version ${info.version} is available for download`;
     });
 
     // Update not available
     const unsubNotAvailable = window.ipcRenderer.autoUpdate.onUpdateNotAvailable(() => {
       showNotification.value = true;
       updateState.value = 'checked';
-      title.value = 'ล่าสุดแล้ว';
-      message.value = 'คุณใช้งานเวอร์ชันล่าสุดแล้ว';
+      title.value = 'Up to date';
+      message.value = 'You are using the latest version';
 
       // Auto close after 10 seconds
       setTimeout(() => {
@@ -222,8 +222,8 @@ onMounted(() => {
         downloading.value = true;
         updateState.value = 'downloading';
         downloadProgress.value = progress;
-        title.value = 'กำลังดาวน์โหลด...';
-        message.value = 'กำลังดาวน์โหลดการอัปเดต';
+        title.value = 'Downloading...';
+        message.value = 'Downloading update...';
       }
     );
 
@@ -232,15 +232,15 @@ onMounted(() => {
       downloading.value = false;
       updateState.value = 'downloaded';
       downloadProgress.value = null;
-      title.value = 'ดาวน์โหลดเสร็จสิ้น!';
-      message.value = `เวอร์ชัน ${info.version} พร้อมติดตั้งแล้ว`;
+      title.value = 'Download complete!';
+      message.value = `Version ${info.version} is ready to install`;
     });
 
     // Error
     const unsubError = window.ipcRenderer.autoUpdate.onError((error: string) => {
       showNotification.value = true;
       updateState.value = 'error';
-      title.value = 'เกิดข้อผิดพลาด';
+      title.value = 'Error';
       message.value = error;
       downloading.value = false;
       downloadProgress.value = null;
