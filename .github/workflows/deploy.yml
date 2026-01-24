@@ -66,34 +66,38 @@ jobs:
           cd apps/desktop
           npm run build:win
 
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-release
+          path: |
+            apps/desktop/release/**/latest.yml
+            apps/desktop/release/**/*.exe
+          if-no-files-found: error
+
+  deploy-windows:
+    name: Deploy Windows App (Self-Hosted)
+    needs: build-windows
+    runs-on: self-hosted
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-release
+          path: windows-release
+
       - name: Deploy to Update Server
-        shell: bash
-        env:
-          SSH_KEY: ${{ secrets.REMOTE_SSH_KEY }}
-          REMOTE_USER: ${{ secrets.REMOTE_USER }}
-          REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
-          REMOTE_PORT: ${{ secrets.REMOTE_PORT || '22' }}
         run: |
-          if [ -z "$REMOTE_USER" ] || [ -z "$REMOTE_HOST" ] || [ -z "$SSH_KEY" ]; then
-            echo "Error: Missing required secrets (REMOTE_USER, REMOTE_HOST, or REMOTE_SSH_KEY)"
-            exit 1
-          fi
+          echo "Deploying Windows App from Self-Hosted Runner..."
 
-          mkdir -p ~/.ssh
-          echo "$SSH_KEY" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
+          # Ensure target directory exists (using sudo if needed, but assuming permissions fixed)
+          mkdir -p /var/www/ytrc-updates/
 
-          # Add remote host to known_hosts
-          ssh-keyscan -p "$REMOTE_PORT" "$REMOTE_HOST" >> ~/.ssh/known_hosts
+          # Copy files
+          # Note: Artifact download structure might include the full path, so we find and move
+          find windows-release -name "*.exe" -exec cp {} /var/www/ytrc-updates/ \;
+          find windows-release -name "latest.yml" -exec cp {} /var/www/ytrc-updates/ \;
 
-          # Verify connection and create target directory
-          echo "Verifying connection and ensuring target directory exists..."
-          ssh -p "$REMOTE_PORT" -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no "$REMOTE_USER@$REMOTE_HOST" "mkdir -p /var/www/ytrc-updates/"
-
-          # Use scp to transfer files
-          cd apps/desktop/release
-          echo "Listing files to be transferred:"
-          ls -R
-
-          # Using -o StrictHostKeyChecking=no as a fallback and -v for debugging
-          scp -P "$REMOTE_PORT" -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -v -r **/latest.yml **/*.exe "$REMOTE_USER@$REMOTE_HOST:/var/www/ytrc-updates/"
+          echo "Listing deployed files:"
+          ls -lh /var/www/ytrc-updates/
