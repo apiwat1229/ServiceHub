@@ -3,7 +3,8 @@
   "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
   "appId": "com.ytrc.desktop-app",
   "productName": "YTRC-Desktop",
-  "asar": false,
+  "asar": true,
+  "compression": "store",
   "directories": {
     "output": "release/${version}"
   },
@@ -18,12 +19,13 @@
   },
   "win": {
     "target": "nsis",
+    "compression": "store",
     "artifactName": "${productName}-Windows-${version}-Setup.${ext}"
   },
   "nsis": {
-    "oneClick": false,
-    "perMachine": false,
-    "allowToChangeInstallationDirectory": true,
+    "oneClick": true,
+    "perMachine": true,
+    "allowToChangeInstallationDirectory": false,
     "deleteAppDataOnUninstall": false,
     "createDesktopShortcut": true,
     "createStartMenuShortcut": true

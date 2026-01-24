@@ -4,9 +4,8 @@ import os from 'node:os'
 import path from 'node:path'
 // In Electron, use process.resourcesPath for packaged apps
 // This correctly points to the resources folder in the installed app
-const __dirname = app.isPackaged
-  ? process.resourcesPath
-  : path.join(app.getAppPath(), 'dist-electron')
+const __dirname = app.getAppPath()
+const APP_ROOT = __dirname
 
 // The built directory structure
 //
@@ -17,14 +16,14 @@ const __dirname = app.isPackaged
 // │ │ ├── main.js
 // │ │ └── preload.mjs
 // │
-process.env.APP_ROOT = app.isPackaged ? process.resourcesPath : path.join(__dirname, '..')
+process.env.APP_ROOT = APP_ROOT
 
 // 🚧 Use ['ENV_NAME'] avoid vite:define plugin - Vite@2.x
 export const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL']
-export const MAIN_DIST = path.join(process.env.APP_ROOT, 'dist-electron')
-export const RENDERER_DIST = path.join(process.env.APP_ROOT, 'dist')
+export const MAIN_DIST = path.join(APP_ROOT, 'dist-electron')
+export const RENDERER_DIST = path.join(APP_ROOT, 'dist')
 
-process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, 'public') : RENDERER_DIST
+process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(APP_ROOT, 'public') : RENDERER_DIST
 
 let win: BrowserWindow | null
 
@@ -37,9 +36,7 @@ function createWindow() {
     titleBarStyle: 'hidden',
     center: true, // Force center on every launch as requested
     webPreferences: {
-      preload: app.isPackaged
-        ? path.join(__dirname, 'dist-electron', 'preload.mjs')
-        : path.join(__dirname, 'preload.mjs'),
+      preload: path.join(MAIN_DIST, 'preload.mjs'),
     },
     // Only restore size, not position, to ensure it always starts in the center
     // ...bounds, 
@@ -244,7 +241,10 @@ autoUpdater.on('update-downloaded', (info) => {
 
 autoUpdater.on('error', (err) => {
   log.error('Update error:', err)
-  win?.webContents.send('update-error', err.message)
+  // Only notify renderer if it's not a 404 (file not found) to avoid annoying popups
+  if (!err.message.includes('404')) {
+    win?.webContents.send('update-error', err.message)
+  }
 })
 
 // IPC handlers for auto-update

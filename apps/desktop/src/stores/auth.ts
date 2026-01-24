@@ -13,6 +13,10 @@ export const useAuthStore = defineStore('auth', {
         isAuthenticated: (state) => !!state.accessToken,
         userAvatarUrl: (state) => {
             if (!state.user?.avatar) return '';
+
+            // Check for broken hashes (e.g. SHA1 of empty string: da39...)
+            if (state.user.avatar.includes('da39766')) return '';
+
             if (state.user.avatar.startsWith('http')) return state.user.avatar;
             const apiUrl = import.meta.env.VITE_API_URL || 'https://app.ytrc.co.th';
             const cleanBaseUrl = apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
