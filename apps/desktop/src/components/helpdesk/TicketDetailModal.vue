@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useUsers } from '@/composables/useUsers';
-import { cn } from '@/lib/utils';
+import { cn, getAvatarUrl } from '@/lib/utils';
 import type { ITTicket, UpdateITTicketDto } from '@/services/it-tickets';
 import { itTicketsApi } from '@/services/it-tickets';
 import { useAuthStore } from '@/stores/auth';
@@ -428,7 +428,7 @@ const handlePostComment = async () => {
                   <div class="bg-background border rounded-lg p-3 shadow-sm">
                     <div class="flex items-center gap-2 mb-2">
                       <Avatar class="w-6 h-6">
-                        <AvatarImage :src="authStore.user?.avatar || ''" />
+                        <AvatarImage :src="getAvatarUrl(authStore.user?.avatar)" />
                         <AvatarFallback class="text-[0.625rem] bg-primary/10 text-primary">
                           {{ authStore.user?.displayName?.substring(0, 2).toUpperCase() || 'ME' }}
                         </AvatarFallback>
@@ -468,7 +468,7 @@ const handlePostComment = async () => {
                   <div class="bg-muted/10 border rounded-lg p-3 shadow-sm">
                     <div class="flex items-center gap-2 mb-1">
                       <Avatar class="w-6 h-6">
-                        <AvatarImage :src="ticketComment.user.avatar || ''" />
+                        <AvatarImage :src="getAvatarUrl(ticketComment.user.avatar)" />
                         <AvatarFallback class="text-[0.625rem] bg-muted text-muted-foreground">
                           {{ ticketComment.user.displayName?.substring(0, 2).toUpperCase() }}
                         </AvatarFallback>
@@ -551,7 +551,7 @@ const handlePostComment = async () => {
                     }}</span>
                   </div>
                   <Avatar class="w-8 h-8 border border-border/50">
-                    <AvatarImage :src="localTicket?.requester?.avatar || ''" />
+                    <AvatarImage :src="getAvatarUrl(localTicket?.requester?.avatar)" />
                     <AvatarFallback class="bg-primary/5 text-primary text-xs">{{
                       userInitials(localTicket?.requester)
                     }}</AvatarFallback>
@@ -676,7 +676,7 @@ const handlePostComment = async () => {
                       >
                         <div class="flex items-center gap-2">
                           <Avatar class="w-5 h-5">
-                            <AvatarImage :src="user.avatar || ''" />
+                            <AvatarImage :src="getAvatarUrl(user.avatar)" />
                             <AvatarFallback class="text-[0.5625rem]">{{
                               userInitials(user)
                             }}</AvatarFallback>

@@ -41,6 +41,7 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { getAvatarUrl } from '@/lib/utils';
 import { notificationsApi } from '@/services/notifications';
 import { rolesApi } from '@/services/roles';
 import { usersApi } from '@/services/users';
@@ -133,7 +134,7 @@ const getGroupIcon = (iconName?: string) => {
 
 const getUserAvatar = (userId: string) => {
   const user = users.value.find((u) => u.id === userId);
-  return user?.avatar || '';
+  return getAvatarUrl(user?.avatar);
 };
 
 // --- Computed ---
@@ -543,7 +544,7 @@ const groupMemberColumns = computed<ColumnDef<UserDto>[]>(() => [
       const user = row.original;
       return h('div', { class: 'flex items-center gap-3' }, [
         h(Avatar, { class: 'w-9 h-9 border' }, () => [
-          h(AvatarImage, { src: user.avatar || '' }),
+          h(AvatarImage, { src: getAvatarUrl(user.avatar) }),
           h(AvatarFallback, {}, () => user.displayName?.charAt(0) || 'U'),
         ]),
         h('div', { class: 'flex flex-col' }, [

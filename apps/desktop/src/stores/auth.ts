@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia';
+import { getAvatarUrl } from '../lib/utils';
 import api, { setAuthToken } from '../services/api';
 import { storage } from '../services/storage';
 import { useThemeStore } from './theme';
@@ -22,30 +23,7 @@ export const useAuthStore = defineStore('auth', {
     getters: {
         isAuthenticated: (state) => !!state.accessToken,
         userAvatarUrl: (state) => {
-            if (!state.user?.avatar) return '';
-
-            const avatar = state.user.avatar;
-            // Robust check for broken SHA1-empty hashes (da39766...)
-            if (
-                avatar.toLowerCase().includes('da39766') ||
-                avatar === 'null' ||
-                avatar === 'undefined' ||
-                avatar.trim() === ''
-            ) {
-                console.log('[AuthStore] Broken avatar detected, suppressing 404:', avatar);
-                return '';
-            }
-
-            if (avatar.startsWith('http')) return avatar;
-
-            const apiUrl = import.meta.env.VITE_API_URL || 'https://app.ytrc.co.th';
-            const cleanBaseUrl = apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
-            const avatarPath = avatar.startsWith('/') ? avatar : `/${avatar}`;
-
-            if (cleanBaseUrl.includes('app.ytrc.co.th') && !cleanBaseUrl.endsWith('/api') && !avatarPath.startsWith('/api')) {
-                return `${cleanBaseUrl}/api${avatarPath}`;
-            }
-            return `${cleanBaseUrl}${avatarPath}`;
+            return getAvatarUrl(state.user?.avatar);
         },
         // ... (rest of the getters remain same)
         userPermissions: (state): string[] => {

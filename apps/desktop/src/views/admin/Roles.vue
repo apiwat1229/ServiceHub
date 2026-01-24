@@ -38,6 +38,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { getAvatarUrl } from '@/lib/utils';
 import { rolesApi } from '@/services/roles';
 import { usersApi, type User } from '@/services/users';
 import type { RoleDto, UpdateRoleDto } from '@my-app/types';
@@ -133,7 +134,7 @@ const userColumns: ColumnDef<User>[] = [
       const user = row.original;
       return h('div', { class: 'flex items-center gap-3' }, [
         h(Avatar, { class: 'w-9 h-9 border' }, () => [
-          h(AvatarImage, { src: user.avatar || '' }),
+          h(AvatarImage, { src: getAvatarUrl(user.avatar) }),
           h(AvatarFallback, {}, () => user.firstName?.charAt(0) || 'U'),
         ]),
         h('div', { class: 'flex flex-col' }, [
@@ -243,7 +244,7 @@ const fetchData = async () => {
         usersCount: roleUsers.length,
         avatars: roleUsers
           .slice(0, 5)
-          .map((u) => u.avatar || '')
+          .map((u) => getAvatarUrl(u.avatar))
           .filter(Boolean),
       };
     });
@@ -508,7 +509,9 @@ onMounted(() => {
             class="flex items-center gap-8 md:gap-12 justify-center md:justify-end text-center w-full md:w-auto"
           >
             <div>
-              <p class="text-[0.625rem] font-bold text-muted-foreground uppercase tracking-widest mb-1">
+              <p
+                class="text-[0.625rem] font-bold text-muted-foreground uppercase tracking-widest mb-1"
+              >
                 {{ t('admin.roles.totalRoles') }}
               </p>
               <p class="text-2xl font-bold text-foreground">{{ roles.length }}</p>
@@ -609,7 +612,8 @@ onMounted(() => {
                     class="w-6 h-6 border-2 border-background ring-2 ring-background transition-transform hover:scale-110 hover:z-10"
                   >
                     <AvatarImage :src="avatar" />
-                    <AvatarFallback class="text-[0.5625rem] bg-muted text-muted-foreground font-bold"
+                    <AvatarFallback
+                      class="text-[0.5625rem] bg-muted text-muted-foreground font-bold"
                       >U{{ i + 1 }}</AvatarFallback
                     >
                   </Avatar>
