@@ -278,10 +278,8 @@ app.whenReady().then(() => {
   createWindow()
 
   // Check for updates on startup (production only)
-  if (!VITE_DEV_SERVER_URL) {
-    setTimeout(() => {
-      log.info('Checking for updates on startup...')
-      autoUpdater.checkForUpdates()
-    }, 3000) // Wait 3 seconds after app starts
-  }
+  setTimeout(() => {
+    log.info('Checking for updates on startup...')
+    autoUpdater.checkForUpdates()
+  }, 5000) // Wait 5 seconds after app starts
 })

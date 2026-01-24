@@ -4,17 +4,82 @@
       <div class="update-content">
         <div class="update-header">
           <div class="update-icon">
-            <svg v-if="updateState === 'checking'" class="animate-spin" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M21 12a9 9 0 11-6.219-8.56" stroke-width="2" stroke-linecap="round"/>
+            <svg
+              v-if="updateState === 'checking'"
+              class="animate-spin"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+            >
+              <path d="M21 12a9 9 0 11-6.219-8.56" stroke-width="2" stroke-linecap="round" />
             </svg>
-            <svg v-else-if="updateState === 'available'" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M7 10l5 5 5-5M12 15V3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <svg
+              v-else-if="updateState === 'available'"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+            >
+              <path
+                d="M7 10l5 5 5-5M12 15V3"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
             </svg>
-            <svg v-else-if="updateState === 'downloaded'" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M20 6L9 17l-5-5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <svg
+              v-else-if="updateState === 'downloaded'"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+            >
+              <path
+                d="M20 6L9 17l-5-5"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
             </svg>
-            <svg v-else-if="updateState === 'error'" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <svg
+              v-else-if="updateState === 'error'"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+            >
+              <path
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <svg
+              v-else-if="updateState === 'checked'"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+            >
+              <path
+                d="M22 11.08V12a10 10 0 1 1-5.93-9.14"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M22 4L12 14.01l-3-3"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
             </svg>
           </div>
           <div class="update-text">
@@ -23,7 +88,12 @@
           </div>
           <button @click="closeNotification" class="close-btn" aria-label="ปิด">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M6 18L18 6M6 6l12 12" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path
+                d="M6 18L18 6M6 6l12 12"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
             </svg>
           </button>
         </div>
@@ -41,22 +111,18 @@
 
         <!-- Action Buttons -->
         <div class="update-actions">
-          <button 
-            v-if="updateState === 'available' && !downloading" 
+          <button
+            v-if="updateState === 'available' && !downloading"
             @click="downloadUpdate"
             class="btn-primary"
           >
             ดาวน์โหลดอัปเดต
           </button>
-          <button 
-            v-if="updateState === 'downloaded'" 
-            @click="installUpdate"
-            class="btn-success"
-          >
+          <button v-if="updateState === 'downloaded'" @click="installUpdate" class="btn-success">
             ติดตั้งและรีสตาร์ท
           </button>
-          <button 
-            v-if="updateState === 'downloaded'" 
+          <button
+            v-if="updateState === 'downloaded'"
             @click="closeNotification"
             class="btn-secondary"
           >
@@ -69,105 +135,116 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue';
 
 interface UpdateInfo {
-  version: string
-  releaseDate: string
-  releaseNotes?: string
+  version: string;
+  releaseDate: string;
+  releaseNotes?: string;
 }
 
 interface ProgressInfo {
-  total: number
-  delta: number
-  transferred: number
-  percent: number
-  bytesPerSecond: number
+  total: number;
+  delta: number;
+  transferred: number;
+  percent: number;
+  bytesPerSecond: number;
 }
 
-const showNotification = ref(false)
-const title = ref('')
-const message = ref('')
-const updateState = ref<'checking' | 'available' | 'downloading' | 'downloaded' | 'error' | null>(null)
-const downloading = ref(false)
-const downloadProgress = ref<ProgressInfo | null>(null)
+const showNotification = ref(false);
+const title = ref('');
+const message = ref('');
+const updateState = ref<
+  'checking' | 'available' | 'downloading' | 'downloaded' | 'error' | 'checked' | null
+>(null);
+const downloading = ref(false);
+const downloadProgress = ref<ProgressInfo | null>(null);
 
 const formatSpeed = (bytesPerSecond: number): string => {
-  const mbps = bytesPerSecond / (1024 * 1024)
-  return `${mbps.toFixed(2)} MB/s`
-}
+  const mbps = bytesPerSecond / (1024 * 1024);
+  return `${mbps.toFixed(2)} MB/s`;
+};
 
 const downloadUpdate = () => {
   if (window.ipcRenderer?.autoUpdate) {
-    window.ipcRenderer.autoUpdate.downloadUpdate()
+    window.ipcRenderer.autoUpdate.downloadUpdate();
   }
-}
+};
 
 const installUpdate = () => {
   if (window.ipcRenderer?.autoUpdate) {
-    window.ipcRenderer.autoUpdate.installUpdate()
+    window.ipcRenderer.autoUpdate.installUpdate();
   }
-}
+};
 
 const closeNotification = () => {
-  showNotification.value = false
-  updateState.value = null
-  downloadProgress.value = null
-}
+  showNotification.value = false;
+  updateState.value = null;
+  downloadProgress.value = null;
+};
 
-let cleanupFunctions: (() => void)[] = []
+let cleanupFunctions: (() => void)[] = [];
 
 onMounted(() => {
   if (window.ipcRenderer?.autoUpdate) {
     // Checking for update
     const unsubChecking = window.ipcRenderer.autoUpdate.onChecking(() => {
-      showNotification.value = true
-      updateState.value = 'checking'
-      title.value = 'กำลังตรวจสอบอัปเดต...'
-      message.value = 'กรุณารอสักครู่'
-    })
+      showNotification.value = true;
+      updateState.value = 'checking';
+      title.value = 'กำลังตรวจสอบอัปเดต...';
+      message.value = 'กรุณารอสักครู่';
+    });
 
     // Update available
     const unsubAvailable = window.ipcRenderer.autoUpdate.onUpdateAvailable((info: UpdateInfo) => {
-      showNotification.value = true
-      updateState.value = 'available'
-      title.value = 'มีเวอร์ชันใหม่!'
-      message.value = `เวอร์ชัน ${info.version} พร้อมให้ดาวน์โหลดแล้ว`
-    })
+      showNotification.value = true;
+      updateState.value = 'available';
+      title.value = 'มีเวอร์ชันใหม่!';
+      message.value = `เวอร์ชัน ${info.version} พร้อมให้ดาวน์โหลดแล้ว`;
+    });
 
     // Update not available
     const unsubNotAvailable = window.ipcRenderer.autoUpdate.onUpdateNotAvailable(() => {
-      // Don't show notification for no updates
-      showNotification.value = false
-    })
+      showNotification.value = true;
+      updateState.value = 'checked';
+      title.value = 'ล่าสุดแล้ว';
+      message.value = 'คุณใช้งานเวอร์ชันล่าสุดแล้ว';
+
+      // Auto close after 3 seconds
+      setTimeout(() => {
+        showNotification.value = false;
+      }, 3000);
+    });
 
     // Download progress
-    const unsubProgress = window.ipcRenderer.autoUpdate.onDownloadProgress((progress: ProgressInfo) => {
-      downloading.value = true
-      updateState.value = 'downloading'
-      downloadProgress.value = progress
-      title.value = 'กำลังดาวน์โหลด...'
-      message.value = 'กำลังดาวน์โหลดการอัปเดต'
-    })
+    const unsubProgress = window.ipcRenderer.autoUpdate.onDownloadProgress(
+      (progress: ProgressInfo) => {
+        downloading.value = true;
+        updateState.value = 'downloading';
+        downloadProgress.value = progress;
+        title.value = 'กำลังดาวน์โหลด...';
+        message.value = 'กำลังดาวน์โหลดการอัปเดต';
+      }
+    );
 
     // Update downloaded
     const unsubDownloaded = window.ipcRenderer.autoUpdate.onUpdateDownloaded((info: UpdateInfo) => {
-      downloading.value = false
-      updateState.value = 'downloaded'
-      downloadProgress.value = null
-      title.value = 'ดาวน์โหลดเสร็จสิ้น!'
-      message.value = `เวอร์ชัน ${info.version} พร้อมติดตั้งแล้ว`
-    })
+      downloading.value = false;
+      updateState.value = 'downloaded';
+      downloadProgress.value = null;
+      title.value = 'ดาวน์โหลดเสร็จสิ้น!';
+      message.value = `เวอร์ชัน ${info.version} พร้อมติดตั้งแล้ว`;
+    });
 
     // Error
     const unsubError = window.ipcRenderer.autoUpdate.onError((error: string) => {
-      showNotification.value = true
-      updateState.value = 'error'
-      title.value = 'เกิดข้อผิดพลาด'
-      message.value = error
-      downloading.value = false
-      downloadProgress.value = null
-    })
+      showNotification.value = true;
+      updateState.value = 'error';
+      title.value = 'เกิดข้อผิดพลาด';
+      message.value = error;
+      downloading.value = false;
+      downloadProgress.value = null;
+    });
 
     cleanupFunctions = [
       unsubChecking,
@@ -176,13 +253,13 @@ onMounted(() => {
       unsubProgress,
       unsubDownloaded,
       unsubError,
-    ]
+    ];
   }
-})
+});
 
 onUnmounted(() => {
-  cleanupFunctions.forEach(cleanup => cleanup())
-})
+  cleanupFunctions.forEach((cleanup) => cleanup());
+});
 </script>
 
 <style scoped>
@@ -229,8 +306,12 @@ onUnmounted(() => {
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .update-text {
