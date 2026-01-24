@@ -86,7 +86,14 @@ jobs:
           # Add remote host to known_hosts
           ssh-keyscan -p "$REMOTE_PORT" "$REMOTE_HOST" >> ~/.ssh/known_hosts
 
+          # Verify connection and create target directory
+          echo "Verifying connection and ensuring target directory exists..."
+          ssh -p "$REMOTE_PORT" -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no "$REMOTE_USER@$REMOTE_HOST" "mkdir -p /var/www/ytrc-updates/"
+
           # Use scp to transfer files
           cd apps/desktop/release
-          # Using -o StrictHostKeyChecking=no as a fallback if keyscan fails
-          scp -P "$REMOTE_PORT" -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -r **/latest.yml **/*.exe "$REMOTE_USER@$REMOTE_HOST:/var/www/ytrc-updates/"
+          echo "Listing files to be transferred:"
+          ls -R
+
+          # Using -o StrictHostKeyChecking=no as a fallback and -v for debugging
+          scp -P "$REMOTE_PORT" -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -v -r **/latest.yml **/*.exe "$REMOTE_USER@$REMOTE_HOST:/var/www/ytrc-updates/"
