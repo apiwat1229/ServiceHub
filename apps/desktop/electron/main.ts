@@ -241,10 +241,8 @@ autoUpdater.on('update-downloaded', (info) => {
 
 autoUpdater.on('error', (err) => {
   log.error('Update error:', err)
-  // Only notify renderer if it's not a 404 (file not found) to avoid annoying popups
-  if (!err.message.includes('404')) {
-    win?.webContents.send('update-error', err.message)
-  }
+  // Always notify renderer so the "Checking..." notification can close or show error
+  win?.webContents.send('update-error', err.message)
 })
 
 // IPC handlers for auto-update
