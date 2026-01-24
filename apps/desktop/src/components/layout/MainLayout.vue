@@ -23,7 +23,7 @@ const showSidebar = computed(() => {
 </script>
 
 <template>
-  <div class="flex flex-1 overflow-hidden bg-transparent text-foreground font-sans">
+  <div class="flex flex-1 h-full overflow-hidden bg-transparent text-foreground font-sans">
     <!-- Sidebar -->
     <Sidebar v-if="showSidebar" />
 

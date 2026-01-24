@@ -35,7 +35,12 @@ import { RawMaterialPlansModule } from './raw-material-plans/raw-material-plans.
     imports: [
         ConfigModule.forRoot({
             isGlobal: true,
-            envFilePath: '../../.env',
+            envFilePath: [
+                join(process.cwd(), '.env'),
+                join(process.cwd(), 'apps/api/.env'),
+                join(process.cwd(), '../../.env'),
+            ],
+            expandVariables: true,
         }),
         PrismaModule,
         AuthModule,
