@@ -210,10 +210,10 @@ onMounted(() => {
       title.value = 'ล่าสุดแล้ว';
       message.value = 'คุณใช้งานเวอร์ชันล่าสุดแล้ว';
 
-      // Auto close after 3 seconds
+      // Auto close after 10 seconds
       setTimeout(() => {
         showNotification.value = false;
-      }, 3000);
+      }, 10000);
     });
 
     // Download progress
