@@ -1,55 +1,64 @@
 import { defineStore } from 'pinia';
-import api from '../services/api';
+import api, { setAuthToken } from '../services/api';
 import { storage } from '../services/storage';
 import { useThemeStore } from './theme';
 
 export const useAuthStore = defineStore('auth', {
-    state: () => ({
-        user: storage.get('user') || null,
-        accessToken: storage.get('accessToken') || null,
-        tempToken: null as string | null,
-    }),
+    state: () => {
+        const user = storage.get('user') || null;
+        const accessToken = storage.get('accessToken') || null;
+
+        // Initialize axios header if we have a persisted token
+        if (accessToken) {
+            setAuthToken(accessToken);
+        }
+
+        return {
+            user,
+            accessToken,
+            tempToken: null as string | null,
+        };
+    },
     getters: {
         isAuthenticated: (state) => !!state.accessToken,
         userAvatarUrl: (state) => {
             if (!state.user?.avatar) return '';
 
-            // Check for broken hashes (e.g. SHA1 of empty string: da39...)
-            if (state.user.avatar.includes('da39766')) return '';
+            const avatar = state.user.avatar;
+            // Robust check for broken SHA1-empty hashes (da39766...)
+            if (
+                avatar.toLowerCase().includes('da39766') ||
+                avatar === 'null' ||
+                avatar === 'undefined' ||
+                avatar.trim() === ''
+            ) {
+                console.log('[AuthStore] Broken avatar detected, suppressing 404:', avatar);
+                return '';
+            }
 
-            if (state.user.avatar.startsWith('http')) return state.user.avatar;
+            if (avatar.startsWith('http')) return avatar;
+
             const apiUrl = import.meta.env.VITE_API_URL || 'https://app.ytrc.co.th';
             const cleanBaseUrl = apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
-            const avatarPath = state.user.avatar.startsWith('/') ? state.user.avatar : `/${state.user.avatar}`;
+            const avatarPath = avatar.startsWith('/') ? avatar : `/${avatar}`;
 
             if (cleanBaseUrl.includes('app.ytrc.co.th') && !cleanBaseUrl.endsWith('/api') && !avatarPath.startsWith('/api')) {
                 return `${cleanBaseUrl}/api${avatarPath}`;
             }
             return `${cleanBaseUrl}${avatarPath}`;
         },
-        /**
-         * Get user's permissions array
-         */
+        // ... (rest of the getters remain same)
         userPermissions: (state): string[] => {
             return state.user?.permissions || [];
         },
-        /**
-         * Check if user has a specific permission
-         */
         hasPermission: (state) => (permission: string): boolean => {
             const permissions = state.user?.permissions || [];
             return permissions.includes(permission);
         },
-        /**
-         * Check if user has ANY of the specified permissions
-         */
         hasAnyPermission: (state) => (permissions: string[]): boolean => {
             const userPermissions = state.user?.permissions || [];
             return permissions.some(p => userPermissions.includes(p));
         },
-        /**
-         * Check if user has ALL of the specified permissions
-         */
         hasAllPermissions: (state) => (permissions: string[]): boolean => {
             const userPermissions = state.user?.permissions || [];
             return permissions.every(p => userPermissions.includes(p));
@@ -72,35 +81,27 @@ export const useAuthStore = defineStore('auth', {
                 this.accessToken = response.data.accessToken;
                 this.user = response.data.user;
 
+                // Set token globally in axios, even if not "remembered" in storage
+                setAuthToken(this.accessToken);
+
                 // Load preferences
-                // eslint-disable-next-line react-hooks/rules-of-hooks
                 const themeStore = useThemeStore();
                 themeStore.loadFromUser(this.user);
 
-                // Always set axios header
-                // api.defaults.headers.common['Authorization'] = `Bearer ${this.accessToken}`;
-
                 console.log(`[Auth] Login success. Remember me: ${remember}`);
                 if (remember) {
-                    console.log(`[Auth] Saving email: ${credentials.email}`);
                     storage.set('accessToken', this.accessToken);
                     storage.set('user', this.user);
                     storage.set('saved_email', credentials.email);
                 } else {
-                    // Session only (cleared on app restart if we used sessionStorage, 
-                    // but for Electron 'session' usually just means memory or not persisting to diskStore)
-                    // For now, let's just NOT save to electron-store.
-                    // If we wanted session-only, we could use sessionStorage.
+                    // Just in case old data exists
                     storage.delete('accessToken');
                     storage.delete('user');
-                    storage.delete('saved_email');
-                    // But we keep in state (memory)
                 }
             } catch (error: any) {
                 if (error.response && error.response.data && error.response.data.code === 'MUST_CHANGE_PASSWORD') {
-                    console.log('Force Change Password triggered');
                     this.tempToken = error.response.data.tempToken;
-                    throw error; // Let the component handle the redirect
+                    throw error;
                 }
                 console.error('Login failed:', error);
                 throw error;
@@ -111,25 +112,20 @@ export const useAuthStore = defineStore('auth', {
                 const response = await api.get('/auth/me');
                 this.user = response.data;
 
-                // Load preferences
-                // eslint-disable-next-line react-hooks/rules-of-hooks
                 const themeStore = useThemeStore();
                 themeStore.loadFromUser(this.user);
 
-                // If we are "remembering" (persisting), update the store too
-                // For simplicity, if we have a token in storage, we update the user in storage
                 if (storage.get('accessToken')) {
                     storage.set('user', this.user);
                 }
             } catch (error) {
                 console.error('Fetch user failed:', error);
-                // Optional: logout if fetch fails (token invalid)
-                // this.logout();
             }
         },
         logout() {
             this.user = null;
             this.accessToken = null;
+            setAuthToken(null);
             storage.delete('accessToken');
             storage.delete('user');
         }

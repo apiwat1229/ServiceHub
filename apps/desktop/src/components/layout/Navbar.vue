@@ -528,7 +528,15 @@ onUnmounted(() => {
             </span>
           </DropdownMenuItem>
 
-          <DropdownMenuItem v-if="isAdmin" @click="router.push('/admin')">
+          <DropdownMenuItem
+            v-if="isAdmin"
+            @click="
+              () => {
+                console.log('[Navbar] Navigating to AdminDashboard');
+                router.push({ name: 'AdminDashboard' });
+              }
+            "
+          >
             <LayoutDashboard class="mr-2 h-4 w-4" />
             <span>{{ t('navbar.adminPanel') }}</span>
           </DropdownMenuItem>

@@ -1,5 +1,6 @@
 import { useAuthStore } from '@/stores/auth';
 import { io, Socket } from 'socket.io-client';
+import { storage } from './storage';
 
 class SocketService {
     private socket: Socket | null = null;
@@ -12,7 +13,7 @@ class SocketService {
         // eslint-disable-next-line react-hooks/rules-of-hooks
         const authStore = useAuthStore();
         // Allow connection if token exists, but we might need to wait for user ID for room joining
-        const token = localStorage.getItem('token') || authStore.accessToken;
+        const token = storage.get('accessToken') || authStore.accessToken;
         if (!token) {
             console.warn('SocketService: No token found, aborting connection.');
             return;

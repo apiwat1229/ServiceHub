@@ -27,14 +27,29 @@ const api = axios.create({
 
 api.interceptors.request.use(
     (config) => {
+        // If we already have an Authorization header set via setAuthToken (api.defaults), 
+        // it will be naturally sent. But if we need to explicitly inject from storage:
         const token = storage.get('accessToken');
-        if (token) {
+        if (token && !config.headers.Authorization) {
             config.headers.Authorization = `Bearer ${token}`;
         }
         return config;
     },
     (error) => Promise.reject(error)
 );
+
+/**
+ * Set the authorization header globally for all future requests
+ */
+export const setAuthToken = (token: string | null) => {
+    if (token) {
+        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        console.log('[API] Global Authorization header updated');
+    } else {
+        delete api.defaults.headers.common['Authorization'];
+        console.log('[API] Global Authorization header removed');
+    }
+};
 
 api.interceptors.response.use(
     (response) => response,
