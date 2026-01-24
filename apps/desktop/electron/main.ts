@@ -40,8 +40,9 @@ function createWindow() {
     },
     // Only restore size, not position, to ensure it always starts in the center
     // ...bounds, 
-    width: bounds?.width || 1200,
-    height: bounds?.height || 800,
+    // Default to a larger size suitable for Full HD (1920x1080)
+    width: bounds?.width || 1600,
+    height: bounds?.height || 900,
   })
 
   // Save window state

@@ -37,6 +37,7 @@ interface ServiceModule {
 
 const { t } = useI18n();
 const authStore = useAuthStore();
+const appVersion = __APP_VERSION__;
 
 const modules = computed<ServiceModule[]>(() => [
   {
@@ -212,14 +213,22 @@ const sortedModules = computed(() => {
 </script>
 
 <template>
-  <div class="h-full flex flex-col justify-center max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+  <div
+    class="h-full flex flex-col justify-center max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12"
+  >
     <!-- Header with Sorting -->
     <div class="mb-10 flex flex-col md:flex-row items-center justify-between gap-6">
       <div class="flex items-center gap-4 text-center md:text-left">
         <!-- Text -->
         <div>
-          <h1 class="text-3xl font-bold tracking-tight text-foreground leading-tight">
+          <h1
+            class="text-3xl font-bold tracking-tight text-foreground leading-tight flex items-center gap-3"
+          >
             {{ t('services.title') }}
+            <span
+              class="text-sm font-semibold text-primary/90 bg-primary/10 px-2.5 py-0.5 rounded-md border border-primary/20 shadow-sm"
+              >v{{ appVersion }}</span
+            >
           </h1>
           <p class="text-muted-foreground text-lg">{{ t('services.subtitle') }}</p>
         </div>

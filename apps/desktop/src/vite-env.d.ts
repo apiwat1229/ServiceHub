@@ -1,13 +1,9 @@
 /// <reference types="vite/client" />
 
-interface Window {
-    ipcRenderer: {
-        storage: {
-            get: (key: string) => any;
-            set: (key: string, value: any) => void;
-            delete: (key: string) => void;
-        };
-    };
-}
+declare const __APP_VERSION__: string;
 
-declare module 'vue3-barcode';
+declare module '*.vue' {
+    import type { DefineComponent } from 'vue';
+    const component: DefineComponent<{}, {}, any>
+    export default component
+}

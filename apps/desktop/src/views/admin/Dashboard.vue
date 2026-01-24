@@ -114,7 +114,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="p-8 space-y-8 max-w-7xl mx-auto">
+  <div class="p-8 space-y-8 max-w-screen-2xl mx-auto">
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>

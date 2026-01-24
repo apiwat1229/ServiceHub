@@ -23,6 +23,10 @@ import {
 import { computed, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
+// Global variable defined in vite.config.ts
+const appVersion = __APP_VERSION__;
+// ... existing code ...
+
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
@@ -190,7 +194,7 @@ const userInitials = computed(() => {
         class="mt-4 pt-2 flex items-center justify-between text-[0.625rem] text-muted-foreground/50 font-bold uppercase tracking-widest px-2"
       >
         <span>YTRC CENTER</span>
-        <span>v0.1.2</span>
+        <span>v{{ appVersion }}</span>
       </div>
     </div>
   </aside>

@@ -1,5 +1,5 @@
 <template>
-  <div class="p-6 max-w-7xl mx-auto space-y-8">
+  <div class="p-6 max-w-screen-2xl mx-auto space-y-8">
     <!-- Header -->
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div>
@@ -11,6 +11,7 @@
         </p>
       </div>
       <div class="flex items-center gap-2">
+        <span class="text-xs font-medium text-slate-400 mr-2">v{{ appVersion }}</span>
         <Button variant="outline" @click="fetchStatus" :disabled="loading" class="h-10 px-4">
           <RefreshCw :class="['w-4 h-4 mr-2', loading && 'animate-spin']" />
           {{ t('admin.systemStatus.refresh') }}
@@ -283,6 +284,7 @@ import { onMounted, onUnmounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
+const appVersion = __APP_VERSION__;
 
 interface HealthCheck {
   status: 'ok' | 'error';

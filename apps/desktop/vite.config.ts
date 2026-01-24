@@ -139,5 +139,8 @@ export default defineConfig(({ mode }) => {
       port: 5173,
       allowedHosts: ['app.ytrc.co.th', 'localhost', '122.154.46.21'],
     },
+    define: {
+      __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
+    },
   }
 })
