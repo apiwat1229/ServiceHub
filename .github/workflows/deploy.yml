@@ -70,15 +70,23 @@ jobs:
         shell: bash
         env:
           SSH_KEY: ${{ secrets.REMOTE_SSH_KEY }}
+          REMOTE_USER: ${{ secrets.REMOTE_USER }}
+          REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
+          REMOTE_PORT: ${{ secrets.REMOTE_PORT || '22' }}
         run: |
+          if [ -z "$REMOTE_USER" ] || [ -z "$REMOTE_HOST" ] || [ -z "$SSH_KEY" ]; then
+            echo "Error: Missing required secrets (REMOTE_USER, REMOTE_HOST, or REMOTE_SSH_KEY)"
+            exit 1
+          fi
+
           mkdir -p ~/.ssh
           echo "$SSH_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          # Add remote host to known_hosts to avoid interaction
-          ssh-keyscan -p ${{ secrets.REMOTE_PORT || '22' }} ${{ secrets.REMOTE_HOST }} >> ~/.ssh/known_hosts
+
+          # Add remote host to known_hosts
+          ssh-keyscan -p "$REMOTE_PORT" "$REMOTE_HOST" >> ~/.ssh/known_hosts
 
           # Use scp to transfer files
-          # Note: We use find to get the files and then scp them to preserve directory structure if needed, 
-          # but based on the original config, it seems they want to strip 4 components: apps/desktop/release/
           cd apps/desktop/release
-          scp -P ${{ secrets.REMOTE_PORT || '22' }} -i ~/.ssh/id_rsa -r **/latest.yml **/*.exe ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }}:/var/www/ytrc-updates/
+          # Using -o StrictHostKeyChecking=no as a fallback if keyscan fails
+          scp -P "$REMOTE_PORT" -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -r **/latest.yml **/*.exe "$REMOTE_USER@$REMOTE_HOST:/var/www/ytrc-updates/"
