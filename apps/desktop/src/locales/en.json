@@ -51,6 +51,7 @@
     "errorSave": "Failed to save data",
     "saved": "Saved successfully",
     "saveSuccess": "Saved successfully",
+    "updateSuccess": "Updated successfully",
     "confirmSaveAll": "Are you sure you want to save {count} item(s)?",
     "deleteSuccess": "Deleted successfully",
     "errorSaving": "Error saving data",
@@ -204,7 +205,7 @@
     "jobOrderMgmt": {
       "title": "Job Orders Management",
       "subtitle": "Manage and track all production job orders",
-      "newOrder": "New Job Order",
+      "newOrder": "Job Order",
       "tableTitle": "All Job Orders",
       "total": "Total",
       "completed": "Completed",
@@ -256,10 +257,12 @@
     }
   },
   "production": {
-    "title": "Production & Quality Daily Report",
+    "title": "Production & Quality",
     "subtitle": "Manage and record daily production reports",
     "reportList": "Report List",
-    "createReport": "Create New Report",
+    "createReport": "Create Report",
+    "saveDraft": "Save Draft",
+    "submitReport": "Submit Report",
     "dryerName": "Dryer Name",
     "bookNo": "Book No",
     "pageNo": "Page No",

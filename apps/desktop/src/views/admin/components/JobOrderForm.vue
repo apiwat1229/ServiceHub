@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -116,16 +116,6 @@ const handleQaDateSelect = (date: any) => {
 <template>
   <div class="w-full h-full p-4">
     <Card class="border shadow-sm bg-white h-full flex flex-col">
-      <CardHeader class="pb-4 border-b bg-slate-50/50">
-        <CardTitle class="text-xl font-black text-slate-800 flex items-center gap-2">
-          <div class="w-1.5 h-6 bg-primary rounded-full"></div>
-          {{
-            props.initialData?.id
-              ? t('qa.jobOrderForm.titleEdit')
-              : t('qa.jobOrderForm.titleCreate')
-          }}
-        </CardTitle>
-      </CardHeader>
       <CardContent class="pt-6 space-y-6 flex-1 overflow-y-auto">
         <!-- Row 1: Numbers & Basics -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">

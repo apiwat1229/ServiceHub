@@ -51,6 +51,12 @@ export function useSidebarMenu() {
                     icon: Bell,
                     permission: 'notifications:read',
                 },
+                {
+                    name: 'Production Reports',
+                    path: '/admin/production',
+                    icon: Layers,
+                    permission: 'production:read',
+                },
                 { name: t('admin.sidebar.approvals'), path: '/approvals', icon: ClipboardCheck },
             ],
         },

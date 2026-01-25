@@ -15,6 +15,7 @@ import {
   Droplets,
   FileText,
   Headset,
+  Layers,
   Truck,
   Wrench,
   type LucideIcon,
@@ -131,6 +132,18 @@ const modules = computed<ServiceModule[]>(() => [
     borderColor: 'border-rose-200',
     hoverBorder: 'group-hover:border-rose-500',
     route: '/admin/contracts',
+  },
+  {
+    id: 'production',
+    title: t('production.title'),
+    description: t('production.subtitle'),
+    icon: Layers,
+    color: 'text-sky-600',
+    bgColor: 'bg-sky-50/50 group-hover:bg-sky-100/50',
+    borderColor: 'border-sky-200',
+    hoverBorder: 'group-hover:border-sky-500',
+    route: '/admin/production',
+    permission: 'production:read',
   },
 ]);
 

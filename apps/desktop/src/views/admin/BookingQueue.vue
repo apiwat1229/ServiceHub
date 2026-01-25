@@ -77,7 +77,7 @@ const SLOT_QUEUE_CONFIG: Record<string, { start: number; limit: number | null }>
 
 // --- State ---
 // --- State ---
-const { t, locale } = useI18n();
+const { t } = useI18n();
 const authStore = useAuthStore();
 const route = useRoute();
 const router = useRouter();
@@ -536,7 +536,7 @@ watch(selectedSlot, (newSlot) => {
                     slotStats[slot.value].booked >= (slotStats[slot.value].limit || 0) &&
                     queueMode !== 'USS'
                       ? 'bg-red-500 text-white hover:bg-red-600 data-[state=active]:bg-red-700 data-[state=active]:text-white shadow-sm border-red-600'
-                      : 'data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm data-[state=active]:border-2 data-[state=active]:border-primary',
+                      : 'bg-white text-muted-foreground border border-slate-200 shadow-sm hover:border-primary/50 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md data-[state=active]:border-2 data-[state=active]:border-primary',
                   ]"
                 >
                   <span class="text-xs font-bold leading-none">{{ slot.label }}</span>
@@ -619,8 +619,8 @@ watch(selectedSlot, (newSlot) => {
     </div>
 
     <div v-else>
-      <!-- Carousel View for Unlimited Slots -->
-      <div v-if="currentSlotConfig.limit === null" class="w-full px-12">
+      <!-- Carousel View for ALL Slots -->
+      <div class="w-full px-12">
         <Carousel class="w-full max-w-[90vw] mx-auto" :opts="{ align: 'start' }">
           <CarouselContent class="-ml-4">
             <CarouselItem
@@ -642,20 +642,6 @@ watch(selectedSlot, (newSlot) => {
           <CarouselPrevious />
           <CarouselNext />
         </Carousel>
-      </div>
-
-      <!-- Grid View for Limited Slots -->
-      <div v-else class="flex flex-wrap justify-center gap-6">
-        <BookingQueueCard
-          v-for="queue in filteredQueues"
-          :key="queue.id"
-          :queue="queue"
-          :selectedDate="selectedDateJS"
-          :barColor="DAY_COLORS[selectedDateJS.getDay()].queueBg"
-          @edit="handleEdit"
-          @delete="handleDeleteClick"
-          @show-ticket="handleShowTicket"
-        />
       </div>
     </div>
 

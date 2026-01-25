@@ -80,6 +80,7 @@ const PERMISSION_MODULES = [
   { id: 'bookings', label: 'Booking Queue' },
   { id: 'mrp', label: 'MRP System' },
   { id: 'truckScale', label: 'Truck Scale' },
+  { id: 'production', label: 'Production Reports' },
 ];
 
 const PERMISSION_ACTIONS = ['read', 'create', 'update', 'delete', 'approve'] as const;
