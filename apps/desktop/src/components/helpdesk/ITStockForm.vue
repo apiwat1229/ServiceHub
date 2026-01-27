@@ -39,6 +39,7 @@ import {
   File as ImageIcon,
   Save,
   ScanBarcode,
+  Trash2,
   X,
 } from 'lucide-vue-next';
 
@@ -51,6 +52,8 @@ const props = defineProps<{
   onSuccess?: () => void;
   onCancel?: () => void;
 }>();
+
+const emit = defineEmits(['delete']);
 
 const { t } = useI18n();
 const authStore = useAuthStore();
@@ -578,15 +581,29 @@ const handleSubmit = async () => {
       </div>
     </div>
 
-    <div class="flex gap-3 pt-2 justify-end border-t mt-4">
-      <Button type="button" variant="outline" class="w-32" @click="onCancel">
-        {{ t('common.cancel') }}
-      </Button>
-      <Button type="submit" class="w-32 gap-2" :disabled="loading">
-        <Save v-if="!loading" class="w-4 h-4" />
-        <span v-if="loading">{{ t('services.itHelp.request.submitting') }}</span>
-        <span v-else>{{ t('common.save') }}</span>
-      </Button>
+    <div class="flex gap-3 pt-2 justify-between border-t mt-4">
+      <div>
+        <Button
+          v-if="initialData"
+          type="button"
+          variant="ghost"
+          class="text-red-500 hover:text-red-600 hover:bg-red-50 gap-2"
+          @click="emit('delete')"
+        >
+          <Trash2 class="w-4 h-4" />
+          {{ t('common.delete') }}
+        </Button>
+      </div>
+      <div class="flex gap-3">
+        <Button type="button" variant="outline" class="w-32" @click="onCancel">
+          {{ t('common.cancel') }}
+        </Button>
+        <Button type="submit" class="w-32 gap-2" :disabled="loading">
+          <Save v-if="!loading" class="w-4 h-4" />
+          <span v-if="loading">{{ t('services.itHelp.request.submitting') }}</span>
+          <span v-else>{{ t('common.save') }}</span>
+        </Button>
+      </div>
     </div>
   </form>
 </template>

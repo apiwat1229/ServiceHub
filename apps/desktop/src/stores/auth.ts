@@ -59,23 +59,18 @@ export const useAuthStore = defineStore('auth', {
                 this.accessToken = response.data.accessToken;
                 this.user = response.data.user;
 
-                // Set token globally in axios, even if not "remembered" in storage
+                // Set token globally in axios
                 setAuthToken(this.accessToken);
+
+                // Always persist token and user for session persistence across reloads
+                storage.set('accessToken', this.accessToken);
+                storage.set('user', this.user);
 
                 // Load preferences
                 const themeStore = useThemeStore();
                 themeStore.loadFromUser(this.user);
 
-                console.log(`[Auth] Login success. Remember me: ${remember}`);
-                if (remember) {
-                    storage.set('accessToken', this.accessToken);
-                    storage.set('user', this.user);
-                    storage.set('saved_email', credentials.email);
-                } else {
-                    // Just in case old data exists
-                    storage.delete('accessToken');
-                    storage.delete('user');
-                }
+                console.log(`[Auth] Login success. Remember me (form): ${remember}`);
             } catch (error: any) {
                 if (error.response && error.response.data && error.response.data.code === 'MUST_CHANGE_PASSWORD') {
                     this.tempToken = error.response.data.tempToken;

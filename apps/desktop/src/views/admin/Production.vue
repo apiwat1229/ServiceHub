@@ -19,6 +19,7 @@ import { CalendarIcon, Search, Shield } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
+import JobOrderDetails from './components/JobOrderDetails.vue';
 import JobOrderForm from './components/JobOrderForm.vue';
 import ProductionReportForm from './components/production/ProductionReportForm.vue';
 import ProductionReportList from './components/production/ProductionReportList.vue';
@@ -32,7 +33,7 @@ const canCreate = computed(() => isAdmin.value || hasPermission('production:crea
 
 // Context: 'production' | 'job-order'
 const activeContext = ref('production');
-// View: 'list' | 'create'
+// View: 'list' | 'create' | 'details'
 const activeTab = ref('list');
 
 // Filters
@@ -70,6 +71,11 @@ const handleReportCancel = () => {
 };
 
 // Job Order Handlers
+const handleViewJobOrder = (jobOrder: JobOrder) => {
+  selectedJobOrder.value = jobOrder;
+  activeTab.value = 'details';
+};
+
 const handleEditJobOrder = (jobOrder: JobOrder) => {
   selectedJobOrder.value = jobOrder;
   activeTab.value = 'create';
@@ -115,6 +121,14 @@ watch(activeContext, () => {
   selectedJobOrder.value = undefined;
 });
 
+// Reset selection when switching to list tab manually
+watch(activeTab, (newTab) => {
+  if (newTab === 'list') {
+    selectedReport.value = undefined;
+    selectedJobOrder.value = undefined;
+  }
+});
+
 const handleCreateClick = () => {
   selectedReport.value = undefined;
   selectedJobOrder.value = undefined;
@@ -127,7 +141,7 @@ const handleCreateClick = () => {
       <!-- Header -->
       <div class="flex items-center justify-between mb-6">
         <!-- Left Side: Search & Date -->
-        <div class="flex items-center gap-3">
+        <div v-if="activeTab === 'list'" class="flex items-center gap-3">
           <!-- Search -->
           <Popover>
             <PopoverTrigger as-child>
@@ -166,6 +180,7 @@ const handleCreateClick = () => {
             </PopoverContent>
           </Popover>
         </div>
+        <div v-else class="flex-1" />
 
         <!-- Right Side: Tabs & Select -->
         <div class="flex items-center gap-4">
@@ -186,7 +201,14 @@ const handleCreateClick = () => {
               class="px-6 h-9 text-xs font-black uppercase tracking-wide data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm data-[state=active]:border-2 data-[state=active]:border-primary transition-all rounded-md text-muted-foreground hover:text-foreground"
               @click="handleCreateClick"
             >
-              {{ t('production.createReport') }}
+              {{ selectedReport ? 'EDIT REPORT' : t('production.createReport') }}
+            </TabsTrigger>
+            <TabsTrigger
+              v-if="activeContext === 'job-order' && activeTab === 'details'"
+              value="details"
+              class="px-6 h-9 text-xs font-black uppercase tracking-wide data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm data-[state=active]:border-2 data-[state=active]:border-primary transition-all rounded-md text-muted-foreground hover:text-foreground"
+            >
+              JOB DETAILS
             </TabsTrigger>
           </TabsList>
 
@@ -218,6 +240,7 @@ const handleCreateClick = () => {
               :key="jobOrderListKey"
               :search-query="searchQuery"
               :date="selectedDate || ''"
+              @view="handleViewJobOrder"
               @edit="handleEditJobOrder"
             />
           </template>
@@ -241,6 +264,18 @@ const handleCreateClick = () => {
                 @cancel="handleJobOrderCancel"
               />
             </template>
+          </div>
+        </TabsContent>
+
+        <!-- Details Tab -->
+        <TabsContent value="details" class="h-full mt-0 border-0 p-0">
+          <div class="h-full flex flex-col">
+            <JobOrderDetails
+              v-if="selectedJobOrder"
+              :job-order="selectedJobOrder"
+              @back="activeTab = 'list'"
+              @updated="selectedJobOrder = $event"
+            />
           </div>
         </TabsContent>
       </div>

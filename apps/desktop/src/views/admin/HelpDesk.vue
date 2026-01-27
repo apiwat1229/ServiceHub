@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import AssetRequestForm from '@/components/helpdesk/AssetRequestForm.vue';
 import BarcodePreview from '@/components/helpdesk/BarcodePreview.vue';
+import ITStockForm from '@/components/helpdesk/ITStockForm.vue';
 import NewTicketForm from '@/components/helpdesk/NewTicketForm.vue';
 import PrinterUsageAnalytics from '@/components/helpdesk/PrinterUsageAnalytics.vue';
+import TicketDetailModal from '@/components/helpdesk/TicketDetailModal.vue';
 import KnowledgeBookCard from '@/components/knowledge-center/KnowledgeBookCard.vue';
 import KnowledgeBookEdit from '@/components/knowledge-center/KnowledgeBookEdit.vue';
 import KnowledgeBookUpload from '@/components/knowledge-center/KnowledgeBookUpload.vue';
@@ -61,7 +63,6 @@ import {
   Plus,
   Search,
   Ticket,
-  Trash2,
   Upload,
   Zap,
 } from 'lucide-vue-next';
@@ -394,19 +395,6 @@ const itAssetColumns: ColumnDef<ITAsset>[] = [
           },
           () => h(Edit2, { class: 'w-4 h-4' })
         ),
-        h(
-          Button,
-          {
-            variant: 'ghost',
-            size: 'icon',
-            class: 'h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50',
-            onClick: (e: Event) => {
-              e.stopPropagation();
-              handleDeleteStock(item);
-            },
-          },
-          () => h(Trash2, { class: 'w-4 h-4' })
-        ),
       ]);
     },
   },
@@ -652,7 +640,8 @@ const handleEditStock = (item: ITAsset) => {
   isStockModalOpen.value = true;
 };
 
-const handleDeleteStock = (item: ITAsset) => {
+const handleDeleteStock = (item: ITAsset | null) => {
+  if (!item) return;
   stockItemToDelete.value = item;
   isStockDeleteConfirmOpen.value = true;
 };
@@ -1534,6 +1523,7 @@ const categories = computed(() => {
           :initial-data="editingStockItem"
           @success="handleStockSuccess"
           @cancel="isStockModalOpen = false"
+          @delete="handleDeleteStock(editingStockItem)"
         />
       </DialogContent>
     </Dialog>

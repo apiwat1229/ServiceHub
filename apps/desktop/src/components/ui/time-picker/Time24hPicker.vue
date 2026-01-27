@@ -7,6 +7,7 @@ import { computed, ref } from 'vue';
 
 const props = defineProps<{
   modelValue?: string;
+  disabled?: boolean;
 }>();
 
 const emit = defineEmits(['update:modelValue']);
@@ -37,6 +38,7 @@ const selectMinute = (m: string) => {
     <PopoverTrigger as-child>
       <Button
         variant="outline"
+        :disabled="disabled"
         :class="
           cn(
             'w-full justify-center text-center font-normal',

@@ -16,7 +16,7 @@ async function bootstrap() {
                 'uploads/it-asset',
                 'uploads/knowledge-books',
             ];
-            const rootDir = join(__dirname, '..', '..', '..');
+            const rootDir = process.cwd();
             uploadDirs.forEach(dir => {
                 const fullPath = join(rootDir, dir);
                 console.log(`📁 Checking/Creating directory: ${fullPath}`);

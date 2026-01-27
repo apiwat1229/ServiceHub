@@ -17,5 +17,6 @@
     "**/.next": true,
     "**/dist": true,
     "**/build": true
-  }
+  },
+  "java.configuration.updateBuildConfiguration": "interactive"
 }

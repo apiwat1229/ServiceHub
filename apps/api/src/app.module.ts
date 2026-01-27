@@ -68,7 +68,7 @@ import { RawMaterialPlansModule } from './raw-material-plans/raw-material-plans.
         RawMaterialPlansModule,
         ProductionReportsModule,
         ServeStaticModule.forRoot({
-            rootPath: join(__dirname, '..', '..', '..', 'uploads'),
+            rootPath: join(process.cwd(), 'uploads'),
             serveRoot: '/api/uploads',
         }),
     ],

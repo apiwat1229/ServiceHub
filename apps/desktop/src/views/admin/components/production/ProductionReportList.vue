@@ -69,14 +69,30 @@ const filteredReports = computed(() => {
     const q = props.searchQuery.toLowerCase();
     filtered = filtered.filter(
       (report) =>
-        report.grade?.toLowerCase().includes(q) ||
-        report.bookNo?.toLowerCase().includes(q) ||
-        report.pageNo?.toLowerCase().includes(q)
+        report.grade?.toLowerCase().includes(q) || report.baleBagLotNo?.toLowerCase().includes(q)
     );
   }
 
   return filtered;
 });
+
+const getPalletCount = (report: ProductionReport) => {
+  return (
+    report.rows?.reduce((sum, row) => {
+      let rowPallets = 0;
+      if (Number(row.weight1) > 0) rowPallets++;
+      if (Number(row.weight2) > 0) rowPallets++;
+      if (Number(row.weight3) > 0) rowPallets++;
+      if (Number(row.weight4) > 0) rowPallets++;
+      if (Number(row.weight5) > 0) rowPallets++;
+      return sum + rowPallets;
+    }, 0) || 0
+  );
+};
+
+const getBaleCount = (report: ProductionReport) => {
+  return getPalletCount(report) * 35;
+};
 
 const fetchReports = async () => {
   isLoading.value = true;
@@ -101,9 +117,9 @@ onMounted(fetchReports);
           <TableHead class="text-center">{{ t('production.productionDate') }}</TableHead>
           <TableHead class="text-center">{{ t('production.shift') }}</TableHead>
           <TableHead class="text-center">{{ t('production.grade') }}</TableHead>
-          <TableHead class="text-center"
-            >{{ t('production.bookNo') }}/{{ t('production.pageNo') }}</TableHead
-          >
+          <TableHead class="text-center">{{ t('production.footer.baleBagLotNo') }}</TableHead>
+          <TableHead class="text-center">Pallets</TableHead>
+          <TableHead class="text-center">Bales</TableHead>
           <TableHead class="text-center">{{ t('common.status') }}</TableHead>
           <TableHead class="text-right">{{ t('common.actions') }}</TableHead>
         </TableRow>
@@ -115,12 +131,21 @@ onMounted(fetchReports);
           </TableCell>
         </TableRow>
         <TableRow v-else v-for="report in filteredReports" :key="report.id">
-          <TableCell class="text-center">{{
-            format(new Date(report.productionDate), 'dd/MM/yyyy')
-          }}</TableCell>
+          <TableCell
+            class="text-center cursor-pointer hover:text-blue-600 hover:underline"
+            @click="emit('edit', report)"
+          >
+            {{ format(new Date(report.productionDate), 'dd-MMM-yyyy') }}
+          </TableCell>
           <TableCell class="text-center">{{ report.shift }}</TableCell>
           <TableCell class="text-center">{{ report.grade }}</TableCell>
-          <TableCell class="text-center">{{ report.bookNo }}/{{ report.pageNo }}</TableCell>
+          <TableCell class="text-center">{{ report.baleBagLotNo || '-' }}</TableCell>
+          <TableCell class="text-center font-bold text-green-600">{{
+            getPalletCount(report)
+          }}</TableCell>
+          <TableCell class="text-center font-bold text-orange-600">{{
+            getBaleCount(report)
+          }}</TableCell>
           <TableCell class="text-center">
             <span
               :class="[
@@ -143,7 +168,7 @@ onMounted(fetchReports);
           </TableCell>
         </TableRow>
         <TableRow v-if="!isLoading && filteredReports.length === 0">
-          <TableCell colspan="6" class="h-24 text-center text-muted-foreground">
+          <TableCell colspan="8" class="h-24 text-center text-muted-foreground">
             {{ t('production.history.empty') }}
           </TableCell>
         </TableRow>

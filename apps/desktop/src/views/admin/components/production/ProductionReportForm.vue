@@ -31,6 +31,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import Time24hPicker from '@/components/ui/time-picker/Time24hPicker.vue';
 import { usePermissions } from '@/composables/usePermissions';
 import { productionReportsApi, type ProductionReport } from '@/services/productionReports';
 import { CalendarDate, DateFormatter, getLocalTimeZone, parseDate } from '@internationalized/date';
@@ -38,7 +39,6 @@ import { CalendarIcon, Check, Plus, Trash2 } from 'lucide-vue-next';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
-import Time24hPicker from './Time24hPicker.vue';
 
 const props = defineProps<{
   initialData?: ProductionReport;
@@ -135,7 +135,47 @@ const removeRow = (index: number) => {
 };
 
 const totalSample = computed(() => {
-  return form.rows.reduce((sum, row) => sum + (Number(row.sampleCount) || 0), 0);
+  return form.rows.reduce(
+    (sum, row) => sum + (parseFloat(row.sampleCount?.toString() || '0') || 0),
+    0
+  );
+});
+
+const accum1 = computed(() => Math.round((totalSample.value * 4) / 18));
+const accum2 = computed(() => Math.round((totalSample.value * 7) / 18));
+const accum3 = computed(() => Math.round((totalSample.value * 11) / 18));
+const accum4 = computed(() => Math.round((totalSample.value * 14) / 18));
+const accum5 = computed(() => totalSample.value);
+
+watch([accum1, accum2, accum3, accum4, accum5], ([a1, a2, a3, a4, a5]) => {
+  form.sampleAccum1 = a1;
+  form.sampleAccum2 = a2;
+  form.sampleAccum3 = a3;
+  form.sampleAccum4 = a4;
+  form.sampleAccum5 = a5;
+});
+
+const totalPallets = computed(() => {
+  return form.rows.reduce((sum, row) => {
+    let rowPallets = 0;
+    if (parseFloat(row.weight1?.toString() || '0') > 0) rowPallets++;
+    if (parseFloat(row.weight2?.toString() || '0') > 0) rowPallets++;
+    if (parseFloat(row.weight3?.toString() || '0') > 0) rowPallets++;
+    if (parseFloat(row.weight4?.toString() || '0') > 0) rowPallets++;
+    if (parseFloat(row.weight5?.toString() || '0') > 0) rowPallets++;
+    return sum + rowPallets;
+  }, 0);
+});
+
+const totalBales = computed(() => {
+  return form.rows.reduce((sum, row) => {
+    const w1 = parseFloat(row.weight1?.toString() || '0') || 0;
+    const w2 = parseFloat(row.weight2?.toString() || '0') || 0;
+    const w3 = parseFloat(row.weight3?.toString() || '0') || 0;
+    const w4 = parseFloat(row.weight4?.toString() || '0') || 0;
+    const w5 = parseFloat(row.weight5?.toString() || '0') || 0;
+    return sum + w1 + w2 + w3 + w4 + w5;
+  }, 0);
 });
 
 const handleSave = async (status: 'DRAFT' | 'SUBMITTED') => {
@@ -284,23 +324,48 @@ onMounted(() => {
               <div class="grid grid-cols-5 gap-2">
                 <div class="space-y-1">
                   <Label class="text-[10px] text-muted-foreground uppercase">Pallet 1</Label>
-                  <Input type="number" v-model.number="form.sampleAccum1" class="text-center" />
+                  <Input
+                    type="number"
+                    v-model.number="form.sampleAccum1"
+                    class="text-center"
+                    readonly
+                  />
                 </div>
                 <div class="space-y-1">
                   <Label class="text-[10px] text-muted-foreground uppercase">Pallet 2</Label>
-                  <Input type="number" v-model.number="form.sampleAccum2" class="text-center" />
+                  <Input
+                    type="number"
+                    v-model.number="form.sampleAccum2"
+                    class="text-center"
+                    readonly
+                  />
                 </div>
                 <div class="space-y-1">
                   <Label class="text-[10px] text-muted-foreground uppercase">Pallet 3</Label>
-                  <Input type="number" v-model.number="form.sampleAccum3" class="text-center" />
+                  <Input
+                    type="number"
+                    v-model.number="form.sampleAccum3"
+                    class="text-center"
+                    readonly
+                  />
                 </div>
                 <div class="space-y-1">
                   <Label class="text-[10px] text-muted-foreground uppercase">Pallet 4</Label>
-                  <Input type="number" v-model.number="form.sampleAccum4" class="text-center" />
+                  <Input
+                    type="number"
+                    v-model.number="form.sampleAccum4"
+                    class="text-center"
+                    readonly
+                  />
                 </div>
                 <div class="space-y-1">
                   <Label class="text-[10px] text-muted-foreground uppercase">Pallet 5</Label>
-                  <Input type="number" v-model.number="form.sampleAccum5" class="text-center" />
+                  <Input
+                    type="number"
+                    v-model.number="form.sampleAccum5"
+                    class="text-center"
+                    readonly
+                  />
                 </div>
               </div>
             </div>
@@ -422,17 +487,47 @@ onMounted(() => {
                   <Label>{{ t('production.footer.baleBagLotNo') }}</Label>
                   <Input v-model="form.baleBagLotNo" placeholder="PE 9.12.67, 25.1.68..." />
                 </div>
-                <div
-                  class="flex items-center gap-4 p-4 border rounded-xl bg-blue-50/50 border-blue-100"
-                >
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div
-                    class="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xl"
+                    class="flex items-center gap-4 p-4 border rounded-xl bg-blue-50/50 border-blue-100"
                   >
-                    {{ totalSample }}
+                    <div
+                      class="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xl"
+                    >
+                      {{ totalSample }}
+                    </div>
+                    <div>
+                      <div class="text-[10px] font-bold text-foreground">TOTAL SAMPLES</div>
+                      <div class="text-[9px] text-muted-foreground">รวมจำนวนตัวอย่าง</div>
+                    </div>
                   </div>
-                  <div>
-                    <div class="text-sm font-bold text-foreground">TOTAL SAMPLES</div>
-                    <div class="text-xs text-muted-foreground">รวมจำนวนตัวอย่าง</div>
+
+                  <div
+                    class="flex items-center gap-4 p-4 border rounded-xl bg-green-50/50 border-green-100"
+                  >
+                    <div
+                      class="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-bold text-xl"
+                    >
+                      {{ totalPallets }}
+                    </div>
+                    <div>
+                      <div class="text-[10px] font-bold text-foreground">TOTAL PALLETS</div>
+                      <div class="text-[9px] text-muted-foreground">รวมจำนวนพาเลท</div>
+                    </div>
+                  </div>
+
+                  <div
+                    class="flex items-center gap-4 p-4 border rounded-xl bg-orange-50/50 border-orange-100"
+                  >
+                    <div
+                      class="h-12 w-12 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-xl"
+                    >
+                      {{ totalBales }}
+                    </div>
+                    <div>
+                      <div class="text-[10px] font-bold text-foreground">TOTAL BALES</div>
+                      <div class="text-[9px] text-muted-foreground">รวมจำนวนก้อน</div>
+                    </div>
                   </div>
                 </div>
               </div>

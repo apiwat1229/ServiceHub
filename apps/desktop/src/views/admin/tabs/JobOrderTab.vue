@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/table';
 import { jobOrdersApi, type JobOrder } from '@/services/jobOrders';
 import { CalendarDate, getLocalTimeZone, today } from '@internationalized/date';
-import { CheckCircle2, Clock, FileText, Package } from 'lucide-vue-next';
+import { CheckCircle2, Clock, Edit, FileText, Package } from 'lucide-vue-next';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
@@ -26,7 +26,10 @@ const props = defineProps<{
   date: string;
 }>();
 
-const emit = defineEmits(['edit']);
+const emit = defineEmits<{
+  (e: 'edit', jobOrder: JobOrder): void;
+  (e: 'view', jobOrder: JobOrder): void;
+}>();
 
 // Helper to parse string date back to CalendarDate-like object
 const parseDateString = (dateStr: string) => {
@@ -104,6 +107,10 @@ const fetchJobOrders = async () => {
   } finally {
     isLoading.value = false;
   }
+};
+
+const handleView = (jobOrder: JobOrder) => {
+  emit('view', jobOrder);
 };
 
 const handleEdit = (jobOrder: JobOrder) => {
@@ -239,7 +246,7 @@ onMounted(() => {
               v-for="order in filteredJobOrders"
               :key="order.id"
               class="group hover:bg-slate-50/50 transition-all cursor-pointer border-b"
-              @click="handleEdit(order)"
+              @click="handleView(order)"
             >
               <TableCell class="font-black text-slate-900 py-3">
                 <div class="flex items-center gap-2">
@@ -286,14 +293,24 @@ onMounted(() => {
                 </Badge>
               </TableCell>
               <TableCell class="text-center">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  class="h-9 w-9 text-primary hover:bg-primary/10 transition-colors"
-                  @click.stop="handlePrint(order)"
-                >
-                  <FileText class="w-4 h-4" />
-                </Button>
+                <div class="flex items-center justify-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    class="h-9 w-9 text-slate-500 hover:text-primary hover:bg-primary/10 transition-colors"
+                    @click.stop="handleEdit(order)"
+                  >
+                    <Edit class="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    class="h-9 w-9 text-primary hover:bg-primary/10 transition-colors"
+                    @click.stop="handlePrint(order)"
+                  >
+                    <FileText class="w-4 h-4" />
+                  </Button>
+                </div>
               </TableCell>
             </TableRow>
           </TableBody>
