@@ -24,6 +24,7 @@ import {
   FileText,
   History,
   MapPin,
+  Monitor,
   Pencil,
   Save,
   Trash2,
@@ -283,6 +284,24 @@ const handlePostComment = async () => {
     loading.value = false;
   }
 };
+
+const getImageUrl = (path: string | null | undefined) => {
+  if (!path) return undefined;
+  if (path.startsWith('http') || path.startsWith('data:')) return path;
+  const baseUrl = import.meta.env.VITE_API_URL || 'https://app.ytrc.co.th';
+  const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+
+  if (
+    cleanBaseUrl.includes('app.ytrc.co.th') &&
+    !cleanBaseUrl.endsWith('/api') &&
+    !cleanPath.startsWith('/api')
+  ) {
+    return `${cleanBaseUrl}/api${cleanPath}`;
+  }
+
+  return `${cleanBaseUrl}${cleanPath}`;
+};
 </script>
 
 <template>
@@ -394,23 +413,107 @@ const handlePostComment = async () => {
             <!-- Description Section -->
             <div class="space-y-3">
               <h4 class="text-sm font-semibold flex items-center gap-2 text-foreground/80">
-                <FileText class="w-4 h-4 text-primary" /> Description
+                <FileText class="w-4 h-4 text-primary" /> Details
               </h4>
+
+              <!-- Asset Request Card -->
               <div
-                v-if="isOwner && isEditable"
-                class="rounded-lg border border-border/50 shadow-sm"
+                v-if="localTicket?.isAssetRequest && localTicket?.asset"
+                class="bg-white rounded-xl border shadow-sm overflow-hidden mb-4"
               >
-                <Textarea
-                  v-model="localTicket!.description"
-                  class="min-h-[120px] bg-muted/30 border-0 focus-visible:ring-0 resize-none text-sm leading-relaxed p-4"
-                  placeholder="Review the description..."
-                />
+                <div class="flex flex-col sm:flex-row">
+                  <!-- Image Section -->
+                  <div
+                    class="sm:w-1/3 min-h-[160px] bg-muted/30 border-b sm:border-b-0 sm:border-r relative flex items-center justify-center p-4"
+                  >
+                    <img
+                      v-if="localTicket.asset.image"
+                      :src="getImageUrl(localTicket.asset.image)"
+                      alt="Asset Image"
+                      class="max-w-full max-h-[140px] object-contain drop-shadow-sm transition-transform hover:scale-105 duration-300"
+                    />
+                    <div
+                      v-else
+                      class="flex flex-col items-center justify-center text-muted-foreground/40"
+                    >
+                      <Monitor class="w-12 h-12 mb-2" />
+                      <span class="text-xs font-medium">No Image</span>
+                    </div>
+                  </div>
+
+                  <!-- Details Section -->
+                  <div class="flex-1 p-5 flex flex-col justify-center space-y-3">
+                    <div>
+                      <div class="flex items-center gap-2 mb-1">
+                        <Badge
+                          variant="outline"
+                          class="text-[0.65rem] font-mono uppercase tracking-wider bg-slate-50 text-slate-500 border-slate-200"
+                        >
+                          {{ localTicket.asset.code }}
+                        </Badge>
+                        <Badge
+                          variant="secondary"
+                          class="text-[0.65rem] capitalize bg-blue-50 text-blue-600 hover:bg-blue-100"
+                        >
+                          {{ localTicket.asset.category }}
+                        </Badge>
+                      </div>
+                      <h3 class="text-lg font-bold text-foreground leading-tight">
+                        {{ localTicket.asset.name }}
+                      </h3>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-x-8 gap-y-2 text-sm pt-2 border-t mt-2">
+                      <div>
+                        <span class="text-muted-foreground text-xs block mb-0.5">Location</span>
+                        <span class="font-medium">{{ localTicket.asset.location || '-' }}</span>
+                      </div>
+                      <div>
+                        <span class="text-muted-foreground text-xs block mb-0.5">Stock Status</span>
+                        <span
+                          :class="{
+                            'text-green-600': (localTicket.asset.stock || 0) > 0,
+                            'text-red-600': (localTicket.asset.stock || 0) <= 0,
+                          }"
+                          class="font-medium flex items-center gap-1.5"
+                        >
+                          <div
+                            class="w-2 h-2 rounded-full"
+                            :class="
+                              (localTicket.asset.stock || 0) > 0 ? 'bg-green-500' : 'bg-red-500'
+                            "
+                          ></div>
+                          {{ (localTicket.asset.stock || 0) > 0 ? 'In Stock' : 'Out of Stock' }} ({{
+                            localTicket.asset.stock || 0
+                          }})
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div
-                v-else
-                class="p-4 bg-muted/30 rounded-lg text-sm leading-relaxed border border-border/50 shadow-sm min-h-[120px]"
-              >
-                {{ localTicket?.description || 'No description provided.' }}
+
+              <!-- Description Field -->
+              <div>
+                <h5 class="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                  Description / Reason
+                </h5>
+                <div
+                  v-if="isOwner && isEditable"
+                  class="rounded-lg border border-border/50 shadow-sm"
+                >
+                  <Textarea
+                    v-model="localTicket!.description"
+                    class="min-h-[100px] bg-muted/30 border-0 focus-visible:ring-0 resize-none text-sm leading-relaxed p-4"
+                    placeholder="Review description..."
+                  />
+                </div>
+                <div
+                  v-else
+                  class="p-4 bg-muted/30 rounded-lg text-sm leading-relaxed border border-border/50 shadow-sm min-h-[80px]"
+                >
+                  {{ localTicket?.description || 'No additional description provided.' }}
+                </div>
               </div>
             </div>
 
