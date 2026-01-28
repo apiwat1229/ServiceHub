@@ -157,11 +157,7 @@ const routes = [
                 name: 'UssDetail',
                 component: () => import('../views/admin/UssDetail.vue'),
             },
-            {
-                path: 'project-timeline',
-                name: 'ProjectTimeline',
-                component: () => import('../views/admin/ProjectTimeline.vue'),
-            },
+
             {
                 path: 'bookings',
                 redirect: '/bookings',

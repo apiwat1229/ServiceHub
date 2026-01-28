@@ -3,6 +3,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/u
 import { useAuthStore } from '@/stores/auth';
 import {
   ArrowUpDown,
+  Calendar,
+  Droplets,
   Factory,
   FlaskConical,
   Leaf,
@@ -25,6 +27,7 @@ interface MrpModule {
   bgColor: string;
   hoverBorder: string;
   route: string;
+  permission?: string;
 }
 
 const { t } = useI18n();
@@ -107,6 +110,39 @@ const modules = computed<MrpModule[]>(() => [
     hoverBorder: 'group-hover:border-pink-500',
     route: '/admin/purchasing',
   },
+  {
+    id: 'booking',
+    title: t('services.booking.name'),
+    description: t('services.booking.description'),
+    icon: Calendar,
+    color: 'text-green-600',
+    bgColor: 'bg-green-50/50 group-hover:bg-green-100/50',
+    hoverBorder: 'group-hover:border-green-500',
+    route: '/admin/bookings',
+    permission: 'bookings:read',
+  },
+  {
+    id: 'truck-scale',
+    title: t('services.truck.name'),
+    description: t('services.truck.description'),
+    icon: Truck,
+    color: 'text-emerald-600',
+    bgColor: 'bg-emerald-50/50 group-hover:bg-emerald-100/50',
+    hoverBorder: 'group-hover:border-emerald-500',
+    route: '/scale',
+    permission: 'truckScale:read',
+  },
+  {
+    id: 'cuplump',
+    title: t('services.cuplump.name'),
+    description: t('services.cuplump.description'),
+    icon: Droplets,
+    color: 'text-orange-600',
+    bgColor: 'bg-orange-50/50 group-hover:bg-orange-100/50',
+    hoverBorder: 'group-hover:border-orange-500',
+    route: '/cuplump-pool',
+    permission: 'bookings:read',
+  },
 ]);
 
 // Search and Sorting
@@ -115,6 +151,12 @@ const sortBy = ref<'az' | 'recent'>('az');
 
 const filteredModules = computed(() => {
   let list = modules.value;
+
+  // Filter by permissions
+  list = list.filter((m) => {
+    if (!m.permission) return true;
+    return authStore.hasPermission(m.permission);
+  });
 
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase();
@@ -127,7 +169,6 @@ const filteredModules = computed(() => {
     return list.sort((a, b) => a.title.localeCompare(b.title));
   }
 
-  // Recent not tracked for sub-modules yet, fallback to default order or A-Z
   return list;
 });
 </script>
