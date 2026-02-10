@@ -1,4 +1,14 @@
 <script setup lang="ts">
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,11 +22,16 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { usePermissions } from '@/composables/usePermissions';
 import { useUsers } from '@/composables/useUsers';
 import { cn, getAvatarUrl } from '@/lib/utils';
 import type { ITTicket, UpdateITTicketDto } from '@/services/it-tickets';
 import { itTicketsApi } from '@/services/it-tickets';
+import { socketService } from '@/services/socket';
 import { useAuthStore } from '@/stores/auth';
+import { format, formatDistanceToNowStrict, intervalToDuration } from 'date-fns';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 import {
   AlertCircle,
   Check,
@@ -26,10 +41,12 @@ import {
   MapPin,
   Monitor,
   Pencil,
+  Printer,
   Save,
+  Star,
   Trash2,
 } from 'lucide-vue-next';
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 
 const props = defineProps<{
@@ -45,6 +62,7 @@ const emit = defineEmits<{
 
 const { users: allUsers } = useUsers();
 const authStore = useAuthStore();
+const { isAdmin } = usePermissions();
 
 const loading = ref(false);
 const localTicket = ref<ITTicket | null>(null);
@@ -56,6 +74,7 @@ const selectedPriority = ref('');
 const selectedAssignee = ref('');
 const isDeleteDialogOpen = ref(false);
 const isRejectDialogOpen = ref(false);
+const isStatusConfirmDialogOpen = ref(false);
 const isEditingTitle = ref(false);
 
 // Initialize local state when ticket changes
@@ -98,8 +117,6 @@ const getStatusColor = (status: string) => {
   }
 };
 
-import { format, formatDistanceToNowStrict, intervalToDuration } from 'date-fns';
-
 const formatDate = (date: string | Date | undefined) => {
   if (!date) return '';
   const d = new Date(date);
@@ -127,8 +144,128 @@ const userInitials = (user?: any) => {
   return name.charAt(0).toUpperCase();
 };
 
-const saveChanges = async () => {
+const resolutionDuration = computed(() => {
+  if (!localTicket.value || !localTicket.value.resolvedAt) return null;
+  const created = new Date(localTicket.value.createdAt);
+  const resolved = new Date(localTicket.value.resolvedAt);
+
+  const duration = intervalToDuration({ start: created, end: resolved });
+
+  if (duration.years || duration.months) {
+    return formatDistanceToNowStrict(created, { addSuffix: false });
+  }
+
+  let parts = [];
+  if (duration.days) parts.push(`${duration.days}d`);
+  if (duration.hours) parts.push(`${duration.hours}h`);
+  if (duration.minutes) parts.push(`${duration.minutes}m`);
+  if (parts.length === 0) return 'less than 1m';
+
+  return parts.join(' ');
+});
+
+const refreshTicket = async () => {
+  if (!props.ticket?.id) return;
+  try {
+    const fresh = await itTicketsApi.getById(props.ticket.id);
+    if (fresh) {
+      localTicket.value = fresh as any;
+      selectedStatus.value = fresh.status;
+      selectedPriority.value = fresh.priority;
+      selectedAssignee.value = fresh.assigneeId || 'unassigned';
+      emit('ticketUpdated', fresh as any);
+    }
+  } catch (error) {
+    console.error('Failed to refresh ticket:', error);
+  }
+};
+
+onMounted(() => {
+  socketService.on('ticket:updated', (updatedTicket: ITTicket) => {
+    if (updatedTicket.id === props.ticket?.id) {
+      refreshTicket();
+    }
+  });
+
+  socketService.on('ticket:commented', ({ ticketId }: { ticketId: string }) => {
+    if (ticketId === props.ticket?.id) {
+      refreshTicket();
+    }
+  });
+});
+
+onUnmounted(() => {
+  socketService.off('ticket:updated');
+  socketService.off('ticket:commented');
+});
+
+const mergedTimeline = computed(() => {
+  if (!localTicket.value) return [];
+
+  const comments = (localTicket.value.comments || []).map((c) => ({
+    ...c,
+    timelineType: 'comment',
+  }));
+
+  const activities = (localTicket.value.activities || []).map((a) => ({
+    ...a,
+    timelineType: 'activity',
+  }));
+
+  return [...comments, ...activities].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  ) as any[];
+});
+
+const getSLAStatusDetail = computed(() => {
+  if (!localTicket.value) return { label: 'N/A', color: 'bg-muted' };
+
+  const getSLAThreshold = (priority: string): number => {
+    switch (priority.toLowerCase()) {
+      case 'high':
+        return 4;
+      case 'medium':
+        return 8;
+      case 'low':
+        return 24;
+      default:
+        return 8;
+    }
+  };
+
+  if (localTicket.value.status === 'Resolved' || localTicket.value.status === 'Closed') {
+    const created = new Date(localTicket.value.createdAt);
+    const resolved = localTicket.value.resolvedAt
+      ? new Date(localTicket.value.resolvedAt)
+      : new Date(localTicket.value.updatedAt);
+    const durationHrs = (resolved.getTime() - created.getTime()) / (1000 * 60 * 60);
+    const threshold = getSLAThreshold(localTicket.value.priority);
+
+    if (durationHrs <= threshold) return { label: 'Met', color: 'bg-green-100 text-green-800' };
+    return { label: 'Breached', color: 'bg-red-100 text-red-800' };
+  }
+
+  const created = new Date(localTicket.value.createdAt);
+  const now = new Date();
+  const durationHrs = (now.getTime() - created.getTime()) / (1000 * 60 * 60);
+  const threshold = getSLAThreshold(localTicket.value.priority);
+
+  if (durationHrs > threshold) return { label: 'Breached', color: 'bg-red-100 text-red-800' };
+  if (durationHrs > threshold * 0.8)
+    return { label: 'Warning', color: 'bg-amber-100 text-amber-800' };
+  return { label: 'On Track', color: 'bg-blue-100 text-blue-800' };
+});
+
+const saveChanges = async (confirmed = false) => {
   if (!localTicket.value) return;
+
+  const isClosing = ['Resolved', 'Closed'].includes(selectedStatus.value);
+  const wasNotClosing = !['Resolved', 'Closed'].includes(localTicket.value.status);
+
+  if (isClosing && wasNotClosing && !confirmed) {
+    isStatusConfirmDialogOpen.value = true;
+    return;
+  }
 
   try {
     loading.value = true;
@@ -161,12 +298,17 @@ const saveChanges = async () => {
       toast.success('Ticket updated successfully');
     }
 
-    isOpen.value = false;
+    if (comment.value.trim()) {
+      await handlePostComment();
+    } else {
+      isOpen.value = false;
+    }
   } catch (error) {
     console.error(error);
     toast.error('Failed to update ticket');
   } finally {
     loading.value = false;
+    isStatusConfirmDialogOpen.value = false;
   }
 };
 
@@ -176,8 +318,8 @@ const availableAssignees = computed(() => {
 
 const isOwner = computed(() => {
   if (!localTicket.value || !authStore.user) return false;
-  // Check if requesterId matches current user
-  return localTicket.value.requesterId === authStore.user.id;
+  // Check if requesterId matches current user or if admin
+  return localTicket.value.requesterId === authStore.user.id || isAdmin.value;
 });
 
 const isApprover = computed(() => {
@@ -188,16 +330,18 @@ const isApprover = computed(() => {
     localTicket.value.status === 'Approved'
   )
     return false;
-  return localTicket.value.approverId === authStore.user.id;
+  // Admins can also approve/reject
+  return localTicket.value.approverId === authStore.user.id || isAdmin.value;
 });
 
 const isEditable = computed(() => {
+  if (isAdmin.value) return true;
   if (!localTicket.value) return false;
   return !['Approved', 'Closed', 'Resolved', 'Cancelled'].includes(localTicket.value.status);
 });
 
 const startEditingTitle = () => {
-  if (isOwner.value && isEditable.value) {
+  if ((isOwner.value || isAdmin.value) && isEditable.value) {
     isEditingTitle.value = true;
   }
 };
@@ -302,6 +446,180 @@ const getImageUrl = (path: string | null | undefined) => {
 
   return `${cleanBaseUrl}${cleanPath}`;
 };
+
+const exportJobOrderPDF = async () => {
+  if (!localTicket.value) return;
+
+  const loadingToast = toast.loading('Generating Job Order PDF...');
+
+  try {
+    const container = document.createElement('div');
+    container.style.position = 'absolute';
+    container.style.left = '-9999px';
+    container.style.top = '0';
+    container.style.width = '794px'; // Exactly 210mm at 96 DPI
+    container.style.height = '1123px'; // Exactly 297mm at 96 DPI
+    container.style.backgroundColor = 'white';
+    container.style.overflow = 'hidden';
+    // Remove individual padding here so the internal div can handle border/padding
+    container.style.padding = '0';
+    container.style.color = '#000';
+    container.style.fontFamily = "'Sarabun', sans-serif";
+
+    const t = localTicket.value;
+    const dateStr = format(new Date(), 'dd/MM/yyyy');
+    const createdDate = format(new Date(t.createdAt), 'dd/MM/yyyy HH:mm');
+
+    container.innerHTML = `
+      <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800&display=swap');
+        * { box-sizing: border-box; font-family: 'Sarabun', sans-serif !important; }
+      </style>
+      <div style="border: 2px solid #000; margin: 30px; padding: 25px; height: 1063px; position: relative; background: white;">
+        <!-- Header -->
+        <div style="display: flex; justify-content: space-between; align-items: start; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px;">
+          <div style="flex: 1;">
+            <h1 style="font-size: 32px; font-weight: bold; margin: 0; text-align: center; text-decoration: underline;">ใบแจ้งซ่อม / ใบสั่งงาน (Job Order)</h1>
+          </div>
+          <div style="width: 170px; border: 1px solid #000; padding: 10px; font-size: 16px;">
+            <div style="font-weight: bold;">Doc NO: ${t.ticketNo}</div>
+            <div style="margin-top: 5px;">วันที่พิมพ์: ${dateStr}</div>
+          </div>
+        </div>
+
+        <!-- Section 1: Requester Information -->
+        <div style="background-color: #f1f5f9; padding: 10px; font-weight: bold; border: 1px solid #000; font-size: 18px; border-bottom: none;">
+          1. ส่วนของผู้แจ้งซ่อม (Requester Section)
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; border: 1px solid #000; padding: 15px; gap: 15px; font-size: 16px;">
+          <div><b style="font-weight: 700;">ชื่อผู้แจ้ง:</b> ${t.requester?.displayName || t.requester?.username || '-'}</div>
+          <div><b style="font-weight: 700;">ฝ่าย/แผนก:</b> ${t.location || '-'}</div>
+          <div><b style="font-weight: 700;">วันที่แจ้ง:</b> ${createdDate}</div>
+          <div><b style="font-weight: 700;">ประเภทงาน:</b> ${t.category}</div>
+        </div>
+        <div style="border: 1px solid #000; border-top: none; padding: 15px; font-size: 16px;">
+          <div style="font-weight: bold; margin-bottom: 10px;">รายละเอียดปัญหา / ความต้องการ (Subject & Description):</div>
+          <div style="font-weight: bold; margin-bottom: 8px; color: #1e40af; font-size: 17px;">[ ${t.title} ]</div>
+          <div style="min-height: 100px; border: 1.5px dashed #94a3b8; padding: 15px; line-height: 1.6; color: #1e293b; background: white;">
+            ${t.description || 'ไม่มีรายละเอียดเพิ่มเติม'}
+          </div>
+        </div>
+        <div style="display: flex; justify-content: space-around; border: 1px solid #000; border-top: none; padding: 35px 15px; font-size: 15px; text-align: center;">
+          <div style="width: 250px;">
+            <div style="margin-bottom: 45px; border-bottom: 1px dotted #000;">&nbsp;</div>
+            <div style="font-weight: bold;">( ${t.requester?.displayName || 'ลงชื่อผู้แจ้งซ่อม'} )</div>
+            <div style="margin-top: 6px; color: #475569;">ผู้แจ้งซ่อม / วันที่</div>
+          </div>
+          <div style="width: 250px;">
+            <div style="margin-bottom: 45px; border-bottom: 1px dotted #000;">&nbsp;</div>
+            <div style="font-weight: bold;">( ................................................... )</div>
+            <div style="margin-top: 6px; color: #475569;">หัวหน้างาน / ผู้รับรอง</div>
+          </div>
+        </div>
+
+        <!-- Section 2: IT Section -->
+        <div style="margin-top: 25px; background-color: #f1f5f9; padding: 10px; font-weight: bold; border: 1px solid #000; font-size: 18px; border-bottom: none;">
+          2. ส่วนของเจ้าหน้าที่ IT (Technician Section)
+        </div>
+        <div style="border: 1px solid #000; padding: 15px; font-size: 16px;">
+          <div style="font-weight: bold; margin-bottom: 10px;">ผลการตรวจสอบ / การดำเนินการแก้ไข (Diagnosis & Resolution):</div>
+          <div style="min-height: 120px; border: 1.5px dashed #94a3b8; padding: 15px; line-height: 1.6; color: #1e293b; background: white;">
+            ${t.status === 'Resolved' || t.status === 'Closed' ? 'งานเสร็จสิ้นตามแผนงาน - ทำการตรวจสอบและแก้ไขปัญหาตามที่ได้รับแจ้งเรียบร้อยแล้ว' : 'กำลังดำเนินการ / รอการเข้ารับบริการ'}
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; border: 1px solid #000; border-top: none; padding: 15px; gap: 15px; font-size: 16px;">
+          <div><b style="font-weight: 700;">ผู้รับผิดชอบ (Assignee):</b> ${t.assignee?.displayName || '-'}</div>
+          <div><b style="font-weight: 700;">ระดับความสำคัญ:</b> ${t.priority}</div>
+          <div><b style="font-weight: 700;">สถานะปัจจุบัน:</b> ${t.status}</div>
+          <div><b style="font-weight: 700;">SLA Status:</b> ${getSLAStatusDetail.value.label}</div>
+        </div>
+        <div style="display: flex; justify-content: space-around; border: 1px solid #000; border-top: none; padding: 35px 15px; font-size: 15px; text-align: center;">
+          <div style="width: 250px;">
+            <div style="margin-bottom: 45px; border-bottom: 1px dotted #000;">&nbsp;</div>
+            <div style="font-weight: bold;">( ${t.assignee?.displayName || 'ลงชื่อเจ้าหน้าที่'} )</div>
+            <div style="margin-top: 6px; color: #475569;">เจ้าหน้าที่ดำเนินการ / วันที่</div>
+          </div>
+          <div style="width: 250px;">
+            <div style="margin-bottom: 45px; border-bottom: 1px dotted #000;">&nbsp;</div>
+            <div style="font-weight: bold;">( ................................................... )</div>
+            <div style="margin-top: 6px; color: #475569;">ผู้ตรวจรับงาน / IT Manager</div>
+          </div>
+        </div>
+
+        <!-- Section 3: User Acceptance -->
+        <div style="margin-top: 25px; background-color: #f1f5f9; padding: 10px; font-weight: bold; border: 1px solid #000; font-size: 18px; border-bottom: none;">
+          3. ส่วนการตรวจรับงาน (User Acceptance Section)
+        </div>
+        <div style="border: 1px solid #000; padding: 20px; font-size: 16px;">
+          <div style="display: flex; gap: 40px; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 18px; height: 18px; border: 1.5px solid #000;"></div> แก้ไขเรียบร้อยแล้ว (Fixed)
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 18px; height: 18px; border: 1.5px solid #000;"></div> ไม่สามารถแก้ไขได้ (Unfixed)
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 18px; height: 18px; border: 1.5px solid #000;"></div> อื่นๆ ...........................
+            </div>
+          </div>
+          <div style="display: flex; gap: 25px; align-items: center;">
+            <div style="font-weight: bold;">ความพึงพอใจ:</div>
+            <div style="display: flex; gap: 20px;">
+              <span>[ ] ดีมาก</span> <span>[ ] ดี</span> <span>[ ] พอใช้</span> <span>[ ] ปรับปรุง</span>
+            </div>
+          </div>
+          <div style="margin-top: 15px; color: #475569; font-size: 14px;">ข้อเสนอแนะ: ...........................................................................................................................................................</div>
+        </div>
+        <div style="display: flex; justify-content: space-around; border: 1px solid #000; border-top: none; padding: 35px 15px; font-size: 15px; text-align: center;">
+          <div style="width: 250px;">
+            <div style="margin-bottom: 45px; border-bottom: 1px dotted #000;">&nbsp;</div>
+            <div style="font-weight: bold;">( ................................................... )</div>
+            <div style="margin-top: 6px; color: #475569;">ผู้ส่งมอบงาน / IT</div>
+          </div>
+          <div style="width: 250px;">
+            <div style="margin-bottom: 45px; border-bottom: 1px dotted #000;">&nbsp;</div>
+            <div style="font-weight: bold;">( ................................................... )</div>
+            <div style="margin-top: 6px; color: #475569;">ผู้ตรวจรับผลงาน / วันที่</div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="position: absolute; bottom: 25px; left: 25px; right: 25px; display: flex; justify-content: space-between; font-size: 12px; color: #64748b;">
+          <div>ServiceHub IT Management System</div>
+          <div>Printed on ${format(new Date(), 'dd MMM yyyy HH:mm:ss')}</div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(container);
+
+    const canvas = await html2canvas(container, {
+      scale: 1.5,
+      useCORS: true,
+      logging: false,
+      backgroundColor: '#ffffff',
+    });
+
+    const imgData = canvas.toDataURL('image/jpeg', 0.82);
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+      compress: true,
+    });
+
+    pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
+    pdf.save(`JobOrder-${t.ticketNo}.pdf`);
+
+    document.body.removeChild(container);
+    toast.dismiss(loadingToast);
+    toast.success('Job Order PDF generated successfully');
+  } catch (err) {
+    console.error('PDF Export Error:', err);
+    toast.dismiss(loadingToast);
+    toast.error('Failed to export Job Order');
+  }
+};
 </script>
 
 <template>
@@ -349,9 +667,20 @@ const getImageUrl = (path: string | null | undefined) => {
                 <Pencil class="w-3.5 h-3.5 text-muted-foreground" />
               </Button>
             </DialogTitle>
-            <div class="flex items-center gap-2 text-xs text-muted-foreground pt-1">
-              <Clock class="w-3.5 h-3.5" />
-              <span>Created {{ localTicket ? formatDate(localTicket.createdAt) : '' }}</span>
+            <div
+              class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground pt-1"
+            >
+              <div class="flex items-center gap-1">
+                <Clock class="w-3.5 h-3.5" />
+                <span>Created {{ localTicket ? formatDate(localTicket.createdAt) : '' }}</span>
+              </div>
+              <div
+                v-if="resolutionDuration"
+                class="flex items-center gap-1 text-green-600 bg-green-50 px-1.5 py-0.5 rounded border border-green-100"
+              >
+                <Check class="w-3.5 h-3.5" />
+                <span>Resolved in {{ resolutionDuration }}</span>
+              </div>
             </div>
           </div>
 
@@ -365,6 +694,15 @@ const getImageUrl = (path: string | null | undefined) => {
               "
             >
               {{ localTicket?.status }}
+            </Badge>
+            <Badge
+              v-if="localTicket?.status !== 'Resolved' && localTicket?.status !== 'Closed'"
+              :class="[
+                'px-3 py-1 text-sm font-medium shadow-sm pointer-events-none ml-2',
+                getSLAStatusDetail.color,
+              ]"
+            >
+              SLA: {{ getSLAStatusDetail.label }}
             </Badge>
           </div>
         </div>
@@ -402,6 +740,58 @@ const getImageUrl = (path: string | null | undefined) => {
             >
               {{ loading ? 'Processing...' : 'Approve' }}
             </Button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rating / Feedback Banner (For Requester on Resolved/Closed) -->
+      <div
+        v-if="localTicket?.status === 'Resolved' && isOwner && !localTicket.rating"
+        class="px-6 mt-6 mb-2 shrink-0"
+      >
+        <div class="bg-amber-50 border border-amber-100 rounded-xl p-4 shadow-sm">
+          <div class="flex items-start gap-3">
+            <div class="p-2 bg-white rounded-lg text-amber-600 shadow-sm mt-0.5">
+              <Star class="w-5 h-5 fill-amber-600" />
+            </div>
+            <div class="flex-1">
+              <h4 class="text-sm font-semibold text-amber-900">How did we do?</h4>
+              <p class="text-xs text-amber-700 mt-1">Please rate the resolution of your ticket.</p>
+
+              <div class="flex items-center gap-1.5 mt-3">
+                <button
+                  v-for="star in 5"
+                  :key="star"
+                  @click="localTicket!.rating = star"
+                  class="transition-transform hover:scale-110"
+                >
+                  <Star
+                    class="w-6 h-6"
+                    :class="
+                      star <= (localTicket?.rating || 0)
+                        ? 'text-amber-500 fill-amber-500'
+                        : 'text-amber-200'
+                    "
+                  />
+                </button>
+              </div>
+
+              <div v-if="localTicket?.rating" class="mt-3">
+                <Textarea
+                  v-model="localTicket!.feedback"
+                  placeholder="Share your feedback (optional)..."
+                  class="bg-white border-amber-100 text-sm h-20"
+                />
+                <Button
+                  size="sm"
+                  class="mt-2 bg-amber-600 hover:bg-amber-700 text-white border-0"
+                  @click="saveChanges"
+                  :disabled="loading"
+                >
+                  Submit Feedback
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -559,46 +949,62 @@ const getImageUrl = (path: string | null | undefined) => {
                   </div>
                 </div>
 
-                <!-- Comments List -->
-                <div
-                  v-for="ticketComment in localTicket?.comments || []"
-                  :key="ticketComment.id"
-                  class="relative"
-                >
+                <!-- Unified Timeline -->
+                <div v-for="item in mergedTimeline" :key="item.id" class="relative">
                   <div
-                    class="absolute -left-[21px] top-1 w-3 h-3 bg-muted-foreground/30 rounded-full ring-4 ring-background"
+                    class="absolute -left-[21px] top-1 w-3 h-3 rounded-full ring-4 ring-background"
+                    :class="
+                      item.timelineType === 'comment' ? 'bg-muted-foreground/30' : 'bg-primary/40'
+                    "
                   ></div>
-                  <div class="bg-muted/10 border rounded-lg p-3 shadow-sm">
+
+                  <!-- Comment View -->
+                  <div
+                    v-if="item.timelineType === 'comment'"
+                    class="bg-muted/10 border rounded-lg p-3 shadow-sm"
+                  >
                     <div class="flex items-center gap-2 mb-1">
                       <Avatar class="w-6 h-6">
-                        <AvatarImage :src="getAvatarUrl(ticketComment.user.avatar)" />
+                        <AvatarImage :src="getAvatarUrl(item.user.avatar)" />
                         <AvatarFallback class="text-[0.625rem] bg-muted text-muted-foreground">
-                          {{ ticketComment.user.displayName?.substring(0, 2).toUpperCase() }}
+                          {{ item.user.displayName?.substring(0, 2).toUpperCase() }}
                         </AvatarFallback>
                       </Avatar>
-                      <span class="text-xs font-medium">{{ ticketComment.user.displayName }}</span>
+                      <span class="text-xs font-medium">{{ item.user.displayName }}</span>
                       <span class="text-[0.625rem] text-muted-foreground ml-auto">
-                        {{ formatDate(ticketComment.createdAt) }}
+                        {{ formatDate(item.createdAt) }}
                       </span>
                     </div>
-                    <p class="text-sm text-foreground/90 whitespace-pre-wrap">
-                      {{ ticketComment.content }}
-                    </p>
+                    <p class="text-sm text-foreground/90 whitespace-pre-wrap">{{ item.content }}</p>
                   </div>
-                </div>
 
-                <!-- Created Event -->
-                <div class="relative pb-2">
-                  <div
-                    class="absolute -left-[21px] top-1.5 w-2.5 h-2.5 bg-muted-foreground/30 rounded-full ring-4 ring-background"
-                  ></div>
-                  <div class="text-xs text-muted-foreground">
+                  <!-- Activity View -->
+                  <div v-else class="text-xs text-muted-foreground py-0.5">
                     <span class="font-medium text-foreground">{{
-                      localTicket?.requester?.displayName || 'User'
+                      item.user?.displayName || 'User'
                     }}</span>
-                    created this ticket.
-                    <div class="text-[0.625rem] opacity-70 mt-0.5">
-                      {{ localTicket ? formatDate(localTicket.createdAt) : '' }}
+                    <span v-if="item.type === 'STATUS_CHANGE'">
+                      changed status from
+                      <span class="font-medium px-1.5 py-0.5 rounded bg-muted/50 text-foreground">{{
+                        item.oldValue
+                      }}</span>
+                      to
+                      <span class="font-medium px-1.5 py-0.5 rounded bg-primary/10 text-primary">{{
+                        item.newValue
+                      }}</span>
+                    </span>
+                    <span v-else-if="item.type === 'ASSIGNMENT'">
+                      assigned this ticket to
+                      <span class="font-medium text-foreground">{{
+                        item.newValue || 'Unassigned'
+                      }}</span>
+                    </span>
+                    <span v-else-if="item.type === 'TICKET_CREATED'"> created this ticket. </span>
+                    <span v-else>
+                      {{ item.content || item.type }}
+                    </span>
+                    <div class="text-[0.625rem] opacity-70 mt-1">
+                      {{ formatDate(item.createdAt) }}
                     </div>
                   </div>
                 </div>
@@ -614,27 +1020,31 @@ const getImageUrl = (path: string | null | undefined) => {
             <div class="p-5 space-y-6">
               <!-- Actions -->
               <!-- Actions -->
-              <div
-                v-if="
-                  !['Approved', 'Closed', 'Resolved', 'Cancelled'].includes(
-                    localTicket?.status || ''
-                  )
-                "
-                class="grid gap-2"
-              >
-                <Button @click="saveChanges" :disabled="loading" class="w-full shadow-sm">
-                  <Save class="w-4 h-4 mr-2" /> Save Changes
-                </Button>
+              <div class="grid gap-2">
+                <div v-if="isEditable" class="grid gap-2">
+                  <Button @click="saveChanges" :disabled="loading" class="w-full shadow-sm">
+                    <Save class="w-4 h-4 mr-2" /> Save Changes
+                  </Button>
+                  <Button
+                    v-if="isOwner"
+                    @click="handleDelete"
+                    :disabled="loading"
+                    variant="outline"
+                    class="w-full shadow-sm text-red-600 hover:text-red-700 hover:bg-red-50 border-red-100"
+                  >
+                    <Trash2 class="w-4 h-4 mr-2" /> Delete Ticket
+                  </Button>
+                </div>
+
                 <Button
-                  v-if="isOwner"
-                  @click="handleDelete"
-                  :disabled="loading"
+                  @click="exportJobOrderPDF"
                   variant="outline"
-                  class="w-full shadow-sm text-red-600 hover:text-red-700 hover:bg-red-50 border-red-100"
+                  class="w-full shadow-sm bg-blue-50/50 hover:bg-blue-50 border-blue-100 text-blue-700 h-10 font-semibold"
                 >
-                  <Trash2 class="w-4 h-4 mr-2" /> Delete Ticket
+                  <Printer class="w-4 h-4 mr-2" /> Export Job Order
                 </Button>
-                <div class="my-4 border-b bg-border/60"></div>
+
+                <div v-if="isEditable" class="my-2 border-b bg-border/60"></div>
               </div>
 
               <!-- Requester Card -->
@@ -795,6 +1205,29 @@ const getImageUrl = (path: string | null | undefined) => {
           </div>
         </div>
       </div>
+      <AlertDialog v-model:open="isStatusConfirmDialogOpen">
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Ticket Closure</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to change the status to
+              <span class="font-bold text-foreground">{{ selectedStatus }}</span
+              >? This will mark the ticket as settled and calculate the final resolution time.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel @click="selectedStatus = localTicket?.status || ''">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              class="bg-primary text-white hover:bg-primary/90"
+              @click="saveChanges(true)"
+            >
+              Confirm & Close
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DialogContent>
   </Dialog>
 

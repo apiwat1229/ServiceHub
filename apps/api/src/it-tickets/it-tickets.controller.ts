@@ -37,8 +37,8 @@ export class ITTicketsController {
     }
 
     @Patch(':id')
-    update(@Param('id') id: string, @Body() updateDto: UpdateITTicketDto) {
-        return this.itTicketsService.update(id, updateDto);
+    update(@Param('id') id: string, @Request() req, @Body() updateDto: UpdateITTicketDto) {
+        return this.itTicketsService.update(id, req.user.userId, updateDto);
     }
 
     @Delete(':id')

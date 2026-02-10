@@ -96,6 +96,10 @@ export class UpdateITTicketDto {
     @IsOptional()
     @IsString()
     issuedBy?: string;
+
+    @IsOptional()
+    @IsString()
+    resolvedAt?: string | Date;
 }
 
 export class CreateTicketCommentDto {

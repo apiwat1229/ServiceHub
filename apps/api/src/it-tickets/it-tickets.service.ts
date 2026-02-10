@@ -68,6 +68,12 @@ export class ITTicketsService {
             }, [createDto.approverId], NotificationType.REQUEST);
         }
 
+        // Log Activity
+        await this.logActivity(ticket.id, userId, 'TICKET_CREATED', null, 'Open', `Ticket created with number ${ticket.ticketNo}`);
+
+        // Real-time Update
+        this.notificationsService.emitTicketEvent('ticket:created', ticket);
+
         return ticket;
     }
 
@@ -194,22 +200,65 @@ export class ITTicketsService {
                     },
                     orderBy: { createdAt: 'desc' },
                 },
+                activities: {
+                    include: {
+                        user: {
+                            select: {
+                                id: true,
+                                displayName: true,
+                                firstName: true,
+                                lastName: true,
+                                avatar: true,
+                            }
+                        }
+                    },
+                    orderBy: { createdAt: 'desc' },
+                }
             },
         });
     }
 
-    async update(id: string, updateDto: UpdateITTicketDto) {
+    async update(id: string, userId: string, updateDto: UpdateITTicketDto) {
         // 1. Get current ticket to check status change and asset info
         const currentTicket = await this.prisma.iTTicket.findUnique({
             where: { id },
-            select: { status: true, isAssetRequest: true, assetId: true, quantity: true }
+            select: { status: true, isAssetRequest: true, assetId: true, quantity: true, assigneeId: true }
         });
+
+        // 2. Prepare update data
+        const updateData: UpdateITTicketDto = { ...updateDto };
+
+        // Handle resolvedAt timestamp
+        if (
+            updateDto.status &&
+            ['Resolved', 'Closed'].includes(updateDto.status) &&
+            !['Resolved', 'Closed'].includes(currentTicket?.status as string)
+        ) {
+            updateData.resolvedAt = new Date();
+        } else if (
+            updateDto.status &&
+            !['Resolved', 'Closed'].includes(updateDto.status) &&
+            ['Resolved', 'Closed'].includes(currentTicket?.status as string)
+        ) {
+            // If reopening, maybe clear resolvedAt? Or keep it? Usually clearing is better for "timing"
+            updateData.resolvedAt = null;
+        }
 
         const ticket = await this.prisma.iTTicket.update({
             where: { id },
-            data: updateDto,
+            data: updateData,
             include: { requester: true }
         });
+
+        // 3. Log Activity for Status Change
+        if (updateDto.status && updateDto.status !== currentTicket?.status) {
+            await this.logActivity(id, userId, 'STATUS_CHANGE', currentTicket?.status, updateDto.status);
+        }
+
+        // 4. Log Activity for Assignment Change
+        if (updateDto.assigneeId !== undefined && updateDto.assigneeId !== currentTicket?.assigneeId) {
+            await this.logActivity(id, userId, 'ASSIGNMENT', currentTicket?.assigneeId, updateDto.assigneeId);
+        }
 
         // 2. Stock Deduction Logic
         // If status changed to 'Approved' and it IS an asset request with a valid asset and quantity
@@ -255,22 +304,30 @@ export class ITTicketsService {
             }
         }
 
-        // Notify Assignee if assigned
-        if (updateDto.assigneeId) {
+        // Notify Assignee if assigned OR if assignee changed
+        if (updateDto.assigneeId && updateDto.assigneeId !== currentTicket?.assigneeId) {
             await this.triggerNotification('IT_HELP_DESK', 'TICKET_ASSIGNED', {
                 title: `Ticket Assigned: ${ticket.ticketNo}`,
-                message: `You have been assigned to ticket ${ticket.ticketNo}`,
+                message: `You have been assigned to ticket ${ticket.ticketNo}: ${ticket.title}`,
                 actionUrl: `/admin/helpdesk?ticketId=${ticket.id}`
             }, [updateDto.assigneeId]);
         }
+
+        // Real-time Update
+        this.notificationsService.emitTicketEvent('ticket:updated', ticket);
 
         return ticket;
     }
 
     async remove(id: string) {
-        return this.prisma.iTTicket.delete({
+        const result = await this.prisma.iTTicket.delete({
             where: { id },
         });
+
+        // Real-time Update
+        this.notificationsService.emitTicketEvent('ticket:deleted', { id });
+
+        return result;
     }
 
     async addComment(ticketId: string, userId: string, createDto: CreateTicketCommentDto) {
@@ -318,6 +375,26 @@ export class ITTicketsService {
             }
         }
 
+        // Real-time Update
+        this.notificationsService.emitTicketEvent('ticket:commented', { ticketId, comment });
+
         return comment;
+    }
+
+    private async logActivity(ticketId: string, userId: string, type: string, oldValue?: string | null, newValue?: string | null, content?: string) {
+        try {
+            await this.prisma.ticketActivity.create({
+                data: {
+                    ticketId,
+                    userId,
+                    type,
+                    oldValue: oldValue?.toString() || null,
+                    newValue: newValue?.toString() || null,
+                    content
+                }
+            });
+        } catch (error) {
+            console.error('Failed to log ticket activity:', error);
+        }
     }
 }

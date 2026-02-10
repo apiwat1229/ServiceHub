@@ -57,6 +57,7 @@ export function useSidebarMenu() {
                     icon: Headset,
                     permission: 'helpdesk:read',
                     children: [
+                        { name: t('services.itHelp.tabs.overview'), path: '/admin/helpdesk?tab=overview', icon: LayoutDashboard },
                         { name: t('services.itHelp.tabs.kb'), path: '/admin/helpdesk?tab=kb', icon: BookOpen },
                         { name: t('services.itHelp.tabs.tickets'), path: '/admin/helpdesk?tab=tickets', icon: FileText },
                         { name: t('services.itHelp.tabs.assetRequests'), path: '/admin/helpdesk?tab=asset-requests', icon: Monitor },

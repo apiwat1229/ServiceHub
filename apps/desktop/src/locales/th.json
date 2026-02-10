@@ -320,6 +320,115 @@
       "name": "จัดการคลังสินค้า",
       "description": "จัดการสินค้าคงคลัง การเคลื่อนย้ายสินค้า และการดำเนินงานในคลังสินค้า"
     },
+    "printer": {
+      "title": "แดชบอร์ดสรุปการใช้งานเครื่องพิมพ์",
+      "subtitle": "วิเคราะห์ข้อมูลจากไฟล์ CSV Log",
+      "uploadTitle": "อัปโหลดไฟล์ CSV",
+      "uploadSubtitle": "อัปโหลดไฟล์ CSV หนึ่งไฟล์หรือมากกว่า (เช่น บันทึกรายเดือน)",
+      "uploadDesc": "รองรับไฟล์ .csv (Encoding: UTF-8)",
+      "dragDrop": "ลากและวางไฟล์ CSV ที่นี่",
+      "orClick": "หรือคลิกเพื่อเลือกไฟล์",
+      "emptyState": "กรุณาอัปโหลดไฟล์ CSV เพื่อเริ่มการวิเคราะห์",
+      "emptyStateDesc": "ระบบจะประมวลผล CopyBW, CopyColor, PrintBW, PrintColor, และ TotalMeter",
+      "uploadProcessing": "กำลังดำเนินการ...",
+      "uploadSuccess": "อัปโหลดเสร็จสมบูรณ์!",
+      "filesSaved": "บันทึกไฟล์แล้ว:",
+      "filesSkipped": "ข้ามไฟล์:",
+      "totalRecords": "บันทึกข้อมูลทั้งหมดแล้ว:",
+      "uploadFailed": "อัปโหลดล้มเหลว",
+      "stats": {
+        "totalUsers": "ผู้ใช้งานทั้งหมด",
+        "totalDepts": "แผนกทั้งหมด",
+        "grandTotal": "ยอดการใช้งานรวม",
+        "printBW": "พิมพ์ขาว-ดำ (Print)",
+        "printColor": "พิมพ์สี (Print)",
+        "copyBW": "ถ่ายเอกสารขาว-ดำ (Copy)",
+        "copyColor": "ถ่ายเอกสารสี (Copy)"
+      },
+      "charts": {
+        "topUsers": "10 อันดับผู้ใช้งานสูงสุด",
+        "usageType": "สัดส่วนประเภทการใช้งาน",
+        "usageByDept": "ยอดการใช้งานแยกตามแผนก",
+        "labels": {
+          "printBW": "Print ขาว-ดำ",
+          "printColor": "Print สี",
+          "copyBW": "Copy ขาว-ดำ",
+          "copyColor": "Copy สี",
+          "totalUsage": "ยอดการใช้งานรวม (แผ่น)"
+        }
+      },
+      "history": {
+        "title": "ประวัติการใช้งานรายเดือน",
+        "comparison": "เปรียบเทียบกับเดือนที่ผ่านมา",
+        "estMonthlyCost": "ราคาประมาณการรายเดือน",
+        "bw": "ขาว-ดำ",
+        "color": "สี",
+        "over": "เกิน",
+        "saveSuccess": "บันทึกข้อมูลรายเดือนสำเร็จ!",
+        "saveError": "บันทึกข้อมูลไม่สำเร็จ",
+        "saveBtn": "บันทึกลงฐานข้อมูล"
+      },
+      "settings": {
+        "title": "ตั้งค่าการวิเคราะห์เครื่องพิมพ์",
+        "importSummary": "สรุปการนำเข้า",
+        "importSummaryDesc": "จัดการข้อมูลการเข้าใช้งานเครื่องพิมพ์ที่นำเข้า",
+        "totalMonths": "รวมจำนวนเดือน",
+        "month": "เดือน",
+        "months": "เดือน",
+        "noDataImported": "ยังไม่มีข้อมูลที่นำเข้า",
+        "noDataImportedDesc": "อัปโหลดไฟล์ CSV เพื่อดูประวัติการใช้งาน",
+        "importedData": "ข้อมูลที่นำเข้า",
+        "scrollHint": "← เลื่อนเพื่อดูเพิ่มเติม →",
+        "deptManagement": "จัดการแผนก",
+        "searchDepts": "ค้นหาแผนก...",
+        "noDeptsFound": "ไม่พบแผนก",
+        "userMapping": "กำหนดแผนกให้ผู้ใช้งาน",
+        "mappingDesc": "กำหนดแผนกให้ชื่อผู้ใช้ที่พบในไฟล์ Log เพื่อการจัดกลุ่มข้อมูลที่ถูกต้อง",
+        "addDept": "เพิ่มแผนก",
+        "addDeptDesc": "กำหนดชื่อแผนกสำหรับการจัดกลุ่มการใช้งานเครื่องพิมพ์",
+        "editDept": "แก้ไขแผนก",
+        "deleteDept": "ลบแผนก",
+        "deptName": "ชื่อแผนก",
+        "description": "คำอธิบาย",
+        "mappingDescDesc": "จับคู่ผู้ใช้งานหลายรายกับแผนกพร้อมกัน",
+        "selectUsers": "เลือกผู้ใช้งาน...",
+        "noUserFound": "ไม่พบผู้ใช้งาน",
+        "selected": "เลือกแล้ว:",
+        "users": "ราย",
+        "clearAll": "ล้างทั้งหมด",
+        "saveMapping": "บันทึกการกำหนดแผนก",
+        "mappingSuccess": "บันทึกข้อมูลสำเร็จ!",
+        "mappingError": "บันทึกข้อมูลไม่สำเร็จ",
+        "noMappingsFound": "ไม่พบการจับคู่",
+        "deletePeriodTitle": "ลบข้อมูลช่วงเวลา",
+        "deletePeriodDesc": "การดำเนินการนี้ไม่สามารถย้อนกลับได้ ข้อมูลการใช้งานเครื่องพิมพ์ทั้งหมดในช่วงเวลานี้จะถูกลบอย่างถาวร",
+        "deletePeriodConfirm": "ระเบียนการใช้งานทั้งหมดจะถูกลบ"
+      },
+      "table": {
+        "title": "รายละเอียดรายบุคคล (รวมยอด)",
+        "search": "ค้นหาชื่อผู้ใช้...",
+        "userName": "ชื่อผู้ใช้",
+        "department": "แผนก",
+        "total": "รวมทั้งหมด",
+        "noData": "ไม่พบข้อมูล",
+        "rowsPerPage": "จำนวนแถวต่อหน้า",
+        "page": "หน้า",
+        "of": "จาก",
+        "selectDept": "เลือกแผนก",
+        "filterDept": "กรองตามแผนก",
+        "allDepts": "ทุกแผนก"
+      },
+      "departments": {
+        "it": "เทคโนโลยีสารสนเทศ (IT)",
+        "hr": "ทรัพยากรบุคคล (HR)",
+        "acc": "บัญชี (Accounting)",
+        "production": "ฝ่ายผลิต (Production)",
+        "sales": "ฝ่ายขาย (Sales)",
+        "mkt": "การตลาด (Marketing)",
+        "mng": "บริหาร (Management)",
+        "other": "อื่นๆ"
+      }
+    },
     "maintenance": {
       "name": "การบำรุงรักษา",
       "description": "การบำรุงรักษาอุปกรณ์และจัดการใบสั่งงาน",
@@ -918,6 +1027,7 @@
         "resolvedTickets": "ตั๋วที่แก้ไขแล้ว"
       },
       "tabs": {
+        "overview": "ภาพรวม",
         "kb": "ศูนย์การเรียนรู้",
         "tickets": "รายการแจ้งซ่อม",
         "assetRequests": "เบิก/คืน อุปกรณ์",
@@ -1090,79 +1200,6 @@
               "erp": "ERP / Accounting System (บิลผิด, สต็อกไม่ตรง)"
             }
           }
-        }
-      },
-      "printer": {
-        "title": "แดชบอร์ดสรุปการใช้งานเครื่องพิมพ์",
-        "subtitle": "วิเคราะห์ข้อมูลจากไฟล์ CSV Log",
-        "uploadTitle": "อัปโหลดไฟล์ CSV",
-        "uploadDesc": "รองรับไฟล์ .csv (Encoding: UTF-8)",
-        "emptyState": "กรุณาอัปโหลดไฟล์ CSV เพื่อเริ่มการวิเคราะห์",
-        "emptyStateDesc": "ระบบจะประมวลผล CopyBW, CopyColor, PrintBW, PrintColor, และ TotalMeter",
-        "stats": {
-          "totalUsers": "ผู้ใช้งานทั้งหมด",
-          "totalDepts": "แผนกทั้งหมด",
-          "grandTotal": "ยอดการใช้งานรวม",
-          "printBW": "พิมพ์ขาว-ดำ (Print)",
-          "printColor": "พิมพ์สี (Print)",
-          "copyBW": "ถ่ายเอกสารขาว-ดำ (Copy)",
-          "copyColor": "ถ่ายเอกสารสี (Copy)"
-        },
-        "charts": {
-          "topUsers": "10 อันดับผู้ใช้งานสูงสุด",
-          "usageType": "สัดส่วนประเภทการใช้งาน",
-          "usageByDept": "ยอดการใช้งานแยกตามแผนก",
-          "labels": {
-            "printBW": "Print ขาว-ดำ",
-            "printColor": "Print สี",
-            "copyBW": "Copy ขาว-ดำ",
-            "copyColor": "Copy สี",
-            "totalUsage": "ยอดการใช้งานรวม (แผ่น)"
-          }
-        },
-        "history": {
-          "title": "ประวัติการใช้งานรายเดือน",
-          "comparison": "เปรียบเทียบกับเดือนที่ผ่านมา",
-          "saveSuccess": "บันทึกข้อมูลรายเดือนสำเร็จ!",
-          "saveError": "บันทึกข้อมูลไม่สำเร็จ",
-          "saveBtn": "บันทึกลงฐานข้อมูล"
-        },
-        "settings": {
-          "title": "ตั้งค่าการวิเคราะห์เครื่องพิมพ์",
-          "deptManagement": "จัดการแผนก",
-          "userMapping": "กำหนดแผนกให้ผู้ใช้งาน",
-          "addDept": "เพิ่มแผนก",
-          "editDept": "แก้ไขแผนก",
-          "deleteDept": "ลบแผนก",
-          "deptName": "ชื่อแผนก",
-          "description": "คำอธิบาย",
-          "mappingDesc": "กำหนดแผนกให้ชื่อผู้ใช้ที่พบในไฟล์ Log เพื่อการจัดกลุ่มข้อมูลที่ถูกต้อง",
-          "saveMapping": "บันทึกการกำหนดแผนก",
-          "mappingSuccess": "บันทึกข้อมูลสำเร็จ!",
-          "mappingError": "บันทึกข้อมูลไม่สำเร็จ"
-        },
-        "table": {
-          "title": "รายละเอียดรายบุคคล (รวมยอด)",
-          "search": "ค้นหาชื่อผู้ใช้...",
-          "userName": "ชื่อผู้ใช้",
-          "department": "แผนก",
-          "total": "รวมทั้งหมด",
-          "noData": "ไม่พบข้อมูล",
-          "rowsPerPage": "จำนวนแถวต่อหน้า",
-          "page": "หน้า",
-          "selectDept": "เลือกแผนก",
-          "filterDept": "กรองตามแผนก",
-          "allDepts": "ทุกแผนก"
-        },
-        "departments": {
-          "it": "เทคโนโลยีสารสนเทศ (IT)",
-          "hr": "ทรัพยากรบุคคล (HR)",
-          "acc": "บัญชี (Accounting)",
-          "production": "ฝ่ายผลิต (Production)",
-          "sales": "ฝ่ายขาย (Sales)",
-          "mkt": "การตลาด (Marketing)",
-          "mng": "บริหาร (Management)",
-          "other": "อื่นๆ"
         }
       },
       "assets": {

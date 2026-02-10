@@ -1406,9 +1406,9 @@ onUnmounted(() => {
             <div class="grid grid-cols-2 gap-4 divide-x h-full items-center">
               <div class="flex flex-col gap-1">
                 <div class="flex items-center justify-between">
-                  <span class="text-[0.6875rem] font-medium text-muted-foreground"
-                    >Total Users</span
-                  >
+                  <span class="text-[0.6875rem] font-medium text-muted-foreground">{{
+                    t('services.printer.stats.totalUsers')
+                  }}</span>
                   <Users class="h-3.5 w-3.5 text-muted-foreground/70" />
                 </div>
                 <div class="text-2xl font-bold text-slate-700">
@@ -1417,9 +1417,9 @@ onUnmounted(() => {
               </div>
               <div class="flex flex-col gap-1 pl-4">
                 <div class="flex items-center justify-between">
-                  <span class="text-[0.6875rem] font-medium text-muted-foreground"
-                    >Total Depts</span
-                  >
+                  <span class="text-[0.6875rem] font-medium text-muted-foreground">{{
+                    t('services.printer.stats.totalDepts')
+                  }}</span>
                   <BarChart3 class="h-3.5 w-3.5 text-muted-foreground/70" />
                 </div>
                 <div class="text-2xl font-bold text-slate-700">
@@ -1436,7 +1436,9 @@ onUnmounted(() => {
             <!-- Grand Total -->
             <div class="p-4 flex flex-col justify-center bg-blue-50/40">
               <div class="flex items-center justify-between mb-1">
-                <span class="text-xs font-semibold text-blue-600">Grand Total Usage</span>
+                <span class="text-xs font-semibold text-blue-600">{{
+                  t('services.printer.stats.grandTotal')
+                }}</span>
                 <Printer class="h-4 w-4 text-blue-600" />
               </div>
               <div class="text-3xl font-bold text-blue-700">
@@ -1446,7 +1448,9 @@ onUnmounted(() => {
             <!-- B&W -->
             <div class="p-4 flex flex-col justify-center">
               <div class="flex items-center justify-between mb-1">
-                <span class="text-xs font-semibold text-slate-600">Total Print B&W</span>
+                <span class="text-xs font-semibold text-slate-600">{{
+                  t('services.printer.stats.printBW')
+                }}</span>
                 <div class="h-2.5 w-2.5 rounded-full bg-blue-500" />
               </div>
               <div class="text-3xl font-bold text-slate-800">{{ formatNumber(stats.totalBW) }}</div>
@@ -1454,7 +1458,9 @@ onUnmounted(() => {
             <!-- Color -->
             <div class="p-4 flex flex-col justify-center">
               <div class="flex items-center justify-between mb-1">
-                <span class="text-xs font-semibold text-slate-600">Total Print Color</span>
+                <span class="text-xs font-semibold text-slate-600">{{
+                  t('services.printer.stats.printColor')
+                }}</span>
                 <div class="h-2.5 w-2.5 rounded-full bg-pink-500" />
               </div>
               <div class="text-3xl font-bold text-slate-800">
@@ -1529,7 +1535,7 @@ onUnmounted(() => {
               class="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-md border border-slate-200"
             >
               <div class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Est. Monthly Cost
+                {{ t('services.printer.history.estMonthlyCost') }}
               </div>
               <div class="text-lg font-bold text-slate-800">
                 ฿{{ formatNumber(estimatedCost.total) }}
@@ -1537,14 +1543,24 @@ onUnmounted(() => {
               <div class="h-4 w-px bg-slate-300 mx-1 hidden sm:block"></div>
               <div class="flex items-center gap-3 text-xs text-muted-foreground">
                 <span :class="{ 'text-orange-600 font-medium': estimatedCost.excessBW > 0 }">
-                  B&W: ฿{{ formatNumber(estimatedCost.bw) }}
+                  {{ t('services.printer.history.bw') }}: ฿{{ formatNumber(estimatedCost.bw) }}
                   <span v-if="estimatedCost.excessBW > 0"
-                    >(Over {{ formatNumber(estimatedCost.excessBW) }})</span
+                    >({{ t('services.printer.history.over') }}
+                    {{ formatNumber(estimatedCost.excessBW) }})</span
                   >
                 </span>
                 <span class="text-pink-600 font-medium"
-                  >Color: ฿{{ formatNumber(estimatedCost.color) }}</span
+                  >{{ t('services.printer.history.color') }}: ฿{{
+                    formatNumber(estimatedCost.color)
+                  }}</span
                 >
+                <span
+                  v-if="estimatedCost.excessColor > 0"
+                  class="text-[10px] text-destructive font-medium"
+                >
+                  ({{ t('services.printer.history.over') }}
+                  {{ formatNumber(estimatedCost.excessColor) }})
+                </span>
               </div>
             </div>
           </div>
@@ -1763,7 +1779,7 @@ onUnmounted(() => {
       <DialogContent class="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>{{ t('services.printer.uploadTitle') }}</DialogTitle>
-          <DialogDescription> Upload one or more CSV files (e.g., Monthly logs) </DialogDescription>
+          <DialogDescription> {{ t('services.printer.uploadSubtitle') }} </DialogDescription>
         </DialogHeader>
 
         <!-- Idle/Select State -->
@@ -1777,8 +1793,8 @@ onUnmounted(() => {
             @click="() => ($refs.fileInput as HTMLInputElement)?.click()"
           >
             <Upload class="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-            <p class="text-sm font-medium mb-2">Drag & Drop CSV files here</p>
-            <p class="text-xs text-muted-foreground mb-4">or click to browse</p>
+            <p class="text-sm font-medium mb-2">{{ t('services.printer.dragDrop') }}</p>
+            <p class="text-xs text-muted-foreground mb-4">{{ t('services.printer.orClick') }}</p>
             <input
               ref="fileInput"
               type="file"
@@ -1819,7 +1835,7 @@ onUnmounted(() => {
             ></div>
           </div>
           <div>
-            <h4 class="font-semibold">Processing...</h4>
+            <h4 class="font-semibold">{{ t('services.printer.uploadProcessing') }}</h4>
             <p class="text-sm text-muted-foreground">{{ processingStatus }}</p>
           </div>
           <div class="w-full h-2 bg-secondary rounded-full overflow-hidden">
@@ -1835,18 +1851,20 @@ onUnmounted(() => {
           <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
             <CheckCircle2 class="w-8 h-8 text-green-600" />
           </div>
-          <h3 class="text-lg font-semibold text-green-700">Upload Complete!</h3>
+          <h3 class="text-lg font-semibold text-green-700">
+            {{ t('services.printer.uploadSuccess') }}
+          </h3>
           <div class="text-sm text-left bg-muted/30 p-4 rounded-md space-y-2">
             <div class="flex justify-between">
-              <span>Files Saved:</span>
+              <span>{{ t('services.printer.filesSaved') }}</span>
               <span class="font-medium">{{ uploadResult?.success }}</span>
             </div>
             <div class="flex justify-between">
-              <span>Files Skipped:</span>
+              <span>{{ t('services.printer.filesSkipped') }}</span>
               <span class="font-medium text-orange-600">{{ uploadResult?.skipped }}</span>
             </div>
             <div class="flex justify-between border-t pt-2">
-              <span>Total Records Saved:</span>
+              <span>{{ t('services.printer.totalRecords') }}</span>
               <span class="font-medium">{{ formatNumber(uploadResult?.savedRecords || 0) }}</span>
             </div>
           </div>
@@ -1857,7 +1875,9 @@ onUnmounted(() => {
           <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto">
             <AlertCircle class="w-8 h-8 text-red-600" />
           </div>
-          <h3 class="text-lg font-semibold text-red-700">Upload Failed</h3>
+          <h3 class="text-lg font-semibold text-red-700">
+            {{ t('services.printer.uploadFailed') }}
+          </h3>
           <p class="text-sm text-muted-foreground">{{ errorMessage }}</p>
         </div>
 

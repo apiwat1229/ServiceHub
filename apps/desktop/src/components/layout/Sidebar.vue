@@ -8,19 +8,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
 import { useSidebarMenu } from '@/composables/useSidebarMenu';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth';
-import {
-  ChevronRight,
-  LogOut,
-  MoreVertical,
-  Search,
-  Settings,
-  User as UserIcon,
-} from 'lucide-vue-next';
-import { computed, ref } from 'vue';
+import { ChevronRight, LogOut, MoreVertical, Settings, User as UserIcon } from 'lucide-vue-next';
+import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 // Global variable defined in vite.config.ts
@@ -31,23 +23,6 @@ const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
 const { menuGroups } = useSidebarMenu();
-
-const searchQuery = ref('');
-
-const filteredMenuGroups = computed(() => {
-  if (!searchQuery.value) return menuGroups.value;
-
-  const query = searchQuery.value.toLowerCase();
-  return menuGroups.value
-    .map((group) => ({
-      ...group,
-      items: group.items.filter(
-        (item) =>
-          item.name.toLowerCase().includes(query) || group.title.toLowerCase().includes(query)
-      ),
-    }))
-    .filter((group) => group.items.length > 0);
-});
 
 const handleLogout = () => {
   authStore.logout();
@@ -66,24 +41,9 @@ const userInitials = computed(() => {
   >
     <!-- Header/Logo Area (Optional, currently Navbar handles brand) -->
 
-    <!-- Search Bar -->
-    <div class="px-4 py-4 pt-6">
-      <div class="relative group">
-        <Search
-          class="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors"
-        />
-        <Input
-          v-model="searchQuery"
-          type="text"
-          placeholder="Search menu..."
-          class="pl-9 h-9 bg-background/50 border-border/40 focus:bg-background transition-all"
-        />
-      </div>
-    </div>
-
     <!-- Navigation Scroll Area -->
     <nav class="flex-1 px-3 py-2 space-y-6 overflow-y-auto scrollbar-hide">
-      <div v-for="(group, index) in filteredMenuGroups" :key="index" class="space-y-1">
+      <div v-for="(group, index) in menuGroups" :key="index" class="space-y-1">
         <div class="px-3">
           <h4
             class="text-[0.625rem] font-bold text-muted-foreground uppercase tracking-widest py-2"
@@ -167,15 +127,6 @@ const userInitials = computed(() => {
             </div>
           </template>
         </div>
-      </div>
-
-      <!-- Empty State for Search -->
-      <div
-        v-if="filteredMenuGroups.length === 0"
-        class="flex flex-col items-center justify-center py-12 text-center"
-      >
-        <Search class="w-8 h-8 text-muted-foreground/20 mb-3" />
-        <p class="text-xs text-muted-foreground">No matches found</p>
       </div>
     </nav>
 

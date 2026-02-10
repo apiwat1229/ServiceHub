@@ -55,4 +55,16 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         console.log(`[Gateway] Emitting 'notification' to room: ${roomName} | Title: ${notification.title}`);
         this.server.to(roomName).emit('notification', notification);
     }
+
+    broadcastEvent(event: string, data: any) {
+        console.log(`[Gateway] Broadcasting global event: ${event}`);
+        this.server.emit(event, data);
+    }
+
+    sendToUsers(userIds: string[], event: string, data: any) {
+        userIds.forEach(userId => {
+            const roomName = `user:${userId}`;
+            this.server.to(roomName).emit(event, data);
+        });
+    }
 }
