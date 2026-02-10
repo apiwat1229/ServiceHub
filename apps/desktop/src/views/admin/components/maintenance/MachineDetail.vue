@@ -85,7 +85,7 @@ onMounted(() => {
       >
         <!-- Body Content -->
         <div :class="effectiveMachineId ? 'px-10 py-6 space-y-6' : 'p-10 space-y-12'">
-          <!-- Back Button (Only for full page) -->
+          <!-- Header: Back Button & Asset ID -->
           <div
             v-if="!effectiveMachineId"
             class="flex items-center justify-between border-b border-slate-100 pb-6 -mt-2"
@@ -111,6 +111,18 @@ onMounted(() => {
                 ASSET-{{ machine.id.split('-')[0].toUpperCase() }}
               </p>
             </div>
+          </div>
+
+          <!-- Machine Image -->
+          <div
+            v-if="machine.image"
+            class="w-full h-64 overflow-hidden rounded-xl border border-slate-100 shadow-sm relative group"
+          >
+            <img
+              :src="machine.image"
+              class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+            />
+            <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
           </div>
 
           <!-- Section 1: Asset Information Table -->
@@ -161,6 +173,14 @@ onMounted(() => {
               </div>
               <div class="flex justify-between items-end border-b border-slate-50 pb-2">
                 <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest">{{
+                  t('services.maintenance.forms.machine.assetTag')
+                }}</span>
+                <span class="text-sm font-black text-slate-900">{{
+                  machine.assetTag || 'N/A'
+                }}</span>
+              </div>
+              <div class="flex justify-between items-end border-b border-slate-50 pb-2">
+                <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest">{{
                   t('services.maintenance.registerId')
                 }}</span>
                 <span class="text-sm font-black text-slate-900"
@@ -176,9 +196,27 @@ onMounted(() => {
               </div>
               <div class="flex justify-between items-end border-b border-slate-50 pb-2">
                 <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest">{{
+                  t('services.maintenance.forms.machine.serial')
+                }}</span>
+                <span class="text-sm font-black text-slate-900">{{
+                  machine.serialNumber || 'N/A'
+                }}</span>
+              </div>
+              <div class="flex justify-between items-end border-b border-slate-50 pb-2">
+                <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest">{{
                   t('services.maintenance.locationZone')
                 }}</span>
                 <span class="text-sm font-black text-slate-900">{{ machine.location }}</span>
+              </div>
+              <div class="flex justify-between items-end border-b border-slate-50 pb-2">
+                <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest">{{
+                  t('services.maintenance.forms.machine.installDate')
+                }}</span>
+                <span class="text-sm font-black text-slate-900">{{
+                  machine.installDate
+                    ? new Date(machine.installDate).toLocaleDateString('th-TH')
+                    : 'N/A'
+                }}</span>
               </div>
               <div class="flex justify-between items-end border-b border-slate-50 pb-2">
                 <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest">{{
@@ -284,7 +322,8 @@ onMounted(() => {
                           class="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"
                         >
                           <User class="w-3.5 h-3.5 text-slate-300" />
-                          {{ t('services.maintenance.technician') }}: {{ repair.technician || 'N/A' }}
+                          {{ t('services.maintenance.technician') }}:
+                          {{ repair.technician || 'N/A' }}
                         </span>
                       </div>
                     </div>
@@ -307,9 +346,9 @@ onMounted(() => {
                     </div>
                     <div class="relative z-10">
                       <div class="flex items-center gap-2 mb-3">
-                        <Clock class="w-3.5 h-3.5 text-blue-500" />
+                        <Clock class="w-3.5 h-3.5 text-primary" />
                         <p
-                          class="text-[0.625rem] font-black text-blue-600 uppercase tracking-widest leading-none"
+                          class="text-[0.625rem] font-black text-primary uppercase tracking-widest leading-none"
                         >
                           {{ t('services.maintenance.maintenanceDescription') }}
                         </p>
@@ -355,9 +394,10 @@ onMounted(() => {
                         </div>
                         <div class="text-right">
                           <p class="text-sm font-black text-slate-900 leading-none mb-1">
-                            {{ part.qty }} {{ (part as any).unit || t('services.maintenance.units') }}
+                            {{ part.qty }}
+                            {{ (part as any).unit || t('services.maintenance.units') }}
                           </p>
-                          <p class="text-xs font-black text-blue-600 uppercase tracking-tighter">
+                          <p class="text-xs font-black text-primary uppercase tracking-tighter">
                             @ {{ formatCurrency(part.price) }}
                           </p>
                         </div>

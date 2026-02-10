@@ -43,8 +43,8 @@ const downloadQr = () => {
   <DialogContent class="w-[95vw] sm:max-w-[425px] overflow-hidden bg-white">
     <DialogHeader class="px-6 py-4 md:p-6 pb-2 border-b border-slate-100 relative overflow-hidden">
       <div class="flex items-center gap-3 mb-2 relative z-10">
-        <div class="p-2 bg-blue-50 rounded-lg">
-          <Monitor class="h-5 w-5 text-blue-600" />
+        <div class="p-2 bg-primary/5 rounded-lg">
+          <Monitor class="h-5 w-5 text-primary" />
         </div>
         <div>
           <DialogTitle class="text-lg sm:text-xl">{{
@@ -63,9 +63,9 @@ const downloadQr = () => {
         class="machine-qr-container bg-white border-2 border-slate-100 rounded-2xl p-4 sm:p-6 shadow-sm mb-6 relative group"
       >
         <div
-          class="absolute inset-0 bg-blue-600/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl flex items-center justify-center"
+          class="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl flex items-center justify-center"
         >
-          <QrCode class="h-12 w-12 text-blue-600/20" />
+          <QrCode class="h-12 w-12 text-primary/20" />
         </div>
         <QrcodeVue
           :value="publicUrl"
@@ -85,7 +85,7 @@ const downloadQr = () => {
           }}</span>
           <button
             @click="copyToClipboard"
-            class="flex items-center gap-1.5 text-[0.625rem] text-blue-600 font-bold hover:text-blue-700 transition-colors"
+            class="flex items-center gap-1.5 text-[0.625rem] text-primary font-bold hover:text-primary/90 transition-colors"
           >
             <Copy class="h-3 w-3" />
             {{ t('services.maintenance.copy') }}
@@ -129,7 +129,7 @@ const downloadQr = () => {
         {{ t('services.maintenance.forms.common.cancel') }}
       </Button>
       <Button
-        class="flex-1 bg-blue-600 hover:bg-blue-700 h-10 shadow-md order-1 sm:order-2"
+        class="flex-1 bg-primary hover:bg-primary/90 h-10 shadow-md order-1 sm:order-2"
         @click="downloadQr"
       >
         <Download class="h-4 w-4 mr-2" />

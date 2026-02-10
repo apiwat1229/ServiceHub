@@ -15,8 +15,11 @@
   },
   "dependencies": {
     "@capacitor/android": "^8.0.1",
+    "@capacitor/app": "^8.0.0",
     "@capacitor/cli": "^8.0.1",
     "@capacitor/core": "^8.0.1",
+    "@capacitor/status-bar": "^8.0.0",
+    "@hugotomazi/capacitor-navigation-bar": "^4.0.1",
     "@internationalized/date": "^3.10.1",
     "@radix-icons/vue": "^1.0.0",
     "@tanstack/vue-table": "^8.21.3",

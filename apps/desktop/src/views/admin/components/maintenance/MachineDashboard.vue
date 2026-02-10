@@ -25,6 +25,9 @@ import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import VueApexCharts from 'vue3-apexcharts';
 
+import { useThemeStore } from '@/stores/theme'; // Import theme store
+
+const themeStore = useThemeStore(); // Initialize store
 const { t, locale } = useI18n();
 
 const emit = defineEmits<{
@@ -42,16 +45,32 @@ const viewMachineDetail = (id: string) => {
 const selectedMachineIds = ref<string[]>(['all']);
 const open = ref(false);
 const topCount = ref('10');
-type Theme = 'indigo' | 'emerald' | 'rose' | 'amber' | 'slate';
-const selectedTheme = ref<Theme>('indigo');
 
-const colorThemes: Record<Theme, string[]> = {
-  indigo: ['#312e81', '#3730a3', '#4338ca', '#4f46e5', '#6366f1', '#818cf8', '#a5b4fc', '#c7d2fe'],
-  emerald: ['#064e3b', '#065f46', '#047857', '#059669', '#10b981', '#34d399', '#6ee7b7', '#a7f3d0'],
-  rose: ['#881337', '#9f1239', '#be123c', '#e11d48', '#f43f5e', '#fb7185', '#fda4af', '#fecdd3'],
-  amber: ['#78350f', '#92400e', '#b45309', '#d97706', '#f59e0b', '#fbbf24', '#fcd34d', '#fde68a'],
-  slate: ['#0f172a', '#1e293b', '#334155', '#475569', '#64748b', '#94a3b8', '#cbd5e1', '#e2e8f0'],
+// Map global theme names to Hex palettes for ApexCharts
+const themePalettes: Record<string, string[]> = {
+  zinc: ['#18181b', '#27272a', '#3f3f46', '#52525b', '#71717a', '#a1a1aa', '#d4d4d8', '#e4e4e7'],
+  teal: ['#0d9488', '#14b8a6', '#2dd4bf', '#5eead4', '#99f6e4', '#ccfbf1', '#e0f2f1', '#f0fdfa'],
+  blue: ['#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe', '#eff6ff', '#f8fafc'], // Primary Blue
+  green: ['#16a34a', '#22c55e', '#4ade80', '#86efac', '#bbf7d0', '#dcfce7', '#f0fdf4', '#f7fee7'],
+  orange: ['#ea580c', '#f97316', '#fb923c', '#fdba74', '#fed7aa', '#ffedd5', '#fff7ed', '#fffaf0'],
+  rose: ['#e11d48', '#f43f5e', '#fb7185', '#fda4af', '#fecdd3', '#ffe4e6', '#fff1f2', '#fffceb'],
+  violet: ['#7c3aed', '#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe', '#ede9fe', '#f5f3ff', '#faf5ff'],
+  pink: ['#db2777', '#ec4899', '#f472b6', '#f9a8d4', '#fbcfe8', '#fce7f3', '#fdf2f8', '#fff1f2'],
+  // Fallbacks
+  indigo: ['#4f46e5', '#6366f1', '#818cf8', '#a5b4fc', '#c7d2fe', '#e0e7ff', '#eef2ff', '#faf5ff'],
+  emerald: ['#059669', '#10b981', '#34d399', '#6ee7b7', '#a7f3d0', '#d1fae5', '#ecfdf5', '#f0fdf4'],
+  amber: ['#d97706', '#f59e0b', '#fbbf24', '#fcd34d', '#fde68a', '#fef3c7', '#fffbeb', '#fffdf0'],
+  slate: ['#475569', '#64748b', '#94a3b8', '#cbd5e1', '#e2e8f0', '#f1f5f9', '#f8fafc', '#f8fafc'],
 };
+
+// Helper to get current palette
+const currentPalette = computed(() => {
+  const color = themeStore.themeColor || 'blue';
+  return themePalettes[color] || themePalettes.blue;
+});
+
+// Helper to get primary color hex (approximate for single line)
+const primaryHex = computed(() => currentPalette.value[0]);
 
 // 1. Cost Trend (Monthly)
 const costTrendChart = computed(() => {
@@ -85,7 +104,9 @@ const costTrendChart = computed(() => {
   } else {
     selectedMachineIds.value.forEach((id) => {
       const machine = machines.value.find((m) => m.id === id);
-      const machineName = machine ? machine.name : t('services.maintenance.dashboard.unknownMachine');
+      const machineName = machine
+        ? machine.name
+        : t('services.maintenance.dashboard.unknownMachine');
       const data = new Array(12).fill(0);
 
       const machineRepairs = repairs.value.filter((r) => r.machineId === id);
@@ -102,45 +123,42 @@ const costTrendChart = computed(() => {
   return {
     series,
     options: {
-      chart: { type: 'line', toolbar: { show: false }, zoom: { enabled: false } },
-      // Remove hardcoded colors to allow auto-palette for multiple lines
-      // colors: ['#10b981'],
+      chart: { type: 'area', toolbar: { show: false }, zoom: { enabled: false } },
+      colors: [primaryHex.value], // Use primary theme color
+      stroke: { curve: 'smooth', width: 2 },
+      fill: {
+        type: 'gradient',
+        gradient: {
+          shadeIntensity: 1,
+          opacityFrom: 0.4,
+          opacityTo: 0.05,
+          stops: [0, 100],
+        },
+      },
       dataLabels: {
         enabled: true,
-        offsetY: -6, // Move label up
+        offsetY: -6,
         style: {
           fontSize: '10px',
-          colors: ['#475569'], // slate-600
+          colors: ['#64748b'],
         },
-        background: {
-          enabled: false, // Remove background box
-        },
+        background: { enabled: false },
         formatter: (val: number) =>
           val > 0
-            ? val.toLocaleString('th-TH', {
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 0,
-              })
+            ? val.toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
             : '',
       },
-      markers: {
-        size: 4,
-        hover: { size: 6 },
-      },
-      stroke: { curve: 'smooth', width: 2 },
-      xaxis: { categories: months, labels: { style: { colors: '#64748b', fontSize: '10px' } } },
+      markers: { size: 4, hover: { size: 6 } },
+      xaxis: { categories: months, labels: { style: { colors: '#94a3b8', fontSize: '10px' } } },
       yaxis: {
         labels: {
-          style: { colors: '#64748b', fontSize: '10px' },
+          style: { colors: '#94a3b8', fontSize: '10px' },
           formatter: (v: number) =>
-            v.toLocaleString('th-TH', {
-              minimumFractionDigits: 0,
-              maximumFractionDigits: 0,
-            }),
+            v.toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 0 }),
         },
       },
       legend: { show: true, position: 'top', horizontalAlign: 'right' },
-      grid: { borderColor: '#f1f5f9' },
+      grid: { borderColor: '#f1f5f9', strokeDashArray: 4 },
       tooltip: { theme: 'light' },
     } as ApexOptions,
   };
@@ -159,16 +177,12 @@ const topCostlyChart = computed(() => {
     .sort((a, b) => b[1] - a[1])
     .slice(0, Number(topCount.value));
 
-  // Generate colors from dark (indigo-900) to light (indigo-300)
-  // Get base colors from selected theme
-  const baseColors = colorThemes[selectedTheme.value];
+  // Generate colors from selected theme palette
+  const baseColors = currentPalette.value;
 
-  // Interpolate or map colors to match topCount
+  // Map colors cyclically via modulo operator
   const chartColors = sorted
-    .map((_, i) => {
-      const index = Math.floor((i / sorted.length) * baseColors.length);
-      return baseColors[Math.min(index, baseColors.length - 1)];
-    })
+    .map((_, i) => baseColors[i % baseColors.length])
     .slice(0, Number(topCount.value));
 
   return {
@@ -267,7 +281,7 @@ const formatCurrency = (val: number) => {
         <!-- Left Column: Charts -->
         <div class="lg:col-span-2 flex flex-col gap-4 h-full">
           <!-- Area Chart: Cost Trend -->
-          <Card class="border-slate-200/50 shadow-sm bg-white overflow-hidden">
+          <Card class="border-slate-200/50 shadow-sm bg-white/80 backdrop-blur-sm overflow-hidden">
             <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
               <div class="space-y-1">
                 <CardTitle class="text-sm font-bold tracking-tight text-slate-900">
@@ -390,7 +404,7 @@ const formatCurrency = (val: number) => {
 
           <!-- Bar Chart: Top Costly Assets -->
           <Card
-            class="border-slate-200/50 shadow-sm bg-white overflow-hidden flex flex-col flex-1 min-h-0"
+            class="border-slate-200/50 shadow-sm bg-white/80 backdrop-blur-sm overflow-hidden flex flex-col flex-1 min-h-0"
           >
             <CardHeader class="pb-1 flex flex-row items-center justify-between flex-shrink-0">
               <div>
@@ -402,32 +416,10 @@ const formatCurrency = (val: number) => {
                 </p>
               </div>
               <div class="flex items-center gap-2">
-                <Select v-model="selectedTheme">
-                  <SelectTrigger
-                    class="h-6 w-[80px] text-[10px] font-bold border-slate-200 capitalize"
-                  >
-                    <SelectValue :placeholder="t('services.maintenance.dashboard.theme')" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="indigo" class="text-xs">{{
-                      t('services.maintenance.dashboard.themes.indigo')
-                    }}</SelectItem>
-                    <SelectItem value="emerald" class="text-xs">{{
-                      t('services.maintenance.dashboard.themes.emerald')
-                    }}</SelectItem>
-                    <SelectItem value="rose" class="text-xs">{{
-                      t('services.maintenance.dashboard.themes.rose')
-                    }}</SelectItem>
-                    <SelectItem value="amber" class="text-xs">{{
-                      t('services.maintenance.dashboard.themes.amber')
-                    }}</SelectItem>
-                    <SelectItem value="slate" class="text-xs">{{
-                      t('services.maintenance.dashboard.themes.slate')
-                    }}</SelectItem>
-                  </SelectContent>
-                </Select>
                 <Select v-model="topCount">
-                  <SelectTrigger class="h-6 w-[70px] text-[10px] font-bold border-slate-200">
+                  <SelectTrigger
+                    class="h-6 w-[70px] text-[10px] font-bold border-slate-200 focus:ring-primary/20"
+                  >
                     <SelectValue placeholder="5" />
                   </SelectTrigger>
                   <SelectContent>
@@ -458,7 +450,9 @@ const formatCurrency = (val: number) => {
         </div>
 
         <!-- Right Column: Machine Cost Breakdown -->
-        <Card class="border-slate-200/50 shadow-sm bg-white overflow-hidden flex flex-col h-full">
+        <Card
+          class="border-slate-200/50 shadow-sm bg-white/80 backdrop-blur-sm overflow-hidden flex flex-col h-full"
+        >
           <CardHeader class="pb-2">
             <div class="flex items-center justify-between">
               <div>
@@ -479,7 +473,7 @@ const formatCurrency = (val: number) => {
               </div>
               <div class="text-right flex flex-col items-end">
                 <span
-                  class="text-xs font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100 shadow-sm"
+                  class="text-xs font-black text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/10 shadow-sm"
                 >
                   {{ formatCurrency(displayedTotalCost) }}
                 </span>

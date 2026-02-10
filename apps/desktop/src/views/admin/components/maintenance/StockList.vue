@@ -82,7 +82,9 @@ const columns = computed<ColumnDef<any>[]>(() => [
               'span',
               { class: 'text-[10px] text-slate-400 font-medium' },
               part.category
-                ? t(`services.maintenance.categories.${part.category.toLowerCase().replace(' ', '')}`)
+                ? t(
+                    `services.maintenance.categories.${part.category.toLowerCase().replace(' ', '')}`
+                  )
                 : t('services.maintenance.categories.spareParts')
             ),
             h('span', { class: 'text-[10px] text-slate-300' }, '•'),
@@ -166,7 +168,7 @@ const columns = computed<ColumnDef<any>[]>(() => [
       const value = Number(row.original.qty) * Number(row.original.price);
       return h(
         'span',
-        { class: 'font-mono font-bold text-blue-600 text-sm' },
+        { class: 'font-mono font-bold text-primary text-sm' },
         formatCurrency(value)
       );
     },
@@ -185,7 +187,7 @@ const columns = computed<ColumnDef<any>[]>(() => [
             <h2
               class="text-xl font-bold tracking-tight text-slate-900 group flex items-center gap-2"
             >
-              <Package class="w-5 h-5 text-blue-600" />
+              <Package class="w-5 h-5 text-primary" />
               {{ t('services.maintenance.stock.title') }}
             </h2>
             <p class="text-sm text-slate-500 font-medium">
@@ -198,7 +200,7 @@ const columns = computed<ColumnDef<any>[]>(() => [
               <Input
                 v-model="localSearch"
                 :placeholder="t('services.maintenance.stock.search')"
-                class="pl-9 bg-white/50 border-slate-200/50 h-9 text-sm rounded-lg focus:ring-blue-500/20"
+                class="pl-9 bg-white/50 border-slate-200/50 h-9 text-sm rounded-lg focus:ring-primary/20"
               />
             </div>
             <Select v-model="categoryFilter">
@@ -255,7 +257,7 @@ const columns = computed<ColumnDef<any>[]>(() => [
             </Select>
             <Button
               @click="router.push('/my-machine/stock/add')"
-              class="bg-blue-600 hover:bg-blue-700 text-white h-9 px-4 rounded-lg shadow-sm shadow-blue-200 flex items-center gap-2"
+              class="bg-primary hover:bg-primary/90 text-primary-foreground h-9 px-4 rounded-lg shadow-sm shadow-primary/20 flex items-center gap-2"
             >
               <Plus class="w-4 h-4" />
               {{ t('services.maintenance.stock.add') }}
@@ -265,7 +267,7 @@ const columns = computed<ColumnDef<any>[]>(() => [
 
         <!-- DataTable -->
         <div
-          class="mt-6 rounded-xl border border-slate-200/50 bg-white/80 backdrop-blur-sm shadow-sm overflow-hidden"
+          class="mt-6 rounded-xl border border-slate-200/50 bg-white/80 backdrop-blur-sm shadow-sm overflow-x-auto"
         >
           <DataTable :columns="columns" :data="filteredStocks" />
         </div>

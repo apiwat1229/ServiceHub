@@ -16,6 +16,9 @@ const APP_ROOT = __dirname
 // │ │ ├── main.js
 // │ │ └── preload.mjs
 // │
+// Disable security warnings in development (unsafe-eval is needed for source maps)
+process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
+
 process.env.APP_ROOT = APP_ROOT
 
 // 🚧 Use ['ENV_NAME'] avoid vite:define plugin - Vite@2.x

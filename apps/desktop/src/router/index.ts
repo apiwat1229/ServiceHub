@@ -74,18 +74,7 @@ const routes = [
         component: () => import('../views/PendingApproval.vue'),
         meta: { requiresAuth: true }
     },
-    {
-        path: '/mrp',
-        component: () => import('@/components/layout/MainLayout.vue'),
-        meta: { requiresAuth: true },
-        children: [
-            {
-                path: '',
-                name: 'MRP System',
-                component: () => import('../views/admin/Mrp.vue'),
-            }
-        ]
-    },
+
     {
         path: '/admin',
         name: 'AdminPanel',
@@ -264,28 +253,7 @@ const routes = [
             }
         ]
     },
-    {
-        path: '/admin/contracts',
-        component: () => import('@/components/layout/NavbarOnlyLayout.vue'),
-        meta: { requiresAuth: true },
-        children: [
-            {
-                path: '',
-                name: 'Contracts',
-                component: () => import('../views/admin/contracts/ContractList.vue'),
-            },
-            {
-                path: 'create',
-                name: 'CreateContract',
-                component: () => import('../views/admin/contracts/ContractForm.vue'),
-            },
-            {
-                path: ':id',
-                name: 'EditContract',
-                component: () => import('../views/admin/contracts/ContractForm.vue'),
-            },
-        ]
-    },
+
     {
         path: '/admin/receiving',
         component: () => import('@/components/layout/NavbarOnlyLayout.vue'),

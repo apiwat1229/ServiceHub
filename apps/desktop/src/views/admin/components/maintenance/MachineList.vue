@@ -90,7 +90,7 @@ const columns = computed<ColumnDef<any>[]>(() => [
           'div',
           {
             class:
-              'flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center border border-slate-200 bg-gradient-to-br from-white to-slate-50 text-slate-400 group-hover/name:text-blue-600 group-hover/name:border-blue-200 transition-all shadow-sm',
+              'flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center border border-slate-200 bg-gradient-to-br from-white to-slate-50 text-slate-400 group-hover/name:text-primary group-hover/name:border-primary/20 transition-all shadow-sm',
           },
           [h(Monitor, { class: 'w-5 h-5' })]
         ),
@@ -100,7 +100,7 @@ const columns = computed<ColumnDef<any>[]>(() => [
               'span',
               {
                 class:
-                  'font-bold text-slate-900 group-hover/name:text-blue-700 transition-colors truncate cursor-pointer',
+                  'font-bold text-slate-900 group-hover/name:text-primary transition-colors truncate cursor-pointer',
               },
               machine.name
             ),
@@ -145,7 +145,11 @@ const columns = computed<ColumnDef<any>[]>(() => [
       const cost = stats.cost;
       return h('div', { class: 'flex flex-col' }, [
         h('span', { class: 'font-mono font-bold text-slate-900' }, formatCurrency(cost)),
-        h('span', { class: 'text-[10px] text-slate-400' }, t('services.maintenance.stats.totalCost')),
+        h(
+          'span',
+          { class: 'text-[10px] text-slate-400' },
+          t('services.maintenance.stats.totalCost')
+        ),
       ]);
     },
   },
@@ -160,7 +164,7 @@ const columns = computed<ColumnDef<any>[]>(() => [
           {
             variant: 'ghost',
             size: 'icon',
-            class: 'h-8 w-8 text-slate-400 hover:text-blue-600 hover:bg-blue-50',
+            class: 'h-8 w-8 text-slate-400 hover:text-primary hover:bg-primary/10',
             onClick: (e: Event) => {
               e.stopPropagation();
               emit('edit-machine', machine);
@@ -207,7 +211,7 @@ const columns = computed<ColumnDef<any>[]>(() => [
       <div class="flex items-center justify-between gap-4">
         <div class="space-y-1">
           <h2 class="text-xl font-bold tracking-tight text-slate-900 group flex items-center gap-2">
-            <Monitor class="w-5 h-5 text-blue-600" />
+            <Monitor class="w-5 h-5 text-primary" />
             {{ t('services.maintenance.machines.title') }}
           </h2>
           <p class="text-sm text-slate-500 font-medium">
@@ -220,12 +224,12 @@ const columns = computed<ColumnDef<any>[]>(() => [
             <Input
               v-model="localSearch"
               :placeholder="t('services.maintenance.machines.search')"
-              class="pl-9 bg-white/50 border-slate-200/50 h-9 text-sm rounded-lg focus:ring-blue-500/20"
+              class="pl-9 bg-white/50 border-slate-200/50 h-9 text-sm rounded-lg focus:ring-primary/20"
             />
           </div>
           <Button
             @click="emit('add-machine')"
-            class="bg-blue-600 hover:bg-blue-700 text-white h-9 px-4 rounded-lg shadow-sm shadow-blue-200 flex items-center gap-2"
+            class="bg-primary hover:bg-primary/90 text-primary-foreground h-9 px-4 rounded-lg shadow-sm shadow-primary/20 flex items-center gap-2"
           >
             <Settings class="w-4 h-4" />
             {{ t('services.maintenance.machines.add') }}
@@ -235,7 +239,7 @@ const columns = computed<ColumnDef<any>[]>(() => [
 
       <!-- Assets Table -->
       <div
-        class="mt-6 rounded-xl border border-slate-200/50 bg-white/80 backdrop-blur-sm shadow-sm overflow-hidden"
+        class="mt-6 rounded-xl border border-slate-200/50 bg-white/80 backdrop-blur-sm shadow-sm overflow-x-auto"
       >
         <DataTable :columns="columns" :data="filteredMachines" @rowClick="viewDetail" />
       </div>

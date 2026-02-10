@@ -410,19 +410,19 @@ const formatNumber = (num: number) => {
 
 const typeChartConfig = computed<Record<string, { label: string; color: string }>>(() => ({
   printBW: {
-    label: t('services.itHelp.printer.charts.labels.printBW'),
+    label: t('services.printer.charts.labels.printBW'),
     color: 'hsl(var(--chart-1))',
   },
   printColor: {
-    label: t('services.itHelp.printer.charts.labels.printColor'),
+    label: t('services.printer.charts.labels.printColor'),
     color: 'hsl(var(--chart-2))',
   },
   copyBW: {
-    label: t('services.itHelp.printer.charts.labels.copyBW'),
+    label: t('services.printer.charts.labels.copyBW'),
     color: 'hsl(var(--chart-3))',
   },
   copyColor: {
-    label: t('services.itHelp.printer.charts.labels.copyColor'),
+    label: t('services.printer.charts.labels.copyColor'),
     color: 'hsl(var(--chart-4))',
   },
 }));
@@ -447,7 +447,7 @@ const deptChartData = computed(() => {
     const deptInfo = dbDepartments.value.find((d) => d.id === u.department);
     const resolvedName = deptInfo ? deptInfo.name : u.department;
 
-    const key = `services.itHelp.printer.departments.${resolvedName}`;
+    const key = `services.printer.departments.${resolvedName}`;
     const deptLabel = te(key) ? t(key) : resolvedName;
     deptDataMap[deptLabel] = (deptDataMap[deptLabel] || 0) + u.total;
   });
@@ -1155,8 +1155,8 @@ onUnmounted(() => {
     <Card>
       <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-7">
         <div class="space-y-1">
-          <CardTitle>{{ t('services.itHelp.printer.title') }}</CardTitle>
-          <CardDescription>{{ t('services.itHelp.printer.subtitle') }}</CardDescription>
+          <CardTitle>{{ t('services.printer.title') }}</CardTitle>
+          <CardDescription>{{ t('services.printer.subtitle') }}</CardDescription>
         </div>
         <div class="flex items-center gap-4">
           <!-- Printer Selector -->
@@ -1290,7 +1290,7 @@ onUnmounted(() => {
             class="flex items-center gap-2 bg-primary text-primary-foreground h-9 px-3 text-sm rounded-md hover:bg-primary/90 transition-colors"
             @click="isUploadModalOpen = true"
           >
-            <FileUp class="w-4 h-4" /> {{ t('services.itHelp.printer.uploadTitle') }}
+            <FileUp class="w-4 h-4" /> {{ t('services.printer.uploadTitle') }}
           </button>
         </template>
       </PrinterSettings>
@@ -1311,9 +1311,9 @@ onUnmounted(() => {
         <div class="w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-3">
           <Printer class="w-6 h-6 text-muted-foreground" />
         </div>
-        <h3 class="text-lg font-semibold mb-1">{{ t('services.itHelp.printer.emptyState') }}</h3>
+        <h3 class="text-lg font-semibold mb-1">{{ t('services.printer.emptyState') }}</h3>
         <p class="text-xs text-muted-foreground">
-          {{ t('services.itHelp.printer.emptyStateDesc') }}
+          {{ t('services.printer.emptyStateDesc') }}
         </p>
       </div>
     </template>
@@ -1406,7 +1406,9 @@ onUnmounted(() => {
             <div class="grid grid-cols-2 gap-4 divide-x h-full items-center">
               <div class="flex flex-col gap-1">
                 <div class="flex items-center justify-between">
-                  <span class="text-[0.6875rem] font-medium text-muted-foreground">Total Users</span>
+                  <span class="text-[0.6875rem] font-medium text-muted-foreground"
+                    >Total Users</span
+                  >
                   <Users class="h-3.5 w-3.5 text-muted-foreground/70" />
                 </div>
                 <div class="text-2xl font-bold text-slate-700">
@@ -1415,7 +1417,9 @@ onUnmounted(() => {
               </div>
               <div class="flex flex-col gap-1 pl-4">
                 <div class="flex items-center justify-between">
-                  <span class="text-[0.6875rem] font-medium text-muted-foreground">Total Depts</span>
+                  <span class="text-[0.6875rem] font-medium text-muted-foreground"
+                    >Total Depts</span
+                  >
                   <BarChart3 class="h-3.5 w-3.5 text-muted-foreground/70" />
                 </div>
                 <div class="text-2xl font-bold text-slate-700">
@@ -1465,9 +1469,7 @@ onUnmounted(() => {
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card class="lg:col-span-1">
           <CardHeader>
-            <CardTitle class="text-base">{{
-              t('services.itHelp.printer.charts.topUsers')
-            }}</CardTitle>
+            <CardTitle class="text-base">{{ t('services.printer.charts.topUsers') }}</CardTitle>
           </CardHeader>
           <CardContent>
             <div class="h-80 w-full">
@@ -1482,9 +1484,7 @@ onUnmounted(() => {
         </Card>
         <Card class="lg:col-span-1">
           <CardHeader>
-            <CardTitle class="text-base">{{
-              t('services.itHelp.printer.charts.usageByDept')
-            }}</CardTitle>
+            <CardTitle class="text-base">{{ t('services.printer.charts.usageByDept') }}</CardTitle>
           </CardHeader>
           <CardContent>
             <div class="h-80 w-full">
@@ -1500,9 +1500,7 @@ onUnmounted(() => {
         </Card>
         <Card class="lg:col-span-1">
           <CardHeader>
-            <CardTitle class="text-base">{{
-              t('services.itHelp.printer.charts.usageType')
-            }}</CardTitle>
+            <CardTitle class="text-base">{{ t('services.printer.charts.usageType') }}</CardTitle>
           </CardHeader>
           <CardContent>
             <div class="h-80 w-full flex justify-center">
@@ -1524,12 +1522,8 @@ onUnmounted(() => {
         <CardHeader>
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <CardTitle class="text-base">{{
-                t('services.itHelp.printer.history.title')
-              }}</CardTitle>
-              <CardDescription>{{
-                t('services.itHelp.printer.history.comparison')
-              }}</CardDescription>
+              <CardTitle class="text-base">{{ t('services.printer.history.title') }}</CardTitle>
+              <CardDescription>{{ t('services.printer.history.comparison') }}</CardDescription>
             </div>
             <div
               class="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-md border border-slate-200"
@@ -1572,17 +1566,15 @@ onUnmounted(() => {
       <Card>
         <CardHeader>
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <CardTitle class="text-lg">{{ t('services.itHelp.printer.table.title') }}</CardTitle>
+            <CardTitle class="text-lg">{{ t('services.printer.table.title') }}</CardTitle>
 
             <div class="flex items-center gap-2">
               <Select v-model="selectedDeptFilter">
                 <SelectTrigger class="w-[180px]">
-                  <SelectValue :placeholder="t('services.itHelp.printer.table.filterDept')" />
+                  <SelectValue :placeholder="t('services.printer.table.filterDept')" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{{
-                    t('services.itHelp.printer.table.allDepts')
-                  }}</SelectItem>
+                  <SelectItem value="all">{{ t('services.printer.table.allDepts') }}</SelectItem>
                   <SelectItem v-for="dept in departments" :key="dept.id" :value="dept.id">
                     {{ dept.label }}
                   </SelectItem>
@@ -1592,7 +1584,7 @@ onUnmounted(() => {
                 <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   v-model="searchQuery"
-                  :placeholder="t('services.itHelp.printer.table.search')"
+                  :placeholder="t('services.printer.table.search')"
                   class="pl-8"
                 />
               </div>
@@ -1608,32 +1600,32 @@ onUnmounted(() => {
                     class="p-3 text-left font-medium cursor-pointer hover:text-primary transition-colors"
                     @click="sortBy('user_name')"
                   >
-                    {{ t('services.itHelp.printer.table.userName') }}
+                    {{ t('services.printer.table.userName') }}
                     <span v-if="sortKey === 'user_name'">{{
                       sortOrder === 'asc' ? '↑' : '↓'
                     }}</span>
                   </th>
                   <th class="p-3 text-left font-medium">
-                    {{ t('services.itHelp.printer.table.department') }}
+                    {{ t('services.printer.table.department') }}
                   </th>
                   <th
                     class="p-3 text-right font-medium cursor-pointer hover:text-primary transition-colors"
                     @click="sortBy('total')"
                   >
-                    {{ t('services.itHelp.printer.table.total') }}
+                    {{ t('services.printer.table.total') }}
                     <span v-if="sortKey === 'total'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
                   </th>
                   <th class="p-3 text-right font-medium text-blue-600">
-                    {{ t('services.itHelp.printer.charts.labels.printBW') }}
+                    {{ t('services.printer.charts.labels.printBW') }}
                   </th>
                   <th class="p-3 text-right font-medium text-pink-600">
-                    {{ t('services.itHelp.printer.charts.labels.printColor') }}
+                    {{ t('services.printer.charts.labels.printColor') }}
                   </th>
                   <th class="p-3 text-right font-medium text-slate-500">
-                    {{ t('services.itHelp.printer.charts.labels.copyBW') }}
+                    {{ t('services.printer.charts.labels.copyBW') }}
                   </th>
                   <th class="p-3 text-right font-medium text-orange-600">
-                    {{ t('services.itHelp.printer.charts.labels.copyColor') }}
+                    {{ t('services.printer.charts.labels.copyColor') }}
                   </th>
                 </tr>
               </thead>
@@ -1656,7 +1648,10 @@ onUnmounted(() => {
                       <Badge variant="secondary" class="font-bold">{{
                         formatNumber(user.total)
                       }}</Badge>
-                      <span v-if="user.meterTotal" class="text-[0.625rem] text-muted-foreground mt-1">
+                      <span
+                        v-if="user.meterTotal"
+                        class="text-[0.625rem] text-muted-foreground mt-1"
+                      >
                         Rd: {{ formatNumber(user.meterTotal) }}
                       </span>
                     </div>
@@ -1686,7 +1681,7 @@ onUnmounted(() => {
                 </tr>
                 <tr v-if="paginatedUsers.length === 0">
                   <td colspan="7" class="p-8 text-center text-muted-foreground">
-                    {{ t('services.itHelp.printer.table.noData') }}
+                    {{ t('services.printer.table.noData') }}
                   </td>
                 </tr>
               </tbody>
@@ -1698,7 +1693,7 @@ onUnmounted(() => {
             <div class="flex items-center gap-6">
               <div class="flex items-center gap-2">
                 <p class="text-sm font-medium">
-                  {{ t('services.itHelp.printer.table.rowsPerPage') }}
+                  {{ t('services.printer.table.rowsPerPage') }}
                 </p>
                 <Select
                   :model-value="pageSize.toString()"
@@ -1719,7 +1714,7 @@ onUnmounted(() => {
                 </Select>
               </div>
               <div class="flex w-[100px] items-center justify-center text-sm font-medium">
-                {{ t('services.itHelp.printer.table.page') }} {{ currentPage }} of {{ totalPages }}
+                {{ t('services.printer.table.page') }} {{ currentPage }} of {{ totalPages }}
               </div>
             </div>
             <div class="flex items-center space-x-2">
@@ -1767,7 +1762,7 @@ onUnmounted(() => {
     <Dialog :open="isUploadModalOpen" @update:open="(v) => (!v ? closeUploadModal() : null)">
       <DialogContent class="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{{ t('services.itHelp.printer.uploadTitle') }}</DialogTitle>
+          <DialogTitle>{{ t('services.printer.uploadTitle') }}</DialogTitle>
           <DialogDescription> Upload one or more CSV files (e.g., Monthly logs) </DialogDescription>
         </DialogHeader>
 

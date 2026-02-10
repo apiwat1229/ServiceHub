@@ -134,7 +134,7 @@ const executeDelete = async () => {
           <Button
             @click="isFormVisible = !isFormVisible"
             :variant="isFormVisible ? 'secondary' : 'default'"
-            class="h-9 px-4 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm"
+            class="h-9 px-4 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold shadow-sm"
           >
             <Plus class="w-3.5 h-3.5 mr-1.5" />
             {{ editingId ? 'Editing' : 'Add' }}
@@ -178,7 +178,7 @@ const executeDelete = async () => {
           </Button>
           <Button
             @click="handleAdd"
-            class="h-8 px-6 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold"
+            class="h-8 px-6 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold"
           >
             {{ editingId ? 'Update Location' : 'Save Location' }}
           </Button>

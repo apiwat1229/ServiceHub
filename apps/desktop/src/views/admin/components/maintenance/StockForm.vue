@@ -223,7 +223,7 @@ const handleSave = () => {
             </template>
             <template v-else>
               <div
-                class="bg-blue-50 text-blue-500 p-3 rounded-full mb-2 group-hover:scale-110 transition-transform"
+                class="bg-primary/10 text-primary p-3 rounded-full mb-2 group-hover:scale-110 transition-transform"
               >
                 <FileText :size="20" />
               </div>
@@ -241,7 +241,7 @@ const handleSave = () => {
         <div class="space-y-4 pt-4 border-t border-slate-100">
           <div class="flex items-center justify-between">
             <Label class="text-slate-700 font-semibold text-sm flex items-center gap-2">
-              <QrCode v-if="tagMode === 'qr'" class="w-4 h-4 text-blue-600" />
+              <QrCode v-if="tagMode === 'qr'" class="w-4 h-4 text-primary" />
               <Barcode v-else class="w-4 h-4 text-green-600" />
               {{ tagMode === 'qr' ? t('services.maintenance.forms.machine.assetTag') : 'Barcode' }}
             </Label>
@@ -252,7 +252,7 @@ const handleSave = () => {
                 class="px-3 py-1 text-[10px] font-bold rounded-md transition-all"
                 :class="
                   tagMode === 'qr'
-                    ? 'bg-white shadow-sm text-blue-600'
+                    ? 'bg-white shadow-sm text-primary'
                     : 'text-slate-500 hover:text-slate-700'
                 "
               >
@@ -289,7 +289,7 @@ const handleSave = () => {
                 {{ t('services.maintenance.forms.stock.encodedData') }}
               </p>
               <code
-                class="text-xs font-mono font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded truncate max-w-full"
+                class="text-xs font-mono font-bold text-primary bg-primary/10 px-2 py-1 rounded truncate max-w-full"
               >
                 {{ form.code || 'NULL' }}
               </code>
@@ -378,7 +378,7 @@ const handleSave = () => {
               type="button"
               variant="ghost"
               size="icon"
-              class="h-5 w-5 text-slate-400 hover:text-blue-600 p-0"
+              class="h-5 w-5 text-slate-400 hover:text-primary p-0"
               @click="showGLCodeSettings = true"
             >
               <Settings class="w-3.5 h-3.5" />
@@ -412,7 +412,7 @@ const handleSave = () => {
               type="button"
               variant="ghost"
               size="icon"
-              class="h-5 w-5 text-slate-400 hover:text-blue-600 p-0"
+              class="h-5 w-5 text-slate-400 hover:text-primary p-0"
               @click="showCategorySettings = true"
             >
               <Settings class="w-3.5 h-3.5" />
@@ -438,7 +438,7 @@ const handleSave = () => {
               type="button"
               variant="ghost"
               size="icon"
-              class="h-5 w-5 text-slate-400 hover:text-blue-600 p-0"
+              class="h-5 w-5 text-slate-400 hover:text-primary p-0"
               @click="showLocationSettings = true"
             >
               <Settings class="w-3.5 h-3.5" />
@@ -548,7 +548,7 @@ const handleSave = () => {
         <Button
           type="submit"
           @click="handleSave"
-          class="h-10 px-8 bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-100 text-white font-black uppercase tracking-widest text-[10px]"
+          class="h-10 px-8 bg-primary hover:bg-primary/90 shadow-lg shadow-primary/10 text-primary-foreground font-black uppercase tracking-widest text-[10px]"
         >
           {{ t('services.maintenance.forms.stock.submit') }}
         </Button>

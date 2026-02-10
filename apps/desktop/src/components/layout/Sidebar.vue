@@ -93,36 +93,79 @@ const userInitials = computed(() => {
         </div>
 
         <div class="space-y-0.5">
-          <router-link
-            v-for="item in group.items"
-            :key="item.path"
-            :to="item.path"
-            :class="
-              cn(
-                'group flex items-center justify-between px-3 py-2 text-sm font-medium rounded-lg transition-all',
-                route.path === item.path
-                  ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20 bg-gradient-to-r from-primary to-primary/80'
-                  : 'text-foreground/70 hover:bg-accent hover:text-foreground'
-              )
-            "
-          >
-            <div class="flex items-center gap-3">
-              <component
-                :is="item.icon"
+          <template v-for="item in group.items" :key="item.path">
+            <!-- Parent Item -->
+            <router-link
+              :to="item.path"
+              :class="
+                cn(
+                  'group flex items-center justify-between px-3 py-2 text-sm font-medium rounded-lg transition-all',
+                  route.path === item.path || (item.children && route.path.startsWith(item.path))
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-foreground/70 hover:bg-accent hover:text-foreground'
+                )
+              "
+            >
+              <div class="flex items-center gap-3">
+                <component
+                  :is="item.icon"
+                  :class="
+                    cn(
+                      'w-4 h-4',
+                      route.path === item.path ||
+                        (item.children && route.path.startsWith(item.path))
+                        ? 'text-primary'
+                        : 'text-foreground/45 group-hover:text-primary'
+                    )
+                  "
+                />
+                <span class="tracking-tight">{{ item.name }}</span>
+              </div>
+
+              <ChevronRight
+                v-if="item.children"
                 :class="
                   cn(
-                    'w-4 h-4',
-                    route.path === item.path
-                      ? 'text-white'
-                      : 'text-foreground/45 group-hover:text-primary'
+                    'w-3.5 h-3.5 transition-transform duration-200',
+                    route.path.startsWith(item.path) ? 'rotate-90' : 'opacity-40'
                   )
                 "
               />
-              <span class="tracking-tight">{{ item.name }}</span>
-            </div>
+            </router-link>
 
-            <ChevronRight v-if="route.path === item.path" class="w-3.5 h-3.5 opacity-50" />
-          </router-link>
+            <!-- Sub Items -->
+            <div
+              v-if="item.children && route.path.startsWith(item.path)"
+              class="mt-0.5 ml-4 pl-3 border-l border-border/60 space-y-0.5"
+            >
+              <router-link
+                v-for="child in item.children"
+                :key="child.path"
+                :to="child.path"
+                :class="
+                  cn(
+                    'group flex items-center gap-3 px-3 py-1.5 text-xs font-medium rounded-lg transition-all',
+                    route.path === child.path || route.fullPath === child.path
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-foreground/60 hover:bg-accent/50 hover:text-foreground'
+                  )
+                "
+              >
+                <component
+                  :is="child.icon"
+                  :class="
+                    cn(
+                      'w-3.5 h-3.5',
+                      route.path === child.path || route.fullPath === child.path
+                        ? 'text-primary'
+                        : 'text-foreground/40 group-hover:text-primary'
+                    )
+                  "
+                />
+                <span>{{ child.name }}</span>
+              </router-link>
+            </div>
+          </template>
         </div>
       </div>
 

@@ -69,7 +69,7 @@ const columns = computed<ColumnDef<StorageLocation>[]>(() => [
           {
             variant: 'ghost',
             size: 'icon',
-            class: 'h-7 w-7 text-slate-400 hover:text-blue-600',
+            class: 'h-7 w-7 text-slate-400 hover:text-primary',
             onClick: () => emit('edit', location),
           },
           () => h(Edit2, { class: 'w-3.5 h-3.5' })

@@ -1,16 +1,20 @@
-```
 <script setup lang="ts">
 import Navbar from '@/components/layout/Navbar.vue';
 import { Button } from '@/components/ui/button';
 import { Toaster } from '@/components/ui/sonner';
 import api from '@/services/api';
 import { useThemeStore } from '@/stores/theme';
+import { App } from '@capacitor/app';
+import { StatusBar } from '@capacitor/status-bar';
+import { NavigationBar } from '@hugotomazi/capacitor-navigation-bar';
 import { AlertCircle, Loader2, RefreshCw } from 'lucide-vue-next';
 import { onMounted, onUnmounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import GlobalBackground from './components/layout/GlobalBackground.vue';
 import UpdateNotification from './components/UpdateNotification.vue';
 
 useThemeStore();
+const router = useRouter();
 
 const isLoading = ref(true);
 const error = ref<string | null>(null);
@@ -40,10 +44,36 @@ const handleRetry = async () => {
 onMounted(() => {
   checkHealth();
   // socketService managed in Navbar
+
+  // Hide Status Bar and Navigation Bar (Immersive Mode) - Native Only
+  const hideSystemBars = async () => {
+    if ((window as any).Capacitor?.isNativePlatform()) {
+      try {
+        await Promise.all([StatusBar.hide(), NavigationBar.hide()]);
+      } catch (err) {
+        console.warn('System bars could not be hidden:', err);
+      }
+    }
+  };
+  hideSystemBars();
+
+  // Handle Android Hardware Back Button (Swipe to Back)
+  App.addListener('backButton', ({ canGoBack }) => {
+    if (
+      window.location.hash === '#/' ||
+      window.location.pathname === '/' ||
+      window.location.hash === '#/dashboard'
+    ) {
+      App.minimizeApp();
+    } else {
+      router.back();
+    }
+  });
 });
 
 onUnmounted(() => {
   // socketService managed in Navbar
+  App.removeAllListeners();
 });
 </script>
 

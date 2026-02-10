@@ -301,10 +301,6 @@
   "services": {
     "title": "Services & Modules",
     "subtitle": "Select a module to access specialized tools.",
-    "mrp": {
-      "name": "MRP System",
-      "description": "Material Requirements Planning for production and inventory."
-    },
     "cuplump": {
       "name": "Cuplump Pool",
       "description": "Cuplump Pool Management System"
@@ -457,7 +453,12 @@
         "title": "Registered Assets",
         "subtitle": "Manage and monitor your industrial equipment",
         "search": "Search assets...",
-        "add": "Add Machine"
+        "add": "Add Machine",
+        "columns": {
+          "machineModel": "Model",
+          "status": "Status",
+          "cost": "Cost"
+        }
       },
       "glCodes": {
         "title": "Management GL-Codes",
@@ -934,11 +935,11 @@
         "overview": "Statistics Overview"
       },
       "tabs": {
-        "myTickets": "Repair Status",
-        "assetRequest": "Asset Request",
         "kb": "Knowledge Center",
-        "stock": "IT Stock Management",
-        "printer": "Printer Analytics"
+        "tickets": "Repair Status",
+        "assetRequests": "Asset Requests",
+        "stock": "Stock Management",
+        "analytics": "Printer Analytics"
       },
       "kb": {
         "title": "Knowledge Center",
@@ -1220,143 +1221,7 @@
       "name": "Project Management",
       "description": "Inventory Management and project tracking."
     },
-    "contracts": {
-      "name": "Contract Management",
-      "description": "Manage contracts, renewals, and legal documents.",
-      "title": "Contract Management",
-      "subtitle": "Manage and track all organizational contracts",
-      "dashboard": {
-        "title": "Contract Management",
-        "subtitle": "Manage, track, and renew your service agreements and legal documents.",
-        "stats": {
-          "expiringValue": "Expiring Value",
-          "expiringValueDesc": "Total expiring contracts value",
-          "totalContracts": "Total Contracts",
-          "totalContractsDesc": "Across all departments",
-          "activeStatus": "Active Status",
-          "activeStatusDesc": "Currently valid contracts",
-          "expiringSoon": "Expiring Soon",
-          "expiringSoonDesc": "Require attention within {period}"
-        },
-        "periods": {
-          "1month": "1 Month",
-          "3months": "3 Months",
-          "6months": "6 Months",
-          "month": "month",
-          "months": "months"
-        },
-        "filters": {
-          "searchPlaceholder": "Search contracts...",
-          "type": "Type",
-          "allTypes": "All Types",
-          "department": "Department",
-          "allDepartments": "All Departments",
-          "status": "Status",
-          "allStatus": "All Status",
-          "showing": "Showing {start} to {end} of {total} contracts",
-          "page": "Page {current} of {total}",
-          "previous": "Previous",
-          "next": "Next"
-        },
-        "table": {
-          "title": "Title",
-          "type": "Type",
-          "department": "Department",
-          "duration": "Duration",
-          "daysLeft": "Days Left",
-          "value": "Value",
-          "status": "Status",
-          "actions": "Actions",
-          "confirmDeleteTitle": "Confirm Deletion",
-          "confirmDelete": "Are you sure you want to delete this approval request?",
-          "deleteError": "Failed to delete approval request",
-          "allContracts": "All Contracts",
-          "total": "Total: {count} contracts",
-          "today": "Today",
-          "expired": "Expired",
-          "day": "day",
-          "days": "days"
-        }
-      },
-      "newContract": "New Contract",
-      "editContract": "Edit Contract",
-      "createContract": "Create Contract",
-      "updateContract": "Update Contract",
-      "deleteContract": "Delete Contract",
-      "viewContract": "View Contract",
-      "contractList": "Contract List",
-      "contractDetails": "Contract Details",
-      "loadingContract": "Loading contract details...",
-      "createNewContract": "Create a new contract record",
-      "updateContractInfo": "Update contract information",
-      "contractCreated": "Contract created successfully",
-      "contractUpdated": "Contract updated successfully",
-      "contractDeleted": "Contract deleted successfully",
-      "errorLoading": "Failed to load contract",
-      "errorSaving": "Failed to save contract",
-      "fillRequired": "Please fill in required fields",
-      "contractNotFound": "Contract not found",
-      "form": {
-        "contractInfo": "Contract Information",
-        "contractTitle": "Contract Title",
-        "contractTitlePlaceholder": "e.g. 2024 Corporate Office Rental Agreement",
-        "contractType": "Contract Type",
-        "selectType": "Select type",
-        "totalCost": "Total Cost (THB)",
-        "costPlaceholder": "0.00",
-        "startDate": "Start Date",
-        "endDate": "End Date",
-        "pickDate": "Pick date",
-        "period": "Period",
-        "selectPeriod": "Select period",
-        "governance": "Governance & Notifications",
-        "responsiblePerson": "Responsible Person",
-        "enterName": "Enter name",
-        "department": "Department",
-        "selectDepartment": "Select department",
-        "notificationRecipients": "Notification Recipients",
-        "emailPlaceholder": "email@company.com",
-        "addEmail": "Add",
-        "noRecipientsAdded": "No recipients added",
-        "documentAttachment": "Document Attachment",
-        "uploadDocument": "Upload Document",
-        "documentAttached": "Document Attached",
-        "fileReady": "File ready",
-        "viewFile": "View File",
-        "remove": "Remove",
-        "selectFile": "Select File",
-        "fileSupport": "PDF, PNG or JPG up to 10MB",
-        "uploadHelp": "Upload the signed contract document for record keeping and compliance."
-      },
-      "status": {
-        "label": "Status",
-        "active": "Active",
-        "expiring": "Expiring",
-        "expired": "Expired",
-        "draft": "Draft"
-      },
-      "types": {
-        "service": "Service",
-        "lease": "Lease",
-        "software": "Software",
-        "maintenance": "Maintenance",
-        "other": "Other"
-      },
-      "actions": {
-        "create": "Create Contract",
-        "cancel": "Cancel",
-        "save": "Save Contract",
-        "saving": "Saving...",
-        "edit": "Edit",
-        "download": "Download PDF",
-        "delete": "Delete",
-        "deleteConfirm": "Are you sure you want to delete this contract?"
-      }
-    },
-    "contactManagement": {
-      "name": "Contact Management",
-      "description": "Manage contract expirations and renewal tracking."
-    },
+
     "uss": {
       "name": "USS",
       "description": "USS receiving operations."

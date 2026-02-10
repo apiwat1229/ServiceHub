@@ -72,7 +72,11 @@ const columns = computed<ColumnDef<any>[]>(() => [
           { class: 'text-xs font-bold text-slate-900 leading-none' },
           row.getValue('machineName')
         ),
-        h('span', { class: 'text-[10px] text-slate-400 mt-1' }, t('services.maintenance.assetUnit')),
+        h(
+          'span',
+          { class: 'text-[10px] text-slate-400 mt-1' },
+          t('services.maintenance.assetUnit')
+        ),
       ]);
     },
   },
@@ -81,7 +85,7 @@ const columns = computed<ColumnDef<any>[]>(() => [
     header: t('services.maintenance.repairs.columns.issue'),
     cell: ({ row }) => {
       return h('div', { class: 'flex items-center gap-2' }, [
-        h(Wrench, { class: 'w-3.5 h-3.5 text-blue-500' }),
+        h(Wrench, { class: 'w-3.5 h-3.5 text-primary' }),
         h(
           'span',
           { class: 'text-xs text-slate-600 font-medium line-clamp-1' },
@@ -107,7 +111,7 @@ const columns = computed<ColumnDef<any>[]>(() => [
       const status = (row.getValue('status') as string) || 'COMPLETED';
       const colorClass =
         status === 'OPEN'
-          ? 'bg-blue-100 text-blue-700 hover:bg-blue-100'
+          ? 'bg-primary/10 text-primary hover:bg-primary/20'
           : status === 'IN_PROGRESS'
             ? 'bg-amber-100 text-amber-700 hover:bg-amber-100'
             : status === 'WAITING_PARTS'
@@ -140,7 +144,7 @@ const columns = computed<ColumnDef<any>[]>(() => [
       <div class="flex items-center justify-between gap-4">
         <div class="space-y-1">
           <h2 class="text-xl font-bold tracking-tight text-slate-900 group flex items-center gap-2">
-            <ClipboardList class="w-5 h-5 text-blue-600" />
+            <ClipboardList class="w-5 h-5 text-primary" />
             {{ t('services.maintenance.repairs.title') }}
           </h2>
           <p class="text-sm text-slate-500 font-medium">
@@ -153,12 +157,12 @@ const columns = computed<ColumnDef<any>[]>(() => [
             <Input
               v-model="localSearch"
               :placeholder="t('services.maintenance.repairs.search')"
-              class="pl-9 bg-white/50 border-slate-200/50 h-9 text-sm rounded-lg focus:ring-blue-500/20"
+              class="pl-9 bg-white/50 border-slate-200/50 h-9 text-sm rounded-lg focus:ring-primary/20"
             />
           </div>
           <Button
             @click="emit('add-repair')"
-            class="bg-blue-600 hover:bg-blue-700 text-white h-9 px-4 rounded-lg shadow-sm shadow-blue-200 flex items-center gap-2"
+            class="bg-primary hover:bg-primary/90 text-primary-foreground h-9 px-4 rounded-lg shadow-sm shadow-primary/20 flex items-center gap-2"
           >
             <Plus class="w-4 h-4" />
             {{ t('services.maintenance.repairs.add') }}
@@ -168,7 +172,7 @@ const columns = computed<ColumnDef<any>[]>(() => [
 
       <!-- DataTable -->
       <div
-        class="mt-6 rounded-xl border border-slate-200/50 bg-white/80 backdrop-blur-sm shadow-sm overflow-hidden"
+        class="mt-6 rounded-xl border border-slate-200/50 bg-white/80 backdrop-blur-sm shadow-sm overflow-x-auto"
       >
         <DataTable :columns="columns" :data="filteredRepairs" />
       </div>

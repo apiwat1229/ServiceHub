@@ -35,6 +35,7 @@ import { bookingsApi } from '@/services/bookings';
 import { notificationsApi } from '@/services/notifications';
 import { socketService } from '@/services/socket';
 import { useAuthStore } from '@/stores/auth';
+import { useSearchStore } from '@/stores/search';
 import type { NotificationDto } from '@my-app/types';
 import { formatDistanceToNow } from 'date-fns';
 import {
@@ -42,12 +43,14 @@ import {
   ArrowRight,
   Bell,
   CheckCircle2,
-  Home,
   LayoutDashboard,
+  LayoutGrid,
   LogOut,
   RotateCw,
+  Search,
   Settings,
   User,
+  X,
 } from 'lucide-vue-next';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -67,9 +70,13 @@ const isCloseConfirmOpen = ref(false);
 
 const { isAdmin, hasPermission } = usePermissions();
 
+const searchStore = useSearchStore();
+
 const props = defineProps<{
   showBrand?: boolean;
 }>();
+
+const isHome = computed(() => route.path === '/' || route.path === '/dashboard');
 
 const handleLogout = () => {
   authStore.logout();
@@ -386,38 +393,80 @@ onUnmounted(() => {
 
 <template>
   <header
-    class="h-12 border-b border-border bg-card/80 backdrop-blur px-6 flex items-center justify-between sticky top-0 z-50 draggable-region"
+    class="h-[calc(3.5rem+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] border-b border-border bg-card/80 backdrop-blur px-6 flex items-center justify-between sticky top-0 z-50 draggable-region transition-all"
   >
-    <div class="flex items-center gap-4 no-drag">
+    <div class="flex items-center gap-6 no-drag">
+      <!-- Brand Section -->
+      <div
+        v-if="showBrand"
+        class="flex items-center gap-3 shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+        @click="router.push('/')"
+      >
+        <div
+          class="p-1.5 rounded-lg bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+        >
+          <LayoutGrid class="w-4 h-4" />
+        </div>
+        <div class="hidden lg:block">
+          <h1 class="text-sm font-bold text-foreground tracking-tight leading-none uppercase">
+            ServiceHub
+          </h1>
+          <p class="text-[8px] font-bold text-primary tracking-wider">PAPERLESS REPAIR</p>
+        </div>
+      </div>
+
+      <div class="h-6 w-px bg-border/50 hidden lg:block" v-if="showBrand"></div>
+
       <MobileSidebar />
+
       <!-- Navigation Controls -->
-      <div class="flex items-center gap-1">
-        <Button variant="ghost" size="icon" class="h-8 w-8" @click="router.back()" title="Back">
-          <ArrowLeft class="w-4 h-4" />
+      <div class="flex items-center gap-1 bg-muted/30 p-1 rounded-lg">
+        <Button variant="ghost" size="icon" class="h-7 w-7" @click="router.back()" title="Back">
+          <ArrowLeft class="w-3.5 h-3.5" />
         </Button>
         <Button
           variant="ghost"
           size="icon"
-          class="h-8 w-8"
+          class="h-7 w-7"
           @click="router.forward()"
           title="Forward"
         >
-          <ArrowRight class="w-4 h-4" />
+          <ArrowRight class="w-3.5 h-3.5" />
         </Button>
-        <Button variant="ghost" size="icon" class="h-8 w-8" @click="router.go(0)" title="Refresh">
-          <RotateCw class="w-4 h-4" />
-        </Button>
-        <Button variant="ghost" size="icon" class="h-8 w-8" @click="router.push('/')" title="Home">
-          <Home class="w-4 h-4" />
+        <Button variant="ghost" size="icon" class="h-7 w-7" @click="router.go(0)" title="Refresh">
+          <RotateCw class="w-3.5 h-3.5" />
         </Button>
       </div>
     </div>
 
-    <!-- Centered Title -->
+    <!-- Centered Search / Title -->
     <div
-      class="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center"
+      class="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center w-full max-w-[400px] px-4 no-drag"
     >
-      <span class="text-lg text-foreground font-semibold">
+      <!-- Search Bar (Visible on Home) -->
+      <div v-if="isHome" class="w-full relative group">
+        <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+          <Search
+            class="w-3.5 h-3.5 text-muted-foreground group-focus-within:text-primary transition-colors"
+          />
+        </div>
+        <input
+          v-model="searchStore.searchQuery"
+          type="text"
+          placeholder="Search for services..."
+          class="w-full h-9 pl-9 pr-9 bg-muted/50 border-transparent rounded-full text-xs font-medium focus:bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all outline-none border hover:bg-muted/80"
+        />
+        <button
+          v-if="searchStore.searchQuery"
+          @click="searchStore.clearSearchQuery"
+          class="absolute inset-y-0 right-3 flex items-center text-muted-foreground hover:text-foreground"
+        >
+          <X class="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      <!-- Page Title (Visible on other pages) -->
+      <span v-else class="text-sm text-foreground font-semibold tracking-tight truncate px-4">
         {{ pageTitle }}
       </span>
     </div>

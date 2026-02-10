@@ -1,5 +1,5 @@
 {
-  "name": "my-app-monorepo",
+  "name": "service-hub",
   "version": "1.0.0",
   "private": true,
   "description": "Monorepo with Nextron (Next.js + Electron), NestJS, Prisma, and PostgreSQL",

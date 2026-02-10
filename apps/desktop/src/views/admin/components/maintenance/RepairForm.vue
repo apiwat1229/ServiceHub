@@ -362,7 +362,7 @@ const handleSubmit = () => {
     <div class="space-y-4 border rounded-xl p-6 bg-slate-50/50 border-slate-200">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
-          <div class="p-2 bg-blue-100 text-blue-600 rounded-lg">
+          <div class="p-2 bg-primary/10 text-primary rounded-lg">
             <Package class="w-4 h-4" />
           </div>
           <h3 class="font-bold text-slate-900 uppercase text-xs tracking-wider">
@@ -372,7 +372,7 @@ const handleSubmit = () => {
         <Button
           size="sm"
           variant="outline"
-          class="h-8 border-blue-200 text-blue-600 hover:bg-blue-50"
+          class="h-8 border-primary/20 text-primary hover:bg-primary/10"
           @click="addPartToForm"
         >
           <Plus class="w-3.5 h-3.5 mr-1" />
@@ -494,7 +494,7 @@ const handleSubmit = () => {
           <TableCell class="text-[10px] font-black uppercase text-slate-400">{{
             t('services.maintenance.forms.repair.estimatedTotal')
           }}</TableCell>
-          <TableCell class="text-right font-black text-blue-600 text-lg">{{
+          <TableCell class="text-right font-black text-primary text-lg">{{
             calculateTotal(form.parts).toLocaleString('th-TH', {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
@@ -511,7 +511,7 @@ const handleSubmit = () => {
     }}</Button>
     <Button
       @click="handleSubmit"
-      class="bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-200 h-9 px-6 rounded-lg font-bold"
+      class="bg-primary hover:bg-primary/90 shadow-md shadow-primary/20 h-9 px-6 rounded-lg font-bold"
     >
       {{ t('services.maintenance.forms.repair.submit') }}
     </Button>

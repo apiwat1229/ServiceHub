@@ -7,18 +7,27 @@ import Sidebar from './Sidebar.vue';
 const route = useRoute();
 
 const showSidebar = computed(() => {
+  // Always show sidebar on main internal routes
   if (
-    route.path.startsWith('/admin/cuplump') ||
-    route.path.startsWith('/cuplump-pool') ||
-    route.path.startsWith('/admin/uss') ||
-    route.path.startsWith('/admin/helpdesk') ||
-    route.path.startsWith('/admin/project-timeline') ||
-    route.path.startsWith('/admin/qa') ||
-    route.path.startsWith('/admin/production')
+    route.path === '/' ||
+    route.path.startsWith('/admin') ||
+    route.path.startsWith('/maintenance') ||
+    route.path.startsWith('/my-machine') ||
+    route.path.startsWith('/scale')
   ) {
-    return false;
+    // Hide for specific sub-apps if they have their own navigation
+    if (
+      route.path.startsWith('/admin/cuplump') ||
+      route.path.startsWith('/cuplump-pool') ||
+      route.path.startsWith('/admin/uss') ||
+      route.path.startsWith('/admin/qa') ||
+      route.path.startsWith('/admin/production')
+    ) {
+      return false;
+    }
+    return true;
   }
-  return route.path.startsWith('/admin');
+  return false;
 });
 </script>
 

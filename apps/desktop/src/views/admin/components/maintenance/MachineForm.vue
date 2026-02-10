@@ -32,6 +32,10 @@ const machine = ref(
         model: '',
         location: '',
         status: 'Active',
+        serialNumber: '',
+        installDate: '',
+        assetTag: '',
+        notes: '',
         image: undefined,
       }
 );
@@ -117,7 +121,7 @@ const handleSave = () => {
         </template>
         <template v-else>
           <div
-            class="bg-blue-50 text-blue-500 p-4 rounded-full mb-3 group-hover:scale-110 transition-transform"
+            class="bg-primary/10 text-primary p-4 rounded-full mb-3 group-hover:scale-110 transition-transform"
           >
             <FileText :size="28" />
           </div>
@@ -138,6 +142,7 @@ const handleSave = () => {
         <div class="relative">
           <ScanBarcode class="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
           <Input
+            v-model="machine.assetTag"
             :placeholder="t('services.maintenance.forms.machine.tagPlaceholder')"
             class="pl-9 bg-white border-slate-200 focus:bg-white transition-colors"
           />
@@ -211,19 +216,24 @@ const handleSave = () => {
       <div class="grid grid-cols-2 gap-4">
         <div class="space-y-2">
           <Label class="text-slate-700">{{ t('services.maintenance.forms.machine.serial') }}</Label>
-          <Input placeholder="SN-998877" class="bg-white border-slate-200" />
+          <Input
+            v-model="machine.serialNumber"
+            placeholder="SN-998877"
+            class="bg-white border-slate-200"
+          />
         </div>
         <div class="space-y-2">
           <Label class="text-slate-700">{{
             t('services.maintenance.forms.machine.installDate')
           }}</Label>
-          <Input type="date" class="bg-white border-slate-200" />
+          <Input v-model="machine.installDate" type="date" class="bg-white border-slate-200" />
         </div>
       </div>
 
       <div class="space-y-2">
         <Label class="text-slate-700">{{ t('services.maintenance.forms.machine.notes') }}</Label>
         <Textarea
+          v-model="machine.notes"
           class="min-h-[100px] resize-none bg-white border-slate-200"
           :placeholder="t('services.maintenance.forms.machine.modelPlaceholder')"
         />
@@ -235,7 +245,7 @@ const handleSave = () => {
     <Button variant="outline" @click="emit('cancel')" class="border-slate-200">{{
       t('services.maintenance.forms.common.cancel')
     }}</Button>
-    <Button @click="handleSave" class="bg-blue-600 hover:bg-blue-700 shadow-md">{{
+    <Button @click="handleSave" class="bg-primary hover:bg-primary/90 shadow-md">{{
       t('services.maintenance.forms.machine.submit')
     }}</Button>
   </div>

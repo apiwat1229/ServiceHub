@@ -937,11 +937,16 @@ model TicketComment {
 // ==========================================
 
 model Machine {
-  id        String   @id @default(uuid())
-  name      String   @unique
-  model     String?
-  location  String?
-  status    String   @default("Active")
+  id           String   @id @default(uuid())
+  name         String   @unique
+  model        String?
+  location     String?
+  status       String   @default("Active")
+  serialNumber String?  @map("serial_number")
+  installDate  DateTime? @map("install_date")
+  assetTag     String?  @map("asset_tag")
+  notes        String?
+  image        String?
   
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

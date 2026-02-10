@@ -342,7 +342,7 @@ onMounted(() => {
           />
         </div>
         <p class="text-[10px] text-slate-500 mt-2 text-center">
-          Drag the blue square to move • Scroll mouse wheel to zoom image
+          Drag the highlighted square to move • Scroll mouse wheel to zoom image
         </p>
       </div>
 
@@ -353,7 +353,7 @@ onMounted(() => {
         <Button
           size="sm"
           @click="handleCrop"
-          class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6"
+          class="bg-primary hover:bg-primary/90 text-primary-foreground font-bold px-6"
         >
           {{ t('services.maintenance.forms.image.cropAction') }}
         </Button>

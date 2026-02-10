@@ -7,6 +7,11 @@ export interface Machine {
     model: string;
     location: string;
     status: 'Active' | 'Inactive' | 'Maintenance';
+    serialNumber?: string;
+    installDate?: string;
+    assetTag?: string;
+    notes?: string;
+    image?: string;
     createdAt: number;
 }
 

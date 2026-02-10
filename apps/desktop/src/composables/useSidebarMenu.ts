@@ -1,26 +1,74 @@
 import { usePermissions } from '@/composables/usePermissions';
 import {
-    Bell,
-    ClipboardCheck,
-    Layers,
+    BarChart3,
+    BookOpen,
+    ClipboardList,
+    FileText,
+    Headset,
     LayoutDashboard,
+    Monitor,
+    Package,
     Server,
+    Settings,
     Shield,
-    Truck,
     Users,
+    Wrench
 } from 'lucide-vue-next';
-import { computed } from 'vue';
+import { computed, type FunctionalComponent } from 'vue';
 import { useI18n } from 'vue-i18n';
+
+export interface MenuItem {
+    name: string;
+    path: string;
+    icon: FunctionalComponent;
+    permission?: string;
+    children?: MenuItem[];
+}
+
+export interface MenuGroup {
+    title: string;
+    items: MenuItem[];
+}
 
 export function useSidebarMenu() {
     const { hasPermission, isAdmin } = usePermissions();
     const { t } = useI18n();
 
-    const allMenuGroups = computed(() => [
+    const allMenuGroups = computed<MenuGroup[]>(() => [
         {
             title: t('admin.sidebar.main'),
             items: [
-                { name: t('admin.sidebar.dashboard'), path: '/admin', icon: LayoutDashboard }, // Public for admin panel
+                { name: t('admin.sidebar.dashboard'), path: '/', icon: LayoutDashboard },
+                {
+                    name: t('services.maintenance.name'),
+                    path: '/maintenance',
+                    icon: Wrench,
+                    permission: 'maintenance:read',
+                    children: [
+                        { name: t('services.maintenance.tabs.overview'), path: '/maintenance?tab=dashboard', icon: LayoutDashboard },
+                        { name: t('services.maintenance.tabs.machines'), path: '/maintenance?tab=machines', icon: Settings },
+                        { name: t('services.maintenance.tabs.repairs'), path: '/maintenance?tab=repairs', icon: ClipboardList },
+                        { name: t('services.maintenance.tabs.parts'), path: '/maintenance?tab=stock', icon: Package },
+                    ]
+                },
+                {
+                    name: t('services.itHelp.name'),
+                    path: '/admin/helpdesk',
+                    icon: Headset,
+                    permission: 'helpdesk:read',
+                    children: [
+                        { name: t('services.itHelp.tabs.kb'), path: '/admin/helpdesk?tab=kb', icon: BookOpen },
+                        { name: t('services.itHelp.tabs.tickets'), path: '/admin/helpdesk?tab=tickets', icon: FileText },
+                        { name: t('services.itHelp.tabs.assetRequests'), path: '/admin/helpdesk?tab=asset-requests', icon: Monitor },
+                        { name: t('services.itHelp.tabs.stock'), path: '/admin/helpdesk?tab=stock', icon: Package },
+                        { name: t('services.itHelp.tabs.analytics'), path: '/admin/helpdesk?tab=analytics', icon: BarChart3 },
+                    ]
+                },
+            ],
+        },
+        {
+            title: t('admin.sidebar.system'),
+            items: [
                 {
                     name: t('admin.sidebar.roles'),
                     path: '/admin/roles',
@@ -33,36 +81,6 @@ export function useSidebarMenu() {
                     icon: Users,
                     permission: 'users:read',
                 },
-                {
-                    name: t('admin.sidebar.suppliers'),
-                    path: '/admin/suppliers',
-                    icon: Truck,
-                    permission: 'suppliers:read',
-                },
-                {
-                    name: t('admin.sidebar.rubberTypes'),
-                    path: '/admin/rubber-types',
-                    icon: Layers,
-                    permission: 'rubberTypes:read',
-                },
-                {
-                    name: t('admin.sidebar.notifications'),
-                    path: '/admin/notifications',
-                    icon: Bell,
-                    permission: 'notifications:read',
-                },
-                {
-                    name: 'Production Reports',
-                    path: '/admin/production',
-                    icon: Layers,
-                    permission: 'production:read',
-                },
-                { name: t('admin.sidebar.approvals'), path: '/approvals', icon: ClipboardCheck },
-            ],
-        },
-        {
-            title: t('admin.sidebar.system'),
-            items: [
                 { name: t('admin.systemStatus.title'), path: '/admin/system-status', icon: Server },
             ],
         },

@@ -52,11 +52,6 @@ export const BOOKINGS_DELETE = 'bookings:delete';
 // ==================== Analytics ====================
 export const ANALYTICS_VIEW = 'analytics:view';
 
-// ==================== MRP System ====================
-export const MRP_READ = 'mrp:read';
-export const MRP_CREATE = 'mrp:create';
-export const MRP_UPDATE = 'mrp:update';
-export const MRP_DELETE = 'mrp:delete';
 
 // ==================== Truck Scale ====================
 export const TRUCK_SCALE_READ = 'truckScale:read';
@@ -85,7 +80,7 @@ export const ALL_PERMISSIONS = [
     ROLES_READ, ROLES_CREATE, ROLES_UPDATE, ROLES_DELETE,
     BOOKINGS_READ, BOOKINGS_CREATE, BOOKINGS_UPDATE, BOOKINGS_DELETE,
     ANALYTICS_VIEW,
-    MRP_READ, MRP_CREATE, MRP_UPDATE, MRP_DELETE,
+
     TRUCK_SCALE_READ, TRUCK_SCALE_CREATE, TRUCK_SCALE_UPDATE, TRUCK_SCALE_DELETE,
     JOB_ORDERS_READ, JOB_ORDERS_CREATE, JOB_ORDERS_UPDATE, JOB_ORDERS_DELETE
 ];
@@ -109,7 +104,7 @@ export const PERMISSION_GROUPS = {
     ROLES: [ROLES_READ, ROLES_CREATE, ROLES_UPDATE, ROLES_DELETE],
     BOOKINGS: [BOOKINGS_READ, BOOKINGS_CREATE, BOOKINGS_UPDATE, BOOKINGS_DELETE],
     ANALYTICS: [ANALYTICS_VIEW],
-    MRP: [MRP_READ, MRP_CREATE, MRP_UPDATE, MRP_DELETE],
+
     TRUCK_SCALE: [TRUCK_SCALE_READ, TRUCK_SCALE_CREATE, TRUCK_SCALE_UPDATE, TRUCK_SCALE_DELETE],
     JOB_ORDERS: [JOB_ORDERS_READ, JOB_ORDERS_CREATE, JOB_ORDERS_UPDATE, JOB_ORDERS_DELETE]
 };

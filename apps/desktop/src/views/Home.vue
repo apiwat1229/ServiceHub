@@ -1,338 +1,140 @@
 <script setup lang="ts">
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/auth';
-import {
-  ArrowUpDown,
-  Box,
-  FileText,
-  Headset,
-  Layers,
-  Wrench,
-  type LucideIcon,
-} from 'lucide-vue-next';
-import { computed, onMounted, ref } from 'vue';
+import { useSearchStore } from '@/stores/search';
+import { ChevronRight, LayoutGrid, Search } from 'lucide-vue-next';
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 interface ServiceModule {
   id: string;
   title: string;
   description: string;
-  icon: LucideIcon;
+  icon: any;
   color: string;
-  bgColor: string;
-  borderColor: string;
-  hoverBorder: string;
+  gradient: string;
+  shadow: string;
   route: string;
-  permission?: string; // Optional permission required to access this module
+  permission?: string;
 }
 
 const { t } = useI18n();
 const authStore = useAuthStore();
-const appVersion = __APP_VERSION__;
+const searchStore = useSearchStore();
 
 const modules = computed<ServiceModule[]>(() => [
-  {
-    id: 'mrp',
-    title: t('services.mrp.name'),
-    description: t('services.mrp.description'),
-    icon: Box,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-50/50 group-hover:bg-blue-100/50',
-    borderColor: 'border-blue-200',
-    hoverBorder: 'group-hover:border-blue-500',
-    route: '/mrp',
-    permission: 'mrp:read',
-  },
-
-  {
-    id: 'maintenance',
-    title: t('services.maintenance.name'),
-    description: t('services.maintenance.description'),
-    icon: Wrench,
-    color: 'text-red-500',
-    bgColor: 'bg-red-50/50 group-hover:bg-red-100/50',
-    borderColor: 'border-red-200',
-    hoverBorder: 'group-hover:border-red-500',
-    route: '/maintenance',
-  },
-  {
-    id: 'it-helpdesk',
-    title: t('services.itHelp.name'),
-    description: t('services.itHelp.description'),
-    icon: Headset,
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-50/50 group-hover:bg-purple-100/50',
-    borderColor: 'border-purple-200',
-    hoverBorder: 'group-hover:border-purple-500',
-    route: '/admin/helpdesk',
-  },
-
-  {
-    id: 'contracts',
-    title: t('services.contracts.name'),
-    description: t('services.contracts.description'),
-    icon: FileText,
-    color: 'text-rose-600',
-    bgColor: 'bg-rose-50/50 group-hover:bg-rose-100/50',
-    borderColor: 'border-rose-200',
-    hoverBorder: 'group-hover:border-rose-500',
-    route: '/admin/contracts',
-  },
-  {
-    id: 'production',
-    title: t('production.title'),
-    description: t('production.subtitle'),
-    icon: Layers,
-    color: 'text-sky-600',
-    bgColor: 'bg-sky-50/50 group-hover:bg-sky-100/50',
-    borderColor: 'border-sky-200',
-    hoverBorder: 'group-hover:border-sky-500',
-    route: '/admin/production',
-    permission: 'production:read',
-  },
+  // Services moved to sidebar
 ]);
 
-// Sorting Logic
-const searchQuery = ref('');
-const sortBy = ref<'az' | 'recent'>('az');
-const moduleUsage = ref<Record<string, number>>({});
+const visibleModules = computed(() => {
+  const baseModules = authStore.user
+    ? modules.value.filter((m) => !m.permission || authStore.hasPermission(m.permission))
+    : modules.value;
 
-const loadUsage = () => {
-  try {
-    const stored = localStorage.getItem('module_usage');
-    if (stored) {
-      moduleUsage.value = JSON.parse(stored);
-    }
-  } catch (e) {
-    console.error('Failed to load module usage', e);
-  }
-};
+  if (!searchStore.searchQuery.trim()) return baseModules;
 
-const trackModuleUsage = (moduleId: string) => {
-  moduleUsage.value[moduleId] = Date.now();
-  localStorage.setItem('module_usage', JSON.stringify(moduleUsage.value));
-};
-
-onMounted(() => {
-  loadUsage();
-});
-
-const sortedModules = computed(() => {
-  let list = [...modules.value];
-
-  console.log('[Home] User permissions:', authStore.userPermissions);
-  console.log('[Home] User object:', authStore.user);
-  console.log('[Home] Total modules before filter:', list.length);
-
-  // If user is not loaded yet (no user object), show all modules temporarily
-  // This prevents modules from disappearing during page reload
-  if (!authStore.user) {
-    console.log('[Home] User not loaded yet, showing all modules');
-    return list;
-  }
-
-  // Filter by permissions - only show modules user has access to
-  list = list.filter((m) => {
-    // If no permission required, show the module
-    if (!m.permission) {
-      console.log(`[Home] Module "${m.id}" - no permission required, showing`);
-      return true;
-    }
-    // Otherwise check if user has the required permission
-    const hasAccess = authStore.hasPermission(m.permission);
-    console.log(`[Home] Module "${m.id}" - requires "${m.permission}", has access: ${hasAccess}`);
-    return hasAccess;
-  });
-
-  console.log('[Home] Total modules after filter:', list.length);
-
-  // Filter by search query
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase();
-    list = list.filter(
-      (m) => m.title.toLowerCase().includes(query) || m.description.toLowerCase().includes(query)
-    );
-  }
-
-  // Sort by selected option
-  if (sortBy.value === 'az') {
-    return list.sort((a, b) => a.title.localeCompare(b.title));
-  } else if (sortBy.value === 'recent') {
-    return list.sort((a, b) => {
-      const timeA = moduleUsage.value[a.id] || 0;
-      const timeB = moduleUsage.value[b.id] || 0;
-      // If time is same (both 0), fallback to A-Z
-      if (timeB === timeA) return a.title.localeCompare(b.title);
-      return timeB - timeA;
-    });
-  }
-  return list;
+  const query = searchStore.searchQuery.toLowerCase();
+  return baseModules.filter(
+    (m) => m.title.toLowerCase().includes(query) || m.description.toLowerCase().includes(query)
+  );
 });
 </script>
 
 <template>
-  <div
-    class="h-full flex flex-col justify-center max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12"
-  >
-    <!-- Header with Sorting -->
-    <div class="mb-10 flex flex-col md:flex-row items-center justify-between gap-6">
-      <div class="flex items-center gap-4 text-center md:text-left">
-        <!-- Text -->
+  <div class="min-h-full flex flex-col pt-4">
+    <!-- Main Content Area -->
+    <main class="flex-1 max-w-7xl w-full px-6 md:px-8 pb-12">
+      <!-- Welcome Header -->
+      <div class="mb-10 flex items-end justify-between">
         <div>
-          <h1
-            class="text-3xl font-bold tracking-tight text-foreground leading-tight flex items-center gap-3"
-          >
-            {{ t('services.title') }}
-            <span
-              class="text-sm font-semibold text-primary/90 bg-primary/10 px-2.5 py-0.5 rounded-md border border-primary/20 shadow-sm"
-              >v{{ appVersion }}</span
-            >
-          </h1>
-          <p class="text-muted-foreground text-lg">{{ t('services.subtitle') }}</p>
-        </div>
-      </div>
-
-      <!-- Controls -->
-      <div class="flex gap-4 w-full md:w-auto">
-        <!-- Search -->
-        <div class="relative w-full md:w-64">
-          <input
-            v-model="searchQuery"
-            type="text"
-            :placeholder="t('common.searchModules') || 'Search modules...'"
-            class="w-full h-10 px-4 rounded-xl border border-border/40 bg-card/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/60"
-          />
-        </div>
-
-        <!-- Sort -->
-        <div class="w-full md:w-auto">
-          <Select v-model="sortBy">
-            <SelectTrigger
-              class="w-full md:w-[180px] bg-transparent border-border/40 backdrop-blur-sm rounded-xl"
-            >
-              <div class="flex items-center gap-2">
-                <ArrowUpDown class="h-4 w-4 text-muted-foreground" />
-                <SelectValue :placeholder="t('common.sortBy')" />
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="az">{{ t('common.sortAZ') }}</SelectItem>
-              <SelectItem value="recent">{{ t('common.sortRecent') }}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-    </div>
-
-    <!-- Modules Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <router-link
-        v-for="module in sortedModules"
-        :key="module.id"
-        :to="module.route"
-        @click="trackModuleUsage(module.id)"
-        :class="[
-          'group relative overflow-hidden rounded-2xl bg-card border p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 block',
-          module.borderColor,
-          module.hoverBorder, // Direct border color transition
-          'focus:outline-none focus:ring-2 focus:ring-primary/20', // Ensure focus is clean
-        ]"
-      >
-        <!-- Large Background Icon (Watermark) -->
-        <component
-          :is="module.icon"
-          class="absolute -right-10 -bottom-10 w-40 h-40 opacity-[0.05] rotate-[15deg] transition-transform duration-500 group-hover:scale-[1.6] group-hover:rotate-[30deg] group-hover:opacity-[0.1]"
-          :class="module.color"
-        />
-
-        <!-- Access Indicator -->
-        <div
-          class="absolute top-6 right-6 flex items-center gap-2 opacity-0 -translate-x-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0"
-        >
-          <span
-            class="text-[10px] font-black tracking-widest uppercase opacity-70"
-            :class="module.color"
-            >{{ t('services.accessModule') || 'OPEN' }}</span
-          >
-          <div
-            class="h-6 w-6 rounded-full flex items-center justify-center bg-background shadow-sm"
-            :class="module.color"
-          >
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="3"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M5 12h14" />
-              <path d="M12 5l7 7-7 7" />
-            </svg>
-          </div>
-        </div>
-
-        <div class="relative z-10 flex flex-col h-full">
-          <!-- Small Icon -->
-          <div
-            class="mb-5 inline-flex h-14 w-14 items-center justify-center rounded-2xl transition-all duration-300 shadow-sm group-hover:shadow-md group-hover:scale-110 group-hover:animate-wiggle"
-            :class="[module.bgColor]"
-          >
-            <component :is="module.icon" :class="['h-7 w-7', module.color]" />
-          </div>
-
-          <h3
-            class="mb-3 text-xl font-bold tracking-tight text-foreground group-hover:text-foreground/90"
-          >
-            {{ module.title }}
-          </h3>
-
-          <p class="text-sm text-muted-foreground leading-relaxed flex-grow pr-4">
-            {{ module.description }}
+          <h2 class="text-3xl font-bold text-foreground tracking-tight flex items-center gap-3">
+            {{ t('admin.dashboard.title') || 'Dashboard' }}
+          </h2>
+          <p class="text-sm text-muted-foreground font-medium mt-1">
+            {{ t('admin.dashboard.subtitle') || 'Manage and monitor your services in one place.' }}
           </p>
         </div>
-      </router-link>
-    </div>
+      </div>
 
-    <!-- Background aesthetic elements -->
-    <div class="fixed right-0 top-1/4 -z-10 opacity-[0.03] pointer-events-none">
-      <svg
-        width="400"
-        height="400"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="0.5"
-      >
-        <path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5" />
-      </svg>
-    </div>
+      <!-- Services Section -->
+      <div class="space-y-6">
+        <div class="flex items-center gap-2">
+          <LayoutGrid class="w-4 h-4 text-primary" />
+          <h3 class="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">
+            Available Services
+          </h3>
+        </div>
+
+        <!-- App Grid -->
+        <div
+          v-if="visibleModules.length > 0"
+          class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+        >
+          <router-link
+            v-for="module in visibleModules"
+            :key="module.id"
+            :to="module.route"
+            class="group relative flex items-start p-5 rounded-xl bg-card border border-border/50 shadow-sm transition-all duration-300 hover:shadow-lg hover:border-primary/30 hover:-translate-y-0.5"
+          >
+            <!-- Module Icon -->
+            <div
+              class="w-12 h-12 rounded-lg flex items-center justify-center mr-4 shrink-0 transition-transform duration-500 group-hover:scale-110 relative overflow-hidden"
+              :class="module.color"
+            >
+              <div
+                class="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-50"
+              ></div>
+              <component :is="module.icon" class="w-6 h-6 text-white relative z-10" />
+            </div>
+
+            <!-- Module Info -->
+            <div class="flex-1 min-w-0">
+              <h4
+                class="text-base font-bold text-foreground group-hover:text-primary transition-colors"
+              >
+                {{ module.title }}
+              </h4>
+              <p class="mt-1 text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                {{ module.description }}
+              </p>
+            </div>
+
+            <!-- Action Arrow -->
+            <div
+              class="self-center ml-2 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300"
+            >
+              <ChevronRight class="w-4 h-4 text-primary" />
+            </div>
+          </router-link>
+        </div>
+
+        <!-- Empty State -->
+        <div
+          v-else
+          class="flex flex-col items-center justify-center py-20 text-center bg-muted/20 rounded-3xl border border-dashed border-border"
+        >
+          <div class="bg-card p-6 rounded-full mb-4 shadow-sm">
+            <Search class="w-10 h-10 text-muted-foreground/40" />
+          </div>
+          <h3 class="text-lg font-bold text-foreground">No services found</h3>
+          <p class="text-muted-foreground max-w-xs mx-auto text-sm">
+            We couldn't find any services matching "{{ searchStore.searchQuery }}".
+          </p>
+          <Button variant="link" class="mt-2" @click="searchStore.clearSearchQuery"
+            >Clear search</Button
+          >
+        </div>
+      </div>
+    </main>
   </div>
 </template>
 
 <style scoped>
-@keyframes wiggle {
-  0%,
-  100% {
-    transform: rotate(0deg);
-  }
-  25% {
-    transform: rotate(-10deg);
-  }
-  75% {
-    transform: rotate(10deg);
-  }
-}
-
-.group:hover .group-hover\:animate-wiggle {
-  animation: wiggle 0.5s ease-in-out both;
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 </style>

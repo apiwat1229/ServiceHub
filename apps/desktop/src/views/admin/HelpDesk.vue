@@ -42,7 +42,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import Spinner from '@/components/ui/spinner/Spinner.vue';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { itAssetsApi, type ITAsset } from '@/services/it-assets';
 import { itTicketsApi, type ITTicket } from '@/services/it-tickets';
 import { knowledgeBooksApi, type KnowledgeBook } from '@/services/knowledge-books';
@@ -57,7 +57,6 @@ import {
   CheckCircle2,
   Clock,
   Edit2,
-  LayoutDashboard,
   Monitor,
   Package,
   Plus,
@@ -74,7 +73,16 @@ import { toast } from 'vue-sonner';
 
 const route = useRoute();
 const router = useRouter();
-const activeTab = ref('kb');
+const activeTab = ref(route.query.tab?.toString() || 'kb');
+
+watch(
+  () => route.query.tab,
+  (newTab) => {
+    if (newTab) {
+      activeTab.value = newTab.toString();
+    }
+  }
+);
 const isDetailModalOpen = ref(false);
 const selectedTicket = ref<ITTicket | null>(null);
 const loadingTickets = ref(false);
@@ -823,7 +831,7 @@ const categories = computed(() => {
     <!-- Header -->
     <Tabs v-model="activeTab" class="w-full space-y-6">
       <!-- Header Refactored -->
-      <div class="flex items-center justify-between space-y-2">
+      <div class="flex items-center justify-between mb-2">
         <div class="flex items-center gap-3">
           <!-- Search Popover -->
           <Popover>
@@ -849,48 +857,11 @@ const categories = computed(() => {
             </PopoverContent>
           </Popover>
 
-          <!-- Date Picker Added Here -->
+          <!-- Date Picker -->
           <DateRangePicker
             v-model="dateRange"
             class="h-9 w-[280px] justify-center text-foreground font-normal bg-white/50 hover:bg-white shadow-sm transition-all border-slate-200 text-xs"
           />
-        </div>
-
-        <div class="flex items-center space-x-2">
-          <TabsList class="bg-muted/50 p-1 h-10 rounded-lg gap-1">
-            <TabsTrigger
-              value="kb"
-              class="h-9 text-xs font-black uppercase tracking-wide data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm data-[state=active]:border-2 data-[state=active]:border-primary transition-all rounded-md px-3"
-            >
-              <BookOpen class="w-4 h-4 mr-2" /> {{ t('services.itHelp.tabs.kb') }}
-            </TabsTrigger>
-            <TabsTrigger
-              v-if="isITDepartment"
-              value="stock"
-              class="h-9 text-xs font-black uppercase tracking-wide data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm data-[state=active]:border-2 data-[state=active]:border-primary transition-all rounded-md px-3"
-            >
-              <Package class="w-4 h-4 mr-2" /> {{ t('services.itHelp.tabs.stock') }}
-            </TabsTrigger>
-            <TabsTrigger
-              v-if="isITDepartment"
-              value="printer"
-              class="h-9 text-xs font-black uppercase tracking-wide data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm data-[state=active]:border-2 data-[state=active]:border-primary transition-all rounded-md px-3"
-            >
-              <LayoutDashboard class="w-4 h-4 mr-2" /> {{ t('services.itHelp.tabs.printer') }}
-            </TabsTrigger>
-            <TabsTrigger
-              value="assets"
-              class="h-9 text-xs font-black uppercase tracking-wide data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm data-[state=active]:border-2 data-[state=active]:border-primary transition-all rounded-md px-3"
-            >
-              <Monitor class="w-4 h-4 mr-2" /> {{ t('services.itHelp.tabs.assetRequest') }}
-            </TabsTrigger>
-            <TabsTrigger
-              value="tickets"
-              class="h-9 text-xs font-black uppercase tracking-wide data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm data-[state=active]:border-2 data-[state=active]:border-primary transition-all rounded-md px-3"
-            >
-              <Ticket class="w-4 h-4 mr-2" /> {{ t('services.itHelp.tabs.myTickets') }}
-            </TabsTrigger>
-          </TabsList>
         </div>
       </div>
 
@@ -1094,12 +1065,12 @@ const categories = computed(() => {
         </Card>
       </TabsContent>
 
-      <TabsContent v-if="isITDepartment" value="printer" class="space-y-4">
+      <TabsContent v-if="isITDepartment" value="analytics" class="space-y-4">
         <PrinterUsageAnalytics />
       </TabsContent>
 
       <!-- Assets Tab -->
-      <TabsContent value="assets" class="space-y-4">
+      <TabsContent value="asset-requests" class="space-y-4">
         <div v-if="isITDepartment && assetRequests.length > 0" class="space-y-4">
           <div class="flex items-center justify-between">
             <h3 class="text-lg font-medium text-muted-foreground">Assets Overview</h3>
@@ -1168,7 +1139,7 @@ const categories = computed(() => {
             >
               <div class="space-y-1">
                 <CardTitle class="text-xl font-bold">{{
-                  t('services.itHelp.tabs.assetRequest')
+                  t('services.itHelp.tabs.assetRequests')
                 }}</CardTitle>
                 <CardDescription> Track your equipment and hardware requests. </CardDescription>
               </div>
