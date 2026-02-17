@@ -45,10 +45,11 @@ import {
   Users,
 } from 'lucide-vue-next';
 import { computed, onMounted, ref, watch } from 'vue';
-import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
+import { usePermissions } from '@/composables/usePermissions';
 
 const { t } = useI18n();
+const { isAdmin } = usePermissions();
 
 const props = defineProps<{
   importedUsers?: string[];
@@ -282,7 +283,8 @@ const importSummary = computed(() => {
 const formatPeriodLabel = (iso: string) => {
   if (!iso) return '';
   const d = new Date(iso);
-  return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const targetLocale = locale.value === 'th' ? 'th-TH' : 'en-US';
+  return d.toLocaleDateString(targetLocale, { month: 'long', year: 'numeric' });
 };
 
 const openDeleteDialog = (period: { iso: string; label: string }) => {
@@ -314,14 +316,22 @@ const confirmDelete = async () => {
         <div class="flex items-center gap-2">
           <Database class="w-5 h-5 text-primary" />
           <div>
-            <CardTitle class="text-lg">Import Summary</CardTitle>
-            <CardDescription class="text-xs">Manage imported printer usage data</CardDescription>
+            <CardTitle class="text-lg">{{
+              t('services.printer.settings.importSummary')
+            }}</CardTitle>
+            <CardDescription class="text-xs">{{
+              t('services.printer.settings.importSummaryDesc')
+            }}</CardDescription>
           </div>
         </div>
         <div class="flex items-center gap-3">
           <Badge variant="secondary" class="text-sm font-semibold">
             {{ importSummary.totalMonths }}
-            {{ importSummary.totalMonths === 1 ? 'Month' : 'Months' }}
+            {{
+              importSummary.totalMonths === 1
+                ? t('services.printer.settings.month')
+                : t('services.printer.settings.months')
+            }}
           </Badge>
           <slot name="upload-button"></slot>
         </div>
@@ -335,8 +345,12 @@ const confirmDelete = async () => {
         <div class="w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-3">
           <Database class="w-6 h-6 text-muted-foreground" />
         </div>
-        <h3 class="text-lg font-semibold mb-1">No data imported yet</h3>
-        <p class="text-xs text-muted-foreground">Upload CSV files to see usage history</p>
+        <h3 class="text-lg font-semibold mb-1">
+          {{ t('services.printer.settings.noDataImported') }}
+        </h3>
+        <p class="text-xs text-muted-foreground">
+          {{ t('services.printer.settings.noDataImportedDesc') }}
+        </p>
       </div>
       <div v-else class="relative">
         <!-- Horizontal Scrollable Container -->
@@ -355,10 +369,13 @@ const confirmDelete = async () => {
                 </div>
                 <div>
                   <div class="text-sm font-semibold text-slate-700">{{ period.label }}</div>
-                  <div class="text-xs text-slate-500">Imported data</div>
+                  <div class="text-xs text-slate-500">
+                    {{ t('services.printer.settings.importedData') }}
+                  </div>
                 </div>
               </div>
               <Button
+                v-if="isAdmin"
                 size="icon"
                 variant="ghost"
                 class="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-600 hover:bg-red-50"
@@ -374,7 +391,7 @@ const confirmDelete = async () => {
           v-if="importSummary.totalMonths > 3"
           class="text-xs text-center text-slate-400 mt-2 flex items-center justify-center gap-1"
         >
-          <span>← Scroll to see more →</span>
+          <span>{{ t('services.printer.settings.scrollHint') }}</span>
         </div>
       </div>
     </CardContent>
@@ -395,7 +412,11 @@ const confirmDelete = async () => {
             <Plus class="w-4 h-4" />
           </Button>
         </div>
-        <Input v-model="deptSearchQuery" placeholder="Search departments..." class="h-8 text-xs" />
+        <Input
+          v-model="deptSearchQuery"
+          :placeholder="t('services.printer.settings.searchDepts')"
+          class="h-8 text-xs"
+        />
       </CardHeader>
       <CardContent>
         <div class="space-y-2 max-h-[500px] overflow-y-auto pr-2">
@@ -403,7 +424,7 @@ const confirmDelete = async () => {
             v-if="filteredDepartments.length === 0"
             class="text-center py-4 text-slate-400 text-sm italic"
           >
-            No departments found
+            {{ t('services.printer.settings.noDeptsFound') }}
           </div>
           <div
             v-for="dept in filteredDepartments"
@@ -417,10 +438,17 @@ const confirmDelete = async () => {
               </div>
             </div>
             <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <Button size="icon" variant="ghost" class="h-7 w-7" @click="handleEditDept(dept)">
+              <Button
+                v-if="isAdmin"
+                size="icon"
+                variant="ghost"
+                class="h-7 w-7"
+                @click="handleEditDept(dept)"
+              >
                 <Edit2 class="w-3.5 h-3.5" />
               </Button>
               <Button
+                v-if="isAdmin"
                 size="icon"
                 variant="ghost"
                 class="h-7 w-7 text-red-500 hover:text-red-600"
@@ -455,7 +483,11 @@ const confirmDelete = async () => {
       <CardContent>
         <div class="mb-4 relative">
           <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input v-model="mappingSearchQuery" placeholder="Search username..." class="pl-9 h-9" />
+          <Input
+            v-model="mappingSearchQuery"
+            :placeholder="t('services.printer.table.search')"
+            class="pl-9 h-9"
+          />
         </div>
 
         <div class="border rounded-lg overflow-hidden">
@@ -472,7 +504,9 @@ const confirmDelete = async () => {
             </thead>
             <tbody class="divide-y divide-slate-100">
               <tr v-if="paginatedMappings.length === 0">
-                <td colspan="2" class="p-8 text-center text-slate-400 italic">No mappings found</td>
+                <td colspan="2" class="p-8 text-center text-slate-400 italic">
+                  {{ t('services.printer.settings.noMappingsFound') }}
+                </td>
               </tr>
               <tr
                 v-for="mapping in paginatedMappings"
@@ -490,6 +524,7 @@ const confirmDelete = async () => {
                 </td>
                 <td class="p-3 text-right">
                   <Button
+                    v-if="isAdmin"
                     variant="ghost"
                     size="icon"
                     class="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
@@ -506,7 +541,9 @@ const confirmDelete = async () => {
         <!-- Pagination Controls -->
         <div class="flex items-center justify-between px-2 pt-4">
           <div class="flex items-center gap-2">
-            <span class="text-sm text-muted-foreground">Rows per page</span>
+            <span class="text-sm text-muted-foreground">{{
+              t('services.printer.table.rowsPerPage')
+            }}</span>
             <Select
               :model-value="pageSize.toString()"
               @update:model-value="(v) => (pageSize = Number(v))"
@@ -524,9 +561,8 @@ const confirmDelete = async () => {
           </div>
 
           <div class="flex items-center gap-2">
-            <span class="text-sm text-muted-foreground">
-              Page {{ currentPage }} of {{ totalPages || 1 }}
-            </span>
+            {{ t('services.printer.table.page') }} {{ currentPage }}
+            {{ t('services.printer.table.of') }} {{ totalPages || 1 }}
             <div class="flex items-center gap-1">
               <Button
                 variant="outline"
@@ -563,7 +599,7 @@ const confirmDelete = async () => {
             : t('services.itHelp.printer.settings.addDept')
         }}</DialogTitle>
         <DialogDescription>
-          Define a department name for grouping printer usage.
+          {{ t('services.printer.settings.addDeptDesc') }}
         </DialogDescription>
       </DialogHeader>
       <div class="grid gap-4 py-4">
@@ -571,13 +607,19 @@ const confirmDelete = async () => {
           <label class="text-sm font-medium">{{
             t('services.itHelp.printer.settings.deptName')
           }}</label>
-          <Input v-model="departmentForm.name" placeholder="e.g. Accounting" />
+          <Input
+            v-model="departmentForm.name"
+            :placeholder="t('services.printer.departments.acc')"
+          />
         </div>
         <div class="grid gap-2">
           <label class="text-sm font-medium">{{
             t('services.itHelp.printer.settings.description')
           }}</label>
-          <Input v-model="departmentForm.description" placeholder="Short description..." />
+          <Input
+            v-model="departmentForm.description"
+            :placeholder="t('services.printer.settings.description') + '...'"
+          />
         </div>
       </div>
       <DialogFooter>
@@ -594,7 +636,9 @@ const confirmDelete = async () => {
     <DialogContent class="sm:max-w-[600px]">
       <DialogHeader>
         <DialogTitle>{{ t('services.itHelp.printer.settings.userMapping') }}</DialogTitle>
-        <DialogDescription> Map multiple users to a department at once. </DialogDescription>
+        <DialogDescription>
+          {{ t('services.printer.settings.mappingDescDesc') }}
+        </DialogDescription>
       </DialogHeader>
 
       <div class="grid gap-6 py-4">
@@ -617,7 +661,7 @@ const confirmDelete = async () => {
                     v-if="mappingForm.userNames.length === 0"
                     class="text-muted-foreground font-normal"
                   >
-                    Select users...
+                    {{ t('services.printer.settings.selectUsers') }}
                   </span>
                   <Badge
                     v-for="user in mappingForm.userNames.slice(0, 5)"
@@ -639,8 +683,8 @@ const confirmDelete = async () => {
             </PopoverTrigger>
             <PopoverContent class="w-[550px] p-0" align="start">
               <Command>
-                <CommandInput placeholder="Search users..." />
-                <CommandEmpty>No user found.</CommandEmpty>
+                <CommandInput :placeholder="t('services.printer.settings.selectUsers')" />
+                <CommandEmpty>{{ t('services.printer.settings.noUserFound') }}</CommandEmpty>
                 <CommandList>
                   <CommandGroup class="max-h-[300px] overflow-auto">
                     <CommandItem
@@ -681,13 +725,16 @@ const confirmDelete = async () => {
             </PopoverContent>
           </Popover>
           <div class="text-[0.625rem] text-muted-foreground flex justify-between">
-            <span>Selected: {{ mappingForm.userNames.length }} users</span>
+            <span
+              >{{ t('services.printer.settings.selected') }} {{ mappingForm.userNames.length }}
+              {{ t('services.printer.settings.users') }}</span
+            >
             <span
               v-if="mappingForm.userNames.length > 0"
               class="cursor-pointer text-primary hover:underline"
               @click="mappingForm.userNames = []"
             >
-              Clear all
+              {{ t('services.printer.settings.clearAll') }}
             </span>
           </div>
         </div>
@@ -728,11 +775,10 @@ const confirmDelete = async () => {
       <DialogHeader>
         <DialogTitle class="flex items-center gap-2 text-red-600">
           <Trash2 class="w-5 h-5" />
-          Delete Period Data
+          {{ t('services.printer.settings.deletePeriodTitle') }}
         </DialogTitle>
         <DialogDescription>
-          This action cannot be undone. All printer usage data for this period will be permanently
-          deleted.
+          {{ t('services.printer.settings.deletePeriodDesc') }}
         </DialogDescription>
       </DialogHeader>
       <div v-if="periodToDelete" class="py-4">
@@ -741,16 +787,20 @@ const confirmDelete = async () => {
             <Calendar class="w-5 h-5 text-red-600" />
             <div>
               <div class="font-semibold text-red-900">{{ periodToDelete.label }}</div>
-              <div class="text-sm text-red-700">All usage records will be deleted</div>
+              <div class="text-sm text-red-700">
+                {{ t('services.printer.settings.deletePeriodConfirm') }}
+              </div>
             </div>
           </div>
         </div>
       </div>
       <DialogFooter>
-        <Button variant="outline" @click="isDeleteDialogOpen = false">Cancel</Button>
+        <Button variant="outline" @click="isDeleteDialogOpen = false">{{
+          t('common.cancel')
+        }}</Button>
         <Button variant="destructive" @click="confirmDelete">
           <Trash2 class="w-4 h-4 mr-2" />
-          Delete
+          {{ t('common.delete') }}
         </Button>
       </DialogFooter>
     </DialogContent>

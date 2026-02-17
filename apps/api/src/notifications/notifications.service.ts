@@ -404,6 +404,10 @@ export class NotificationsService {
 
         return group?.members || [];
     }
+
+    emitTicketEvent(event: string, data: any) {
+        this.notificationsGateway.broadcastEvent(event, data);
+    }
 }
 
 

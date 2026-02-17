@@ -80,6 +80,7 @@ model User {
   requesterTickets ITTicket[] @relation("TicketRequester")
   assigneeTickets  ITTicket[] @relation("TicketAssignee")
   ticketComments   TicketComment[]
+  ticketActivities TicketActivity[]
 
   @@map("users")
 }
@@ -907,6 +908,11 @@ model ITTicket {
   issuedBy       String?   @map("issued_by")
   resolvedAt     DateTime? @map("resolved_at")
 
+  resolvedAt     DateTime? @map("resolved_at")
+
+  rating         Int?
+  feedback       String?
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -916,7 +922,27 @@ model ITTicket {
   @@index([assetId])
   @@map("it_tickets")
 
-  comments TicketComment[]
+  comments   TicketComment[]
+  activities TicketActivity[]
+}
+
+model TicketActivity {
+  id       String   @id @default(uuid())
+  ticketId String   @map("ticket_id")
+  ticket   ITTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id])
+
+  type     String // e.g. STATUS_CHANGE, ASSIGNMENT, COMMENT_ADDED
+  oldValue String? @map("old_value")
+  newValue String? @map("new_value")
+  content  String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([ticketId])
+  @@map("ticket_activities")
 }
 
 model TicketComment {

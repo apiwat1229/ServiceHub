@@ -38,9 +38,30 @@ export interface ITTicket {
     issuedAt?: string;
     issuedBy?: string;
     resolvedAt?: string;
+    rating?: number;
+    feedback?: string;
     createdAt: string;
     updatedAt: string;
     comments?: TicketComment[];
+    activities?: TicketActivity[];
+}
+
+export interface TicketActivity {
+    id: string;
+    ticketId: string;
+    userId: string;
+    user: {
+        id: string;
+        displayName: string;
+        firstName?: string;
+        lastName?: string;
+        avatar?: string;
+    };
+    type: string;
+    oldValue?: string;
+    newValue?: string;
+    content?: string;
+    createdAt: string;
 }
 
 export interface TicketComment {

@@ -5,7 +5,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { useSidebarMenu } from '@/composables/useSidebarMenu';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth';
-import { ChevronRight, Menu, Search } from 'lucide-vue-next';
+import { ChevronRight, Menu } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
@@ -13,23 +13,6 @@ const route = useRoute();
 const authStore = useAuthStore();
 const { menuGroups } = useSidebarMenu();
 const isOpen = ref(false);
-
-const searchQuery = ref('');
-
-const filteredMenuGroups = computed(() => {
-  if (!searchQuery.value) return menuGroups.value;
-
-  const query = searchQuery.value.toLowerCase();
-  return menuGroups.value
-    .map((group) => ({
-      ...group,
-      items: group.items.filter(
-        (item) =>
-          item.name.toLowerCase().includes(query) || group.title.toLowerCase().includes(query)
-      ),
-    }))
-    .filter((group) => group.items.length > 0);
-});
 
 const userInitials = computed(() => {
   if (!authStore.user?.firstName) return 'U';
@@ -65,23 +48,8 @@ watch(
         </SheetTitle>
       </SheetHeader>
 
-      <!-- Search in Mobile -->
-      <div class="px-4 py-4">
-        <div class="relative">
-          <Search
-            class="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"
-          />
-          <Input
-            v-model="searchQuery"
-            type="text"
-            placeholder="Search menu..."
-            class="pl-9 h-9 bg-background/50 border-border/40"
-          />
-        </div>
-      </div>
-
       <nav class="flex-1 px-3 py-2 space-y-6 overflow-y-auto">
-        <div v-for="(group, index) in filteredMenuGroups" :key="index" class="space-y-1">
+        <div v-for="(group, index) in menuGroups" :key="index" class="space-y-1">
           <div class="px-3">
             <h4
               class="text-[0.625rem] font-bold text-muted-foreground uppercase tracking-widest py-2"

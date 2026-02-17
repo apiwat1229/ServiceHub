@@ -46,10 +46,13 @@ import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { itAssetsApi, type ITAsset } from '@/services/it-assets';
 import { itTicketsApi, type ITTicket } from '@/services/it-tickets';
 import { knowledgeBooksApi, type KnowledgeBook } from '@/services/knowledge-books';
+import { socketService } from '@/services/socket';
 import { useAuthStore } from '@/stores/auth';
 import { getLocalTimeZone, today } from '@internationalized/date';
 import type { ColumnDef } from '@tanstack/vue-table';
 import { format, formatDistanceToNowStrict, intervalToDuration } from 'date-fns';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 import {
   AlertTriangle,
   ArrowUpDown,
@@ -57,6 +60,7 @@ import {
   CheckCircle2,
   Clock,
   Edit2,
+  FileText,
   Monitor,
   Package,
   Plus,
@@ -66,14 +70,16 @@ import {
   Zap,
 } from 'lucide-vue-next';
 import type { DateRange } from 'reka-ui';
-import { computed, h, onMounted, ref, watch, type Ref } from 'vue';
+import { computed, h, onMounted, onUnmounted, ref, watch, type Ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import { toast } from 'vue-sonner';
 
+import { usePermissions } from '@/composables/usePermissions';
+
 const route = useRoute();
 const router = useRouter();
-const activeTab = ref(route.query.tab?.toString() || 'kb');
+const activeTab = ref(route.query.tab?.toString() || 'overview');
 
 watch(
   () => route.query.tab,
@@ -83,6 +89,7 @@ watch(
     }
   }
 );
+const { isAdmin } = usePermissions();
 const isDetailModalOpen = ref(false);
 const selectedTicket = ref<ITTicket | null>(null);
 const loadingTickets = ref(false);
@@ -123,16 +130,235 @@ watch(
   { immediate: true }
 );
 
-watch(isDetailModalOpen, (isOpen) => {
-  if (!isOpen && route.query.ticketId) {
-    const query = { ...route.query };
-    delete query.ticketId;
-    router.replace({ query });
-  }
+watch(activeTab, (newTab) => {
+  const query = { ...route.query, tab: newTab };
+  router.replace({ query });
 });
 
 const { t } = useI18n();
 const authStore = useAuthStore();
+
+const getSLAThreshold = (priority: string): number => {
+  switch (priority.toLowerCase()) {
+    case 'high':
+      return 4;
+    case 'medium':
+      return 8;
+    case 'low':
+      return 24;
+    default:
+      return 8;
+  }
+};
+
+const getSLAStatus = (ticket: ITTicket) => {
+  if (ticket.status === 'Cancelled') return null;
+
+  if (ticket.status === 'Resolved' || ticket.status === 'Closed') {
+    const created = new Date(ticket.createdAt);
+    const resolved = ticket.resolvedAt ? new Date(ticket.resolvedAt) : new Date(ticket.updatedAt);
+    const durationHrs = (resolved.getTime() - created.getTime()) / (1000 * 60 * 60);
+    const threshold = getSLAThreshold(ticket.priority);
+
+    if (durationHrs <= threshold) return { label: 'Met', color: 'text-green-600 bg-green-50' };
+    return { label: 'Breached', color: 'text-red-600 bg-red-50' };
+  }
+
+  const created = new Date(ticket.createdAt);
+  const now = new Date();
+  const durationHrs = (now.getTime() - created.getTime()) / (1000 * 60 * 60);
+  const threshold = getSLAThreshold(ticket.priority);
+
+  if (durationHrs > threshold) return { label: 'Breached', color: 'text-red-600 bg-red-100/50' };
+  if (durationHrs > threshold * 0.8)
+    return { label: 'Warning', color: 'text-amber-600 bg-amber-50' };
+  return { label: 'On Track', color: 'text-blue-600 bg-blue-50' };
+};
+const exportTicketsToCSV = () => {
+  if (tickets.value.length === 0) {
+    toast.error('No tickets to export');
+    return;
+  }
+
+  const headers = [
+    'Ticket No',
+    'Title',
+    'Category',
+    'Priority',
+    'Status',
+    'Location',
+    'Requester',
+    'Assignee',
+    'Created At',
+    'Resolved At',
+  ];
+
+  const rows = tickets.value.map((t) => [
+    t.ticketNo,
+    `"${t.title.replace(/"/g, '""')}"`,
+    t.category,
+    t.priority,
+    t.status,
+    t.location || '',
+    t.requester?.displayName || '',
+    t.assignee?.displayName || '',
+    t.createdAt ? format(new Date(t.createdAt), 'yyyy-MM-dd HH:mm:ss') : '',
+    t.resolvedAt ? format(new Date(t.resolvedAt), 'yyyy-MM-dd HH:mm:ss') : '',
+  ]);
+
+  const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', `it-tickets-${format(new Date(), 'yyyyMMdd-HHmmss')}.csv`);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  toast.success('Tickets exported successfully');
+};
+
+const exportTicketsToPDF = async () => {
+  if (tickets.value.length === 0) {
+    toast.error('No tickets to export');
+    return;
+  }
+
+  const loadingToast = toast.loading('Generating PDF report...');
+
+  try {
+    // Create hidden container for PDF content
+    const container = document.createElement('div');
+    container.style.position = 'absolute';
+    container.style.left = '-9999px';
+    container.style.top = '0';
+    container.style.width = '794px'; // 210mm at 96 DPI
+    container.style.backgroundColor = 'white';
+    container.style.padding = '0';
+    container.style.margin = '0';
+    container.style.color = '#000';
+
+    // Header Section
+    const dateStr = format(new Date(), 'dd MMM yyyy HH:mm');
+    const rangeStr =
+      dateRange.value?.start && dateRange.value?.end
+        ? `${dateRange.value.start.toDate(getLocalTimeZone()).toLocaleDateString()} - ${dateRange.value.end.toDate(getLocalTimeZone()).toLocaleDateString()}`
+        : 'All Time';
+
+    // SLA Calculation for Summary
+    const resolvedInPeriod = tickets.value.filter(
+      (t) => t.status === 'Resolved' || t.status === 'Closed'
+    );
+    const slaMet = resolvedInPeriod.filter((t) => getSLAStatus(t)?.label === 'Met').length;
+    const slaRate = resolvedInPeriod.length
+      ? ((slaMet / resolvedInPeriod.length) * 100).toFixed(0)
+      : '0';
+
+    container.innerHTML = `
+      <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800&display=swap');
+        * { box-sizing: border-box; font-family: 'Sarabun', sans-serif !important; }
+      </style>
+      <div style="padding: 40px; background: white; min-height: 1123px;">
+        <div style="border-bottom: 2px solid #f1f5f9; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: start;">
+          <div>
+            <h1 style="font-size: 28px; font-weight: 800; color: #0f172a; margin: 0;">IT Help Desk Report</h1>
+            <p style="font-size: 16px; color: #64748b; margin: 4px 0 0 0;">Generated on ${dateStr}</p>
+          </div>
+          <div style="text-align: right;">
+            <p style="font-size: 14px; font-weight: 600; color: #3b82f6; background-color: #eff6ff; padding: 6px 16px; border-radius: 99px; display: inline-block;">${rangeStr}</p>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 40px;">
+          <div style="background-color: #f8fafc; padding: 16px; border-radius: 12px; text-align: center; border: 1px solid #e2e8f0;">
+            <p style="font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">Total Tickets</p>
+            <p style="font-size: 24px; font-weight: 700; color: #0f172a; margin: 4px 0 0 0;">${ticketStats.value.total}</p>
+          </div>
+          <div style="background-color: #eff6ff; padding: 16px; border-radius: 12px; text-align: center; border: 1px solid #bfdbfe;">
+            <p style="font-size: 12px; font-weight: 600; color: #2563eb; text-transform: uppercase;">Open Tickets</p>
+            <p style="font-size: 24px; font-weight: 700; color: #1e40af; margin: 4px 0 0 0;">${ticketStats.value.openCount + ticketStats.value.inProgressCount}</p>
+          </div>
+          <div style="background-color: #f0fdf4; padding: 16px; border-radius: 12px; text-align: center; border: 1px solid #bbf7d0;">
+            <p style="font-size: 12px; font-weight: 600; color: #16a34a; text-transform: uppercase;">Resolved</p>
+            <p style="font-size: 24px; font-weight: 700; color: #166534; margin: 4px 0 0 0;">${ticketStats.value.resolved}</p>
+          </div>
+          <div style="background-color: #fffbeb; padding: 16px; border-radius: 12px; text-align: center; border: 1px solid #fde68a;">
+            <p style="font-size: 12px; font-weight: 600; color: #d97706; text-transform: uppercase;">SLA Met Rate</p>
+            <p style="font-size: 24px; font-weight: 700; color: #92400e; margin: 4px 0 0 0;">${slaRate}%</p>
+          </div>
+        </div>
+
+        <h2 style="font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 16px;">Detailed Ticket Log</h2>
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+          <thead>
+            <tr style="background-color: #f1f5f9; text-align: left;">
+              <th style="padding: 12px 8px; border-bottom: 2px solid #e2e8f0; color: #475569;">No.</th>
+              <th style="padding: 12px 8px; border-bottom: 2px solid #e2e8f0; color: #475569;">Subject</th>
+              <th style="padding: 12px 8px; border-bottom: 2px solid #e2e8f0; color: #475569;">Status</th>
+              <th style="padding: 12px 8px; border-bottom: 2px solid #e2e8f0; color: #475569;">Assignee</th>
+              <th style="padding: 12px 8px; border-bottom: 2px solid #e2e8f0; color: #475569;">Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tickets.value
+              .slice(0, 50) // Limit to 50 for clarity in summary report
+              .map(
+                (t) => `
+              <tr style="border-bottom: 1px solid #f1f5f9;">
+                <td style="padding: 12px 8px; color: #64748b; font-family: 'Sarabun', monospace;">${t.ticketNo}</td>
+                <td style="padding: 12px 8px; font-weight: 600; color: #0f172a;">${t.title}</td>
+                <td style="padding: 12px 8px;">
+                  <span style="padding: 3px 10px; border-radius: 4px; font-size: 11px; font-weight: 700; background-color: #f1f5f9; color: #475569;">${t.status}</span>
+                </td>
+                <td style="padding: 12px 8px; color: #475569;">${t.assignee?.displayName || '-'}</td>
+                <td style="padding: 12px 8px; color: #64748b;">${format(new Date(t.createdAt), 'dd/MM/yy')}</td>
+              </tr>
+            `
+              )
+              .join('')}
+          </tbody>
+        </table>
+        <div style="margin-top: 40px; text-align: center; font-size: 12px; color: #94a3b8;">
+          This report is automatically generated by ServiceHub IT Management System.
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(container);
+
+    const canvas = await html2canvas(container, {
+      scale: 1.5,
+      useCORS: true,
+      logging: false,
+      backgroundColor: '#ffffff',
+    });
+
+    const imgData = canvas.toDataURL('image/jpeg', 0.82);
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+      compress: true,
+    });
+
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+    pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
+    pdf.save(`it-report-${format(new Date(), 'yyyyMMdd-HHmmss')}.pdf`);
+
+    document.body.removeChild(container);
+    toast.dismiss(loadingToast);
+    toast.success('PDF report exported successfully');
+  } catch (err) {
+    console.error('PDF Export Error:', err);
+    toast.dismiss(loadingToast);
+    toast.error('Failed to export PDF');
+  }
+};
 
 // ... existing imports ...
 
@@ -462,8 +688,8 @@ const ticketStats = computed(() => {
 
   resolvedTickets.forEach((t) => {
     const created = new Date(t.createdAt);
-    const updated = new Date(t.updatedAt);
-    const diff = updated.getTime() - created.getTime();
+    const resolved = t.resolvedAt ? new Date(t.resolvedAt) : new Date(t.updatedAt);
+    const diff = resolved.getTime() - created.getTime();
     totalResolutionTime += diff;
     if (diff < minTimeMs) {
       minTimeMs = diff;
@@ -525,8 +751,8 @@ const assetStats = computed(() => {
 
   resolvedTickets.forEach((t) => {
     const created = new Date(t.createdAt);
-    const updated = new Date(t.updatedAt);
-    const diff = updated.getTime() - created.getTime();
+    const resolved = t.resolvedAt ? new Date(t.resolvedAt) : new Date(t.updatedAt);
+    const diff = resolved.getTime() - created.getTime();
     totalResolutionTime += diff;
     if (diff < minTimeMs) {
       minTimeMs = diff;
@@ -685,9 +911,28 @@ onMounted(() => {
   if (isITDepartment.value) {
     loadITAssets();
   }
+
+  // Real-time Listeners
+  socketService.on('ticket:created', loadTickets);
+  socketService.on('ticket:updated', (updatedTicket: ITTicket) => {
+    onTicketUpdated(updatedTicket);
+  });
+  socketService.on('ticket:deleted', loadTickets);
+  socketService.on('ticket:commented', () => {
+    // Refresh the list to ensure comment counts/info are up to date
+    loadTickets();
+  });
+});
+
+onUnmounted(() => {
+  socketService.off('ticket:created', loadTickets);
+  socketService.off('ticket:updated');
+  socketService.off('ticket:deleted', loadTickets);
+  socketService.off('ticket:commented');
 });
 
 const isITDepartment = computed(() => {
+  if (isAdmin.value) return true;
   const userDept = authStore.user?.department;
   // Check against both English and Thai values to ensure it works regardless of current locale
   return userDept === 'Information Technology' || userDept === 'เทคโนโลยีสารสนเทศ (IT)';
@@ -830,42 +1075,220 @@ const categories = computed(() => {
   <div class="space-y-6">
     <!-- Header -->
     <Tabs v-model="activeTab" class="w-full space-y-6">
-      <!-- Header Refactored -->
-      <div class="flex items-center justify-between mb-2">
-        <div class="flex items-center gap-3">
-          <!-- Search Popover -->
-          <Popover>
-            <PopoverTrigger as-child>
-              <Button
-                variant="outline"
-                size="icon"
-                class="h-9 w-9 text-muted-foreground hover:text-primary bg-white/50 hover:bg-white shadow-sm border-slate-200"
-              >
-                <Search class="h-4 w-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent class="w-80 p-2" align="start">
-              <div class="flex items-center gap-2">
-                <Search class="h-4 w-4 text-muted-foreground" />
-                <Input
-                  v-model="searchQuery"
-                  :placeholder="t('services.itHelp.searchPlaceholder')"
-                  class="h-8 border-none focus-visible:ring-0 shadow-none"
-                  auto-focus
-                />
-              </div>
-            </PopoverContent>
-          </Popover>
-
-          <!-- Date Picker -->
-          <DateRangePicker
-            v-model="dateRange"
-            class="h-9 w-[280px] justify-center text-foreground font-normal bg-white/50 hover:bg-white shadow-sm transition-all border-slate-200 text-xs"
-          />
-        </div>
+      <div class="mb-2">
+        <!-- Tabs List would normally go here, but this design uses a different approach -->
       </div>
 
       <!-- Main Content Tabs -->
+
+      <!-- Overview Tab -->
+      <TabsContent value="overview" class="space-y-6">
+        <!-- Main Stats Summary -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card class="bg-gradient-to-br from-white to-slate-50 border-slate-200">
+            <CardContent class="p-6">
+              <div class="flex items-center justify-between mb-2">
+                <p class="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                  Total Tickets
+                </p>
+                <div class="p-2 bg-blue-50 rounded-lg">
+                  <Ticket class="w-5 h-5 text-blue-600" />
+                </div>
+              </div>
+              <div class="flex items-baseline gap-2">
+                <h4 class="text-3xl font-bold text-slate-900">{{ ticketStats.total }}</h4>
+                <p class="text-xs text-muted-foreground">tickets logged</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card class="bg-gradient-to-br from-white to-blue-50/20 border-blue-100">
+            <CardContent class="p-6">
+              <div class="flex items-center justify-between mb-2">
+                <p class="text-sm font-medium text-blue-600 uppercase tracking-wider">
+                  Active Tasks
+                </p>
+                <div class="p-2 bg-blue-100/50 rounded-lg">
+                  <Clock class="w-5 h-5 text-blue-600" />
+                </div>
+              </div>
+              <div class="flex items-baseline gap-2">
+                <h4 class="text-3xl font-bold text-blue-700">
+                  {{ ticketStats.openCount + ticketStats.inProgressCount }}
+                </h4>
+                <p class="text-xs text-blue-600/70">pending response</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card class="bg-gradient-to-br from-white to-green-50/20 border-green-100">
+            <CardContent class="p-6">
+              <div class="flex items-center justify-between mb-2">
+                <p class="text-sm font-medium text-green-600 uppercase tracking-wider">
+                  Successfully Resolved
+                </p>
+                <div class="p-2 bg-green-100/50 rounded-lg">
+                  <CheckCircle2 class="w-5 h-5 text-green-600" />
+                </div>
+              </div>
+              <div class="flex items-baseline gap-2">
+                <h4 class="text-3xl font-bold text-green-700">{{ ticketStats.resolved }}</h4>
+                <p class="text-xs text-green-600/70">issues fixed</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card class="bg-gradient-to-br from-white to-primary/5 border-primary/10">
+            <CardContent class="p-6">
+              <div class="flex items-center justify-between mb-2">
+                <p class="text-sm font-medium text-primary uppercase tracking-wider">
+                  SLA Efficiency
+                </p>
+                <div class="p-2 bg-primary/10 rounded-lg">
+                  <Zap class="w-5 h-5 text-primary" />
+                </div>
+              </div>
+              <div class="flex items-baseline gap-2">
+                <h4 class="text-3xl font-bold text-primary">{{ ticketStats.bestResponse }}h</h4>
+                <p class="text-xs text-primary/70">fastest resolution</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <!-- System & Service Management Status -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card class="border-slate-200">
+            <CardHeader class="pb-2">
+              <CardTitle class="text-lg font-bold flex items-center gap-2">
+                <ClipboardList class="w-5 h-5 text-primary" />
+                Quick Actions
+              </CardTitle>
+            </CardHeader>
+            <CardContent class="grid grid-cols-1 md:grid-cols-2 gap-3 pb-6">
+              <Button
+                variant="outline"
+                class="h-16 justify-start gap-4 border-2 border-primary/10 hover:border-primary/30 hover:bg-primary/5 group"
+                @click="isTicketModalOpen = true"
+              >
+                <div
+                  class="p-2 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors"
+                >
+                  <Plus class="w-5 h-5 text-primary" />
+                </div>
+                <div class="text-left">
+                  <div class="text-sm font-bold">New Repair Ticket</div>
+                  <div class="text-[0.625rem] text-muted-foreground">Report technical issues</div>
+                </div>
+              </Button>
+              <Button
+                variant="outline"
+                class="h-16 justify-start gap-4 border-2 border-slate-100 hover:border-slate-200 hover:bg-slate-50 group"
+                @click="isAssetModalOpen = true"
+              >
+                <div class="p-2 bg-slate-100 rounded-lg group-hover:bg-slate-200 transition-colors">
+                  <Monitor class="w-5 h-5 text-slate-600" />
+                </div>
+                <div class="text-left">
+                  <div class="text-sm font-bold">Request Equipment</div>
+                  <div class="text-[0.625rem] text-muted-foreground">
+                    Order hardware or software
+                  </div>
+                </div>
+              </Button>
+              <Button
+                v-if="isITDepartment"
+                variant="outline"
+                class="h-16 justify-start gap-4 border-2 border-slate-100 hover:border-slate-200 hover:bg-slate-50 group"
+                @click="activeTab = 'stock'"
+              >
+                <div class="p-2 bg-slate-100 rounded-lg group-hover:bg-slate-200 transition-colors">
+                  <Package class="w-5 h-5 text-slate-600" />
+                </div>
+                <div class="text-left">
+                  <div class="text-sm font-bold">Inventory Management</div>
+                  <div class="text-[0.625rem] text-muted-foreground">Manage IT assets stock</div>
+                </div>
+              </Button>
+              <Button
+                variant="outline"
+                class="h-16 justify-start gap-4 border-2 border-slate-100 hover:border-slate-200 hover:bg-slate-50 group"
+                @click="activeTab = 'kb'"
+              >
+                <div class="p-2 bg-slate-100 rounded-lg group-hover:bg-slate-200 transition-colors">
+                  <BookOpen class="w-5 h-5 text-slate-600" />
+                </div>
+                <div class="text-left">
+                  <div class="text-sm font-bold">Help Documents</div>
+                  <div class="text-[0.625rem] text-muted-foreground">Manuals & Guides</div>
+                </div>
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card class="border-slate-200 overflow-hidden">
+            <CardHeader class="pb-2 border-b bg-slate-50/50">
+              <div class="flex items-center justify-between">
+                <CardTitle class="text-sm font-bold uppercase tracking-wider text-slate-500"
+                  >Service Performance</CardTitle
+                >
+                <div
+                  class="px-2 py-0.5 bg-green-100 text-green-700 text-[0.625rem] font-bold rounded-full uppercase"
+                >
+                  All Systems Operating
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent class="p-0">
+              <div class="divide-y">
+                <div
+                  class="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
+                >
+                  <div class="flex items-center gap-3">
+                    <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                    <div>
+                      <div class="text-sm font-medium">Average Resolution Time</div>
+                      <div class="text-xs text-muted-foreground">
+                        Performance across all categories
+                      </div>
+                    </div>
+                  </div>
+                  <div class="text-lg font-bold text-slate-700">{{ ticketStats.avgResponse }}h</div>
+                </div>
+                <div
+                  class="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
+                >
+                  <div class="flex items-center gap-3">
+                    <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                    <div>
+                      <div class="text-sm font-medium">Active User Inquiries</div>
+                      <div class="text-xs text-muted-foreground">Tickets waiting for IT action</div>
+                    </div>
+                  </div>
+                  <div class="text-lg font-bold text-slate-700">{{ ticketStats.openCount }}</div>
+                </div>
+                <div
+                  class="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
+                >
+                  <div class="flex items-center gap-3">
+                    <div class="w-2 h-2 rounded-full bg-indigo-500"></div>
+                    <div>
+                      <div class="text-sm font-medium">Monthly Tickets Growth</div>
+                      <div class="text-xs text-muted-foreground">
+                        Based on current period activity
+                      </div>
+                    </div>
+                  </div>
+                  <div class="text-sm font-bold text-slate-700">
+                    +{{ ticketStats.total }} this period
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </TabsContent>
+
       <!-- Knowledge Base Tab -->
       <TabsContent value="kb" class="space-y-4">
         <!-- Header -->
@@ -959,6 +1382,37 @@ const categories = computed(() => {
         <div class="space-y-4">
           <div class="flex items-center justify-between">
             <h3 class="text-lg font-medium text-muted-foreground">Inventory Overview</h3>
+            <div class="flex items-center gap-3">
+              <!-- Search Popover -->
+              <Popover>
+                <PopoverTrigger as-child>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    class="h-9 w-9 text-muted-foreground hover:text-primary bg-white/50 hover:bg-white shadow-sm border-slate-200"
+                  >
+                    <Search class="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent class="w-80 p-2" align="start">
+                  <div class="flex items-center gap-2">
+                    <Search class="h-4 w-4 text-muted-foreground" />
+                    <Input
+                      v-model="searchQuery"
+                      :placeholder="t('services.itHelp.searchPlaceholder')"
+                      class="h-8 border-none focus-visible:ring-0 shadow-none"
+                      auto-focus
+                    />
+                  </div>
+                </PopoverContent>
+              </Popover>
+
+              <!-- Date Picker -->
+              <DateRangePicker
+                v-model="dateRange"
+                class="h-9 w-[280px] justify-center text-foreground font-normal bg-white/50 hover:bg-white shadow-sm transition-all border-slate-200 text-xs"
+              />
+            </div>
           </div>
 
           <!-- Stats Section -->
@@ -1071,9 +1525,41 @@ const categories = computed(() => {
 
       <!-- Assets Tab -->
       <TabsContent value="asset-requests" class="space-y-4">
-        <div v-if="isITDepartment && assetRequests.length > 0" class="space-y-4">
+        <!-- Assets Overview Stats (Always shown for IT Department) -->
+        <template v-if="isITDepartment">
           <div class="flex items-center justify-between">
             <h3 class="text-lg font-medium text-muted-foreground">Assets Overview</h3>
+            <div class="flex items-center gap-3">
+              <!-- Search Popover -->
+              <Popover>
+                <PopoverTrigger as-child>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    class="h-9 w-9 text-muted-foreground hover:text-primary bg-white/50 hover:bg-white shadow-sm border-slate-200"
+                  >
+                    <Search class="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent class="w-80 p-2" align="start">
+                  <div class="flex items-center gap-2">
+                    <Search class="h-4 w-4 text-muted-foreground" />
+                    <Input
+                      v-model="searchQuery"
+                      :placeholder="t('services.itHelp.searchPlaceholder')"
+                      class="h-8 border-none focus-visible:ring-0 shadow-none"
+                      auto-focus
+                    />
+                  </div>
+                </PopoverContent>
+              </Popover>
+
+              <!-- Date Picker -->
+              <DateRangePicker
+                v-model="dateRange"
+                class="h-9 w-[280px] justify-center text-foreground font-normal bg-white/50 hover:bg-white shadow-sm transition-all border-slate-200 text-xs"
+              />
+            </div>
           </div>
 
           <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
@@ -1130,8 +1616,9 @@ const categories = computed(() => {
               </CardContent>
             </Card>
           </div>
-        </div>
+        </template>
 
+        <!-- Asset Requests List -->
         <template v-if="assetRequests.length > 0">
           <Card>
             <CardHeader
@@ -1241,6 +1728,37 @@ const categories = computed(() => {
               <h3 class="text-lg font-medium text-muted-foreground">
                 {{ t('services.itHelp.stats.overview') }}
               </h3>
+              <div class="flex items-center gap-3">
+                <!-- Search Popover -->
+                <Popover>
+                  <PopoverTrigger as-child>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      class="h-9 w-9 text-muted-foreground hover:text-primary bg-white/50 hover:bg-white shadow-sm border-slate-200"
+                    >
+                      <Search class="h-4 w-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent class="w-80 p-2" align="start">
+                    <div class="flex items-center gap-2">
+                      <Search class="h-4 w-4 text-muted-foreground" />
+                      <Input
+                        v-model="searchQuery"
+                        :placeholder="t('services.itHelp.searchPlaceholder')"
+                        class="h-8 border-none focus-visible:ring-0 shadow-none"
+                        auto-focus
+                      />
+                    </div>
+                  </PopoverContent>
+                </Popover>
+
+                <!-- Date Picker -->
+                <DateRangePicker
+                  v-model="dateRange"
+                  class="h-9 w-[280px] justify-center text-foreground font-normal bg-white/50 hover:bg-white shadow-sm transition-all border-slate-200 text-xs"
+                />
+              </div>
             </div>
 
             <!-- Stats Section -->
@@ -1317,15 +1835,25 @@ const categories = computed(() => {
                 }}</CardTitle>
                 <CardDescription>{{ t('services.itHelp.tickets.subtitle') }}</CardDescription>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                class="h-9 border-2 border-primary/20 text-primary hover:bg-primary hover:text-white transition-all font-bold"
-                @click="isTicketModalOpen = true"
-              >
-                <Plus class="w-4 h-4 mr-2" />
-                {{ t('services.itHelp.newTicket') }}
-              </Button>
+              <div class="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  class="h-9 gap-2 border-primary/20 text-primary hover:bg-primary/5 hidden md:flex"
+                  @click="exportTicketsToPDF"
+                >
+                  <FileText class="w-4 h-4" /> PDF
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  class="h-9 border-2 border-primary/20 text-primary hover:bg-primary hover:text-white transition-all font-bold"
+                  @click="isTicketModalOpen = true"
+                >
+                  <Plus class="w-4 h-4 mr-2" />
+                  {{ t('services.itHelp.newTicket') }}
+                </Button>
+              </div>
             </CardHeader>
             <CardContent class="p-0">
               <div class="divide-y divide-border/50">
@@ -1372,6 +1900,17 @@ const categories = computed(() => {
 
                   <!-- Right Side: Ticket No & Status -->
                   <div class="flex items-center gap-3 flex-shrink-0 pl-4">
+                    <div v-if="getSLAStatus(ticket)" class="hidden lg:block">
+                      <Badge
+                        variant="outline"
+                        :class="[
+                          getSLAStatus(ticket)?.color,
+                          'px-1.5 py-0.5 text-[0.625rem] font-medium border-0 rounded uppercase tracking-wide pointer-events-none',
+                        ]"
+                      >
+                        SLA: {{ getSLAStatus(ticket)?.label }}
+                      </Badge>
+                    </div>
                     <Badge
                       variant="secondary"
                       class="text-[0.625rem] h-5 px-1.5 font-mono font-medium text-muted-foreground bg-muted border border-border rounded pointer-events-none"
