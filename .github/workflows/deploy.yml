@@ -43,61 +43,61 @@ jobs:
 
           echo "Deployment Complete!"
 
-  build-windows:
-    name: Build & Deploy Windows App
-    if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: false
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build Windows App
-        run: |
-          cd apps/desktop
-          npm run build:win
-
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-release
-          path: |
-            apps/desktop/release/**/latest.yml
-            apps/desktop/release/**/*.exe
-          if-no-files-found: error
-
-  deploy-windows:
-    name: Deploy Windows App (Self-Hosted)
-    needs: build-windows
-    runs-on: self-hosted
-    if: startsWith(github.ref, 'refs/tags/v')
-    steps:
-      - name: Download Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: windows-release
-          path: windows-release
-
-      - name: Deploy to Update Server
-        run: |
-          echo "Deploying Windows App from Self-Hosted Runner..."
-
-          # Ensure target directory exists (using sudo if needed, but assuming permissions fixed)
-          mkdir -p /var/www/ytrc-updates/
-
-          # Copy files
-          # Note: Artifact download structure might include the full path, so we find and move
-          find windows-release -name "*.exe" -exec cp {} /var/www/ytrc-updates/ \;
-          find windows-release -name "latest.yml" -exec cp {} /var/www/ytrc-updates/ \;
-
-          echo "Listing deployed files:"
-          ls -lh /var/www/ytrc-updates/
+#   build-windows:
+#     name: Build & Deploy Windows App
+#     if: startsWith(github.ref, 'refs/tags/v')
+#     runs-on: windows-latest
+#     steps:
+#       - uses: actions/checkout@v4
+#         with:
+#           submodules: false
+#
+#       - name: Setup Node.js
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: '20'
+#           cache: 'npm'
+#
+#       - name: Install dependencies
+#         run: npm install
+#
+#       - name: Build Windows App
+#         run: |
+#           cd apps/desktop
+#           npm run build:win
+#
+#       - name: Upload Artifacts
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: windows-release
+#           path: |
+#             apps/desktop/release/**/latest.yml
+#             apps/desktop/release/**/*.exe
+#           if-no-files-found: error
+#
+#   deploy-windows:
+#     name: Deploy Windows App (Self-Hosted)
+#     needs: build-windows
+#     runs-on: self-hosted
+#     if: startsWith(github.ref, 'refs/tags/v')
+#     steps:
+#       - name: Download Artifacts
+#         uses: actions/download-artifact@v4
+#         with:
+#           name: windows-release
+#           path: windows-release
+#
+#       - name: Deploy to Update Server
+#         run: |
+#           echo "Deploying Windows App from Self-Hosted Runner..."
+#
+#           # Ensure target directory exists (using sudo if needed, but assuming permissions fixed)
+#           mkdir -p /var/www/ytrc-updates/
+#
+#           # Copy files
+#           # Note: Artifact download structure might include the full path, so we find and move
+#           find windows-release -name "*.exe" -exec cp {} /var/www/ytrc-updates/ \;
+#           find windows-release -name "latest.yml" -exec cp {} /var/www/ytrc-updates/ \;
+#
+#           echo "Listing deployed files:"
+#           ls -lh /var/www/ytrc-updates/
