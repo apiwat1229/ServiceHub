@@ -908,7 +908,7 @@ model ITTicket {
   issuedBy       String?   @map("issued_by")
   resolvedAt     DateTime? @map("resolved_at")
 
-  resolvedAt     DateTime? @map("resolved_at")
+
 
   rating         Int?
   feedback       String?
