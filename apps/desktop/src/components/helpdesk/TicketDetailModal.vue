@@ -1,14 +1,14 @@
 ```
 <script setup lang="ts">
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -17,11 +17,11 @@ import DatePicker from '@/components/ui/date-picker.vue';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import Time24hPicker from '@/components/ui/time-picker/Time24hPicker.vue';
@@ -36,18 +36,18 @@ import { format, formatDistanceToNowStrict, intervalToDuration } from 'date-fns'
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import {
-    AlertCircle,
-    Check,
-    Clock,
-    FileText,
-    History,
-    MapPin,
-    Monitor,
-    Pencil,
-    Printer,
-    Save,
-    Star,
-    Trash2,
+  AlertCircle,
+  Check,
+  Clock,
+  FileText,
+  History,
+  MapPin,
+  Monitor,
+  Pencil,
+  Printer,
+  Save,
+  Star,
+  Trash2,
 } from 'lucide-vue-next';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
@@ -81,6 +81,9 @@ const isStatusConfirmDialogOpen = ref(false);
 const isEditingTitle = ref(false);
 const resolvedDate = ref<string | null>(null);
 const resolvedTime = ref('00:00');
+const isEditingCreated = ref(false);
+const createdDate = ref<string | null>(null);
+const createdTime = ref('00:00');
 
 // Initialize local state when ticket changes
 watch(
@@ -109,6 +112,15 @@ watch(
       } else {
         resolvedDate.value = null;
         resolvedTime.value = '00:00';
+      }
+
+      if (newTicket.createdAt) {
+        const d = new Date(newTicket.createdAt);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        createdDate.value = `${year}-${month}-${day}`;
+        createdTime.value = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
       }
     }
   },
@@ -341,6 +353,19 @@ const saveChanges = async (confirmed = false) => {
       }
     }
 
+    // Handle createdAt update (Admin only)
+    if (isAdmin.value && createdDate.value) {
+      const [year, month, day] = createdDate.value.split('-').map(Number);
+      const [hours, minutes] = createdTime.value.split(':').map(Number);
+      const newCreatedAtDate = new Date(year, month - 1, day, hours, minutes);
+      const newCreatedAt = newCreatedAtDate.toISOString();
+
+      if (newCreatedAt !== localTicket.value.createdAt) {
+        (updateDto as any).createdAt = newCreatedAt;
+        hasChanges = true;
+      }
+    }
+
     if (!hasChanges) {
       toast.info('No changes to save');
       loading.value = false;
@@ -357,8 +382,8 @@ const saveChanges = async (confirmed = false) => {
 
     if (comment.value.trim()) {
       await handlePostComment();
-    } 
-    
+    }
+
     emit('update:open', false);
   } catch (error) {
     console.error(error);
@@ -738,9 +763,32 @@ const exportJobOrderPDF = async () => {
             <div
               class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground pt-1"
             >
-              <div class="flex items-center gap-1">
+              <div class="flex items-center gap-1 group">
                 <Clock class="w-3.5 h-3.5" />
-                <span>Created {{ localTicket ? formatDate(localTicket.createdAt) : '' }}</span>
+                <span
+                  v-if="!isEditingCreated"
+                  :class="{ 'cursor-pointer hover:underline decoration-dashed': isAdmin }"
+                  @click="isAdmin ? (isEditingCreated = true) : null"
+                  title="Click to edit (Admin)"
+                >
+                  Created {{ localTicket ? formatDate(localTicket.createdAt) : '' }}
+                </span>
+                <div v-else class="flex items-center gap-1 h-6">
+                  <DatePicker v-model="createdDate" class="h-6 w-[110px] text-xs px-2" />
+                  <input
+                    type="time"
+                    v-model="createdTime"
+                    class="h-6 w-[60px] text-xs border rounded px-1 bg-white focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    class="h-6 w-6 hover:bg-green-50"
+                    @click="isEditingCreated = false"
+                  >
+                    <Check class="w-3.5 h-3.5 text-green-600" />
+                  </Button>
+                </div>
               </div>
               <div
                 v-if="resolutionDuration"
@@ -1088,23 +1136,13 @@ const exportJobOrderPDF = async () => {
             <div class="p-5 space-y-6">
               <!-- Actions -->
               <!-- Actions -->
-<<<<<<< HEAD
-              <div v-if="isEditable" class="grid gap-2">
-                <Button @click="saveChanges" :disabled="loading" class="w-full shadow-sm">
-                  <Save class="w-4 h-4 mr-2" /> Save Changes
-                </Button>
-                <Button
-                  v-if="canManage"
-                  @click="handleDelete"
-                  :disabled="loading"
-=======
               <div class="grid gap-2">
                 <div v-if="isEditable" class="grid gap-2">
                   <Button @click="saveChanges" :disabled="loading" class="w-full shadow-sm">
                     <Save class="w-4 h-4 mr-2" /> Save Changes
                   </Button>
                   <Button
-                    v-if="isOwner"
+                    v-if="canManage"
                     @click="handleDelete"
                     :disabled="loading"
                     variant="outline"
@@ -1114,16 +1152,9 @@ const exportJobOrderPDF = async () => {
                   </Button>
                 </div>
 
-                <Button
-                  @click="exportJobOrderPDF"
->>>>>>> bdace1217199d1cbd9258540603dda41901e131c
-                  variant="outline"
-                  class="w-full shadow-sm bg-blue-50/50 hover:bg-blue-50 border-blue-100 text-blue-700 h-10 font-semibold"
-                >
+                <Button @click="exportJobOrderPDF" variant="outline" class="w-full shadow-sm">
                   <Printer class="w-4 h-4 mr-2" /> Export Job Order
                 </Button>
-
-                <div v-if="isEditable" class="my-2 border-b bg-border/60"></div>
               </div>
 
               <!-- Requester Card -->

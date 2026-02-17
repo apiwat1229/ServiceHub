@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button';
+import DatePicker from '@/components/ui/date-picker.vue';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -11,6 +12,7 @@ import {
 } from '@/components/ui/select';
 import Spinner from '@/components/ui/spinner/Spinner.vue';
 import { Textarea } from '@/components/ui/textarea';
+import { usePermissions } from '@/composables/usePermissions';
 import { itTicketsApi } from '@/services/it-tickets';
 import { Paperclip, Send, Trash2 } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
@@ -29,6 +31,8 @@ const loading = ref(false);
 const attachmentInput = ref<HTMLInputElement | null>(null);
 const attachmentPreview = ref<string | null>(null);
 
+const { isAdmin } = usePermissions();
+
 const form = ref({
   subject: '',
   category: '',
@@ -38,6 +42,7 @@ const form = ref({
   location: '',
   description: '',
   attachment: null as File | null,
+  createdAt: null as string | null, // Admin only
 });
 
 // Cascading Logic Helpers
@@ -130,6 +135,7 @@ const handleSubmit = async () => {
       category: `${form.value.category} > ${form.value.subcategory}${form.value.issueType ? ' > ' + form.value.issueType : ''}`,
       description: form.value.description,
       priority: form.value.priority.charAt(0).toUpperCase() + form.value.priority.slice(1), // capitalize
+      ...(form.value.createdAt ? { createdAt: new Date(form.value.createdAt).toISOString() } : {}),
     };
 
     await itTicketsApi.create(payload);
@@ -262,6 +268,15 @@ const handleSubmit = async () => {
           required
         />
       </div>
+    </div>
+
+    <!-- Admin: Backdate Creation -->
+    <div v-if="isAdmin" class="space-y-2">
+      <Label>Created Date (Admin Only)</Label>
+      <div class="flex items-center gap-2">
+        <DatePicker v-model="form.createdAt" class="w-full" />
+      </div>
+      <p class="text-xs text-muted-foreground">Leave empty to use current date and time.</p>
     </div>
 
     <!-- Description -->

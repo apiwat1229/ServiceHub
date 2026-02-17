@@ -38,6 +38,10 @@ export class CreateITTicketDto {
     approverId?: string;
 
     @IsOptional()
+    @IsDateString()
+    createdAt?: string;
+
+    @IsOptional()
     isAssetRequest?: boolean;
 }
 
@@ -98,9 +102,12 @@ export class UpdateITTicketDto {
     issuedBy?: string;
 
     @IsOptional()
+    @IsDateString()
+    resolvedAt?: string | Date | null;
+
     @IsOptional()
     @IsDateString()
-    resolvedAt?: string | Date;
+    createdAt?: string | Date | null;
 }
 
 export class CreateTicketCommentDto {

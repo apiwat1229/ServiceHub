@@ -65,7 +65,7 @@ export class ITTicketsService {
                 title: `Approval Required: ${ticket.ticketNo}`,
                 message: `${ticket.requester?.displayName} requested: ${ticket.title}`,
                 actionUrl: `/admin/helpdesk?ticketId=${ticket.id}`
-            }, [createDto.approverId], NotificationType.REQUEST);
+            }, [createDto.approverId as string], NotificationType.REQUEST);
         }
 
         // Log Activity
@@ -311,7 +311,7 @@ export class ITTicketsService {
                 title: `Ticket Assigned: ${ticket.ticketNo}`,
                 message: `You have been assigned to ticket ${ticket.ticketNo}: ${ticket.title}`,
                 actionUrl: `/admin/helpdesk?ticketId=${ticket.id}`
-            }, [updateDto.assigneeId]);
+            }, [updateDto.assigneeId as string]);
         }
 
         // Real-time Update
