@@ -1,7 +1,9 @@
+```
 <script setup lang="ts">
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import DatePicker from '@/components/ui/date-picker.vue';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import {
@@ -12,6 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import Time24hPicker from '@/components/ui/time-picker/Time24hPicker.vue';
 import { useUsers } from '@/composables/useUsers';
 import { cn, getAvatarUrl } from '@/lib/utils';
 import type { ITTicket, UpdateITTicketDto } from '@/services/it-tickets';
@@ -57,6 +60,8 @@ const selectedAssignee = ref('');
 const isDeleteDialogOpen = ref(false);
 const isRejectDialogOpen = ref(false);
 const isEditingTitle = ref(false);
+const resolvedDate = ref<string | null>(null);
+const resolvedTime = ref('00:00');
 
 // Initialize local state when ticket changes
 watch(
@@ -67,10 +72,41 @@ watch(
       selectedStatus.value = newTicket.status;
       selectedPriority.value = newTicket.priority;
       selectedAssignee.value = newTicket.assigneeId || 'unassigned';
+      if (newTicket.resolvedAt) {
+        const d = new Date(newTicket.resolvedAt);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        resolvedDate.value = `${year}-${month}-${day}`;
+        resolvedTime.value = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+      } else if (['Resolved', 'Closed'].includes(newTicket.status)) {
+        // Fallback to updatedAt if resolvedAt is missing but status is resolved/closed
+        const d = new Date(newTicket.updatedAt);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        resolvedDate.value = `${year}-${month}-${day}`;
+        resolvedTime.value = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+      } else {
+        resolvedDate.value = null;
+        resolvedTime.value = '00:00';
+      }
     }
   },
   { immediate: true }
 );
+
+// Watch for status changes to set default resolved date
+watch(selectedStatus, (newStatus) => {
+  if (['Resolved', 'Closed'].includes(newStatus) && !resolvedDate.value) {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    resolvedDate.value = `${year}-${month}-${day}`;
+    resolvedTime.value = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  }
+});
 
 const isOpen = computed({
   get: () => props.open,
@@ -150,18 +186,38 @@ const saveChanges = async () => {
       hasChanges = true;
     }
 
-    if (!hasChanges && !comment.value) {
-      isOpen.value = false;
+    if (['Resolved', 'Closed'].includes(selectedStatus.value)) {
+      // Check if we have a resolved date set in the UI
+      if (resolvedDate.value) {
+        const [year, month, day] = resolvedDate.value.split('-').map(Number);
+        const [hours, minutes] = resolvedTime.value.split(':').map(Number);
+
+        // Construct date using local time
+        const newResolvedAtDate = new Date(year, month - 1, day, hours, minutes);
+        const newResolvedAt = newResolvedAtDate.toISOString();
+
+        // ALWAYS update the resolvedAt if status is resolved/closed and we have a date
+        // This fixes the issue where sometimes the date doesn't update if it thinks it's the same
+        (updateDto as any).resolvedAt = newResolvedAt;
+        hasChanges = true;
+        console.log('[DEBUG] Setting resolvedAt:', newResolvedAt);
+      }
+    }
+
+    if (!hasChanges) {
+      toast.info('No changes to save');
+      loading.value = false;
       return;
     }
 
-    if (hasChanges) {
-      const updated = await itTicketsApi.update(localTicket.value.id, updateDto);
-      emit('ticketUpdated', updated);
-      toast.success('Ticket updated successfully');
-    }
+    console.log('[DEBUG] Sending updateDto:', updateDto);
 
-    isOpen.value = false;
+    const updatedTicket = await itTicketsApi.update(props.ticket!.id, updateDto);
+    console.log('[DEBUG] Received updatedTicket:', updatedTicket);
+
+    toast.success('Ticket updated successfully');
+    emit('ticketUpdated', updatedTicket);
+    emit('update:open', false);
   } catch (error) {
     console.error(error);
     toast.error('Failed to update ticket');
@@ -191,13 +247,25 @@ const isApprover = computed(() => {
   return localTicket.value.approverId === authStore.user.id;
 });
 
+const isITDepartment = computed(() => {
+  const userDept = authStore.user?.department;
+  return userDept === 'IT' || userDept === 'Information Technology';
+});
+
 const isEditable = computed(() => {
   if (!localTicket.value) return false;
+  // IT Department can always edit
+  if (isITDepartment.value) return true;
   return !['Approved', 'Closed', 'Resolved', 'Cancelled'].includes(localTicket.value.status);
 });
 
+const canManage = computed(() => {
+  return isOwner.value || isITDepartment.value;
+});
+
 const startEditingTitle = () => {
-  if (isOwner.value && isEditable.value) {
+  // Allow editing if owner OR IT, provided it's editable (which is always true for IT)
+  if (canManage.value && isEditable.value) {
     isEditingTitle.value = true;
   }
 };
@@ -341,7 +409,7 @@ const getImageUrl = (path: string | null | undefined) => {
             >
               {{ localTicket?.title }}
               <Button
-                v-if="isOwner && isEditable"
+                v-if="canManage && isEditable"
                 variant="ghost"
                 size="icon"
                 class="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -499,7 +567,7 @@ const getImageUrl = (path: string | null | undefined) => {
                   Description / Reason
                 </h5>
                 <div
-                  v-if="isOwner && isEditable"
+                  v-if="canManage && isEditable"
                   class="rounded-lg border border-border/50 shadow-sm"
                 >
                   <Textarea
@@ -614,19 +682,12 @@ const getImageUrl = (path: string | null | undefined) => {
             <div class="p-5 space-y-6">
               <!-- Actions -->
               <!-- Actions -->
-              <div
-                v-if="
-                  !['Approved', 'Closed', 'Resolved', 'Cancelled'].includes(
-                    localTicket?.status || ''
-                  )
-                "
-                class="grid gap-2"
-              >
+              <div v-if="isEditable" class="grid gap-2">
                 <Button @click="saveChanges" :disabled="loading" class="w-full shadow-sm">
                   <Save class="w-4 h-4 mr-2" /> Save Changes
                 </Button>
                 <Button
-                  v-if="isOwner"
+                  v-if="canManage"
                   @click="handleDelete"
                   :disabled="loading"
                   variant="outline"
@@ -725,6 +786,13 @@ const getImageUrl = (path: string | null | undefined) => {
                       >
                     </SelectContent>
                   </Select>
+                  <div class="space-y-1.5" v-if="['Resolved', 'Closed'].includes(selectedStatus)">
+                    <label class="text-xs font-medium">Resolution Date & Time</label>
+                    <div class="flex gap-2">
+                      <DatePicker v-model="resolvedDate" class="flex-1" />
+                      <Time24hPicker v-model="resolvedTime" class="w-[100px]" />
+                    </div>
+                  </div>
                 </div>
 
                 <div class="space-y-1.5">

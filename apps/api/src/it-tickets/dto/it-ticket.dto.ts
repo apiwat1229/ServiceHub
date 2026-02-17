@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsDateString, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateITTicketDto {
     @IsNotEmpty()
@@ -96,6 +96,10 @@ export class UpdateITTicketDto {
     @IsOptional()
     @IsString()
     issuedBy?: string;
+
+    @IsOptional()
+    @IsDateString()
+    resolvedAt?: string;
 }
 
 export class CreateTicketCommentDto {

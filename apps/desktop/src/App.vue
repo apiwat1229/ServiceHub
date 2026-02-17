@@ -11,7 +11,6 @@ import { AlertCircle, Loader2, RefreshCw } from 'lucide-vue-next';
 import { onMounted, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import GlobalBackground from './components/layout/GlobalBackground.vue';
-import UpdateNotification from './components/UpdateNotification.vue';
 
 useThemeStore();
 const router = useRouter();
@@ -25,7 +24,7 @@ const checkHealth = async () => {
     isLoading.value = true;
     error.value = null;
     // Simple health check to ensure API is reachable
-    await api.get('/health');
+    await api.get('/health', { timeout: 5000 });
     isLoading.value = false;
   } catch (err) {
     console.error('Health check failed:', err);
@@ -87,41 +86,41 @@ onUnmounted(() => {
       <!-- Loading & Error States -->
       <div
         v-if="isLoading || error"
-        class="absolute inset-0 z-50 flex flex-col items-center justify-center p-4 bg-background/20 backdrop-blur-[2px]"
+        class="fixed inset-0 z-[100] flex flex-col items-center justify-center p-4 bg-background/95 backdrop-blur-sm"
       >
         <!-- Loading State -->
         <div
           v-if="isLoading"
-          class="flex flex-col items-center justify-center p-8 rounded-2xl bg-background/60 backdrop-blur-md border border-border/50 shadow-sm transition-all duration-500 animate-in fade-in zoom-in"
+          class="flex flex-col items-center justify-center text-center animate-in fade-in zoom-in duration-300"
         >
-          <div class="relative mb-6">
-            <Loader2 class="h-12 w-12 animate-spin text-primary" />
-            <div class="absolute inset-0 h-12 w-12 rounded-full border-2 border-primary/20"></div>
+          <div class="relative mb-8">
+            <Loader2 class="h-16 w-16 animate-spin text-primary" />
+            <div class="absolute inset-0 h-16 w-16 rounded-full border-4 border-primary/20"></div>
           </div>
-          <p class="text-xl font-semibold text-foreground mb-1">Connecting to app.ytrc.co.th</p>
-          <p class="text-sm text-muted-foreground animate-pulse">
-            Establishing secure connection...
+          <h2 class="text-2xl font-bold text-foreground mb-2">Connecting to Server</h2>
+          <p class="text-muted-foreground animate-pulse">
+            Establishing secure connection to app.ytrc.co.th...
           </p>
         </div>
 
         <!-- Error State -->
         <div
           v-else-if="error"
-          class="flex flex-col items-center max-w-md text-center p-8 rounded-2xl bg-background/80 backdrop-blur-md border border-destructive/20 shadow-xl animate-in fade-in slide-in-from-bottom-4"
+          class="flex flex-col items-center max-w-md text-center animate-in fade-in slide-in-from-bottom-4 duration-300"
         >
-          <div class="rounded-full bg-destructive/10 p-4 mb-6">
-            <AlertCircle class="h-12 w-12 text-destructive" />
+          <div class="rounded-full bg-destructive/10 p-6 mb-6">
+            <AlertCircle class="h-16 w-16 text-destructive" />
           </div>
-          <h2 class="text-2xl font-bold mb-3">Connection Failed</h2>
-          <p class="text-muted-foreground mb-8">{{ error }}</p>
+          <h2 class="text-2xl font-bold mb-2">Connection Failed</h2>
+          <p class="text-muted-foreground mb-8 text-lg">{{ error }}</p>
           <Button
             @click="handleRetry"
             :disabled="isRetrying"
             size="lg"
-            class="w-full sm:w-auto min-w-[160px] rounded-xl shadow-lg shadow-primary/20"
+            class="h-12 px-8 text-lg rounded-xl shadow-lg shadow-primary/20"
           >
-            <RefreshCw class="mr-2 h-4 w-4" :class="{ 'animate-spin': isRetrying }" />
-            {{ isRetrying ? 'Retrying Connection...' : 'Retry Connection' }}
+            <RefreshCw class="mr-2 h-5 w-5" :class="{ 'animate-spin': isRetrying }" />
+            {{ isRetrying ? 'Retrying...' : 'Retry Connection' }}
           </Button>
         </div>
       </div>
@@ -131,7 +130,6 @@ onUnmounted(() => {
     </div>
   </div>
 
-  <UpdateNotification />
   <Toaster
     position="top-center"
     :duration="5000"

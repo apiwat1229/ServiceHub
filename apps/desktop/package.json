@@ -1,5 +1,5 @@
 {
-  "name": "desktop",
+  "name": "service-hub",
   "private": true,
   "version": "1.1.10",
   "type": "module",

@@ -905,6 +905,7 @@ model ITTicket {
   
   issuedAt       DateTime? @map("issued_at")
   issuedBy       String?   @map("issued_by")
+  resolvedAt     DateTime? @map("resolved_at")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

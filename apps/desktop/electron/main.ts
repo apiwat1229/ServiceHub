@@ -70,13 +70,27 @@ function createWindow() {
 
   if (VITE_DEV_SERVER_URL) {
     win.loadURL(VITE_DEV_SERVER_URL)
-    win.webContents.openDevTools()
+    // win.webContents.openDevTools()
+    win.webContents.closeDevTools()
   } else {
     // win.loadFile('dist/index.html')
     win.loadFile(path.join(RENDERER_DIST, 'index.html'))
     // Open DevTools in production for debugging
-    win.webContents.openDevTools()
+    // win.webContents.openDevTools()
+    win.webContents.closeDevTools()
   }
+
+  // Toggle DevTools with F12 or Ctrl+Shift+I
+  win.webContents.on('before-input-event', (event, input) => {
+    if (input.key === 'F12' && input.type === 'keyDown') {
+      win?.webContents.toggleDevTools()
+      event.preventDefault()
+    }
+    if (input.control && input.shift && input.key.toLowerCase() === 'i' && input.type === 'keyDown') {
+      win?.webContents.toggleDevTools()
+      event.preventDefault()
+    }
+  })
 }
 
 // Quit when all windows are closed, except on macOS. There, it's common
@@ -210,79 +224,10 @@ ipcMain.handle('preview-window', async (event, title) => {
 });
 
 // ============================================
-// Auto-Update Configuration
+// Auto-Update Configuration (DISABLED)
 // ============================================
-import log from 'electron-log'
-import { autoUpdater } from 'electron-updater'
-
-// Auto-update settings will be configured in app.whenReady()
-
-// Auto-update event handlers
-autoUpdater.on('checking-for-update', () => {
-  log.info('Checking for update...')
-  win?.webContents.send('update-checking')
-})
-
-autoUpdater.on('update-available', (info) => {
-  log.info('Update available:', info)
-  win?.webContents.send('update-available', info)
-})
-
-autoUpdater.on('update-not-available', (info) => {
-  log.info('Update not available:', info)
-  win?.webContents.send('update-not-available', info)
-})
-
-autoUpdater.on('download-progress', (progressObj) => {
-  log.info('Download progress:', progressObj)
-  win?.webContents.send('download-progress', progressObj)
-})
-
-autoUpdater.on('update-downloaded', (info) => {
-  log.info('Update downloaded:', info)
-  win?.webContents.send('update-downloaded', info)
-})
-
-autoUpdater.on('error', (err) => {
-  log.error('Update error:', err)
-  // Always notify renderer so the "Checking..." notification can close or show error
-  win?.webContents.send('update-error', err.message)
-})
-
-// IPC handlers for auto-update
-ipcMain.on('check-for-updates', () => {
-  if (!VITE_DEV_SERVER_URL) {
-    autoUpdater.checkForUpdates()
-  } else {
-    log.info('Skipping update check in development mode')
-  }
-})
-
-ipcMain.on('download-update', () => {
-  autoUpdater.downloadUpdate()
-})
-
-ipcMain.on('install-update', () => {
-  autoUpdater.quitAndInstall()
-})
+// Auto-update logic has been removed as per request.
 
 app.whenReady().then(() => {
-  // Configure logging for auto-updater (must be done after app is ready)
-  // Check if log.transports.file exists before configuring
-  if (log.transports && log.transports.file) {
-    log.transports.file.level = 'info'
-  }
-  autoUpdater.logger = log
-
-  // Auto-update settings
-  autoUpdater.autoDownload = false // Let user choose to download
-  autoUpdater.autoInstallOnAppQuit = true // Install when app quits
-
   createWindow()
-
-  // Check for updates on startup (production only)
-  setTimeout(() => {
-    log.info('Checking for updates on startup...')
-    autoUpdater.checkForUpdates()
-  }, 5000) // Wait 5 seconds after app starts
 })

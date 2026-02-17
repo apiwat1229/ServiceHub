@@ -205,6 +205,8 @@ export class ITTicketsService {
             select: { status: true, isAssetRequest: true, assetId: true, quantity: true }
         });
 
+        console.log(`[DEBUG] Updating ticket ${id}. Payload:`, JSON.stringify(updateDto));
+
         const ticket = await this.prisma.iTTicket.update({
             where: { id },
             data: updateDto,

@@ -443,30 +443,8 @@ onUnmounted(() => {
     <div
       class="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center w-full max-w-[400px] px-4 no-drag"
     >
-      <!-- Search Bar (Visible on Home) -->
-      <div v-if="isHome" class="w-full relative group">
-        <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-          <Search
-            class="w-3.5 h-3.5 text-muted-foreground group-focus-within:text-primary transition-colors"
-          />
-        </div>
-        <input
-          v-model="searchStore.searchQuery"
-          type="text"
-          placeholder="Search for services..."
-          class="w-full h-9 pl-9 pr-9 bg-muted/50 border-transparent rounded-full text-xs font-medium focus:bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all outline-none border hover:bg-muted/80"
-        />
-        <button
-          v-if="searchStore.searchQuery"
-          @click="searchStore.clearSearchQuery"
-          class="absolute inset-y-0 right-3 flex items-center text-muted-foreground hover:text-foreground"
-        >
-          <X class="w-3.5 h-3.5" />
-        </button>
-      </div>
-
-      <!-- Page Title (Visible on other pages) -->
-      <span v-else class="text-sm text-foreground font-semibold tracking-tight truncate px-4">
+      <!-- Page Title -->
+      <span class="text-sm text-foreground font-semibold tracking-tight truncate px-4">
         {{ pageTitle }}
       </span>
     </div>

@@ -906,6 +906,79 @@
         "saveSuccess": "บันทึกข้อมูลสำเร็จ"
       }
     },
+    "printer": {
+      "title": "แดชบอร์ดสรุปการใช้งานเครื่องพิมพ์",
+      "subtitle": "วิเคราะห์ข้อมูลจากไฟล์ CSV Log",
+      "uploadTitle": "อัปโหลดไฟล์ CSV",
+      "uploadDesc": "รองรับไฟล์ .csv (Encoding: UTF-8)",
+      "emptyState": "กรุณาอัปโหลดไฟล์ CSV เพื่อเริ่มการวิเคราะห์",
+      "emptyStateDesc": "ระบบจะประมวลผล CopyBW, CopyColor, PrintBW, PrintColor, และ TotalMeter",
+      "stats": {
+        "totalUsers": "ผู้ใช้งานทั้งหมด",
+        "totalDepts": "แผนกทั้งหมด",
+        "grandTotal": "ยอดการใช้งานรวม",
+        "printBW": "พิมพ์ขาว-ดำ (Print)",
+        "printColor": "พิมพ์สี (Print)",
+        "copyBW": "ถ่ายเอกสารขาว-ดำ (Copy)",
+        "copyColor": "ถ่ายเอกสารสี (Copy)"
+      },
+      "charts": {
+        "topUsers": "10 อันดับผู้ใช้งานสูงสุด",
+        "usageType": "สัดส่วนประเภทการใช้งาน",
+        "usageByDept": "ยอดการใช้งานแยกตามแผนก",
+        "labels": {
+          "printBW": "Print ขาว-ดำ",
+          "printColor": "Print สี",
+          "copyBW": "Copy ขาว-ดำ",
+          "copyColor": "Copy สี",
+          "totalUsage": "ยอดการใช้งานรวม (แผ่น)"
+        }
+      },
+      "history": {
+        "title": "ประวัติการใช้งานรายเดือน",
+        "comparison": "เปรียบเทียบกับเดือนที่ผ่านมา",
+        "saveSuccess": "บันทึกข้อมูลรายเดือนสำเร็จ!",
+        "saveError": "บันทึกข้อมูลไม่สำเร็จ",
+        "saveBtn": "บันทึกลงฐานข้อมูล"
+      },
+      "settings": {
+        "title": "ตั้งค่าการวิเคราะห์เครื่องพิมพ์",
+        "deptManagement": "จัดการแผนก",
+        "userMapping": "กำหนดแผนกให้ผู้ใช้งาน",
+        "addDept": "เพิ่มแผนก",
+        "editDept": "แก้ไขแผนก",
+        "deleteDept": "ลบแผนก",
+        "deptName": "ชื่อแผนก",
+        "description": "คำอธิบาย",
+        "mappingDesc": "กำหนดแผนกให้ชื่อผู้ใช้ที่พบในไฟล์ Log เพื่อการจัดกลุ่มข้อมูลที่ถูกต้อง",
+        "saveMapping": "บันทึกการกำหนดแผนก",
+        "mappingSuccess": "บันทึกข้อมูลสำเร็จ!",
+        "mappingError": "บันทึกข้อมูลไม่สำเร็จ"
+      },
+      "table": {
+        "title": "รายละเอียดรายบุคคล (รวมยอด)",
+        "search": "ค้นหาชื่อผู้ใช้...",
+        "userName": "ชื่อผู้ใช้",
+        "department": "แผนก",
+        "total": "รวมทั้งหมด",
+        "noData": "ไม่พบข้อมูล",
+        "rowsPerPage": "จำนวนแถวต่อหน้า",
+        "page": "หน้า",
+        "selectDept": "เลือกแผนก",
+        "filterDept": "กรองตามแผนก",
+        "allDepts": "ทุกแผนก"
+      },
+      "departments": {
+        "it": "เทคโนโลยีสารสนเทศ (IT)",
+        "hr": "ทรัพยากรบุคคล (HR)",
+        "acc": "บัญชี (Accounting)",
+        "production": "ฝ่ายผลิต (Production)",
+        "sales": "ฝ่ายขาย (Sales)",
+        "mkt": "การตลาด (Marketing)",
+        "mng": "บริหาร (Management)",
+        "other": "อื่นๆ"
+      }
+    },
     "itHelp": {
       "name": "แจ้งปัญหาไอที",
       "description": "ระบบแจ้งซ่อมและเบิกอุปกรณ์ไอที",
@@ -920,6 +993,7 @@
       "tabs": {
         "kb": "ศูนย์การเรียนรู้",
         "tickets": "รายการแจ้งซ่อม",
+        "reports": "รายงานปัญหา/สถิติ",
         "assetRequests": "เบิก/คืน อุปกรณ์",
         "stock": "จัดการคลังอุปกรณ์ IT",
         "analytics": "สรุปยอดพิมพ์"
@@ -1090,79 +1164,6 @@
               "erp": "ERP / Accounting System (บิลผิด, สต็อกไม่ตรง)"
             }
           }
-        }
-      },
-      "printer": {
-        "title": "แดชบอร์ดสรุปการใช้งานเครื่องพิมพ์",
-        "subtitle": "วิเคราะห์ข้อมูลจากไฟล์ CSV Log",
-        "uploadTitle": "อัปโหลดไฟล์ CSV",
-        "uploadDesc": "รองรับไฟล์ .csv (Encoding: UTF-8)",
-        "emptyState": "กรุณาอัปโหลดไฟล์ CSV เพื่อเริ่มการวิเคราะห์",
-        "emptyStateDesc": "ระบบจะประมวลผล CopyBW, CopyColor, PrintBW, PrintColor, และ TotalMeter",
-        "stats": {
-          "totalUsers": "ผู้ใช้งานทั้งหมด",
-          "totalDepts": "แผนกทั้งหมด",
-          "grandTotal": "ยอดการใช้งานรวม",
-          "printBW": "พิมพ์ขาว-ดำ (Print)",
-          "printColor": "พิมพ์สี (Print)",
-          "copyBW": "ถ่ายเอกสารขาว-ดำ (Copy)",
-          "copyColor": "ถ่ายเอกสารสี (Copy)"
-        },
-        "charts": {
-          "topUsers": "10 อันดับผู้ใช้งานสูงสุด",
-          "usageType": "สัดส่วนประเภทการใช้งาน",
-          "usageByDept": "ยอดการใช้งานแยกตามแผนก",
-          "labels": {
-            "printBW": "Print ขาว-ดำ",
-            "printColor": "Print สี",
-            "copyBW": "Copy ขาว-ดำ",
-            "copyColor": "Copy สี",
-            "totalUsage": "ยอดการใช้งานรวม (แผ่น)"
-          }
-        },
-        "history": {
-          "title": "ประวัติการใช้งานรายเดือน",
-          "comparison": "เปรียบเทียบกับเดือนที่ผ่านมา",
-          "saveSuccess": "บันทึกข้อมูลรายเดือนสำเร็จ!",
-          "saveError": "บันทึกข้อมูลไม่สำเร็จ",
-          "saveBtn": "บันทึกลงฐานข้อมูล"
-        },
-        "settings": {
-          "title": "ตั้งค่าการวิเคราะห์เครื่องพิมพ์",
-          "deptManagement": "จัดการแผนก",
-          "userMapping": "กำหนดแผนกให้ผู้ใช้งาน",
-          "addDept": "เพิ่มแผนก",
-          "editDept": "แก้ไขแผนก",
-          "deleteDept": "ลบแผนก",
-          "deptName": "ชื่อแผนก",
-          "description": "คำอธิบาย",
-          "mappingDesc": "กำหนดแผนกให้ชื่อผู้ใช้ที่พบในไฟล์ Log เพื่อการจัดกลุ่มข้อมูลที่ถูกต้อง",
-          "saveMapping": "บันทึกการกำหนดแผนก",
-          "mappingSuccess": "บันทึกข้อมูลสำเร็จ!",
-          "mappingError": "บันทึกข้อมูลไม่สำเร็จ"
-        },
-        "table": {
-          "title": "รายละเอียดรายบุคคล (รวมยอด)",
-          "search": "ค้นหาชื่อผู้ใช้...",
-          "userName": "ชื่อผู้ใช้",
-          "department": "แผนก",
-          "total": "รวมทั้งหมด",
-          "noData": "ไม่พบข้อมูล",
-          "rowsPerPage": "จำนวนแถวต่อหน้า",
-          "page": "หน้า",
-          "selectDept": "เลือกแผนก",
-          "filterDept": "กรองตามแผนก",
-          "allDepts": "ทุกแผนก"
-        },
-        "departments": {
-          "it": "เทคโนโลยีสารสนเทศ (IT)",
-          "hr": "ทรัพยากรบุคคล (HR)",
-          "acc": "บัญชี (Accounting)",
-          "production": "ฝ่ายผลิต (Production)",
-          "sales": "ฝ่ายขาย (Sales)",
-          "mkt": "การตลาด (Marketing)",
-          "mng": "บริหาร (Management)",
-          "other": "อื่นๆ"
         }
       },
       "assets": {

@@ -59,6 +59,7 @@ export function useSidebarMenu() {
                     children: [
                         { name: t('services.itHelp.tabs.kb'), path: '/admin/helpdesk?tab=kb', icon: BookOpen },
                         { name: t('services.itHelp.tabs.tickets'), path: '/admin/helpdesk?tab=tickets', icon: FileText },
+                        { name: t('services.itHelp.tabs.reports'), path: '/admin/helpdesk?tab=reports', icon: BarChart3 },
                         { name: t('services.itHelp.tabs.assetRequests'), path: '/admin/helpdesk?tab=asset-requests', icon: Monitor },
                         { name: t('services.itHelp.tabs.stock'), path: '/admin/helpdesk?tab=stock', icon: Package },
                         { name: t('services.itHelp.tabs.analytics'), path: '/admin/helpdesk?tab=analytics', icon: BarChart3 },
