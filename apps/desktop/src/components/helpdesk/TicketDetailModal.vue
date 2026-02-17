@@ -353,8 +353,8 @@ const saveChanges = async (confirmed = false) => {
       }
     }
 
-    // Handle createdAt update (Admin only)
-    if (isAdmin.value && createdDate.value) {
+    // Handle createdAt update (Admin or IT only)
+    if ((isAdmin.value || isITDepartment.value) && createdDate.value) {
       const [year, month, day] = createdDate.value.split('-').map(Number);
       const [hours, minutes] = createdTime.value.split(':').map(Number);
       const newCreatedAtDate = new Date(year, month - 1, day, hours, minutes);
@@ -767,9 +767,11 @@ const exportJobOrderPDF = async () => {
                 <Clock class="w-3.5 h-3.5" />
                 <span
                   v-if="!isEditingCreated"
-                  :class="{ 'cursor-pointer hover:underline decoration-dashed': isAdmin }"
-                  @click="isAdmin ? (isEditingCreated = true) : null"
-                  title="Click to edit (Admin)"
+                  :class="{
+                    'cursor-pointer hover:underline decoration-dashed': isAdmin || isITDepartment,
+                  }"
+                  @click="isAdmin || isITDepartment ? (isEditingCreated = true) : null"
+                  :title="isAdmin || isITDepartment ? 'Click to edit' : ''"
                 >
                   Created {{ localTicket ? formatDate(localTicket.createdAt) : '' }}
                 </span>
@@ -1195,6 +1197,14 @@ const exportJobOrderPDF = async () => {
                 </div>
 
                 <div class="space-y-1.5">
+                  <div class="space-y-1.5" v-if="isAdmin || isITDepartment">
+                    <label class="text-xs font-medium">Created Date & Time</label>
+                    <div class="flex gap-2">
+                      <DatePicker v-model="createdDate" class="flex-1" />
+                      <Time24hPicker v-model="createdTime" class="w-[100px]" />
+                    </div>
+                  </div>
+
                   <label class="text-xs font-medium">Status</label>
                   <Select v-model="selectedStatus" :disabled="!isEditable">
                     <SelectTrigger class="h-9 bg-background">

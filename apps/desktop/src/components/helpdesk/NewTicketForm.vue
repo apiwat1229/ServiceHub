@@ -12,9 +12,8 @@ import {
 } from '@/components/ui/select';
 import Spinner from '@/components/ui/spinner/Spinner.vue';
 import { Textarea } from '@/components/ui/textarea';
-import { usePermissions } from '@/composables/usePermissions';
 import { itTicketsApi } from '@/services/it-tickets';
-import { Paperclip, Send, Trash2 } from 'lucide-vue-next';
+import { Clock, Paperclip, Send, Trash2 } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
@@ -31,8 +30,6 @@ const loading = ref(false);
 const attachmentInput = ref<HTMLInputElement | null>(null);
 const attachmentPreview = ref<string | null>(null);
 
-const { isAdmin } = usePermissions();
-
 const form = ref({
   subject: '',
   category: '',
@@ -42,8 +39,40 @@ const form = ref({
   location: '',
   description: '',
   attachment: null as File | null,
-  createdAt: null as string | null, // Admin only
+  createdAt: null as string | null, // Combined Date + Time
 });
+
+// Created Date/Time Local State
+const now = new Date();
+const year = now.getFullYear();
+const month = String(now.getMonth() + 1).padStart(2, '0');
+const day = String(now.getDate()).padStart(2, '0');
+const hours = String(now.getHours()).padStart(2, '0');
+const minutes = String(now.getMinutes()).padStart(2, '0');
+
+const createdDate = ref<string | null>(`${year}-${month}-${day}`);
+const createdTime = ref<string>(`${hours}:${minutes}`);
+
+// Watchers to Combine Date + Time into form.createdAt
+watch(
+  [createdDate, createdTime],
+  ([newDate, newTime]) => {
+    if (!newDate) {
+      form.value.createdAt = null;
+      return;
+    }
+    // Combine date and time
+    // newDate is YYYY-MM-DD from DatePicker
+    // newTime is HH:MM from Input type="time"
+    const combined = new Date(`${newDate}T${newTime || '00:00'}:00`);
+    if (!isNaN(combined.getTime())) {
+      form.value.createdAt = combined.toISOString();
+    } else {
+      form.value.createdAt = null;
+    }
+  },
+  { immediate: true }
+);
 
 // Cascading Logic Helpers
 const categories = computed(() => {
@@ -270,11 +299,17 @@ const handleSubmit = async () => {
       </div>
     </div>
 
-    <!-- Admin: Backdate Creation -->
-    <div v-if="isAdmin" class="space-y-2">
-      <Label>Created Date (Admin Only)</Label>
+    <!-- Created Date & Time -->
+    <div class="space-y-2">
+      <Label>Created Date & Time</Label>
       <div class="flex items-center gap-2">
-        <DatePicker v-model="form.createdAt" class="w-full" />
+        <div class="flex-1">
+          <DatePicker v-model="createdDate" class="w-full" />
+        </div>
+        <div class="w-[140px] relative">
+          <Input type="time" v-model="createdTime" class="pl-9" :disabled="!createdDate" />
+          <Clock class="w-4 h-4 text-muted-foreground absolute left-3 top-3 pointer-events-none" />
+        </div>
       </div>
       <p class="text-xs text-muted-foreground">Leave empty to use current date and time.</p>
     </div>
