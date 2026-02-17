@@ -353,16 +353,36 @@ const saveChanges = async (confirmed = false) => {
       }
     }
 
-    // Handle createdAt update (Admin or IT only)
-    if ((isAdmin.value || isITDepartment.value) && createdDate.value) {
-      const [year, month, day] = createdDate.value.split('-').map(Number);
-      const [hours, minutes] = createdTime.value.split(':').map(Number);
-      const newCreatedAtDate = new Date(year, month - 1, day, hours, minutes);
-      const newCreatedAt = newCreatedAtDate.toISOString();
+    // Handle createdAt update (Admin only)
+    if (isAdmin.value && createdDate.value) {
+      try {
+        const [year, month, day] = createdDate.value.split('-').map(Number);
+        let hours = 0,
+          minutes = 0;
 
-      if (newCreatedAt !== localTicket.value.createdAt) {
-        (updateDto as any).createdAt = newCreatedAt;
-        hasChanges = true;
+        if (createdTime.value) {
+          const timeParts = createdTime.value.split(':').map(Number);
+          if (timeParts.length >= 2) {
+            hours = timeParts[0];
+            minutes = timeParts[1];
+          }
+        }
+
+        const newCreatedAtDate = new Date(year, month - 1, day, hours, minutes);
+        const newCreatedAt = newCreatedAtDate.toISOString();
+
+        console.log('[DEBUG] Admin updating createdAt:', {
+          old: localTicket.value.createdAt,
+          new: newCreatedAt,
+          isDiff: newCreatedAt !== localTicket.value.createdAt,
+        });
+
+        if (newCreatedAt !== localTicket.value.createdAt) {
+          (updateDto as any).createdAt = newCreatedAt;
+          hasChanges = true;
+        }
+      } catch (err) {
+        console.error('[DEBUG] Date processing error:', err);
       }
     }
 

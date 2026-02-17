@@ -110,6 +110,7 @@ export interface UpdateITTicketDto {
     issuedAt?: string;
     issuedBy?: string;
     resolvedAt?: string;
+    createdAt?: string;
 }
 
 export const itTicketsApi = {
