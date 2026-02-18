@@ -225,8 +225,15 @@ export class ITTicketsService {
             select: { status: true, isAssetRequest: true, assetId: true, quantity: true, assigneeId: true }
         });
 
-        // 2. Prepare update data
-        const updateData: UpdateITTicketDto = { ...updateDto };
+        const updateData: any = { ...updateDto };
+
+        // Ensure dates are correctly formatted as Date objects for Prisma
+        if (updateDto.createdAt) {
+            updateData.createdAt = new Date(updateDto.createdAt);
+        }
+        if (updateDto.resolvedAt) {
+            updateData.resolvedAt = new Date(updateDto.resolvedAt);
+        }
 
         // Handle resolvedAt timestamp if not already provided
         if (!updateData.resolvedAt) {
@@ -235,7 +242,7 @@ export class ITTicketsService {
                 ['Resolved', 'Closed'].includes(updateDto.status) &&
                 !['Resolved', 'Closed'].includes(currentTicket?.status as string)
             ) {
-                updateData.resolvedAt = new Date().toISOString();
+                updateData.resolvedAt = new Date();
             } else if (
                 updateDto.status &&
                 !['Resolved', 'Closed'].includes(updateDto.status) &&

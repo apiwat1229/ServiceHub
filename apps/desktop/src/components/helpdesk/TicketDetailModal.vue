@@ -438,7 +438,11 @@ const isApprover = computed(() => {
 
 const isITDepartment = computed(() => {
   const userDept = authStore.user?.department;
-  return userDept === 'IT' || userDept === 'Information Technology';
+  return (
+    userDept === 'IT' ||
+    userDept === 'Information Technology' ||
+    userDept === 'เทคโนโลยีสารสนเทศ (IT)'
+  );
 });
 
 const isEditable = computed(() => {

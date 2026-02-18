@@ -58,6 +58,7 @@ import {
   ArrowUpDown,
   BookOpen,
   CheckCircle2,
+  ClipboardList,
   Clock,
   Edit2,
   FileText,
