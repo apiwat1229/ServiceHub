@@ -30,17 +30,6 @@ jobs:
           npm run build:api
           pm2 restart servicehub-api || pm2 start apps/api/dist/main.js --name servicehub-api
 
-          # Build Frontend
-          echo "Building Frontend..."
-          npm install @unovis/ts @unovis/vue --workspace=apps/desktop
-          npm run build:web --workspace=apps/desktop
-
-          # Update Static Files
-          echo "Updating Static Files..."
-          # Note: /var/www/ytrc-app/ is writable by admin group
-          rm -rf /var/www/ytrc-app/*
-          cp -r apps/desktop/dist/* /var/www/ytrc-app/
-
           echo "Deployment Complete!"
 
 #   build-windows:
