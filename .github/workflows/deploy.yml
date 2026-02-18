@@ -13,7 +13,7 @@ jobs:
       - name: Deploy Local
         run: |
           # Navigate to project directory
-          cd /home/admin/Desktop/Desktop-NestJS
+          cd /home/admin/Desktop/ServiceHub
 
           # Pull latest code
           git checkout package-lock.json
@@ -28,7 +28,7 @@ jobs:
           # Use db push to sync schema directly because migration history is messy on server
           npx prisma db push --schema=packages/database/prisma/schema.prisma --accept-data-loss
           npm run build:api
-          pm2 restart nestjs-api
+          pm2 restart servicehub-api || pm2 start apps/api/dist/main.js --name servicehub-api
 
           # Build Frontend
           echo "Building Frontend..."
